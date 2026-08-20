@@ -1234,6 +1234,14 @@ return [
                 'defaultSeverity'   => EntityProblem::SEVERITY_WARNING,
                 'text'              => 'Invalid call number for book',
             ],
+            //What the auto-fix page reports for each book it is about to give a sort text.
+            //It reported `collection-invalid-call-number-format` until 2026-08-21, which
+            //named the wrong entity and the wrong fault at once.
+            'book-missing-sort-text' => [
+                'entity'            => 'book',
+                'defaultSeverity'   => EntityProblem::SEVERITY_WARNING,
+                'text'              => 'No sort text for book',
+            ],
             'library-missing-call-number-format' => [
                 'entity'            => 'library',
                 'defaultSeverity'   => EntityProblem::SEVERITY_WARNING,

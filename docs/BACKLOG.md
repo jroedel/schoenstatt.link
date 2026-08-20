@@ -332,6 +332,100 @@ rediscovered.
   they can sign in with their address regardless and inherit the roles. Worth deciding
   rather than leaving implicit.
 
+- [x] ~~**Measure `sion-model/auto-fix-data-problems` and `admin/import-father`** — the
+  two unported singles nobody had looked at.~~ **Done 2026-08-21.**
+
+  **`admin/import-father` needs nothing.** Measured rather than assumed, because the
+  three previous pages of this kind all turned out to be broken: this one is POST-gated
+  and form-validated, its three outcomes were repaired on 2026-08-17, its config keys
+  match what `PatresGateway` reads (`patres_api_get_person_uri`, not the
+  `patres_api_person_uri` a first pass guessed at), and the remote endpoint is live —
+  `https://schoenstatt-fathers.link/api/persons` answers **401** without a key rather
+  than 404. It 302s to a locale-prefixed form first, and both the redirect and the `key`
+  query parameter survive the hop, which `Laminas\Http\Client` follows by default. The
+  one thing not checkable from here is whether production's key is still valid; that
+  needs a signed-in `sch_administrator`.
+
+  **`sion-model/auto-fix-data-problems` had one real defect and it was under-reporting.**
+  The page is simulate-by-default and CSRF-gated, so there was no GET-mutation hazard —
+  unlike its retired cousins. What it does is backfill `lib_books.sort_text`. Measured on
+  the capsule:
+
+  | | books |
+  |---|---|
+  | active books with no sort text | **27,910** |
+  | the page offers to fix | 9,764 — every one in Colegio Mayor |
+  | invisible on the page | **17,207** |
+
+  PUC's entire active catalogue — all 16,383 books — was in the invisible part. The
+  number on screen read as the size of the problem when it was 35% of it.
+
+  **The vocabulary for saying so already existed and had never been wired up.**
+  `PROBLEM_LIBRARY_MISSING_SORT_TEXT_FORMAT` and its collection twin were declared, given
+  `problem_specifications` entries with display text, and emitted by nothing at all. They
+  are emitted now, from `getLibraryProblems()` — one problem per affected library rather
+  than 17,207 rows, because the action is one decision per library — and that placement
+  reaches both the global report and the per-library page, which is the one a librarian
+  opens.
+
+  Fixed alongside, all measured rather than inferred:
+
+  - **The badge cost 0.54s and a 120 MB peak.** `LibrariesController` got the number by
+    running the entire simulation — 27,910 books fetched, a sort text computed for each,
+    9,764 objects built — to put one integer on a menu entry. `LibraryTable::
+    getSortTextCoverage()` answers with one grouped query plus eight filter builds:
+    **0.076s, 10 MB**. Fixability is a property of the (library, collection) pair, not of
+    the book.
+  - **The auto-fix labelled its own rows wrong**, as
+    `collection-invalid-call-number-format` — the wrong entity *and* the wrong fault,
+    sending an administrator to look at a collection that is fine. Now
+    `book-missing-sort-text`.
+  - **`getCollectionProblems()` assigned where it meant to merge**, so only the last
+    library's collection problems survived its loop. Five libraries' worth were being
+    discarded silently; the report goes from 4 such problems to 8.
+  - **Three PHP 8.5 deprecations, all invisible in production** because the app narrows
+    `error_reporting` to exclude `E_DEPRECATED`. The new test surfaced **16,692**
+    occurrences of `null` used as an array offset in `getBookSortText()` (a collectionless
+    book has a null `collectionId`), plus a dynamic property on `LibraryOptions` and a
+    `new DateTime(null)`. All three are errors in PHP 9.
+
+  A first pass had this diagnosed as a code bug in the collection→library fallback. It is
+  not: the fallback exists inside `getSortTextFilter()`, and it needs a `CallNumberRegex`
+  **and** a `SortTextFormat`. The finding is recorded below as the configuration decision
+  it actually is.
+
+- [ ] **17,207 active books can never be given a sort text, and that is a product
+  decision.** Now visible on the data-problems report (above) rather than silently absent
+  from the auto-fix page. `getSortTextFilter()` needs both a `CallNumberRegex` and a
+  `SortTextFormat`, on the collection or its library, and:
+
+  | library | books stuck | why |
+  |---|---|---|
+  | **4 PUC** | 16,383 | no format and no regex, and no collections either |
+  | **1 Bellavista** | 514 | has a library `SortTextFormat` but **no `CallNumberRegex`**, so it does nothing; three of its four collections have neither |
+  | **6 Austin Fathers** | 183 | nothing configured |
+  | **7 Austin University Men** | 126 | `SortTextFormat` is `%1{author}{title}`, which does not parse — see the existing item on that |
+  | **3 Colegio Mayor** | 1 | one collectionless book |
+
+  Bellavista is the interesting one: somebody configured a format and it has never once
+  been used, because the regex it needs was never filled in. Nothing anywhere said so.
+  What each library's books should sort by is a librarian's call, not a code change.
+
+- [ ] **`PhrasesApiV3SmokeTest::testAnOverwriteLeavesTheTextItDestroyedInTheHistory`
+  failed once and has not failed since — mechanism undiagnosed.** Seen 2026-08-21 during
+  a `ci-local` run: the assertion that `history[0].previous` holds the value the second
+  PATCH destroyed. It then passed in isolation and on two subsequent full-suite runs.
+
+  What it is **not**: a timestamp-granularity race. The history query orders by
+  `history_id DESC` (`TranslationsTable:958`), an autoincrement, so two writes in the same
+  second are still deterministically ordered — which was the first guess and is wrong.
+
+  Where to look: the test patches a **fixed** phrase id that other tests in the same file
+  also write to, so the state it inherits depends on what ran before it. A flake nobody
+  can reproduce is worth one deliberate look before it is trusted, because the assertion
+  it makes — that an overwrite is recoverable — is the one that justifies letting the API
+  overwrite at all.
+
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
 - [ ] **Remove the footer's serving note when the migration ends.** Every HTML page
   carries one muted line saying which front controller and which renderer produced it,
@@ -708,13 +802,22 @@ rediscovered.
   `comment` key stating the exit condition). Upstream PRs: diablomedia#27 and
   the SlmLocale one, both open. When either ships a release including the 8.4
   constraint, delete its entry and restore a version constraint.
-- [ ] **`opcache.interned_strings_buffer` raise — requested 2026-08-18, not yet
-  applied.** konsoleH ticket open to take it from 8 MB to 32 MB; `/en/sm/phpinfo`
-  still reported `8` on the day it was raised. First live reading after enabling
-  OPcache was **73% of 8 MB** (74,545 strings) against ~29% memory and ~15% of the
-  key table; it has since sat at 89–100%. When the buffer fills, strings simply
-  stop being interned: no restart, no error, just a quiet loss of the saving the
-  buffer exists to provide.
+- [x] ~~**`opcache.interned_strings_buffer` raise — requested 2026-08-18.**~~
+  **Landed, confirmed 2026-08-21** from a live `/en/sm/cache-status`:
+  `internedBufferConfiguredMb: 32`, `internedBufferBytes: 33554432`,
+  `internedPercentUsed: 39.9`, `internedStrings: 68328`. It had sat at 89–100% of
+  8 MB. When the buffer fills, strings simply stop being interned: no restart, no
+  error, just a quiet loss of the saving the buffer exists to provide.
+
+  **The new number says more than "comfortable".** 13.4 MB of interned strings on a
+  cache that had only just been reset by the deploy is already *more than the whole
+  old buffer* — so the 8 MB ceiling was genuinely truncating, and everything past
+  it had never been interned at all. The old 89–100% was not a cache comfortably
+  near its limit; it was a cache that had stopped doing part of its job.
+
+  Still open on the same konsoleH front: **`apc.ttl` is still 0**, so a failed APCu
+  allocation expunges the whole segment rather than evicting. The size half of that
+  ask landed on 2026-08-11 (32M → 256M); the eviction half did not.
   - **Confirming it landed is a sampling problem, not a lookup**, and the
     instrumentation for it went in on 2026-08-18: the directive is
     `PHP_INI_SYSTEM`, so a running pool keeps the old buffer after the file
