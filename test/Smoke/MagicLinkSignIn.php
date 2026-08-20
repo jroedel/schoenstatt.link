@@ -144,9 +144,19 @@ trait MagicLinkSignIn
         return $matches[1];
     }
 
+    /**
+     * The whole link, query included.
+     *
+     * The pattern used to stop at the token — `\?token=[0-9a-f]+` and nothing after —
+     * which was accurate until 2026-08-20, when the destination started travelling in
+     * the link as a second parameter. It then silently truncated every link at the `&`,
+     * so this harness followed a URL no mail client would produce and the tests went on
+     * exercising only the session channel. `\S+` to the end of the token *and beyond*
+     * keeps whatever else the link carries.
+     */
     protected function extractVerifyUrl(string $mailBody): string
     {
-        $found = preg_match('#https?://\S+/user/verify\?token=[0-9a-f]+#', $mailBody, $matches);
+        $found = preg_match('#https?://\S+/user/verify\?token=[0-9a-f]+(?:&\S*)?#', $mailBody, $matches);
         $this->assertSame(1, $found, 'the mail should contain an absolute sign-in link');
 
         return $matches[0];

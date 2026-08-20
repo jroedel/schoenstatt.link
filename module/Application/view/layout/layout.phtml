@@ -137,15 +137,18 @@ $routeName = $this->routeName();?>
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <?php
                     if (! $username) :
-                        //if they're not logged in show a link for sign on and registration
+                        //One button, not two. `zfcuser/register` was retired on
+                        //2026-08-20: under magic links, registering and signing in are the
+                        //same request — an address nobody has seen simply becomes an
+                        //account — so a separate Register button offered a second route to
+                        //the identical page. The counterpart in templates/layout.html.twig
+                        //must say the same thing; the two layouts disagreeing about the
+                        //navbar is how a bridged page and a ported one stop looking like
+                        //one site.
                         ?><ul class="nav navbar-nav pull-right">
                         <?php if ('zfcuser/login' !== $routeName) :?>
                         <li><a class="btn" href="<?php echo $this->url('zfcuser/login');?>"><?php
                         echo $this->translate('Sign in', 'Application');?></a></li>
-                        <?php endif;
-                        if ('zfcuser/register' !== $routeName) :?>
-                        <li><a class="btn" href="<?php echo $this->url('zfcuser/register');?>"><strong><?php
-                        echo $this->translate('Register', 'Application');?></strong></a></li>
                         <?php endif;?>
                     </ul>
                     <?php else :?>

@@ -40,13 +40,13 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 122 |
-| guarded routes total | 122 |
+| guarded routes existing | 118 |
+| guarded routes total | 118 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 124 |
-| routes declared twice | 2 |
+| route guard entries | 119 |
+| routes declared twice | 1 |
 | routes shadowed by symfony | 94 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 209 |
-| total routes | 141 |
+| total routes | 137 |
 | unguarded routes | 19 |
 | unguarded routes matchable | 7 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (122 + 19 = 141). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (118 + 19 = 137). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -606,13 +606,10 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `juser` | yes | administrator | administrator (1) | no |  |
 | `juser/create` | yes | administrator | administrator (1) | no |  |
 | `juser/create-role` | yes | administrator | administrator (1) | no |  |
-| `juser/thanks` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `juser/user/api-token-revoke` | yes | administrator | administrator (1) | no |  |
 | `juser/user/api-tokens` | yes | administrator | administrator (1) | no |  |
 | `juser/user/delete` | yes | administrator | administrator (1) | no |  |
 | `juser/user/edit` | yes | administrator | administrator (1) | no |  |
-| `juser/user/show` | yes | administrator | administrator (1) | no |  |
-| `juser/verify-email` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `kernel-switch` | yes | sch_administrator | sch_administrator (1) | no |  |
 | `libraries` | yes | lib_administrator | lib_administrator (1) | no |  |
 | `libraries/create` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
@@ -684,7 +681,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `zfcuser` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `zfcuser/login` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `zfcuser/logout` | yes | user | administrator, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (33) | no | **dup ×2** |
-| `zfcuser/register` | yes | guest | guest (1) | yes | **dup ×2** |
 | `zfcuser/verify` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 
 ### Routes declared by more than one guard entry
@@ -694,7 +690,6 @@ The last declaration in merge order wins; the others are silently discarded.
 | route | declaration order (last wins) |
 | --- | --- |
 | `zfcuser/logout` | discarded: guest, user<br>**WINS**: user |
-| `zfcuser/register` | discarded: guest, user<br>**WINS**: guest |
 
 ## Routes with no guard entry (default deny — nobody can reach these)
 

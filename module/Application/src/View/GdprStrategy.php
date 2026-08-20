@@ -93,7 +93,9 @@ class GdprStrategy implements ListenerAggregateInterface
         //onFinish() strips Set-Cookie, so sign-in would silently fail. Show the
         //explainer instead. Magic-link tokens are only consumed on successful
         //redemption, so the emailed link still works after consenting.
-        $authRoutes = ['zfcuser/login', 'zfcuser/register', 'zfcuser/verify'];
+        //`zfcuser/register` was in this list until 2026-08-20, when the route was
+        //retired: registering and signing in are one request under magic links.
+        $authRoutes = ['zfcuser/login', 'zfcuser/verify'];
         if (! $hasConsented && in_array($route->getMatchedRouteName(), $authRoutes, true)) {
             $newMatch = new RouteMatch(['controller' => IndexController::class, 'action' => 'sign-in-no-cookies']);
             $newMatch->setMatchedRouteName('sign-in-no-cookies');

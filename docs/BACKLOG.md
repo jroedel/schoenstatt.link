@@ -228,6 +228,110 @@ rediscovered.
   now `/home/httpd/php85-ini/ourlink/php.ini` — the path moves with every
   konsoleH PHP version, which is the trap that makes tuned values silently
   revert on a flip.
+- [x] ~~**Retire the password era.**~~ **Done 2026-08-20.** Four routes, one dead mail
+  chain, two columns and 290 stored password hashes.
+
+  What was measured before anything was deleted, because most of it did not *look* dead:
+
+  - **`user.password` had no reader at all.** No `password_verify`, no `Bcrypt`, no
+    `CredentialTreatment` anywhere in `module/` or `src/`. Its only two writers were
+    literal empty strings, each with a comment explaining that the column is NOT NULL
+    and unused. 290 of 5,116 rows still held pre-2020 hashes — credential material for
+    an authentication method the application no longer has, so a liability and nothing
+    else. `must_change_password` was worse in a small way: still on the create *and*
+    edit forms, so an administrator could set it, and setting it did nothing. 0 rows.
+  - **The registration mail chain was unreachable through a `debug_backtrace()`.**
+    `UserTable::insertUser()` decided whether to send a "confirm your email address"
+    mail by inspecting *the name of its calling function* and comparing it to
+    `'register'` — 2016-era design that worked while ZfcUser had a method called
+    `register`. `insertUser()` has **no callers at all** today; the passwordless path is
+    `createUserFromEmail()`, which never goes near it. So `onRegister()`,
+    `onInactiveUser()`, `sendVerificationEmail()` and the `juser/verify-email` route it
+    built links for were dead as a set, not one at a time.
+  - **`juser/thanks`** had an empty action and a template still promising a confirmation
+    email; **`juser/user/show`** was guarded `administrator` and routed to a
+    `showAction()` that does not exist, with no template.
+  - **`/user/register`** differed from `/user/login` only in wording — same
+    `handleEmailRequest()` — so it was a second URL for one page, plus a Register button
+    on every page of the site in **both** layouts.
+
+  Two migrations rather than one, and the pair is the interesting part:
+  `user.password` is NOT NULL with no default and `@@sql_mode` carries
+  `STRICT_TRANS_TABLES`, so the release that stops writing the column cannot be the
+  release that drops it — between the symlink swap and the post phase there is a window
+  where nothing supplies it. `db8.4` (pre) gives the column a default; `db8.5` (post)
+  drops both columns and is `@destructive: yes`, because the previous release's
+  `processUserRow()` names them on *every* read of the `user` table, identity lookups
+  included. Rolling back past it does not degrade a page; it takes the site down.
+
+  Also landed with it, and each has its own entry above or below: the sign-in link now
+  carries its destination, a refused destination is explained rather than 403'd, and a
+  freshly issued API token is shown in a well with a copy button instead of a flash
+  message. JUser's `composer.json` and README were rewritten to name what the module
+  actually uses (the ZfcUser/ZfcBase/GoalioRememberMe list was five years wrong), and its
+  release plan is recorded there: **2.0.0** is this line, **3.0.0** is the one with no
+  `laminas-mvc`/`router`/`view`/`http` and no `bjy-authorize`.
+
+- [x] ~~**The sign-in link now carries where the visitor was going.**~~ **Done
+  2026-08-20.** The destination lived only in a session container, which works exactly
+  when the link is opened in the browser that asked for it — and the ordinary case is
+  asking on a desktop and clicking on a phone. There it was silently lost and the visitor
+  landed on the welcome page with nothing saying so. It travels as a second query
+  parameter now, re-validated on arrival through the same `validRedirect()`, with the
+  session kept as the better channel when it survives. `test/Smoke/UserSmokeTest` proves
+  it with **two cookie jars**, which is what "another device" is when written down.
+
+  A test-harness bug fell out of this and is worth knowing: `MagicLinkSignIn::
+  extractVerifyUrl()` matched `?token=[0-9a-f]+` and stopped, so the moment the link grew
+  a second parameter the harness silently truncated it at the `&` and went on following a
+  URL no mail client would produce. Every sign-in test in the suite was exercising only
+  the session channel.
+
+- [x] ~~**Signing in towards a page you may not reach now says so.**~~ **Done
+  2026-08-20.** Redeeming a link sent the visitor to their destination, where the route
+  guard answered a bare 403 — correct in general, and unhelpful here, because nothing on
+  that page says the sign-in itself worked. The destination is checked while there is
+  still somewhere to say it, and a refusal lands on the post-login page with **two**
+  messages: that they are signed in, and which page was refused.
+
+  **The obvious implementation is wrong and fails in the dangerous direction**, which is
+  the part to remember. `Authorize::isAllowed()` cannot answer this: `load()` runs once
+  per request and bakes the identity's roles into the ACL as it goes, and on this request
+  `BjyAuthorize\Guard\Route` already triggered that load while the visitor was anonymous
+  — so the identity is `guest` no matter what is written to the auth storage afterwards.
+  It refused a member their own saved search. The check asks about the account's real
+  roles instead, and getting *those* took two more corrections: `getUser()` does not link
+  roles on a cache miss, which is exactly the freshly-registered case, and `rolesList` is
+  a list of numeric `user_role.id` values despite the name, so every one of them misses an
+  ACL keyed on role names. The names are on the link rows, as `name`.
+
+- [x] ~~**A freshly issued API token no longer arrives as a flash message.**~~ **Done
+  2026-08-20.** It renders in a Bootstrap well with a copy button, from a one-shot session
+  container. The visible reason is shape — a JWT is several hundred characters and an alert
+  box makes the reader select it by hand. The other reason is why this is not cosmetic:
+  the flash pipeline translates its messages at render time, and a translator miss is what
+  writes a phrase row, so an earlier version that appended the JWT to the message filed
+  four real tokens into a table any `sch_api_translator` account can read. A
+  `TranslatableMessage` parameter had fixed that instance; keeping the token out of the
+  message pipeline altogether removes the class. The token is written into an input
+  attribute and never into JavaScript, so nothing has to escape a credential into a script
+  context. `test/Smoke/ApiTokenAdminSmokeTest` asserts the well, the button, that the token
+  is **not** inside any alert element, and that a refresh does not show it a second time.
+
+- [ ] **Tag JUser 2.0.0.** The content is on `modernization`; the tag is not, and tagging
+  is the user's call. Note the wrinkle recorded in JUser's README: **`1.0.0` (2022-07-19)
+  is not an ancestor of `modernization`** — it belongs to the abandoned `1.0.x` branch, so
+  `git describe` reports `0.1.0-…` and reads like the tags were lost. The decision taken
+  2026-08-20 was to number forward anyway rather than move a published tag.
+
+- [ ] **An admin-created account is never told it exists.** Retiring the registration mail
+  removed the only notification `UsersController::createAction()` could have sent — except
+  it never sent one, because the chain was unreachable. So this is a gap that was always
+  there and is now visible: an administrator creates an account to pre-assign roles, and
+  nothing reaches the person. It mostly does not matter, since open registration means
+  they can sign in with their address regardless and inherit the roles. Worth deciding
+  rather than leaving implicit.
+
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
 - [ ] **Remove the footer's serving note when the migration ends.** Every HTML page
   carries one muted line saying which front controller and which renderer produced it,
