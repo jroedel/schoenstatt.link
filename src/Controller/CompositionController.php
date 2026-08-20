@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
@@ -72,11 +71,6 @@ final class CompositionController
         }
 
         $params = ['sw_id' => $swId] + (is_string($slug) ? ['slug' => $slug] : []);
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'composition', $params);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $id = SiteWideIdentifier::toId(IdentifierValidator::ENTITY_COMPOSITION, $swId);
         if (null === $id) {

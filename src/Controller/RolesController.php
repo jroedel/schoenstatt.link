@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Schoenstatt\Model\SchoenstattTable;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,18 +28,12 @@ final class RolesController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'roles');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         /** @var SchoenstattTable $table */
         $table = $this->laminas->get(SchoenstattTable::class);
 

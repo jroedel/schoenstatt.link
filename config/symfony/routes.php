@@ -79,6 +79,7 @@ use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
+use App\Http\LocalePrefix;
 use App\Sion\ReservedVerbs;
 use App\Sion\SiteWideIdentifier;
 use App\Twig\LaminasExtension;
@@ -154,6 +155,14 @@ $locales = Locales::pattern();
  * @param array<string, mixed> $extra
  * @param array<string, string> $requirements patterns for the path's own placeholders.
  *        Merged *under* the `_locale` constraint so a route cannot widen it by accident.
+ * @param LocalePrefix|null $localePrefix whether the *unprefixed* twin answers itself or
+ *        302s to the prefixed one, as SlmLocale does. Defaults to redirecting, because
+ *        that is what every ported HTML page wants and what all forty-two controllers
+ *        that used to hand-write it did. Pass it — by name, since it sits after two
+ *        optional arguments — only for the machine endpoints, where the reason is
+ *        recorded on the declaration. App\Http\LocalePrefixListener acts on it, and
+ *        test/Integration/LocalePrefixDeclarationTest pins the exact set that opts out, so a
+ *        new machine endpoint cannot acquire the redirect by inheriting this default.
  */
 $ported = static function (
     string $name,
@@ -161,12 +170,25 @@ $ported = static function (
     string|array $controller,
     RouteAccess $access,
     array $extra = [],
-    array $requirements = []
+    array $requirements = [],
+    ?LocalePrefix $localePrefix = null
 ) use (
     $routes,
     $locales
 ): void {
-    $defaults = ['_controller' => $controller, RouteAccess::ATTRIBUTE => $access] + $extra;
+    //The placeholders of this path, in declaration order, so App\Http\LocalePrefixListener
+    //can rebuild the redirect target without compiling the Route or being handed the
+    //collection. Read off the string rather than from Route::compile() because the answer
+    //cannot change between here and dispatch, and because the unprefixed twin is declared
+    //first — its own compiled form would not yet mention `_locale` to exclude.
+    preg_match_all('/\{(\w+)\}/', $path, $placeholders);
+
+    $defaults = [
+        '_controller'           => $controller,
+        RouteAccess::ATTRIBUTE  => $access,
+        LocalePrefix::ATTRIBUTE => ($localePrefix ?? LocalePrefix::redirectsToPrefixed())
+            ->withParams($placeholders[1]),
+    ] + $extra;
     $routes->add($name, new Route($path, $defaults, $requirements));
     $routes->add(
         $name . '.locale',
@@ -194,12 +216,29 @@ $maintenance = RouteAccess::openToEveryone(
     . 'would put a session and the role/resource queries behind it on an endpoint the deploy hooks '
     . 'call, for a foregone answer'
 );
-$ported('sm-cache-status', '/sm/cache-status', CacheStatusController::class, $maintenance);
+// Neither takes SlmLocale's hop to the prefixed form, and this is the pair the whole
+// declaration exists for: a deploy hook and the production monitor ask for the bare path,
+// and a 302 in front of a machine that reads a JSON body is an extra round trip at best.
+// Their sibling sion-model/phpinfo *does* redirect, because it is only ever reached from a
+// browser — which is why this cannot be inferred from the /sm/ prefix.
+$noLocaleHop = LocalePrefix::servedHere(
+    'a machine endpoint: tools/deploy.sh and tools/smoke-prod.sh call it directly, it emits JSON '
+    . 'rather than localized text, and its gate is the maintenance key rather than anything the '
+    . 'locale affects'
+);
+$ported(
+    'sm-cache-status',
+    '/sm/cache-status',
+    CacheStatusController::class,
+    $maintenance,
+    localePrefix: $noLocaleHop
+);
 $ported(
     'sm-clear-persistent-cache',
     '/sm/clear-persistent-cache',
     ClearPersistentCacheController::class,
-    $maintenance
+    $maintenance,
+    localePrefix: $noLocaleHop
 );
 
 // The sitemap. Ported 2026-08-13 and rewritten the same day, once it turned out that Google
@@ -221,12 +260,22 @@ $ported(
 // docs/sitemap.md has the quotations from the specification.
 //
 // One deliberate deviation, unchanged: this answers the bare path instead of taking
-// SlmLocale's hop to /en/…, which every ported *HTML* route reproduces through
-// LocalePrefix::redirect(). A sitemap has no locale — each file carries all five languages as
-// xhtml:link alternates — so the prefix names nothing about the content, and a 302 in front of
-// a crawler-facing file is cost without meaning. The prefixed form still answers, because
-// $ported() declares both, and robots.txt now names the bare one.
-$ported('sitemap', '/sitemap.xml', SitemapController::class, RouteAccess::guardedBy('route/sitemap'));
+// SlmLocale's hop to /en/…, which every ported *HTML* route reproduces. A sitemap has no
+// locale — each file carries all five languages as xhtml:link alternates — so the prefix
+// names nothing about the content, and a 302 in front of a crawler-facing file is cost
+// without meaning. The prefixed form still answers, because $ported() declares both, and
+// robots.txt now names the bare one.
+$ported(
+    'sitemap',
+    '/sitemap.xml',
+    SitemapController::class,
+    RouteAccess::guardedBy('route/sitemap'),
+    localePrefix: LocalePrefix::servedHere(
+        'a sitemap has no locale of its own — each file names all five languages as xhtml:link '
+        . 'alternates — so the prefix would describe nothing, and Apache serves this file '
+        . 'directly at the bare path: PHP is reached only when it is missing'
+    )
+);
 
 // The first HTML route, ported 2026-08-05, and the reason templates/ and the Twig
 // layer exist. Checked against its own laminas resource rather than declared open,
@@ -1745,19 +1794,33 @@ $ported(
 // The four read-only library pages behind one controller — see App\Controller\
 // LibraryPageController for why they share, and for the one authorization difference
 // this batch introduces (`data-problems` gains the per-library check its siblings make).
-$libraryPage = static function (string $page, string $suffix) use ($ported, $textDomain): void {
+$libraryPage = static function (
+    string $page,
+    string $suffix,
+    ?LocalePrefix $localePrefix = null
+) use (
+    $ported,
+    $textDomain
+): void {
     $ported(
         'libraries/library/' . $page,
         '/libraries/{library_id}/' . $suffix,
         LibraryPageController::class,
         RouteAccess::guardedBy('route/libraries/library/' . $page),
         $textDomain('Books') + [LibraryPageController::PAGE => $page],
-        ['library_id' => '[0-9]{1,5}']
+        ['library_id' => '[0-9]{1,5}'],
+        $localePrefix
     );
 };
 $libraryPage('label-management', 'label-management');
 $libraryPage('book-list', 'book-list');
-$libraryPage('book-list-json', 'book-list-json');
+//The one of the four that is not a page. Its three siblings take SlmLocale's hop; this
+//one is fetched by the library admin page's JavaScript, and a 302 in front of an XHR is
+//a redirect the caller has to follow for no benefit.
+$libraryPage('book-list-json', 'book-list-json', LocalePrefix::servedHere(
+    'fetched by the library admin page\'s JavaScript and answered as JSON, so the locale segment '
+    . 'names nothing about the response and the hop is a round trip the caller pays for nothing'
+));
 $libraryPage('data-problems', 'data-problems');
 
 // The two bulk operations that are a form, a table call and a redirect. No method

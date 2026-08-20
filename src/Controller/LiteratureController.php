@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
@@ -82,11 +81,6 @@ final class LiteratureController
     /** GET /literature — the catalogue index. */
     public function home(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'publications');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $table = $this->publications();
 
         //The three flags are the visitor's own corpus permissions, so the counts a
@@ -135,16 +129,6 @@ final class LiteratureController
             return $this->notFound();
         }
 
-        $redirect = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'publications/index',
-            ['inLanguage' => $language]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         /** @var array<mixed> $objects */
         $objects = $this->publications()->searchPublications(
             ['inLanguage' => [$language]],
@@ -167,11 +151,6 @@ final class LiteratureController
     /** GET /literature/search — the result table for a query string. */
     public function search(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'publications/search');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $form = $this->form();
         $form->setData($request->query->all());
 

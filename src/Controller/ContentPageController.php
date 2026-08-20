@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\Laminas\RouteUrl;
 use LogicException;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -59,18 +58,6 @@ final class ContentPageController
 
     public function __invoke(Request $request): Response
     {
-        //no prefix means no locale was asked for, and SlmLocale answers that with a
-        //redirect to the negotiated language rather than by serving the same body at
-        //two URLs — App\Http\LocaleListener has already settled which language that
-        //is. The route name is what the redirect is built from, so this works for all
-        //five pages without any of them naming itself.
-        if (null === $request->attributes->get('_locale')) {
-            return new RedirectResponse(
-                $this->urls->path($this->routeName($request)),
-                Response::HTTP_FOUND
-            );
-        }
-
         return new Response($this->twig->render($this->template($request), [
             'page_title'  => $this->pageTitle($request),
             'breadcrumbs' => $this->breadcrumbs($request),

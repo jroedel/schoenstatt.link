@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Sion\Entities;
 use App\Sion\EntityEdit;
@@ -116,11 +115,6 @@ final class EntityEditController
         /** @var mixed $raw */
         $raw   = $request->attributes->get($idParam);
         $rawId = is_string($raw) || is_int($raw) ? (string) $raw : '';
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, $laminasRoute, [$idParam => $rawId]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $id = $this->resolveId($request, $rawId);
         if (null === $id) {

@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use SionModel\Service\ProblemService;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -49,20 +47,12 @@ final class DataProblemsController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        if (null === $request->attributes->get('_locale')) {
-            return new RedirectResponse(
-                $this->urls->path('sion-model/data-problems'),
-                Response::HTTP_FOUND
-            );
-        }
-
         /** @var ProblemService $problems */
         $problems = $this->laminas->get(ProblemService::class);
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
@@ -45,7 +44,8 @@ use function ucwords;
  *
  * ## They take the locale hop too, and that is not obvious
  *
- * These call `LocalePrefix::redirect()` like every other HTML route here, which means
+ * These routes declare the locale hop like every other HTML route here — since 2026-08-20
+ * by inheriting `$ported()`'s default rather than by calling a helper — which means
  * `/associations/1` answers **302 to `/en/associations/1`** and only then 301s to the
  * destination. Written without it first, on the reasoning that a redirect to a redirect
  * is a wasted hop — and the baseline diff refused it: laminas sends exactly that 302,
@@ -82,11 +82,6 @@ final class SendToNewUrlController
             return $this->notFound('association', 'associations');
         }
 
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'associations/association', ['sw_id' => $swId]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $filter = new IdentifierFilter(IdentifierValidator::ENTITY_ASSOCIATION, 8 === strlen($swId));
         $id     = $filter->filter($swId);
 
@@ -103,13 +98,6 @@ final class SendToNewUrlController
             return $this->notFound('association', 'associations');
         }
 
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'associations/old-association', [
-            'association_id' => (string) $id,
-        ]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         return $this->association((int) $id);
     }
 
@@ -119,13 +107,6 @@ final class SendToNewUrlController
         $id = $request->attributes->get('publication_id');
         if (! is_numeric($id)) {
             return $this->notFound('publication', 'publications');
-        }
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'publications/publication-old', [
-            'publication_id' => (string) $id,
-        ]);
-        if (null !== $redirect) {
-            return $redirect;
         }
 
         /** @var SionTable $table */

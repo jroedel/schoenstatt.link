@@ -10,7 +10,6 @@ use App\Schoenstatt\ShrineDatasets;
 use App\Schoenstatt\ShrineIndex;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\AssociationKindsService;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -49,15 +48,6 @@ final class ShrinesController
 
     public function __invoke(Request $request): Response
     {
-        //no prefix means no locale was asked for, and SlmLocale answers that with a
-        //redirect to the negotiated language rather than by serving two URLs with
-        //the same body — App\Http\LocaleListener has already settled which language
-        //that is. Reproduced so /shrines keeps behaving as it does today, and so the
-        //canonical link keeps pointing somewhere that is not also served here.
-        if (null === $request->attributes->get('_locale')) {
-            return new RedirectResponse($this->urls->path('shrines'), Response::HTTP_FOUND);
-        }
-
         /** @var SchoenstattTable $table */
         $table = $this->laminas->get(SchoenstattTable::class);
         /** @var AssociationKindsService $kinds */

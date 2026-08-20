@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
@@ -56,18 +54,23 @@ final class LibraryPageController
     private const BOOK_LIST_JSON   = 'book-list-json';
     private const DATA_PROBLEMS    = 'data-problems';
 
-    /** page => [laminas route name, permission] */
+    /**
+     * page => per-library permission.
+     *
+     * This used to carry the laminas route name alongside, for the sole purpose of
+     * assembling the locale-prefix redirect. App\Http\LocalePrefixListener derives that
+     * from the matched route now, so the name was data this class no longer had a use for.
+     */
     private const PAGES = [
-        self::LABEL_MANAGEMENT => ['libraries/library/label-management', LibraryPage::ADMINISTRATE],
-        self::BOOK_LIST        => ['libraries/library/book-list', LibraryPage::SHOW],
-        self::BOOK_LIST_JSON   => ['libraries/library/book-list-json', LibraryPage::ADMINISTRATE],
-        self::DATA_PROBLEMS    => ['libraries/library/data-problems', LibraryPage::SHOW],
+        self::LABEL_MANAGEMENT => LibraryPage::ADMINISTRATE,
+        self::BOOK_LIST        => LibraryPage::SHOW,
+        self::BOOK_LIST_JSON   => LibraryPage::ADMINISTRATE,
+        self::DATA_PROBLEMS    => LibraryPage::SHOW,
     ];
 
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls,
         private readonly LibraryPage $page
     ) {
     }
@@ -97,19 +100,9 @@ final class LibraryPageController
         if (! is_string($page) || ! array_key_exists($page, self::PAGES)) {
             throw new RuntimeException('A library page route declared no known page name.');
         }
-        [$routeName, $permission] = self::PAGES[$page];
+        $permission = self::PAGES[$page];
 
         $libraryId = (int) $request->attributes->get('library_id');
-
-        //The JSON route takes no locale hop: it is fetched by the library admin page's
-        //JavaScript, and a 302 in front of an XHR is a redirect the caller has to follow
-        //for no benefit. Every HTML route reproduces SlmLocale's hop, as the others do.
-        if (self::BOOK_LIST_JSON !== $page) {
-            $redirect = LocalePrefix::redirect($request, $this->urls, $routeName, ['library_id' => $libraryId]);
-            if (null !== $redirect) {
-                return $redirect;
-            }
-        }
 
         $library = $this->page->library($request);
         $refusal = $this->page->refuse($library, $permission);

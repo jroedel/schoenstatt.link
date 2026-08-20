@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\Books\LibraryPage;
 use App\Books\RefreshSortForm;
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
@@ -81,11 +80,6 @@ final class LibrarySortController
         $isRefresh = true === $request->attributes->get(self::REFRESH);
         $libraryId = (int) $request->attributes->get('library_id');
         $routeName = $isRefresh ? 'libraries/library/refresh-sort' : 'libraries/library/sort-debugging';
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, $routeName, ['library_id' => $libraryId]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $library = $this->page->library($request);
         //`administrate` on both, including the diagnostic: it lists every book's call

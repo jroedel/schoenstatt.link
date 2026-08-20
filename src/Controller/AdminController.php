@@ -9,7 +9,6 @@ use App\Laminas\ServiceBridge;
 use App\Schoenstatt\AdminIndex;
 use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -49,14 +48,6 @@ final class AdminController
 
     public function __invoke(Request $request): Response
     {
-        //no prefix means no locale was asked for, and SlmLocale answers that with a
-        //redirect to the negotiated language rather than serving the same body at two
-        //URLs. Reproduced for the reason ShrinesController reproduces it, and placed
-        //before anything is fetched so the redirect costs no queries.
-        if (null === $request->attributes->get('_locale')) {
-            return new RedirectResponse($this->urls->path('admin'), Response::HTTP_FOUND);
-        }
-
         /** @var TranslationsTable $translations */
         $translations = $this->laminas->get(TranslationsTable::class);
         /** @var ProblemService $problems */

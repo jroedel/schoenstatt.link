@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use SionModel\Db\Model\SionTable;
 use SionModel\Service\ChangesCollector;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -49,20 +47,12 @@ final class ViewChangesController
 
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        if (null === $request->attributes->get('_locale')) {
-            return new RedirectResponse(
-                $this->urls->path('sion-model/view-changes'),
-                Response::HTTP_FOUND
-            );
-        }
-
         $config   = $this->sionModelConfig();
         $maxRows  = $this->maxRows($config);
         $changes  = $this->changes($config, $maxRows);

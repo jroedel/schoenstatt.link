@@ -72,6 +72,7 @@ use App\Http\InventedCacheControlListener;
 use App\Http\LaminasResponseConverter;
 use App\Http\LegacyBridge;
 use App\Http\LocaleListener;
+use App\Http\LocalePrefixListener;
 use App\Http\MaintenanceKey;
 use App\Http\PhraseFlushListener;
 use App\Http\ProtocolVersionListener;
@@ -268,6 +269,15 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             new SessionListener($this->laminas(...)),
             SessionListener::PRIORITY
         );
+        //the 302 to the locale-prefixed form that SlmLocale issues under laminas, which
+        //forty-two controllers used to open with. Above the guard on purpose: the
+        //return trip a denial builds has to name the prefixed URL, because that value
+        //is now carried in a login link rather than a session. See LocalePrefixListener.
+        $dispatcher->addListener(
+            KernelEvents::REQUEST,
+            new LocalePrefixListener($this->routeUrl(...)),
+            LocalePrefixListener::PRIORITY
+        );
         //the route guard BjyAuthorize\Guard\Route cannot be here to run. Below
         //RouterListener because it reads the matched route's own declaration, and
         //below LocaleListener because a 403 renders Twig and would otherwise
@@ -372,23 +382,20 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // role with no descendants. No ServiceBridge of its own — phpinfo() needs
             // nothing from laminas, and RouteUrl reaches it lazily for links.
             PhpInfoController::class => fn (): PhpInfoController => new PhpInfoController(
-                $this->twig(),
-                $this->routeUrl()
+                $this->twig()
             ),
             // The data-problems list. Needs the laminas container for ProblemService
             // *and* Twig, and its template reaches back for formatEntity through
             // App\Laminas\EntityFormatter.
             DataProblemsController::class => fn (): DataProblemsController => new DataProblemsController(
                 $this->laminas(),
-                $this->twig(),
-                $this->routeUrl()
+                $this->twig()
             ),
             // The changes log. Reads the merged sion_model config to decide how much of
             // the database to read, so it needs the bridge as well as Twig.
             ViewChangesController::class => fn (): ViewChangesController => new ViewChangesController(
                 $this->laminas(),
-                $this->twig(),
-                $this->routeUrl()
+                $this->twig()
             ),
             // Batch 4. Every one of these is the same three dependencies — the
             // laminas services for its table, Twig for its template, RouteUrl for
@@ -396,8 +403,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // nothing more. Where a controller needs none of the three it says so.
             TimelineController::class => fn (): TimelineController => new TimelineController(
                 $this->laminas(),
-                $this->twig(),
-                $this->routeUrl()
+                $this->twig()
             ),
             MusicController::class => fn (): MusicController => new MusicController(
                 $this->laminas(),
@@ -419,8 +425,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 ),
             AssociationsController::class => fn (): AssociationsController => new AssociationsController(
                 $this->laminas(),
-                $this->twig(),
-                $this->routeUrl()
+                $this->twig()
             ),
             // The v3 API. BotIdentity and the controller share one ServiceBridge like
             // everything else here, so a request that never reaches them loads no
@@ -451,8 +456,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             ),
             RolesController::class => fn (): RolesController => new RolesController(
                 $this->laminas(),
-                $this->twig(),
-                $this->routeUrl()
+                $this->twig()
             ),
             // Batch 6, the contact/search surface. Same three dependencies throughout:
             // every one of these reads the query string, asks SchoenstattTable, and
@@ -460,8 +464,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             AssignmentSearchController::class
                 => fn (): AssignmentSearchController => new AssignmentSearchController(
                     $this->laminas(),
-                    $this->twig(),
-                    $this->routeUrl()
+                    $this->twig()
                 ),
             MovementController::class => fn (): MovementController => new MovementController(
                 $this->laminas(),
@@ -480,8 +483,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             ),
             TextsController::class => fn (): TextsController => new TextsController(
                 $this->laminas(),
-                $this->twig(),
-                $this->routeUrl()
+                $this->twig()
             ),
             LibrariesController::class => fn (): LibrariesController => new LibrariesController(
                 $this->laminas(),
@@ -497,7 +499,6 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 => fn (): LibraryCollectionsController => new LibraryCollectionsController(
                     $this->laminas(),
                     $this->twig(),
-                    $this->routeUrl(),
                     $this->libraryPage()
                 ),
             BookController::class => fn (): BookController => new BookController(
@@ -516,13 +517,11 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             CheckoutsController::class => fn (): CheckoutsController => new CheckoutsController(
                 $this->laminas(),
                 $this->twig(),
-                $this->routeUrl(),
                 $this->libraryPage()
             ),
             LibraryController::class => fn (): LibraryController => new LibraryController(
                 $this->laminas(),
                 $this->twig(),
-                $this->routeUrl(),
                 $this->libraryPage()
             ),
             LibraryCheckoutController::class => fn (): LibraryCheckoutController => new LibraryCheckoutController(
@@ -579,7 +578,6 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             LibraryPageController::class => fn (): LibraryPageController => new LibraryPageController(
                 $this->laminas(),
                 $this->twig(),
-                $this->routeUrl(),
                 $this->libraryPage()
             ),
             // The first restricted page, and the only reason to trust

@@ -8,7 +8,6 @@ use App\Books\Import\ImportColumns;
 use App\Books\Import\ImportTemplate;
 use App\Books\Import\SpreadsheetUpload;
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\SionResult;
@@ -95,15 +94,6 @@ final class LibraryImportsController
     private function index(Request $request, LibraryTable $table): Response
     {
         $libraryId = (int) $request->attributes->get('library_id');
-        $redirect  = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'library-imports/library',
-            ['library_id' => $libraryId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $library = $this->page->library($request);
         $refusal = $this->page->refuse($library, LibraryPage::ADMINISTRATE);
@@ -138,15 +128,6 @@ final class LibraryImportsController
     private function create(Request $request, LibraryTable $table): Response
     {
         $libraryId = (int) $request->attributes->get('library_id');
-        $redirect  = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'library-imports/library/create',
-            ['library_id' => $libraryId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $library = $this->page->library($request);
         $refusal = $this->page->refuse($library, LibraryPage::ADMINISTRATE);
@@ -251,15 +232,6 @@ final class LibraryImportsController
     private function downloadTemplate(Request $request, LibraryTable $table): Response
     {
         $libraryId = (int) $request->attributes->get('library_id');
-        $redirect  = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'library-imports/library/template',
-            ['library_id' => $libraryId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $library = $this->page->library($request);
         //`administrate`, the same as every other page here: the filled variant is the
@@ -325,15 +297,6 @@ final class LibraryImportsController
     private function detail(Request $request, LibraryTable $table): Response
     {
         $importId = (int) $request->attributes->get('import_id');
-        $redirect = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'library-imports/library-import',
-            ['import_id' => $importId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $import = SionResult::rowOrNull($table->getLibraryImport($importId));
         if (null === $import) {

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Form\TextSearchForm;
 use Books\Model\EventTextTable;
@@ -57,18 +55,12 @@ final class TextsController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'texts');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $form = $this->form();
         $form->setData($request->query->all());
 

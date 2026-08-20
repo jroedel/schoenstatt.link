@@ -4,79 +4,113 @@ declare(strict_types=1);
 
 namespace App\Http;
 
-use App\Laminas\RouteUrl;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-
 /**
- * The redirect an HTML route owes its own *unprefixed* form.
+ * Whether a Symfony-served route answers its own *unprefixed* form, or redirects to
+ * the prefixed one the way SlmLocale would.
  *
  * Every ported path is declared twice — `/music` and `/{_locale}/music` — because
  * every caller uses the prefixed form and Symfony, unlike laminas, has no
- * SlmLocale\Strategy\UriPathStrategy to strip the segment before routing. But
+ * `SlmLocale\Strategy\UriPathStrategy` to strip the segment before routing. But
  * SlmLocale does not *serve* the unprefixed form either: it answers it with a 302 to
- * the negotiated language, so the page exists at one URL rather than two. A ported
- * controller has to reproduce that, and the absence of the `_locale` request
- * attribute is how it knows which form it is answering.
+ * the negotiated language, so the page exists at one URL rather than two. The absence
+ * of the `_locale` request attribute is how the unprefixed twin is recognised.
  *
- * ## Why this is a helper and not a listener
+ * ## Why this is a declaration and not a rule
  *
- * A listener would be better and is still the right end state — docs/strangler.md
- * says so, and says why it has not happened: the maintenance endpoints must *not*
- * redirect, so a listener needs a per-route declaration of its own, which is a design
- * change rather than a refactor. Until then the check lives in the controllers.
+ * The decision is genuinely per route, which is what kept it in the controllers for so
+ * long. `/_health` has no prefixed form at all. The two maintenance endpoints a deploy
+ * hook calls — `sm-cache-status`, `sm-clear-persistent-cache` — are asked for
+ * unprefixed and must answer, while `sm-phpinfo`, in the same tree and reached only
+ * from a browser, redirects like any other page. `/api/v3` speaks JSON to a program
+ * that would not follow a 302 to a language. None of that is inferable from the path,
+ * so it is stated here, beside {@see \App\Authorization\RouteAccess}, in the file that
+ * already is the migration status of the site.
  *
- * What this class changes is only how many copies of it there are. Three controllers
- * had written it out by hand when this batch began; the batch adds eight more routes,
- * and eleven hand-written copies of a rule about *when a page is allowed to exist at
- * two URLs* is how one of them quietly stops doing it. The three originals are left
- * as they are — rewriting working, production-facing code to adopt a helper is not
- * what a porting batch should spend its risk budget on — so this is used by the new
- * controllers only. Consolidating the other three belongs with the move to a
- * listener.
+ * `servedHere()` requires a reason for the same purpose `RouteAccess::openToEveryone()`
+ * does: the quiet option is the one that needs to justify itself. Both halves are
+ * required arguments of the `$ported()` helper, so a route cannot acquire either policy
+ * by omission.
+ *
+ * ## The params are derived, not declared
+ *
+ * The redirect target is assembled from the *laminas* route the ported one shadows —
+ * `App\Http\SymfonyRoute::routeName()`, i.e. the Symfony name minus `.locale` — and its
+ * parameters are the path's own placeholders, read back out of the request. That was
+ * measured against all 42 hand-written call sites this class replaced: every one passed
+ * exactly the placeholders of its own path, omitting the optional ones it had not
+ * matched (`['sw_id' => …] + ['slug' => …]`, `['library_id' => …]`, `['inLanguage' =>
+ * …]`), and every one targeted its own route name. So there was nothing per-route to
+ * declare beyond the policy, and deriving it removes the failure mode those call sites
+ * had: a target assembled by hand from the wrong parameters is a 302 to a URL that
+ * 404s, and nothing about it is visible until someone follows the link.
+ *
+ * The `$ported()` helper reads the placeholders straight off the path string it is
+ * already given, rather than compiling the Route at request time — the answer cannot
+ * change between declaration and dispatch, and the listener stays free of the
+ * collection.
  */
 final class LocalePrefix
 {
     /**
-     * A 302 to the prefixed form when the request has no locale, or null when it does
-     * and the controller should carry on.
+     * Route default / request attribute the declaration travels in.
      *
-     * The route named here is the *laminas* route the ported one shadows, because
-     * RouteUrl assembles from the laminas router — which is also what makes the target
-     * carry the prefix at all: App\Http\LocaleListener has already set
-     * \Locale::setDefault() from the negotiation, and RouteUrl reads it.
-     *
-     * **The query string is carried across.** SlmLocale redirects the *URI*, query
-     * included, and this rebuilt the target from the route name alone — so
-     * `/assignments/search?search=Walter` arrived at `/en/assignments/search` with the
-     * search silently gone. Latent since the helper was extracted in batch 4 and
-     * invisible until batch 6, because it takes a route whose input *is* the query
-     * string for a dropped query to change what the page shows: every earlier user of
-     * this helper reads its input from the path. Measured against laminas on
-     * `/texts?search=Bund` and `/assignments/search?search=Walter`.
-     *
-     * @param array<string, mixed> $params route parameters the target needs, e.g. the
-     *                                     dictionary's `inLanguage`. Without them a
-     *                                     parameterised route assembles to the wrong
-     *                                     URL, or throws.
+     * Underscore-prefixed like Symfony's own, and for the reason
+     * `RouteAccess::ATTRIBUTE` gives: it is framework plumbing rather than a routing
+     * placeholder, so ArgumentResolver will never bind it to a controller parameter.
      */
-    public static function redirect(
-        Request $request,
-        RouteUrl $urls,
-        string $route,
-        array $params = []
-    ): ?RedirectResponse {
-        if (null !== $request->attributes->get('_locale')) {
-            return null;
-        }
+    public const ATTRIBUTE = '_locale_prefix';
 
-        $options = [];
-        $query   = $request->query->all();
-        if ([] !== $query) {
-            $options['query'] = $query;
-        }
+    /**
+     * @param list<string> $params the path's own placeholders, filled in by $ported().
+     *        Empty on a literal path, and never consulted when $reason is set.
+     */
+    private function __construct(
+        /** Why this route answers unprefixed. Null exactly when the route redirects. */
+        public readonly ?string $reason,
+        public readonly array $params = []
+    ) {
+    }
 
-        return new RedirectResponse($urls->path($route, $params, $options), Response::HTTP_FOUND);
+    /**
+     * Answer the unprefixed form with a 302 to the prefixed one, as SlmLocale does.
+     *
+     * This is what every ported HTML page wants: the page then exists at one URL, which
+     * is also what keeps the canonical link pointing somewhere that is not *also*
+     * served here. See docs/sitemap.md on why that matters more than it looks.
+     */
+    public static function redirectsToPrefixed(): self
+    {
+        return new self(null);
+    }
+
+    /**
+     * Serve the unprefixed path as itself.
+     *
+     * The reason is stored, asserted non-empty, and repeated in
+     * `test/Integration/LocalePrefixDeclarationTest::NO_REDIRECT` — which is where the
+     * whole picture lives, deliberately rather than in `tools/acl-table.php`: that tool
+     * is the authorization oracle, and which URL a page answers at is not an
+     * authorization question. Keeping them apart is what stops the ACL baseline churning
+     * every time a route's locale handling changes.
+     */
+    public static function servedHere(string $reason): self
+    {
+        return new self($reason);
+    }
+
+    public function redirects(): bool
+    {
+        return null === $this->reason;
+    }
+
+    /**
+     * The same declaration carrying the placeholders of the path it was declared on.
+     * Called once per route by $ported(); nothing else should need it.
+     *
+     * @param list<string> $params
+     */
+    public function withParams(array $params): self
+    {
+        return new self($this->reason, $params);
     }
 }
