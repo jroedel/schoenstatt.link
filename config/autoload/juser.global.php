@@ -97,14 +97,27 @@ return [
                  * duplication.
                  */
                 ['route' => 'zfcuser/logout', 'roles' => ['user']],
-//                 ['route' => 'change-email', 'roles' => ['user']],
-                ['route' => 'zfcuser/register', 'roles' => ['guest']],
-                ['route' => 'juser/verify-email', 'roles' => ['guest', 'user', null]],
-                ['route' => 'juser/thanks', 'roles' => ['guest', 'user', null]],
+                /*
+                 * Four entries were removed here on 2026-08-20, with the routes they
+                 * guarded — the password era's, every one of them:
+                 *
+                 * - zfcuser/register: registering and signing in are one request under
+                 *   magic links, so /user/register was a second URL for /user/login with
+                 *   different wording.
+                 * - juser/verify-email: redeeming a link is what verifies the address, so
+                 *   there is nothing left to confirm separately. The route had become a
+                 *   forwarder to zfcuser/verify, and the only thing that ever built its
+                 *   URL was Mailer::sendVerificationEmail(), reachable only through
+                 *   UserTable::insertUser(), which had no callers at all.
+                 * - juser/thanks: its action was an empty method and its template still
+                 *   said "you should be receiving an email to confirm your email
+                 *   address". view/juser/login/check-email.phtml does that job now.
+                 * - juser/user/show: guarded `administrator`, routed to a showAction()
+                 *   that does not exist, with no template. Nothing was ever behind it.
+                 */
                 ['route' => 'juser', 'roles' => ['administrator']],
                 ['route' => 'juser/user/edit', 'roles' => ['administrator']],
                 ['route' => 'juser/user/delete', 'roles' => ['administrator']],
-                ['route' => 'juser/user/show', 'roles' => ['administrator']],
                 /*
                  * Issuing and revoking API credentials. Administrators only, and
                  * worth being explicit about why it is not merely "the same as the

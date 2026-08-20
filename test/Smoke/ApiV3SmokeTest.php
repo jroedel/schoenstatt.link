@@ -458,15 +458,17 @@ class ApiV3SmokeTest extends SmokeTestCase
     }
 
     /**
-     * Every NOT NULL column of `user` that has no default: email, password,
-     * create_datetime, update_datetime, state. `password` is one of them even though
-     * the site is passwordless — the column outlived the feature — and it is left
-     * empty rather than hashed, because nothing may authenticate as a bot account
-     * except its token.
+     * Every NOT NULL column of `user` that has no default: email, create_datetime,
+     * update_datetime, state.
+     *
+     * `password` was in this list until db8.5 dropped the column, with the note that it
+     * "outlived the feature" and was left empty because nothing may authenticate as a
+     * bot account except its token. That is now true by construction rather than by
+     * convention: there is no column to leave empty.
      */
     private const INSERT_USER = 'INSERT INTO user '
-        . '(username, email, display_name, password, state, create_datetime, update_datetime) '
-        . "VALUES (%s, %s, 'API bot', '', 1, NOW(), NOW())";
+        . '(username, email, display_name, state, create_datetime, update_datetime) '
+        . "VALUES (%s, %s, 'API bot', 1, NOW(), NOW())";
 
     private ?int $botUserId = null;
 

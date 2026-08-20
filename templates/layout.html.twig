@@ -157,11 +157,16 @@
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     {% if not display_name() %}
                     <ul class="nav navbar-nav pull-right">
+                        {# One button, not two. `zfcuser/register` was retired on
+                           2026-08-20: under magic links, registering and signing in are
+                           the same request — an address nobody has seen simply becomes
+                           an account — so a separate Register button offered a second
+                           route to the identical page. The counterpart in
+                           module/Application/view/layout/layout.phtml must say the same
+                           thing; the two layouts disagreeing about the navbar is how a
+                           bridged page and a ported one stop looking like one site. #}
                         {% if current_route() != 'zfcuser/login' %}
                         <li><a class="btn" href="{{ laminas_path('zfcuser/login') }}">{{ translate('Sign in', 'Application') }}</a></li>
-                        {% endif %}
-                        {% if current_route() != 'zfcuser/register' %}
-                        <li><a class="btn" href="{{ laminas_path('zfcuser/register') }}"><strong>{{ translate('Register', 'Application') }}</strong></a></li>
                         {% endif %}
                     </ul>
                     {% else %}
