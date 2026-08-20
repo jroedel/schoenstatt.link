@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Locale;
@@ -63,11 +62,6 @@ final class MovementController
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'schoenstatt');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         /** @var SchoenstattTable $table */
         $table = $this->laminas->get(SchoenstattTable::class);
 

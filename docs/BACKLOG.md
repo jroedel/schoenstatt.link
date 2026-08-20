@@ -238,21 +238,30 @@ rediscovered.
   `serving_note` Twig function, the `servingNote` view helper plus its factory and its two
   config entries, `test/Unit/ServingNoteTest`, `test/Smoke/ServingNoteSmokeTest`, and rule
   8 in `tools/port-baseline.php`.
-- [ ] **Move the unprefixed-to-prefixed locale redirect out of the ported
+- [x] ~~**Move the unprefixed-to-prefixed locale redirect out of the ported
   controllers and into a `kernel.request` listener above the authorization
-  check.** **Now due**: the wayside-shrine port (2026-08-07) made it the third
-  copy, which is the threshold this item set for itself. Since the authorization
-  bridge landed (2026-08-06) the two front
-  controllers disagree about the *unprefixed* form of a restricted path: laminas
-  answers `/admin` with SlmLocale's `302 → /en/admin` and denies on the second
-  hop, while the Symfony guard runs before the controller that would issue that
-  redirect and so denies at once, with `?redirect=/admin` rather than
-  `?redirect=/en/admin`. Nobody's access changes, the visitor arrives in the same
-  place, and every real caller uses the prefixed form — so this is tidiness, not
-  a bug. The reason it is not already done: the redirect is a per-route decision
-  (`ShrinesController` and `AdminController` do it, the maintenance endpoints must
-  **not**, `/_health` has no prefixed form at all), so a listener needs a
-  declaration of its own alongside `RouteAccess`.
+  check.**~~ **Done 2026-08-20.** `App\Http\LocalePrefixListener` at priority -8,
+  between `LocaleListener` (0) and `AuthorizationListener` (-16); the declaration
+  it reads is `App\Http\LocalePrefix`, alongside `RouteAccess` in
+  `config/symfony/routes.php`, exactly as this item anticipated.
+
+  What it stopped being tidiness for: the divergence this described —
+  `?redirect=/admin` where laminas produces `?redirect=/en/admin` — is harmless
+  while the return trip lives in a session, and is a **wrong destination** once it
+  travels in a magic link that may be opened on another device. Both front
+  controllers now answer `?redirect=/en/admin`, measured.
+
+  Two things worth keeping. **The declaration turned out to be a boolean**, not a
+  target: the route name comes from `SymfonyRoute::routeName()` and the parameters
+  from the path's own placeholders, which was measured against all 42 hand-written
+  call sites before deleting them — every one passed exactly its own path's
+  placeholders and targeted its own route name. And **`$ported()` defaults to
+  redirecting**, with the 34 non-redirecting routes pinned by name in
+  `test/Integration/LocalePrefixDeclarationTest`, because a default is also how a
+  new JSON endpoint would silently acquire a 302 its caller has to follow. Net:
+  42 controllers lost the block, 12 lost the `RouteUrl` dependency they held only
+  for it, 517 lines deleted against 201 added. See
+  [strangler.md](strangler.md) § The locale hop, and the redirect order.
 - [ ] **Two consoles now exist in principle.** `bin/console` builds the *laminas*
   container and is the deploy's command host; a Symfony console would want the
   kernel. Nothing needs converging yet — `App\Kernel` contributes no commands —

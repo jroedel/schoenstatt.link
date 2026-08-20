@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityDelete;
@@ -90,11 +89,6 @@ final class EntityDeleteController
         /** @var mixed $raw */
         $raw   = $request->attributes->get($idParam);
         $rawId = is_string($raw) ? $raw : '';
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, $laminasRoute, [$idParam => $rawId]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         //The four refusal branches, in the laminas action's order. The order is observable —
         //see App\Sion\EntityDelete's docblock on why a visitor lacking the per-row

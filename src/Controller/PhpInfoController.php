@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Laminas\RouteUrl;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -48,23 +46,12 @@ use function phpinfo;
 final class PhpInfoController
 {
     public function __construct(
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        //as SlmLocale would, and as the other ported HTML routes do. The maintenance
-        //endpoints deliberately do *not* redirect, because a deploy hook calls them
-        //unprefixed; this page is only ever reached from a browser.
-        if (null === $request->attributes->get('_locale')) {
-            return new RedirectResponse(
-                $this->urls->path('sion-model/phpinfo'),
-                Response::HTTP_FOUND
-            );
-        }
-
         ob_start();
         phpinfo();
         $info = (string) ob_get_clean();

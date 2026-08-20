@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ViewHelpers;
 use App\Laminas\ServiceBridge;
@@ -86,11 +85,6 @@ final class PublicationController
         }
 
         $params = ['sw_id' => $swId] + (is_string($slug) ? ['slug' => $slug] : []);
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'publication', $params);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $id = SiteWideIdentifier::toId(IdentifierValidator::ENTITY_PUBLICATION, $swId);
         if (null === $id) {

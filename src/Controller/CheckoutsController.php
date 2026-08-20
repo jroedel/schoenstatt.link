@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
@@ -57,16 +55,9 @@ final class CheckoutsController
         'overdue' => ['withinLibraryId', 'book', 'borrower', 'checkedOutOn', 'dueOn'],
     ];
 
-    private const ROUTES = [
-        'all'     => 'checkouts/library',
-        'current' => 'checkouts/library/current',
-        'overdue' => 'checkouts/library/overdue',
-    ];
-
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls,
         private readonly LibraryPage $page
     ) {
     }
@@ -79,15 +70,6 @@ final class CheckoutsController
         }
 
         $libraryId = (int) $request->attributes->get('library_id');
-        $redirect  = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            self::ROUTES[$subset],
-            ['library_id' => $libraryId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $library = $this->page->library($request);
         $refusal = $this->page->refuse($library, LibraryPage::ADMINISTRATE);

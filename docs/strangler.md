@@ -658,22 +658,61 @@ declaration: `AdminController` contains no authorization code at all. Read
 `config/symfony/routes.php` together — the second is the whole of the first's
 security.
 
-One difference from laminas that survives, and is a behaviour change rather than a
-bug: on the **unprefixed** form of a restricted path the two front controllers
-redirect in a different order. Laminas answers `/admin` with SlmLocale's `302 →
-/en/admin` and only then denies, so an anonymous visitor takes two hops and arrives
-at `?redirect=/en/admin`. The Symfony guard runs before the controller that would
-issue the locale redirect, so it answers `/admin` with one hop to
-`?redirect=/admin`. Nobody's access changes and the visitor lands in the same place
-one redirect later; every real caller uses the prefixed form. Fixing it properly
-means moving the unprefixed-to-prefixed redirect out of the controllers and into a
-listener above the guard, which is a separate change and needs a per-route
-declaration of its own (the maintenance endpoints must *not* redirect). As of batch 4
-there are **eleven** routes doing it: the three original hand-written copies
-(`ShrinesController`, `AdminController`, `WaysideShrinesController`) plus eight going
-through `App\Http\LocalePrefix`, which was extracted so the batch did not add eight more
-hand-written ones. The helper is not the fix — it only makes the rule exist once — and
-the listener still wants doing. Consolidating the three originals belongs with it.
+### The locale hop, and the redirect order — fixed 2026-08-20
+
+This section used to record a surviving difference from laminas: on the **unprefixed**
+form of a restricted path the two front controllers redirected in a different order.
+Laminas answered `/admin` with SlmLocale's `302 → /en/admin` and denied on the second
+hop, arriving at `?redirect=/en/admin`; the Symfony guard ran before the controller that
+would issue the locale redirect, so it denied on the first hop and produced
+`?redirect=/admin`. Nobody's access differed, so it read as tidiness.
+
+It stopped being tidiness once the return trip began travelling in a **login link**
+rather than a session: the value in that query string is what the visitor actually lands
+on after clicking a magic link, possibly on a different device. A wrong value there is a
+wrong destination, not a cosmetic difference.
+
+`App\Http\LocalePrefixListener` now issues the hop on `kernel.request` at priority
+**-8** — below `LocaleListener`'s 0, because the target needs the negotiated locale, and
+above `AuthorizationListener`'s -16, which is the entire point. Both bounds are asserted
+by nothing but that arithmetic, so they are stated as constants rather than left to
+registration order.
+
+Three things about the shape are worth carrying forward:
+
+- **The declaration is a policy, not a target.** `App\Http\LocalePrefix` says only
+  whether the unprefixed twin redirects; the route name comes from
+  `SymfonyRoute::routeName()` and the parameters from the path's own placeholders, read
+  off the path string by `$ported()` at declaration time. That was measured against all
+  42 hand-written call sites before they were deleted: every one passed exactly its own
+  path's placeholders and targeted its own route name, so there was nothing per-route
+  left to state. Deriving it also removes the failure mode those call sites had — a
+  target assembled by hand from the wrong parameters is a 302 to a URL that 404s, and
+  nothing about it shows until somebody follows the link.
+- **`$ported()` defaults to redirecting, and the opt-out set is pinned by name.** Sixty
+  of the sixty-four call sites would have said the same thing, so a required argument
+  would have been ceremony; but a default is also how a *new* JSON endpoint would
+  silently acquire a redirect its caller has to follow.
+  `test/Integration/LocalePrefixDeclarationTest::NO_REDIRECT` therefore lists all 34
+  non-redirecting routes and fails on any change in either direction — a route acquiring
+  the hop, or `sm-cache-status` losing it and putting a 302 in front of the deploy's own
+  cache gate.
+- **Four routes opt out explicitly and the rest have no twin to be sent to.** The
+  explicit four are `sm-cache-status`, `sm-clear-persistent-cache` (a deploy hook and the
+  production monitor call them at the bare path), `sitemap` (Apache serves the file, and
+  its content is all five languages at once) and `libraries/library/book-list-json`
+  (fetched by JavaScript). Their sibling `sion-model/phpinfo` *does* redirect, because it
+  is only ever reached from a browser — which is exactly why this could not be inferred
+  from the `/sm/` prefix. The other 26 are declared with `$routes->add()` rather than
+  `$ported()`: `/api/v3` ×21, `comments/create` ×2 (POST only, and a 302 discards the
+  body), `health` (no prefixed form exists), `library/my-books` and `legacy` (bridged, so
+  SlmLocale does its own).
+
+Net effect on the tree: **42 controllers lost the four-line block**, 34 lost an import,
+and twelve lost the `RouteUrl` constructor dependency they had only for this — 517 lines
+deleted against 201 added. `LibraryPageController::PAGES` and
+`CheckoutsController::ROUTES` both carried laminas route names for no other purpose and
+are gone with it.
 
 ## The Twig layer
 
@@ -694,7 +733,8 @@ and what a later port should reuse rather than reinvent:
 | `src/Laminas/ViewHelpers.php` | the only door to a laminas view helper, one typed method per allowed helper |
 | `src/View/SiteChrome.php` | the chrome's decisions: ACL-filtered navigation, language chooser, search box |
 | `templates/books/_library-list.html.twig` | the library list, written as a partial now because the literature home page will need it |
-| `src/Http/LocalePrefix.php` | the 302 an HTML route owes its own unprefixed form, in one place |
+| `src/Http/LocalePrefix.php` | whether a route's unprefixed form redirects; declared per route in `routes.php` |
+| `src/Http/LocalePrefixListener.php` | issues that 302, above the authorization check. **No controller does this any more** |
 | `src/Books/EventTimeline.php` | the timeline's grouping, pinned against the laminas action by a parity test |
 
 **Every `{% set %}` in `layout.html.twig` is prefixed `chrome_`, and it must stay that
@@ -1121,7 +1161,7 @@ Batch 6's 43:
 |---|---|---|---|
 | 15 | `?redirect=` carries the query | the prefixed anonymous form of the 3 new *search* paths × 5 locales | **an intentional improvement over laminas**, which drops it — see "The two denial branches" above. This is the group to expect to grow: every future guarded route whose input is a query string joins it |
 | 10 | a results table and a search box appear | `/persons`, `/persons/search` × 5 locales | **the intentional repair.** The laminas pages render an "Add person" link and nothing else, for every query — see below |
-| 9 | the guard answers before the locale hop | the unprefixed form of each of the 9 new guarded paths | the redirect-order divergence documented above, now on nine more routes. laminas sends `/texts` → `/en/texts` and then denies; the Symfony guard runs first and sends `/en/user/login?redirect=/texts` |
+| 9 | ~~the guard answers before the locale hop~~ — **fixed 2026-08-20** | the unprefixed form of each of the 9 new guarded paths | was the redirect-order divergence, on nine more routes: laminas sent `/texts` → `/en/texts` and then denied, the Symfony guard ran first and sent `/en/user/login?redirect=/texts`. `App\Http\LocalePrefixListener` now hops before the guard, so both front controllers answer `?redirect=/en/texts` |
 | 5 | `936` vs `938` in a badge | `/admin` × 5 locales | the count of untranslated phrases, which grows as pages are rendered — so it moved between the two captures. Capture drift of the same kind rule 3 normalizes for visit counters, and a candidate for a rule 9 |
 | 4 | assignment rows in a different order | `/movement`, 4 locales of 5 | the same 62 assignments and the **same byte length**; `getAssignments()` orders by `AssociationId, IsActive DESC, IsMainRole DESC, Sort` and ties are broken arbitrarily, so two runs of *either* front controller disagree. That it was 5 locales on the previous run and 4 on this one, with no code change between them, is the demonstration |
 
@@ -1141,7 +1181,7 @@ Batch 8's, and it is the cleanest of the three:
 
 | what | where | why |
 |---|---|---|
-| the guard answers before the locale hop | the **unprefixed** form of all 9 new delete paths | the same redirect-order divergence as batch 6's nine, and the only entry this batch added. laminas answers `/SL100319A/delete` with SlmLocale's `302 → /en/SL100319A/delete` and denies on the second hop; the Symfony guard runs first and answers `302 → /en/user/login?redirect=/SL100319A/delete` |
+| ~~the guard answers before the locale hop~~ — **fixed 2026-08-20** | the **unprefixed** form of all 9 new delete paths | was the same divergence as batch 6's nine, and the only entry this batch added. laminas answered `/SL100319A/delete` with SlmLocale's `302 → /en/SL100319A/delete` and denied on the second hop; the Symfony guard ran first and answered `302 → /en/user/login?redirect=/SL100319A/delete`. Both now agree — see § The locale hop, and the redirect order |
 
 Batch 9's, on the twelve new create paths (nine routes plus three query-string variants),
 signed in, across five locales — **176 differing responses and not one defect**. Every one
@@ -1356,7 +1396,7 @@ whole comparison against unmodified code — is what made them visible, and it c
 |---|---|---|
 | `format.entity('person', …)` dropped its options, so `displayEditPencil: false` did nothing | batch 5 | an extra `…/persons/{id}/edit` anchor on **every assignment row of every ported association page**. Nothing failed; the page offered a link the original does not |
 | `show_active\|default(true)` turned an explicit `false` back into `true` — Twig's `default` fires on an *empty* value | batch 5 | the association page renders that partial twice with complementary filters, so both columns showed the same rows: "Past contacts" listed current contacts and vice versa. Visible on `/en/SL100001A`, whose six assignments have all ended — laminas leaves the first column empty and the ported page filled it |
-| `LocalePrefix::redirect()` rebuilt its target from the route name and dropped the query string | batch 4 | `/assignments/search?search=Walter` landed on `/en/assignments/search` with the search silently gone — and, since a blank query there returns everything, on a 595 KB page rather than an error. Invisible until a route whose input *is* the query string was ported |
+| the locale hop rebuilt its target from the route name and dropped the query string (then `LocalePrefix::redirect()`, now the listener, which carries the query for this reason) | batch 4 | `/assignments/search?search=Walter` landed on `/en/assignments/search` with the search silently gone — and, since a blank query there returns everything, on a 595 KB page rather than an error. Invisible until a route whose input *is* the query string was ported |
 
 **Batch 7 found three, and one of them destroys data.** Every one passed the batch's own
 smoke suite — nineteen tests asserting three access outcomes per route and a field marker in

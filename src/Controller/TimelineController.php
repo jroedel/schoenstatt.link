@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Books\EventTimeline;
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Filter\KentenichPeriodFromDate;
 use Books\Model\EventTextTable;
@@ -51,18 +49,12 @@ final class TimelineController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'events');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         /** @var EventTextTable $table */
         $table = $this->laminas->get(EventTextTable::class);
 

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\SionResult;
 use Books\Form\SearchForm;
@@ -68,7 +66,6 @@ final class LibraryController
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls,
         private readonly LibraryPage $page
     ) {
     }
@@ -78,11 +75,6 @@ final class LibraryController
         $isAdmin   = true === $request->attributes->get(self::ADMIN);
         $libraryId = (int) $request->attributes->get('library_id');
         $routeName = $isAdmin ? 'libraries/library/admin' : 'libraries/library';
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, $routeName, ['library_id' => $libraryId]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $library = $this->page->library($request);
         //**Both checks on the admin page, in this order.** `adminAction()` opens with

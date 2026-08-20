@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
@@ -38,11 +37,6 @@ final class LibrariesController
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'libraries');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         /** @var LibraryTable $table */
         $table = $this->laminas->get(LibraryTable::class);
 

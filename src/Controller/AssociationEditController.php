@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Laminas\Form\FormInterface;
@@ -79,11 +78,6 @@ final class AssociationEditController
         $swId = $request->attributes->get('sw_id');
         if (! is_string($swId)) {
             return $this->notFound();
-        }
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'association-edit', ['sw_id' => $swId]);
-        if (null !== $redirect) {
-            return $redirect;
         }
 
         $id = $this->associationIdOf($swId);

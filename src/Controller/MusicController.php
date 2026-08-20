@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\MusicTable;
@@ -41,11 +40,6 @@ final class MusicController
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'music');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         /** @var MusicTable $table */
         $table = $this->laminas->get(MusicTable::class);
 

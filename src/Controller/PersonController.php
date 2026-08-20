@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
@@ -72,11 +71,6 @@ final class PersonController
             return $this->notFound();
         }
         $id = (int) $id;
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'persons/person', ['person_id' => $id]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         /** @var SchoenstattTable $table */
         $table = $this->laminas->get(SchoenstattTable::class);
