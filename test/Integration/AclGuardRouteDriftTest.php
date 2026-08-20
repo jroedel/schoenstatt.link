@@ -189,10 +189,13 @@ class AclGuardRouteDriftTest extends TestCase
      *
      * Entries that repeat a route with *different* roles are allowed, because
      * that is the only way to override a shared module's default — JUser
-     * declares zfcuser/register for ['guest', 'user'] and this application
-     * narrows it to ['guest']. That works because config/autoload/ merges after
-     * module config, so it is load order rather than precedence; the override
-     * carries a comment saying so.
+     * declares zfcuser/logout for ['guest', 'user'] and this application narrows
+     * it to ['user']. That works because config/autoload/ merges after module
+     * config, so it is load order rather than precedence; the override carries a
+     * comment saying so.
+     *
+     * (This example named zfcuser/register until 2026-08-20, when that route was
+     * retired with the rest of the password era.)
      */
     public function testNoRouteIsGuardedTwiceWithIdenticalRoles(): void
     {

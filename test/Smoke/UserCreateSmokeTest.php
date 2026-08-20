@@ -98,12 +98,16 @@ class UserCreateSmokeTest extends SmokeTestCase
      * The case that actually broke: a POST carrying none of the four checkboxes
      * at all.
      *
-     * A browser never does this — mustChangePassword and isMultiPersonUser
-     * render a hidden element, so something is always posted for them — which is
-     * exactly why nothing caught it. Anything that is not a browser (a script, a
-     * future template that drops the hidden input, an agent) sent null into
-     * `must_change_password`, and the SQLSTATE came back to the admin as "Error
-     * in form submission, please review." with nothing written to the log.
+     * A browser never does this — isMultiPersonUser renders a hidden element, so
+     * something is always posted for it — which is exactly why nothing caught it.
+     * Anything that is not a browser (a script, a future template that drops the
+     * hidden input, an agent) sent null into a NOT NULL column, and the SQLSTATE
+     * came back to the admin as "Error in form submission, please review." with
+     * nothing written to the log.
+     *
+     * The column that actually broke was `must_change_password`, which no longer
+     * exists (db8.5). `multi_person_user` is the same shape and still does, which is
+     * why this test is still the right test.
      */
     public function testAnAccountCreatesWhenNoCheckboxIsPostedAtAll(): void
     {
@@ -193,8 +197,9 @@ class UserCreateSmokeTest extends SmokeTestCase
             'username'    => $username,
             'email'       => $emailPrefix . $username . '@example.org',
             'displayName' => 'Smoke ' . $username,
-            //Both carry a hidden element, so a browser always posts them.
-            'mustChangePassword' => '0',
+            //Carries a hidden element, so a browser always posts it. `mustChangePassword`
+            //sat beside it until 2026-08-20, when the field and its column went: nothing
+            //had ever read it and no row carried it.
             'isMultiPersonUser'  => '0',
             //The select is keyed on user_role.id, not on the role name.
             'rolesList'   => [(string) $this->roleId('sch_api_bot')],

@@ -1,0 +1,57 @@
+-- db8.5 — drop user.password and user.must_change_password
+--
+-- @phase: post
+-- @kind: ddl
+-- @idempotent: yes
+-- @destructive: yes
+-- @tables: user
+-- @verify: SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user' AND COLUMN_NAME IN ('password','must_change_password')
+--
+-- The second half of retiring the password era; db8.4 is the first and must have been
+-- applied, which the ledger enforces by ordering.
+--
+-- ## Nothing authenticates against either column
+--
+-- Sign-in is a magic link: JUser\Service\LoginTokenService issues a token, stores only
+-- its sha256 digest in `user`.`verification_token` with an absolute UTC expiry in
+-- `verification_expiration`, and redeeming it is what both signs the visitor in and
+-- proves the address. Those two columns are **live** and are not touched here — they
+-- look like password-era artefacts and are the opposite.
+--
+-- Searched across `module/` and `src/` on 2026-08-20: no `password_verify`, no
+-- `Laminas\Crypt` `Bcrypt`, no `CredentialTreatment`, no authentication adapter of any
+-- kind reading this column. The only writes were two literal empty strings, both
+-- carrying a comment explaining that the column is NOT NULL and unused.
+--
+-- ## What is being destroyed, measured
+--
+--   users                                  5,116
+--   with a non-empty `password`              290
+--   with `must_change_password` = 1            0
+--
+-- The 290 are pre-2020 hashes for accounts that have signed in by email ever since.
+-- They are the reason `@tables: user` is set: this migration destroys data rather than
+-- structure alone, and while nothing can read those hashes to authenticate, a snapshot
+-- is cheap insurance against "we were sure nothing read it".
+--
+-- Keeping them would be the worse choice. They are credential material for an
+-- authentication method this application no longer has, so they can only ever be a
+-- liability — there is no code path left that could even check one.
+--
+-- `must_change_password` had the opposite problem: it is on both the create and edit
+-- forms, so an administrator can still set it today, and setting it does nothing
+-- whatsoever. Zero rows carry it. Its form element goes in the same commit.
+--
+-- ## `@destructive: yes`
+--
+-- Older code cannot survive this, and not in a narrow way. The previous release's
+-- UserTable::processUserRow() names both columns in the row it builds for **every**
+-- read of the `user` table — which includes the identity provider BjyAuthorize asks on
+-- every authenticated request. Rolling back to it after this has run does not degrade a
+-- page; it takes the site down. So both rollback paths must refuse a release that does
+-- not ship this file. That refusal was bought on 2026-08-17 by db8.1 doing exactly this
+-- — see docs/incident-2026-08-17-stale-opcache.md.
+
+ALTER TABLE `user`
+    DROP COLUMN IF EXISTS `password`,
+    DROP COLUMN IF EXISTS `must_change_password`;
