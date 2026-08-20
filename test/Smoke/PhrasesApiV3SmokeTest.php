@@ -1236,8 +1236,8 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         $pdo   = $this->pdo();
 
         $pdo->prepare(
-            'INSERT INTO user (username, email, display_name, password, state, create_datetime, update_datetime)'
-            . " VALUES (:email, :email2, 'API bot', '', 1, NOW(), NOW())"
+            'INSERT INTO user (username, email, display_name, state, create_datetime, update_datetime)'
+            . " VALUES (:email, :email2, 'API bot', 1, NOW(), NOW())"
         )->execute(['email' => $email, 'email2' => $email]);
         $userId = (int) $pdo->lastInsertId();
 

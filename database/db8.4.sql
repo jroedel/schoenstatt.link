@@ -1,0 +1,48 @@
+-- db8.4 — give user.password a default, so the next release can stop writing it
+--
+-- @phase: pre
+-- @kind: ddl
+-- @idempotent: yes
+-- @destructive: no
+-- @tables: none
+-- @verify: SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user' AND COLUMN_NAME='password'
+--
+-- The first half of retiring the password era. db8.5 drops the column; this makes it
+-- safe for the release in between to stop writing it, and the gap between the two is
+-- the whole point of the pair.
+--
+-- ## Why one migration could not do this
+--
+-- `user`.`password` is `varchar(128) NOT NULL` with **no default**, and `@@sql_mode`
+-- carries `STRICT_TRANS_TABLES` (measured on the capsule, MariaDB 10.11.18). So an
+-- INSERT that omits the column is an error, not a warning.
+--
+-- The release this ships with removes `password` from JUser's `update_columns` map,
+-- which is what decides the columns SionTable::createEntity() writes — so from that
+-- release on, creating a user omits the column entirely. Two writes that used to
+-- supply it explicitly (`UsersController::createAction()` and
+-- `UserTable::createUserFromEmail()`, both with a comment saying "the column is NOT
+-- NULL so it gets an empty string") go in the same commit.
+--
+-- Dropping the column in the same deploy does not close the gap, because the phases
+-- are ordered around the symlink swap and both cannot be on the same side of it:
+--
+--   pre   — previous release still serving. It SELECTs `password` in
+--           UserTable::processUserRow(), so the column must still exist.
+--   swap  — new release live. It neither reads nor writes the column.
+--   post  — db8.5 drops it.
+--
+-- Between the swap and post there is a window — normally seconds, indefinitely long
+-- if the post phase fails — in which the column exists and nothing supplies it. A
+-- default is what makes an INSERT in that window succeed, and it is why this file
+-- exists rather than being folded into db8.5.
+--
+-- `@tables: none` because nothing is at risk: adding a default neither reads nor
+-- rewrites a single row, and the column it applies to is dropped by db8.5, which does
+-- declare a snapshot.
+--
+-- Harmless to the previous release by construction: it passes a value explicitly, so
+-- the default is never consulted while that code is the one running.
+
+ALTER TABLE `user`
+    MODIFY COLUMN `password` VARCHAR(128) NOT NULL DEFAULT '';

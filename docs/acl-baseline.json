@@ -21,13 +21,13 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 122,
-        "guarded_routes_total": 122,
+        "guarded_routes_existing": 118,
+        "guarded_routes_total": 118,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 124,
-        "routes_declared_twice": 2,
+        "route_guard_entries": 119,
+        "routes_declared_twice": 1,
         "routes_shadowed_by_symfony": 94,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
@@ -35,7 +35,7 @@
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 209,
-        "total_routes": 141,
+        "total_routes": 137,
         "unguarded_routes": 19,
         "unguarded_routes_matchable": 7
     },
@@ -1512,77 +1512,6 @@
             "public": false,
             "route": "juser/create-role"
         },
-        "juser/thanks": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        null,
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                null,
-                "guest",
-                "user"
-            ],
-            "effective_roles": [
-                "administrator",
-                "bib_administrator",
-                "bib_user",
-                "blog_administrator",
-                "blog_contributor",
-                "dict_administrator",
-                "guest",
-                "lib_academic",
-                "lib_administrator",
-                "lib_institute",
-                "lib_patres",
-                "lib_user",
-                "pub_administrator",
-                "pub_all",
-                "pub_brothers",
-                "pub_brothers_moderator",
-                "pub_drive",
-                "pub_families",
-                "pub_families_moderator",
-                "pub_general_moderator",
-                "pub_institute",
-                "pub_institute_moderator",
-                "pub_ladies",
-                "pub_ladies_moderator",
-                "pub_moderator",
-                "pub_patres",
-                "pub_patres_moderator",
-                "pub_sisters",
-                "pub_sisters_moderator",
-                "pub_user",
-                "sch_administrator",
-                "sch_api_bot",
-                "sch_api_translator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user",
-                "texts_administrator",
-                "texts_moderator",
-                "texts_user",
-                "translator",
-                "user",
-                "view_changes"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": true,
-            "route": "juser/thanks"
-        },
         "juser/user/api-token-revoke": {
             "anonymous_allowed": false,
             "assertion": null,
@@ -1674,100 +1603,6 @@
             "matchable": true,
             "public": false,
             "route": "juser/user/edit"
-        },
-        "juser/user/show": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "administrator"
-            ],
-            "effective_roles": [
-                "administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "juser/user/show"
-        },
-        "juser/verify-email": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        null,
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                null,
-                "guest",
-                "user"
-            ],
-            "effective_roles": [
-                "administrator",
-                "bib_administrator",
-                "bib_user",
-                "blog_administrator",
-                "blog_contributor",
-                "dict_administrator",
-                "guest",
-                "lib_academic",
-                "lib_administrator",
-                "lib_institute",
-                "lib_patres",
-                "lib_user",
-                "pub_administrator",
-                "pub_all",
-                "pub_brothers",
-                "pub_brothers_moderator",
-                "pub_drive",
-                "pub_families",
-                "pub_families_moderator",
-                "pub_general_moderator",
-                "pub_institute",
-                "pub_institute_moderator",
-                "pub_ladies",
-                "pub_ladies_moderator",
-                "pub_moderator",
-                "pub_patres",
-                "pub_patres_moderator",
-                "pub_sisters",
-                "pub_sisters_moderator",
-                "pub_user",
-                "sch_administrator",
-                "sch_api_bot",
-                "sch_api_translator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user",
-                "texts_administrator",
-                "texts_moderator",
-                "texts_user",
-                "translator",
-                "user",
-                "view_changes"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": true,
-            "route": "juser/verify-email"
         },
         "kernel-switch": {
             "anonymous_allowed": false,
@@ -4327,36 +4162,6 @@
             "public": false,
             "route": "zfcuser/logout"
         },
-        "zfcuser/register": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 2,
-            "declarations": [
-                {
-                    "roles": [
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                },
-                {
-                    "roles": [
-                        "guest"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "guest"
-            ],
-            "effective_roles": [
-                "guest"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "zfcuser/register"
-        },
         "zfcuser/verify": {
             "anonymous_allowed": true,
             "assertion": null,
@@ -6308,8 +6113,7 @@
     },
     "roles_available": true,
     "routes_declared_more_than_once": [
-        "zfcuser/logout",
-        "zfcuser/register"
+        "zfcuser/logout"
     ],
     "rules": [
         {

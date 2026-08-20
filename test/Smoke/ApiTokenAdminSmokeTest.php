@@ -73,13 +73,40 @@ class ApiTokenAdminSmokeTest extends SmokeTestCase
         ]);
         $this->assertSame(302, $issued['status'], 'issuing should redirect back to the screen');
 
-        //The JWT is shown once, in the flash message on the page after the redirect,
-        //and never again — the registry keeps only its jti.
+        //The JWT is shown once on the page after the redirect and never again — the
+        //registry keeps only its jti.
         $after = $this->get($page, false, $jar);
         $this->assertSame(200, $after['status']);
         $this->assertStringContainsString('smoke test token', $after['body'], 'the label should be listed');
 
         $jwt = $this->extractJwt($after['body']);
+
+        //It arrives in a well with a copy button, NOT in a flash message, and both halves
+        //of that are asserted because both matter. A JWT is several hundred characters and
+        //an alert box makes the reader select it by hand; and the flash pipeline
+        //translates its messages, which is how a token once became a row in the phrase
+        //table that any sch_api_translator account could read.
+        $this->assertStringContainsString('juser-issued-token', $after['body'], 'shown in its own well');
+        $this->assertStringContainsString('id="juser-copy-token"', $after['body'], 'with a copy button');
+        $this->assertStringContainsString('Token issued.', $after['body'], 'the flash says only that');
+
+        //The alert markup and the token must not appear in the same element. Checked by
+        //slicing out every alert on the page and looking for the credential in them.
+        $alerts = '';
+        if (preg_match_all('/<div class="alert[^"]*">(.*?)<\/div>/s', $after['body'], $found) > 0) {
+            $alerts = implode("\n", $found[1]);
+        }
+        $this->assertStringNotContainsString($jwt, $alerts, 'the token must not be inside a flash alert');
+
+        //Shown exactly once: a refresh of the same page must not repeat it, because the
+        //session slot it travelled in is read and cleared in one act.
+        $refreshed = $this->get($page, false, $jar);
+        $this->assertSame(200, $refreshed['status']);
+        $this->assertStringNotContainsString(
+            $jwt,
+            $refreshed['body'],
+            'the token is one-shot; a second render must not show it again'
+        );
 
         //The half that lives in the other repository: BotIdentity must recognise it.
         $api = $this->request('GET', '/api/v3/associations', ['Authorization: Bearer ' . $jwt]);
@@ -177,8 +204,8 @@ class ApiTokenAdminSmokeTest extends SmokeTestCase
         $pdo   = $this->pdo();
 
         $insert = $pdo->prepare(
-            'INSERT INTO user (username, email, display_name, password, state, create_datetime, update_datetime)'
-            . " VALUES (:email, :email2, 'Token subject', '', 1, NOW(), NOW())"
+            'INSERT INTO user (username, email, display_name, state, create_datetime, update_datetime)'
+            . " VALUES (:email, :email2, 'Token subject', 1, NOW(), NOW())"
         );
         $insert->execute(['email' => $email, 'email2' => $email]);
         $userId = (int) $pdo->lastInsertId();
