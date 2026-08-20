@@ -124,6 +124,27 @@ const MAILPIT_URL    = 'http://mailpit:8025';
 const CONSENT_COOKIE = 'EU_COOKIE_LAW_CONSENT';
 const CONSENT_VALUE  = 'true';
 const EMAIL_PREFIX   = 'port-baseline-';
+/**
+ * **One account, reused across every run — not a fresh `time()`-suffixed one.**
+ *
+ * This was `EMAIL_PREFIX . time()` until 2026-08-21, and the reason for the change is
+ * `/users`: the user-administration index renders one table row per account, carrying
+ * the account's own `user_id` in two links. A throwaway account per run therefore puts
+ * a row in the second capture that is not in the first, with an id no normalization
+ * rule can match without also blanking the 292 real ids the page exists to show. The
+ * page could not be compared at all.
+ *
+ * A fixed local part fixes that by construction: the passwordless flow treats a known
+ * address as a sign-in rather than a registration (`UserTable::createUserFromEmail()`
+ * is reached only for an unknown one), so run 1 creates the account and every run after
+ * it signs the same one in — same id, same username, same row. It also stops this tool
+ * leaking an all-roles account into the capsule on every run; there were 61 by the time
+ * anyone counted.
+ *
+ * Rule 4 still erases the address, the username and the display name, all three of
+ * which are derived from this constant.
+ */
+const EMAIL_ACCOUNT  = EMAIL_PREFIX . 'account';
 const EMAIL_DOMAIN   = '@example.com';
 const OUT_ROOT       = __DIR__ . '/../data/port-baseline';
 
@@ -358,6 +379,37 @@ const PATHS = [
     '/persons/create',
     '/texts/create',
 
+    // batch 12 — the JUser user-administration surface: seven routes, all guarded
+    // `administrator`, all of them `JUser\Controller\UsersController`'s own actions rather
+    // than any shared SionModel one.
+    //
+    // **The index is the reason EMAIL_ACCOUNT above is a constant and not a `time()`.** It
+    // renders a row per account with the account's `user_id` in two links, so a per-run
+    // throwaway account is a row the second capture has and the first does not.
+    //
+    // Two ids, deliberately: user 5 carries a `PersID` and user 6 does not, which is the
+    // branch `formatPerson` sits behind in the index and the branch that decides whether
+    // the edit form renders its `personId` select at all.
+    //
+    // `/users/5/delete` is a **GET** here, and a GET on that route renders a confirmation
+    // page rather than deleting anything — the POST branch is what deletes, and this tool
+    // never posts. `/users/5/api-tokens/1/revoke` is the same shape: a non-POST returns a
+    // redirect before it reads the token id, which is why naming a token that does not
+    // exist is safe.
+    //
+    // The not-found branches (`/users/9999999/edit` and friends) are **not** here, for the
+    // reason `/dictionary/xx` is last in this list: each sets a flash message, and a flash
+    // is read by the next page rendered in the same session. They are covered by
+    // test/Smoke/JUserAdminSmokeTest instead.
+    '/users',
+    '/users/create',
+    '/users/roles/create',
+    '/users/5/edit',
+    '/users/6/edit',
+    '/users/5/delete',
+    '/users/5/api-tokens',
+    '/users/5/api-tokens/1/revoke',
+
     // earlier batches, re-compared because every port re-enters the same layout,
     // the same translator and the same authorization listener
     '/',
@@ -562,7 +614,7 @@ function normalize(string $html, string $account): string
     // rule 4 — per-run by construction
     $html = preg_replace('/nonce="[^"]*"/', 'nonce="{{NONCE}}"', $html);
     $html = str_replace($account, '{{ACCOUNT}}', $html);
-    $html = preg_replace('/' . preg_quote(EMAIL_PREFIX, '/') . '\d+/', '{{ACCOUNT}}', $html);
+    $html = preg_replace('/' . preg_quote(EMAIL_PREFIX, '/') . '[0-9a-z]+/', '{{ACCOUNT}}', $html);
     // ...and the CSRF token, which is the same kind of value and was missing until the
     // comment form arrived on three ported pages. Laminas\Validator\Csrf mints
     // `<hash>-<salted hash>` per session per request, so two captures of one URL never
@@ -721,7 +773,7 @@ function show(string $name, string $file): int
  */
 function signInWithEveryRole(string $jar): string
 {
-    $email = EMAIL_PREFIX . time() . EMAIL_DOMAIN;
+    $email = EMAIL_ACCOUNT . EMAIL_DOMAIN;
 
     $form = httpGet('/en/user/login', $jar);
     if ($form['status'] !== 200) {

@@ -783,6 +783,48 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **The account form loses a validation error.** `/users/{id}/edit` reports a failed
+  validation with a **flash** and then re-renders the form — and a flash is read by the
+  *next* page, so the administrator sees a clean form with no explanation and then finds
+  "Error in form submission, please review." decorating whatever they open next. Every
+  sibling action on that surface uses `nowMessenger`, which renders on the response being
+  returned, and is right to. Reproduced faithfully by `App\Controller\UserEditController`
+  during batch 12 (2026-08-21) rather than corrected there, because the batch's only
+  evidence that nothing *else* moved is a byte-for-byte baseline diff, and a message change
+  would have taken that away. One line, and it wants its own commit.
+
+- [ ] **Three JUser admin pages have an untranslated `<h1>` and a translated `<title>`.**
+  `/users/create`, `/users/roles/create` and `/users/{id}/edit`: the heading is
+  `escapeHtml($title)` with no `translate()`, sitting next to a `headTitle($title)` the
+  layout *does* translate. So a Spanish administrator reads "Crear nuevo usuario" in the
+  browser tab and "Create new user" on the page. The index page next door translates both.
+  Measured in all five locales on 2026-08-21; reproduced in `templates/juser/*.html.twig`
+  for the reason above. Fixing it is `{{ translate(page_title) }}` in three templates, and
+  the phrases already exist in the `JUser` domain — `Create new user` and `Create new role`
+  are translated in four locales today and simply not asked for.
+
+- [ ] **The `user` entity spec still carries three fields copied from the association
+  entity.** `edit_route => 'association-edit'`, `create_action_redirect_route =>
+  'association'` and `show_route => 'juser/user'` in `module/JUser/config/module.config.php`.
+  All three are dead *for this entity* — nothing routes `user` through `SionController`, and
+  batch 12 removed the last laminas controller that touched it — but they are readable by
+  anything that formats a `user` entity generically, and `juser/user` has been
+  `may_terminate => false` since `juser/user/show` was retired on 2026-08-20, so assembling
+  it produces `/users/5`, which matches no route. The neighbouring `user-role` spec had the
+  same copy-paste in `required_columns_for_creation` and it was **not** dead: it broke
+  `/users/roles/create` completely, for years (fixed 2026-08-21). So the question to answer
+  is not "are these used" but "what reads an entity spec's routes without dispatching
+  through SionController" — `sch_changes` rendering and `edit_pencil()` are the candidates.
+
+- [ ] **`tools/form-regression.php` still leaks an account per run.** It signs in as
+  `form-regression-<time>@example.com` and never purges; 11 such accounts existed on
+  2026-08-21. `tools/port-baseline.php` had the same habit and 61 accounts, fixed the same
+  day by giving it one deterministic address instead — the passwordless flow treats a known
+  address as a sign-in rather than a registration, so reusing one costs nothing. The same
+  one-line change would do it here, but that tool's own docblock says to throw it away when
+  it stops earning rent, so deleting it may be the better answer.
+
+
 - [ ] **Four selects refuse records that already exist**, because their option list is
   narrower than the data. This is not a hypothetical: open one of these records, change
   anything, press save, and the form rejects it over a field nobody touched. Each is accepted
@@ -1692,6 +1734,32 @@ Background and measurements: [caching.md](caching.md).
   `['assignment', 'role']` — harmless over-invalidation, still wrong.
 
 ## Testing & CI
+
+- [x] ~~**The smoke suite was leaking a real account per sign-in, and had been for weeks.**~~
+  **Fixed 2026-08-21.** `MagicLinkSignIn`'s docblock has always said every class using it must
+  purge in `tearDown()`; nine of the twenty-eight did not, and registration here is open, so
+  every address any of them posted became a real account. Measured: **6,011 of the capsule's
+  6,303 accounts were `@example.com` fixtures**, 2,146 of them from `Batch6SymfonySmokeTest`
+  alone, growing by a few hundred per full suite run.
+
+  Three things worth keeping from it:
+
+  - **It corrupted a measurement before it corrupted anything else.** The `user` table was 95%
+    ours, so `getUsers()` — which caches every account with its roles as one APCu item — read
+    14.03 MiB where the real figure is 0.55 MiB, and `/users` rendered 6,303 rows where
+    production renders about 292. Batch 12's first cost estimate for that page was wrong in
+    the alarming direction, and the reason was the test suite. The capsule's *content* tracks
+    production; its `user` table is the one place the suites are the majority of the rows.
+  - **A docblock instruction was the wrong mechanism.** The fix is an `#[After]`-attributed
+    purge on the trait itself, not a `tearDown()` — a class defining its own `tearDown()`
+    silently wins over a trait's, which is exactly the failure being prevented. An attributed
+    method runs in addition to `tearDown()`, so forgetting is no longer possible.
+  - **The nineteen classes that did purge are unaffected**: both purges are idempotent
+    DELETEs keyed on the class's own prefix, so the explicit calls stay harmless. Verified by
+    running `Batch6SymfonySmokeTest` and counting: 0 accounts left behind, against ~40 before.
+
+  `tools/form-regression.php` still leaks — see Bugs above.
+
 
 - [ ] **Run-time sweep for the deprecations a static pass cannot see.** All
   three known ones are now fixed — `SionTable:255`'s dynamic
