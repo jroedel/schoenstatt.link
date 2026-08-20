@@ -5,8 +5,30 @@
 -- @idempotent: yes
 -- @destructive: no
 -- @tables: none
--- @verify: SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user' AND COLUMN_NAME='password'
+-- @verify: SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user' AND COLUMN_NAME='password' AND (COLUMN_DEFAULT IS NULL OR LENGTH(REPLACE(COLUMN_DEFAULT, CHAR(39), '')) <> 0)
 --
+-- ## The @verify header was wrong on the first attempt, and this is the correction
+--
+-- `@verify` must return **zero rows**: tools/migrate.sh reads it as "select what is
+-- still wrong", so anything it returns fails the migration. The first version selected
+-- the column's definition unconditionally — a query that returns exactly one row when
+-- the migration has *succeeded*. It ran on production on 2026-08-20, applied cleanly
+-- (`password NO ''`), and then aborted the pre phase on its own success. Nothing was
+-- swapped and no data was harmed; the file was resealed with the query below.
+--
+-- The trap is that db8.1's header, which this was copied from, looks identical in shape
+-- and is correct — because that migration *drops* columns, so "select the column" is
+-- already "select what is still wrong". Inverting the sense is not optional when the
+-- migration adds or changes something rather than removing it.
+--
+-- `REPLACE(COLUMN_DEFAULT, CHAR(39), '')` rather than a comparison against '': MariaDB
+-- reports COLUMN_DEFAULT as a quoted *expression*, so the default of an empty string
+-- comes back as the two-character string `''` (measured, MariaDB 10.11.18) while MySQL
+-- returns it bare. Stripping apostrophes and requiring nothing left is true of both.
+-- CHAR(39) rather than a literal apostrophe because this whole query travels through a
+-- shell. Rehearsed in both directions on the capsule: zero rows with the default in
+-- place, one row naming the column without it.
+
 -- The first half of retiring the password era. db8.5 drops the column; this makes it
 -- safe for the release in between to stop writing it, and the gap between the two is
 -- the whole point of the pair.
