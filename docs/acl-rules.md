@@ -47,13 +47,13 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 45 |
 | route guard entries | 119 |
 | routes declared twice | 1 |
-| routes shadowed by symfony | 94 |
+| routes shadowed by symfony | 101 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 182 |
+| symfony routes acl checked | 196 |
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 209 |
+| symfony served routes | 223 |
 | total routes | 137 |
 | unguarded routes | 19 |
 | unguarded routes matchable | 7 |
@@ -172,6 +172,20 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `events` | `/timeline` | `route/events` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\TimelineController` |
 | `events.locale` | `/{_locale}/timeline` | `route/events` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\TimelineController` |
 | `health` | `/_health` | _open_ | everyone — reason below | n/a | `App\Controller\HealthController` |
+| `juser` | `/users` | `route/juser` | administrator | html | `App\Controller\UsersController` |
+| `juser.locale` | `/{_locale}/users` | `route/juser` | administrator | html | `App\Controller\UsersController` |
+| `juser/create` | `/users/create` | `route/juser/create` | administrator | html | `App\Controller\UserCreateController` |
+| `juser/create-role` | `/users/roles/create` | `route/juser/create-role` | administrator | html | `App\Controller\UserCreateController` |
+| `juser/create-role.locale` | `/{_locale}/users/roles/create` | `route/juser/create-role` | administrator | html | `App\Controller\UserCreateController` |
+| `juser/create.locale` | `/{_locale}/users/create` | `route/juser/create` | administrator | html | `App\Controller\UserCreateController` |
+| `juser/user/api-token-revoke` | `/users/{user_id}/api-tokens/{token_id}/revoke` | `route/juser/user/api-token-revoke` | administrator | html | `App\Controller\ApiTokensController::revoke` |
+| `juser/user/api-token-revoke.locale` | `/{_locale}/users/{user_id}/api-tokens/{token_id}/revoke` | `route/juser/user/api-token-revoke` | administrator | html | `App\Controller\ApiTokensController::revoke` |
+| `juser/user/api-tokens` | `/users/{user_id}/api-tokens` | `route/juser/user/api-tokens` | administrator | html | `App\Controller\ApiTokensController::screen` |
+| `juser/user/api-tokens.locale` | `/{_locale}/users/{user_id}/api-tokens` | `route/juser/user/api-tokens` | administrator | html | `App\Controller\ApiTokensController::screen` |
+| `juser/user/delete` | `/users/{user_id}/delete` | `route/juser/user/delete` | administrator | html | `App\Controller\UserDeleteController` |
+| `juser/user/delete.locale` | `/{_locale}/users/{user_id}/delete` | `route/juser/user/delete` | administrator | html | `App\Controller\UserDeleteController` |
+| `juser/user/edit` | `/users/{user_id}/edit` | `route/juser/user/edit` | administrator | html | `App\Controller\UserEditController` |
+| `juser/user/edit.locale` | `/{_locale}/users/{user_id}/edit` | `route/juser/user/edit` | administrator | html | `App\Controller\UserEditController` |
 | `libraries` | `/libraries` | `route/libraries` | lib_administrator | html | `App\Controller\LibrariesController` |
 | `libraries.locale` | `/{_locale}/libraries` | `route/libraries` | lib_administrator | html | `App\Controller\LibrariesController` |
 | `libraries/create` | `/libraries/create` | `route/libraries/create` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityCreateController` |
@@ -384,6 +398,13 @@ warning at the top of this file.
 | `dictionary/entry/edit` | `/dictionary/:entry_id/edit` | `/dictionary/0/edit` | `dictionary/entry/edit` | restricted to dict_administrator | `route/dictionary/entry/edit` — **the same resource** |
 | `dictionary/inLanguage` | `/dictionary/:inLanguage` | `/dictionary/aa` | `dictionary/inLanguage` | **public** (names the default role `guest`) | `route/dictionary/inLanguage` — **the same resource** |
 | `events` | `/timeline` | `—` | `events` | **public** (names the default role `guest`) | `route/events` — **the same resource** |
+| `juser` | `/users` | `—` | `juser` | restricted to administrator | `route/juser` — **the same resource** |
+| `juser/create` | `/users/create` | `—` | `juser/create` | restricted to administrator | `route/juser/create` — **the same resource** |
+| `juser/create-role` | `/users/roles/create` | `—` | `juser/create-role` | restricted to administrator | `route/juser/create-role` — **the same resource** |
+| `juser/user/api-token-revoke` | `/users/:user_id/api-tokens/:token_id/revoke` | `/users/0/api-tokens/0/revoke` | `juser/user/api-token-revoke` | restricted to administrator | `route/juser/user/api-token-revoke` — **the same resource** |
+| `juser/user/api-tokens` | `/users/:user_id/api-tokens` | `/users/0/api-tokens` | `juser/user/api-tokens` | restricted to administrator | `route/juser/user/api-tokens` — **the same resource** |
+| `juser/user/delete` | `/users/:user_id/delete` | `/users/0/delete` | `juser/user/delete` | restricted to administrator | `route/juser/user/delete` — **the same resource** |
+| `juser/user/edit` | `/users/:user_id/edit` | `/users/0/edit` | `juser/user/edit` | restricted to administrator | `route/juser/user/edit` — **the same resource** |
 | `libraries` | `/libraries` | `—` | `libraries` | restricted to lib_administrator | `route/libraries` — **the same resource** |
 | `libraries/create` | `/libraries/create` | `—` | `libraries/create` | **public** (names the default role `guest`) | `route/libraries/create` — **the same resource** |
 | `libraries/library` | `/libraries/:library_id` | `/libraries/0` | `libraries/library` | **public** (names the default role `guest`) | `route/libraries/library` — **the same resource** |

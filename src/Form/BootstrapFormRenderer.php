@@ -392,7 +392,6 @@ final class BootstrapFormRenderer
         $declared    = $this->declaredAttributes($element);
         $class       = isset($declared['class']) ? (string) $declared['class'] : '';
         $hasOwnClass = isset($declared['class']);
-        unset($declared['type'], $declared['name']);
 
         /**
          * **`class` keeps the position the element declared it in**, and only a button
@@ -405,8 +404,21 @@ final class BootstrapFormRenderer
          * until batch 11b, because it takes a button that declares *both* a class and a
          * later attribute, and the checkout form is the first ported page with one.
          */
+        /**
+         * **Declared first, then `type` and `name` assigned over it** — the same order
+         * `FormButton::openTag()` builds: `$element->getAttributes()`, then `name`, then
+         * `type`, then `value`. This built the seeds first until 2026-08-21 and matched
+         * every earlier ported form by accident, because a button declared as
+         * `'type' => 'Submit'` gets `['type' => 'submit']` seeded by its own class and so
+         * really does start with `type`. `JUser\Form\EditUserForm` declares its submit as
+         * a plain element with `'type' => 'submit'` *inside* `attributes`, which leaves the
+         * attribute array starting at `name` — laminas rendered
+         * `<button name="submit" class="btn-primary btn" type="submit" …>` and this
+         * rendered `<button type="submit" name="submit" …>`. See {@see attributes()},
+         * which had the identical defect for `<input>` and `<select>`.
+         */
         /** @var array<string, scalar> $attributes */
-        $attributes = ['type' => $type, 'name' => (string) $element->getName()];
+        $attributes = [];
         foreach ($declared as $key => $declaredValue) {
             if ('class' === $key) {
                 $attributes['class'] = self::buttonClass($class);
@@ -419,6 +431,8 @@ final class BootstrapFormRenderer
         if (! $hasOwnClass) {
             $attributes['class'] = self::buttonClass($class);
         }
+        $attributes['name'] = (string) $element->getName();
+        $attributes['type'] = $type;
         //rendered even when empty: FormButton::openTag() always sets it from
         //getValue(), so the baseline carries `value=""` on both buttons of the
         //advanced search
@@ -659,6 +673,29 @@ final class BootstrapFormRenderer
     private function textarea(ElementInterface $element): string
     {
         $attributes = $this->attributes($element, ['name' => (string) $element->getName()]);
+        /**
+         * **`type` is filtered out, and until 2026-08-21 it was dropped by accident.**
+         * `Laminas\Form\Element\Textarea` seeds its own attribute array with
+         * `['type' => 'textarea']` — a `<textarea>` has no `type` attribute, and
+         * `FormTextarea::$validTagAttributes` does not list one, so laminas never emits it.
+         * The old ordering code unset `type` from the declared set as a side effect of
+         * putting the seeds first; once the order was corrected to match laminas, three
+         * `<textarea type="textarea">` appeared on the collection and library forms. So the
+         * filter is transcribed rather than inferred, the way {@see select()}'s is.
+         */
+        $allowed = array_flip([
+            //FormTextarea::$validTagAttributes
+            'autocomplete', 'autofocus', 'cols', 'dirname', 'disabled', 'form', 'inputmode',
+            'maxlength', 'minlength', 'name', 'placeholder', 'readonly', 'required', 'rows', 'wrap',
+            //the globals a form here can declare, the same subset select() allows
+            'accesskey', 'class', 'contenteditable', 'dir', 'draggable', 'hidden', 'id',
+            'lang', 'spellcheck', 'style', 'tabindex', 'title',
+        ]);
+        $attributes = array_filter(
+            $attributes,
+            static fn (string $key): bool => isset($allowed[$key]) || str_starts_with($key, 'data-'),
+            ARRAY_FILTER_USE_KEY
+        );
 
         return sprintf(
             '<textarea %s>%s</textarea>',
@@ -793,8 +830,17 @@ final class BootstrapFormRenderer
         //search box would have silently searched one language where the visitor picked
         //three. The association form has no multiple select, which is why this survived
         //the first form port; found by the byte diff on /literature/search.
+        //**Truthy, not `=== true`.** `FormSelect::render()` asks
+        //`array_key_exists('multiple', $attributes) && $attributes['multiple']`, and the
+        //difference is not academic: `JUser\Form\EditUserForm` declares
+        //`'multiple' => 'multiple'` — the string, which is what the HTML attribute's value
+        //actually is — where the literature search box that first found this bug declares
+        //`true`. With the strict check the roles select rendered `name="rolesList"`, so a
+        //browser posted `rolesList=1&rolesList=41&…`, PHP kept **only the last**, and
+        //saving an account would have cut it down to one role. Found by the byte diff on
+        ///users/5/edit; nothing about it is visible on the page.
         $name = (string) $element->getName();
-        if (true === $element->getAttribute('multiple')) {
+        if ($element->getAttribute('multiple')) {
             $name .= '[]';
         }
 
@@ -936,22 +982,51 @@ final class BootstrapFormRenderer
     // -------------------------------------------------------------- plumbing
 
     /**
-     * The element's attributes, in the order laminas renders them: the seeds first
-     * (`type`, `name`), then whatever the element declares, then `class`.
+     * The element's attributes, in the order laminas renders them.
      *
-     * `name` and `type` are removed from the declared set before merging so that an
-     * element which happens to declare one does not move it to the end.
+     * **The order is the element's own, and the seeds are assigned *over* it.** That is
+     * exactly what the laminas helpers do — `FormInput::render()` takes
+     * `$element->getAttributes()` and then assigns `name`, `type` and `value` into it, so
+     * an attribute the element already declares keeps its position and only a genuinely
+     * new one is appended. `class` sits between the two because TwbBundle's row sets it on
+     * the *element* before any helper runs.
      *
-     * @param array<string, string> $seed
+     * This read `$attributes = $seed;` first until 2026-08-21, i.e. it put `type` and
+     * `name` in front of everything, and every form ported before then agreed with it by
+     * accident: an element declared as `'type' => 'Text'` gets `['type' => 'text']` seeded
+     * by its own class, so `type` really was first and `name` really was second.
+     * `JUser\Form\EditUserForm` is the first ported form to declare the type *inside*
+     * `attributes` — which leaves the element a plain `Laminas\Form\Element`, whose
+     * attribute array starts empty and so begins with `name`. laminas rendered
+     * `name="username" type="text" size="30"`, this rendered
+     * `type="text" name="username" size="30"`, and the two documents are equivalent to a
+     * browser and unequal to a diff. Fixing the order rather than teaching the harness to
+     * ignore it, because "the bytes match" is the only claim this renderer can actually
+     * make.
+     *
+     * @param array<string, string> $seed `name`/`type`, assigned last
      * @return array<string, scalar>
      */
     private function attributes(ElementInterface $element, array $seed, bool $withClass = true): array
     {
+        //`name` is always in here, because `Element::setName()` writes it — which is
+        //precisely why the seeds have to be assigned over the declared set rather than
+        //prepended to it.
+        //
+        //**`value` is the one key that is dropped**, and it is dropped because of *when*
+        //laminas would have produced it rather than because it is unwanted. A plain
+        //element never carries one (`Element::setAttribute()` diverts that key to
+        //`setValue()`), but `Laminas\Form\Element\Csrf` materialises `value` in its
+        //attribute array the first time its hash is asked for — and TwbBundle's row has
+        //already set `class` on the element by then, so laminas renders
+        //`type name class value` and not `type name value class`. Removing it here and
+        //letting the caller append it after `class` reproduces that for every element at
+        //once, instead of encoding one element's laziness.
         $declared = $element->getAttributes();
-        unset($declared['name'], $declared['type'], $declared['value']);
+        unset($declared['value']);
 
         /** @var array<string, scalar> $attributes */
-        $attributes = $seed;
+        $attributes = [];
         $hasOwnClass = false;
 
         //**An element's own class keeps its declared position and `form-control` is
@@ -983,6 +1058,10 @@ final class BootstrapFormRenderer
             $attributes['class'] = 'form-control';
         }
 
+        foreach ($seed as $key => $value) {
+            $attributes[$key] = $value;
+        }
+
         return $attributes;
     }
 
@@ -1008,8 +1087,36 @@ final class BootstrapFormRenderer
     }
 
     /**
-     * `false` is dropped, `true` renders bare. Everything else is escaped as an
-     * attribute value.
+     * The nine attributes laminas renders as HTML5 boolean attributes.
+     *
+     * Transcribed from `Laminas\Form\View\Helper\AbstractHelper::$booleanAttributes`,
+     * whose `off` value is the empty string for every one of them — which is what makes
+     * "falsy means omit the attribute entirely" right rather than a shortcut.
+     *
+     * Keyed on the attribute **name**, not on the PHP type of its value, and that is the
+     * whole point. This class used to switch on `is_bool()`, which is correct for the
+     * `checked` a checkbox row synthesises and wrong for anything a form *declares*: an
+     * HTML boolean attribute's idiomatic spelling is `multiple="multiple"`, and
+     * `JUser\Form\EditUserForm` spells it that way. laminas rendered `<select … multiple>`
+     * and this rendered `<select … multiple="multiple">`.
+     *
+     * @var array<string, true>
+     */
+    private const BOOLEAN_ATTRIBUTES = [
+        'autofocus'  => true,
+        'checked'    => true,
+        'disabled'   => true,
+        'itemscope'  => true,
+        'multiple'   => true,
+        'readonly'   => true,
+        'required'   => true,
+        'selected'   => true,
+        'novalidate' => true,
+    ];
+
+    /**
+     * A boolean attribute renders bare when truthy and vanishes when falsy; `false` on any
+     * other attribute is dropped; everything else is escaped as an attribute value.
      *
      * @param array<string, scalar> $attributes
      */
@@ -1017,6 +1124,12 @@ final class BootstrapFormRenderer
     {
         $parts = [];
         foreach ($attributes as $key => $value) {
+            if (isset(self::BOOLEAN_ATTRIBUTES[$key])) {
+                if ($value) {
+                    $parts[] = $this->escaper->escapeHtmlAttr($key);
+                }
+                continue;
+            }
             if (is_bool($value)) {
                 if ($value) {
                     $parts[] = $this->escaper->escapeHtmlAttr($key);

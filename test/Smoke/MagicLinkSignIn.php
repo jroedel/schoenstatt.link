@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Smoke;
 
 use PDO;
+use PHPUnit\Framework\Attributes\After;
 use RuntimeException;
 
 /**
@@ -297,6 +298,35 @@ trait MagicLinkSignIn
             getenv('SMOKE_DB_PASSWORD') ?: 'schoenstatt',
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
+    }
+
+    /**
+     * Delete this class's accounts and its mail, whatever the using class does about
+     * tearDown.
+     *
+     * **A docblock instruction was not enough.** The note above says every user of this
+     * trait must purge in tearDown, and on 2026-08-21 nine of the twenty-eight classes
+     * using it did not — `Batch6SymfonySmokeTest`, `LibrarySurfaceSmokeTest`,
+     * `RestrictedIndexAuthorizationSmokeTest` and six more. Registration here is open, so
+     * every address any of them posted had become a real account: **6,011 of the capsule's
+     * 6,303 accounts were `@example.com` fixtures**, 2,146 of them from one class, growing
+     * by a few hundred per full suite run. The `user` table was 95% test litter, the
+     * `all-linked-users` APCu entry it feeds was 14 MiB against a real 0.55 MiB, and
+     * /users rendered 6,303 rows — which is how a page cost got measured wrong before
+     * anyone noticed the rows were ours.
+     *
+     * `#[After]` rather than a `tearDown()` on the trait, and that difference is the point:
+     * a class defining its own `tearDown()` silently wins over a trait's, which is the
+     * failure this is meant to make impossible. An attributed method runs *in addition* to
+     * tearDown, so forgetting is no longer an option — and the explicit calls the other
+     * nineteen classes already make stay harmless, because both purges are idempotent
+     * DELETEs keyed on this class's own prefix.
+     */
+    #[After]
+    protected function purgeSignInFixtures(): void
+    {
+        $this->purgeAccounts();
+        $this->purgeMail();
     }
 
     protected function purgeMail(): void

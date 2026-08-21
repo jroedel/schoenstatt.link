@@ -11,6 +11,7 @@ use Laminas\View\Renderer\PhpRenderer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+use function preg_match;
 use function preg_replace;
 use function trim;
 
@@ -129,6 +130,49 @@ final class SelectRenderingParityTest extends TestCase
             self::optionsOf(self::ported()->row($element)),
             'a multiple select does not mark the same options selected'
         );
+    }
+
+    /**
+     * **`multiple` spelled as the string it is in HTML, which is how a form actually
+     * declares it — and the case that was broken.**
+     *
+     * `JUser\Form\EditUserForm` writes `'multiple' => 'multiple'`, where the literature
+     * search box writes `true`. Two things keyed on the boolean and so did nothing for the
+     * string: the `[]` the name needs when a select is multiple, and rendering `multiple`
+     * as a bare HTML boolean attribute rather than as `multiple="multiple"`. The first is
+     * not cosmetic — without the brackets a browser posts `rolesList=1&rolesList=41&…`,
+     * PHP keeps only the last, and saving an account through /users/{id}/edit would have
+     * cut it down to a single role.
+     *
+     * Asserted on the whole `<select …>` open tag rather than on the options, because both
+     * defects live in the attributes.
+     */
+    public function testAMultipleSelectDeclaredAsAStringMatchesLaminas(): void
+    {
+        $element = new Select('rolesList');
+        $element->setOptions(['value_options' => ['1' => 'administrator', '7' => 'lib_user']]);
+        $element->setAttribute('multiple', 'multiple');
+        $element->setValue(['1', '7']);
+
+        $this->assertSame(
+            self::openTagOf(self::laminas()->render($element)),
+            self::openTagOf(self::ported()->row($element)),
+            'a select declaring multiple="multiple" does not render the attributes laminas renders'
+        );
+    }
+
+    /**
+     * The `<select …>` open tag, which is where both string-vs-boolean defects showed.
+     *
+     * `class="form-control"` is removed because it is not the helper's: TwbBundle's row adds
+     * it, and the ported side is rendered through `row()` while the laminas side is the bare
+     * helper. Same asymmetry `optionsOf()` sidesteps by reading only the options.
+     */
+    private static function openTagOf(string $markup): string
+    {
+        self::assertSame(1, preg_match('/<select[^>]*>/', $markup, $m), 'no <select> in the markup');
+
+        return (string) preg_replace('/ class="form-control"/', '', $m[0]);
     }
 
     /**
