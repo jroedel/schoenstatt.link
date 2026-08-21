@@ -2245,19 +2245,61 @@ before it shipped.
   the string. Three renderer defects in that family, all in the same table, all fixed —
   and fixing them made ten *already-ported* form pages match laminas that had not before.
 
-#### Two things reproduced that are wrong, and why
+#### Two things reproduced that are wrong — both fixed the next day
 
-- **`editAction()` reports a validation failure with a flash and then re-renders the form.**
-  A flash is read by the *next* page, so the administrator sees a clean form with no
-  explanation and then finds "Error in form submission, please review." decorating whatever
-  they open next. Every sibling action uses `nowMessenger` and is right to. Reproduced, filed
-  in BACKLOG.md: correcting it in the same commit would mean the baseline diff no longer
-  proves the port is faithful, which is the only evidence there is that nothing else moved.
-- **The `<h1>` is untranslated on three of these pages while the `<title>` is translated.**
-  `create.phtml`, `create-role.phtml` and `edit.phtml` all do `escapeHtml($title)` with no
+Batch 12 reproduced both deliberately, because its only evidence that nothing *else* moved
+was a byte-for-byte diff against the laminas rendering, and either change would have altered
+both sides of it. The `.phtml` they reproduced are deleted, so on **2026-08-21** there was
+nothing left to be faithful to and both were corrected — in their own commit, which is the
+sequence worth keeping rather than the two lines it touched.
+
+- **`editAction()` reported a validation failure with a flash and then re-rendered the form.**
+  A flash is read by the *next* page, so the administrator saw a clean form with no
+  explanation and then found "Error in form submission, please review." decorating whatever
+  they opened next. `App\Controller\UserEditController`'s two re-rendering branches now use
+  `now()`; the two that redirect still flash, which is the whole distinction — a message
+  belongs in the flash bag exactly when the response carrying it is a redirect.
+- **The `<h1>` was untranslated on three of these pages while the `<title>` was translated.**
+  `create.phtml`, `create-role.phtml` and `edit.phtml` all did `escapeHtml($title)` with no
   `translate()` next to a `headTitle($title)` that the layout does translate, so a Spanish
-  administrator reads "Crear nuevo usuario" in the browser tab and "Create new user" on the
-  page. A one-word fix on three templates, filed rather than folded in, for the same reason.
+  administrator read "Crear nuevo usuario" in the browser tab and "Create new user" on the
+  page. Now `{{ translate(page_title) }}` in all three, and measured rather than assumed:
+  **nine of the twelve non-English headings changed.** The one that did not is
+  `/users/{id}/edit` in Italian — "Edit User" is a separate phrase from "Edit user" and
+  carries de/es/pt but no it_IT — so asking for the translation is what puts that one on the
+  worklist rather than what fills it. A BACKLOG entry had claimed "Edit User" was
+  untranslated in all five locales; it was translated in four, and the difference only shows
+  up if you look at the rendering instead of the entry.
+
+#### The entity spec batch 12 did not read, and the live bug in the next one over
+
+The `user` entity spec named three of another entity's routes: `show_route => 'juser/user'`,
+`edit_route => 'association-edit'`, `create_action_redirect_route => 'association'`. Batch 12
+filed them as dead-for-this-entity rather than fixing them. Reading them properly on
+2026-08-21 turned up something the filing had got wrong and something worse next door.
+
+**A `may_terminate => false` part route does not assemble to a URL nothing serves — it
+throws.** `Laminas\Router\Http\Part::assemble()` raises `Part route may not terminate`. So
+"assembling `juser/user` produces `/users/5`, which matches no route" was wrong in the
+direction that matters: anything formatting a `user` entity as a link was a **500**, not a
+dead link. Two accidents hid it — nothing formats a `user` (its `report_changes` is off and
+`sch_changes` holds no `user` row), and `route/juser/user` *is* an ACL resource, so
+`isActionAllowed('show')` refused for an anonymous caller before the assemble could run. An
+administrator, who is allowed, would have met the exception.
+
+**`dictionary-entry` has the identical defect and is not protected by either accident.** Its
+`show_route` was also `dictionary/entry`, also `may_terminate => false`; `route/dictionary/entry`
+is *not* an ACL resource, so the ACL raises on the unknown resource and the catch in
+`isActionAllowed()` assumes "allow"; and `report_changes` is on, so `/sm/view-changes` formats
+its 2,711 change rows. Only arithmetic kept the page up: it shows `changes_max_rows` = 500 and
+the newest dictionary-entry change was **878th by recency**. One edit to any entry would have
+taken `/sm/view-changes` down for every moderator holding `view_changes`.
+
+Six fields across three specs failed to assemble; all six are fixed and
+`test/Integration/EntitySpecRoutesAreAssemblableTest` is the guard. It assembles rather than
+checking that a route name exists, because **all six names existed** — what was wrong was the
+pairing of the name with the key the spec offers it, and `assemble()` is the only thing that
+knows about that pairing.
 
 #### One trap, and it cost a debugging session
 

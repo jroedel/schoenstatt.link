@@ -886,38 +886,20 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
-- [ ] **The account form loses a validation error.** `/users/{id}/edit` reports a failed
-  validation with a **flash** and then re-renders the form — and a flash is read by the
-  *next* page, so the administrator sees a clean form with no explanation and then finds
-  "Error in form submission, please review." decorating whatever they open next. Every
-  sibling action on that surface uses `nowMessenger`, which renders on the response being
-  returned, and is right to. Reproduced faithfully by `App\Controller\UserEditController`
-  during batch 12 (2026-08-21) rather than corrected there, because the batch's only
-  evidence that nothing *else* moved is a byte-for-byte baseline diff, and a message change
-  would have taken that away. One line, and it wants its own commit.
-
-- [ ] **Three JUser admin pages have an untranslated `<h1>` and a translated `<title>`.**
-  `/users/create`, `/users/roles/create` and `/users/{id}/edit`: the heading is
-  `escapeHtml($title)` with no `translate()`, sitting next to a `headTitle($title)` the
-  layout *does* translate. So a Spanish administrator reads "Crear nuevo usuario" in the
-  browser tab and "Create new user" on the page. The index page next door translates both.
-  Measured in all five locales on 2026-08-21; reproduced in `templates/juser/*.html.twig`
-  for the reason above. Fixing it is `{{ translate(page_title) }}` in three templates, and
-  the phrases already exist in the `JUser` domain — `Create new user` and `Create new role`
-  are translated in four locales today and simply not asked for.
-
-- [ ] **The `user` entity spec still carries three fields copied from the association
-  entity.** `edit_route => 'association-edit'`, `create_action_redirect_route =>
-  'association'` and `show_route => 'juser/user'` in `module/JUser/config/module.config.php`.
-  All three are dead *for this entity* — nothing routes `user` through `SionController`, and
-  batch 12 removed the last laminas controller that touched it — but they are readable by
-  anything that formats a `user` entity generically, and `juser/user` has been
-  `may_terminate => false` since `juser/user/show` was retired on 2026-08-20, so assembling
-  it produces `/users/5`, which matches no route. The neighbouring `user-role` spec had the
-  same copy-paste in `required_columns_for_creation` and it was **not** dead: it broke
-  `/users/roles/create` completely, for years (fixed 2026-08-21). So the question to answer
-  is not "are these used" but "what reads an entity spec's routes without dispatching
-  through SionController" — `sch_changes` rendering and `edit_pencil()` are the candidates.
+- [ ] **`Entity::$actionRouteProperties` names two properties `Entity` does not have.**
+  `create => 'createRoute'` and `touch => 'touchRoute'`, in
+  `module/SionModel/src/Entity/Entity.php`. `FormatEntity::isActionAllowed()` and
+  `App\Laminas\EntityFormatter::isActionAllowed()` read the mapped name off the spec
+  dynamically, so asking either about the `create` or `touch` action reads an undefined
+  property: a warning on 8.5, which production's `error_reporting` excludes, and a *null*
+  route — which means the route permission check silently passes. Nothing calls
+  `isActionAllowed()` with either action today (both formatters only pass `show` and
+  `edit`), so this is a landmine rather than a live bug. The real property names are
+  `createActionRedirectRoute` and `touchJsonRoute`; whether the map should point at those or
+  the two entries should go is the question, and the `touch` feature was removed in August
+  2026, which argues for going. Found 2026-08-21 while writing
+  `test/Integration/EntitySpecRoutesAreAssemblableTest`, whose own list of properties is
+  guarded by a `property_exists()` assertion for exactly this reason.
 
 - [ ] **`tools/form-regression.php` still leaks an account per run.** It signs in as
   `form-regression-<time>@example.com` and never purges; 11 such accounts existed on
@@ -2036,10 +2018,14 @@ Background and measurements: [caching.md](caching.md).
   work. The JWT-id generator that survived is
   `JUser\Service\ApiTokenService:122`, which mints every v3 credential, so that is
   the security-relevant one to read first.
-- [ ] Drop the stale `laminas/laminas-crypt` require from JUser's
-  `composer.json` — nothing in JUser uses it. Cosmetic for this app (the
-  submodule's composer.json is not read; the root one governs installation),
-  but it misleads anyone installing JUser as a package.
+- [ ] Give **SionModel** the `laminas/laminas-cache` require it uses.
+  `SionCacheTrait`, `PersistentCacheFactory`, `LegacyCacheConfig` and
+  `SionModelController` all reference `Laminas\Cache` and its `composer.json`
+  does not require it; it resolves transitively here through the storage
+  adapters, so only a standalone install of the package notices. JUser had the
+  same gap and it was closed 2026-08-21 (`^3.0 || ^4.0`, matching JTranslate).
+  The `laminas/laminas-crypt` item that used to sit here is done — 864d08f
+  removed it from JUser's require block along with the password era.
 - [ ] Consider narrowing the application log's level. Both loggers write at
   `Level::Debug` because that is exactly what laminas-log did (a Logger with a
   Stream writer and no priority filter wrote every event), so

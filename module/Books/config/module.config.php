@@ -1573,7 +1573,21 @@ return [
 //                     'cell'    => 'contactInfo',
 //                 ],
                 'report_changes'                            => true,
-                'index_route'                               => 'library-imports/library',
+                /*
+                 * **No `index_route`** since 2026-08-21. It named `library-imports/library`,
+                 * i.e. `/library-imports/library/:library_id` — the imports of *one* library,
+                 * which is the only import index this application has ("We will never show
+                 * all imports at once, just per-library", on the route above). An entity spec
+                 * has no `index_route_key`, so that route could only ever be assembled with
+                 * no `library_id` at all, which throws `Missing parameter "library_id"`.
+                 *
+                 * Two fallback chains reach it, neither of which runs today:
+                 * `App\Sion\EntityEdit::redirectRoute()` tries showRoute, editRoute and the
+                 * create redirect first (all three are set and all three assemble), and
+                 * `App\Sion\EntityDelete::redirectRoute()` would reach it — except this
+                 * entity has no ported delete route. Removing it lets both fall through to
+                 * `sion_model.default_redirect_route`, which assembles.
+                 */
 //                 'index_template'                            => 'project/events/index',
                 'default_route_key'                         => 'import_id',
 //                 'show_action_template'                      => 'project/events/show',
@@ -2234,18 +2248,49 @@ return [
 //                 'index_template'                            => 'project/events/index',
                 'default_route_key'                         => 'entry_id',
 //                     'show_action_template'                      => 'project/events/show',
-                'show_route'                                => 'dictionary/entry',
-                'show_route_key'                            => 'entry_id',
-                'show_route_key_field'                      => 'entryId',
+                /*
+                 * **No `show_route`, and its absence is a bug fix (2026-08-21).** It said
+                 * `dictionary/entry`, which is `may_terminate => false` — the segment exists
+                 * only to carry `/edit`, since an entry has no page of its own; the list at
+                 * `/dictionary/{inLanguage}` is where entries are read.
+                 *
+                 * A part route that may not terminate does not assemble to a URL nothing
+                 * serves. `Laminas\Router\Http\Part::assemble()` throws
+                 * `Part route may not terminate`. So **every attempt to format a
+                 * dictionary-entry as a link was a 500**, for everyone: unlike the `user`
+                 * entity's identical defect, `route/dictionary/entry` is not an ACL resource,
+                 * so `isActionAllowed('show')` could not refuse first — it asks the ACL, the
+                 * ACL raises on the unknown resource, and the catch there assumes "allow".
+                 *
+                 * What made this invisible is arithmetic. `report_changes` is on, so
+                 * sch_changes holds 2,711 dictionary-entry rows, and `/sm/view-changes`
+                 * formats the entity of every row it shows — but it shows `changes_max_rows`
+                 * = 500, and the newest dictionary-entry change was 878th by recency when
+                 * this was measured. One edit to any entry would have moved it to first and
+                 * taken the page down for every moderator holding `view_changes`.
+                 *
+                 * Measured with App\Laminas\EntityFormatter against the capsule:
+                 * `format('dictionary-entry', …)` threw; `format('user', …)` returned the
+                 * name unlinked, which is what this entity now does too. Pinned by
+                 * test/Integration/EntitySpecRoutesAreAssemblableTest.
+                 */
                  'edit_action_form'                          => Form\DictionaryEntryForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'dictionary/entry/edit',
                 'edit_route_key'                            => 'entry_id',
                 'edit_route_key_field'                      => 'entryId',
                  'create_action_form'                        => Form\DictionaryEntryForm::class,
-                'create_action_redirect_route'              => 'dictionary/entry',
-                'create_action_redirect_route_key'          => 'entry_id',
-                'create_action_redirect_route_key_field'    => 'entryId',
+                /*
+                 * No `create_action_redirect_route` either, for the same reason: the old
+                 * value was the unassemblable `dictionary/entry` above, and the one route
+                 * that would make sense — `dictionary/inLanguage` — needs an `inLanguage`
+                 * that `create_action_redirect_route_key` cannot supply. Nothing reads it:
+                 * `/dictionary/create` is Symfony-served and carries
+                 * `EntityCreateController::REDIRECT_TARGET => 'dictionaryEntry'`, which
+                 * reproduces `DictionaryController::redirectAfterCreate()` — the moderator
+                 * goes to the dictionary of the entry's own language. Omitted rather than
+                 * repointed, so the one live answer stays the only answer.
+                 */
 //                 'create_action_template'                    => 'project/events/create',
                 'database_bound_data_preprocessor'          => 'preprocessDictionaryEntry',
                 'database_bound_data_postprocessor'         => 'postprocessDictionaryEntry',
