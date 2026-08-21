@@ -89,16 +89,6 @@ return [
                     ],
                 ],
             ],
-            'sign-in-no-cookies' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/sign-in-no-cookies',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'signInNoCookies',
-                    ],
-                ],
-            ],
             'redirect-pre-april-2020-sl-id' => [
                 'type' => Segment::class,
                 'options' => [

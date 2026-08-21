@@ -35,9 +35,9 @@
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 231,
-        "total_routes": 137,
-        "unguarded_routes": 19,
-        "unguarded_routes_matchable": 7
+        "total_routes": 136,
+        "unguarded_routes": 18,
+        "unguarded_routes_matchable": 6
     },
     "dynamic_providers": {
         "resource": [
@@ -9026,7 +9026,6 @@
         "libraries/library/delete",
         "library-imports",
         "publication-upload-cover",
-        "sign-in-no-cookies",
         "sion-model"
     ],
     "unguarded_routes_matchable": [
@@ -9035,8 +9034,7 @@
         "event-edit",
         "events/create",
         "libraries/library/delete",
-        "publication-upload-cover",
-        "sign-in-no-cookies"
+        "publication-upload-cover"
     ],
     "unknown_roles_named_in_config": [],
     "warnings": []

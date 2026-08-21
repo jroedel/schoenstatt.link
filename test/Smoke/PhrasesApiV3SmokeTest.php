@@ -76,6 +76,17 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
      * than book bodies, and because both carry an `origin_route`.
      */
     private const PHRASE_ID  = 10028;
+
+    /**
+     * A phrase whose `origin_route` still exists **and** takes no parameters, so its
+     * `context.url` is a URL an agent can actually fetch. `publications` (/literature),
+     * from the Books domain.
+     *
+     * Separate from PHRASE_ID because that one's origin route was deleted — see
+     * {@see testAPhraseCarriesItsContextAndAnEtag()}. Read-only here: nothing in this class
+     * writes to it, so it needs no cleanup.
+     */
+    private const ROUTED_PHRASE_ID = 5375;
     private const PHRASE_TWO = 6197;
 
     private const COLLECTION = '/api/v3/phrases';
@@ -236,13 +247,28 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     /**
      * The context an agent browses with: the route the phrase was first seen on, and
      * where that route needs no parameters, a URL it can fetch.
+     *
+     * ## Why this one test uses a different phrase from the other thirty
+     *
+     * `self::PHRASE_ID`'s `origin_route` is `sign-in-no-cookies`, which was **deleted on
+     * 2026-08-21** — an unreachable route that nothing linked to. The phrase was filed
+     * against it by accident of the route-match swap: `GdprStrategy::onRoute()` called
+     * `setMatchedRouteName('sign-in-no-cookies')`, so every phrase rendered on that page
+     * recorded it, including "Access to entity denied.", which has nothing to do with
+     * cookies.
+     *
+     * The API degrades correctly — `context.url` comes back as an empty string rather than
+     * throwing, because the route cannot be assembled — and that is worth having a test
+     * for on its own. What it is *not* is a phrase that can demonstrate an absolute,
+     * fetchable URL, so this test names one that can. `origin_route` is a historical record
+     * and nothing keeps it in step with the router; assuming otherwise is what broke here.
      */
     public function testAPhraseCarriesItsContextAndAnEtag(): void
     {
-        $response = $this->getWithBearer($this->translatorToken(), self::ITEM);
+        $response = $this->getWithBearer($this->translatorToken(), self::COLLECTION . '/' . self::ROUTED_PHRASE_ID);
         $document = $this->decode($response);
 
-        $this->assertSame(self::PHRASE_ID, $document['phraseId']);
+        $this->assertSame(self::ROUTED_PHRASE_ID, $document['phraseId']);
         $this->assertNotEmpty($document['context']['originRoute']);
         //Absolute and on the host we just called, not a hardcoded production URL — an
         //agent following a hardcoded one out of a staging response would read the live
@@ -258,6 +284,40 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
             $document['meta']['etag'],
             str_replace('-gzip"', '"', (string) ($response['headers']['etag'] ?? '')),
             'the ETag header and the document disagree about more than the gzip suffix'
+        );
+    }
+
+    /**
+     * A phrase whose origin route no longer exists still answers, with an empty `url`.
+     *
+     * `origin_route` is a historical record — the route a phrase was first *seen* on — and
+     * nothing keeps it in step with the router. `self::PHRASE_ID` is the live example: its
+     * route was `sign-in-no-cookies`, deleted 2026-08-21, and it was filed against that
+     * route only because `GdprStrategy::onRoute()` renamed the match, so the phrase
+     * ("Access to entity denied.") never had anything to do with cookies.
+     *
+     * The route name is still reported, because it is what the record says; the URL is
+     * empty, because there is nothing to assemble. Both halves are asserted: a 500 here
+     * would take out the phrase an agent happened to open next, and silently dropping
+     * `originRoute` would lose the only clue about where the string is used.
+     */
+    public function testAPhraseWhoseOriginRouteIsGoneStillAnswers(): void
+    {
+        $document = $this->decode($this->getWithBearer($this->translatorToken(), self::ITEM));
+
+        $this->assertSame(self::PHRASE_ID, $document['phraseId']);
+        $this->assertSame(
+            'sign-in-no-cookies',
+            $document['context']['originRoute'],
+            'the record is reported as it stands, deleted route and all'
+        );
+        //**null, not an empty string**, and the difference is the API's own convention:
+        //absent means "there is no answer", where '' would read as "the answer is nothing".
+        //A caller checking `if (url)` treats them alike; one deserializing into a typed
+        //field does not.
+        $this->assertNull(
+            $document['context']['url'],
+            'an unassemblable route must produce a null url, not an exception and not a bad link'
         );
     }
 

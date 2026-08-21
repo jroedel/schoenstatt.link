@@ -130,9 +130,14 @@ suites run from the superproject working tree.
   and given the raw container router it produced `/user/verify?token=…` with no locale prefix
   — the unprefixed twin, which 302s. **And a flash messenger must be reused:** a fresh
   `new FlashMessenger()` per message moves the previous one out of the session and drops it,
-  so redemption's two messages became one. `sign-in-no-cookies` is **not** ported and never
-  was reachable — no guard entry, so default deny; the swap worked only because it ran after
-  the guard approved a different route.
+  so redemption's two messages became one. **`sign-in-no-cookies` is gone** — deleted from
+  both front controllers 2026-08-21, having never been reachable: no guard entry, so default
+  deny, and the only thing that ever showed the page was `GdprStrategy::onRoute()`'s
+  route-match swap, which runs after the guard approves a different route and builds its
+  match by hand. The page survives as `templates/content/sign-in-no-cookies.html.twig`,
+  rendered by `CookieExplainer`; `IndexController::signInNoCookiesAction()`, its `.phtml` and
+  `GdprStrategy::onRoute()` are alive for the rollback path only and go with
+  `LoginController`.
   **The JUser user-administration surface is Symfony-served since 2026-08-21** — `/users`,
   the two create forms, the account form, the delete confirmation and the API-token screen
   with its revoke twin. Five controllers over one `App\JUser\UserAdmin`, and the second

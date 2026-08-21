@@ -2266,15 +2266,25 @@ bar of someone who had just clicked an emailed link, and the point of the gate i
 link survives. The strategy's other half, `onFinish()`, was already reproduced by
 `App\Http\GdprCookieListener`.
 
-#### `sign-in-no-cookies` was ported and then withdrawn
+#### `sign-in-no-cookies` was ported, withdrawn, and then deleted outright
 
-It has **no guard entry**, so default deny applies and it has never been reachable as a URL.
-The only thing that ever rendered it is the route-match swap, which works because it runs at
-priority -5000 — *after* the guard has approved a different route. Declaring a Symfony route
-for it makes `tools/acl-table.php` write "no such resource — denies everyone" into the
-committed snapshot permanently, which is worse than leaving the laminas route to deny
-everyone quietly. The template lives at `templates/content/sign-in-no-cookies.html.twig` and
-`CookieExplainer` renders it. Whether the page should be public is filed in `docs/BACKLOG.md`.
+It had **no guard entry**, so default deny applied and it was never reachable as a URL. The
+only thing that ever rendered it is the route-match swap, which works because it runs at
+priority -5000 — *after* the guard has approved a different route — and which builds its
+`RouteMatch` by hand rather than naming a route.
+
+Declaring a Symfony route for it makes `tools/acl-table.php` write "no such resource —
+denies everyone" into the committed snapshot permanently, so batch 13 withdrew the
+declaration and filed the question "should this be public?". **Answered the next day by
+deleting the laminas route too** (2026-08-21): nothing links to the URL, no visitor has ever
+reached it, and granting it a public entry would have added a route to defend for no gain.
+`docs/acl-rules.md`'s "reachable by nobody" list went 7 → 6 and `total routes` 137 → 136;
+nothing else in the ACL moved.
+
+The page is `templates/content/sign-in-no-cookies.html.twig`, rendered by
+`App\JUser\CookieExplainer`. `IndexController::signInNoCookiesAction()`, its `.phtml` and
+`GdprStrategy::onRoute()` survive for the rollback path alone — remove the four Symfony
+declarations and laminas needs all three again — and they go with `LoginController`.
 
 #### Two measurements worth keeping
 
