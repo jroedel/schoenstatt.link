@@ -126,6 +126,23 @@ suites run from the superproject working tree.
   one release: the laminas routes stay declared either way, so deleting the five Symfony
   declarations puts laminas back in charge — the only place on this site where being wrong is
   not recoverable from a browser. Deleting it is what unblocks JUser 3.0.0.
+  **JUser declares its 3.0.0 host contract as of 2026-08-21, and nothing here implements
+  it yet.** Six interfaces in `module/JUser/src/Host/` plus `JUser\Twig\JUserExtension`:
+  they are what the eight ported controllers and the four `App\JUser\*` support classes
+  get rewritten against when they move *into* the module, which is what makes 3.0.0
+  droppable into another application. Nothing is wired — no class implements one, no
+  template calls `juser_path()`, no dependency has left JUser's `require` — so the whole
+  of the contract's verification is `test/Integration/JUserHostContractTest`, which pins
+  the three properties that fail with no symptom: `Severity` matching the laminas flash
+  namespaces (a flash crosses a redirect *in the session*, so both front controllers must
+  agree on the string or a message is silently never rendered), `juser_layout` resolving
+  inside `{% extends %}`, and no framework type reachable from the contract's **code**.
+  That last one deliberately allows the prose — every docblock there names the laminas
+  class it replaces, which is the opposite of a coupling, and a blanket string search
+  reported four of six files as violations for documenting their own purpose. Like
+  SionModel's two files, this code holds level 8 and PSR-12 without its path saying so: a
+  level-8 audit must name `module/JUser/src/Host` and `module/JUser/src/Twig` alongside
+  `src`.
   Three things to know before touching it. **`?redirect=` could not be transcribed:**
   `validRedirect()` ends in a laminas-router match, and through `ServiceBridge` that router
   has never seen SlmLocale, so it rejects every locale-prefixed path — a faithful port would
@@ -335,7 +352,7 @@ suites run from the superproject working tree.
 - **Authorization changes must be diffed, not just tested.** `docker compose exec -T app php tools/acl-table.php` emits a reviewable table of every role, guard and rule; `--format=json` emits the sorted, diffable form. `docs/acl-rules.md` and `docs/acl-baseline.json` are the committed snapshots. Regenerate and diff them after any change to a route, a guard entry or a role — a rule that quietly stops matching makes a page work for *more* people and nothing fails.
 - Beyond smoke, verification is lint + coding standard:
   - Syntax check any file you touch: `php -l path/to/File.php`.
-  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard), and the two files that left `src` for SionModel on 2026-08-21, which the submodule's own `phpcs.xml` covers. `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
+  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard), the two files that left `src` for SionModel on 2026-08-21, and `module/JUser/src/{Host,Twig}` — each covered by its own submodule's `phpcs.xml`. `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
   - Auto-fix: `php composer.phar cs-fix` — ask the user before running it broadly.
 - Local dev server: `php composer.phar run serve` (PHP built-in server on 127.0.0.1:8080 serving `public/`).
 - `bin/console` is the headless entry point (symfony/console): it builds the
