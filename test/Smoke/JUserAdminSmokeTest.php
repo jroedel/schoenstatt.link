@@ -185,7 +185,7 @@ class JUserAdminSmokeTest extends SmokeTestCase
      *
      * `delete.phtml` read `$this->user->username` — a property on an array — so it asked
      * whether to permanently delete `''` for as long as it existed. The one behaviour this
-     * batch deliberately did not reproduce; see App\Controller\UserDeleteController.
+     * batch deliberately did not reproduce; see JUser\Controller\UserDeleteController.
      */
     public function testTheDeleteConfirmationNamesTheAccount(): void
     {

@@ -7579,7 +7579,7 @@
         },
         "juser": {
             "path": "/users",
-            "controller": "App\\Controller\\UsersController",
+            "controller": "JUser\\Controller\\UsersController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser",
@@ -7589,7 +7589,7 @@
         },
         "juser.locale": {
             "path": "/{_locale}/users",
-            "controller": "App\\Controller\\UsersController",
+            "controller": "JUser\\Controller\\UsersController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser",
@@ -7599,7 +7599,7 @@
         },
         "juser/create": {
             "path": "/users/create",
-            "controller": "App\\Controller\\UserCreateController",
+            "controller": "JUser\\Controller\\UserCreateController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/create",
@@ -7609,7 +7609,7 @@
         },
         "juser/create-role": {
             "path": "/users/roles/create",
-            "controller": "App\\Controller\\UserCreateController",
+            "controller": "JUser\\Controller\\UserCreateController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/create-role",
@@ -7619,7 +7619,7 @@
         },
         "juser/create-role.locale": {
             "path": "/{_locale}/users/roles/create",
-            "controller": "App\\Controller\\UserCreateController",
+            "controller": "JUser\\Controller\\UserCreateController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/create-role",
@@ -7629,7 +7629,7 @@
         },
         "juser/create.locale": {
             "path": "/{_locale}/users/create",
-            "controller": "App\\Controller\\UserCreateController",
+            "controller": "JUser\\Controller\\UserCreateController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/create",
@@ -7639,7 +7639,7 @@
         },
         "juser/user/api-token-revoke": {
             "path": "/users/{user_id}/api-tokens/{token_id}/revoke",
-            "controller": "App\\Controller\\ApiTokensController::revoke",
+            "controller": "JUser\\Controller\\ApiTokensController::revoke",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/api-token-revoke",
@@ -7649,7 +7649,7 @@
         },
         "juser/user/api-token-revoke.locale": {
             "path": "/{_locale}/users/{user_id}/api-tokens/{token_id}/revoke",
-            "controller": "App\\Controller\\ApiTokensController::revoke",
+            "controller": "JUser\\Controller\\ApiTokensController::revoke",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/api-token-revoke",
@@ -7659,7 +7659,7 @@
         },
         "juser/user/api-tokens": {
             "path": "/users/{user_id}/api-tokens",
-            "controller": "App\\Controller\\ApiTokensController::screen",
+            "controller": "JUser\\Controller\\ApiTokensController::screen",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/api-tokens",
@@ -7669,7 +7669,7 @@
         },
         "juser/user/api-tokens.locale": {
             "path": "/{_locale}/users/{user_id}/api-tokens",
-            "controller": "App\\Controller\\ApiTokensController::screen",
+            "controller": "JUser\\Controller\\ApiTokensController::screen",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/api-tokens",
@@ -7679,7 +7679,7 @@
         },
         "juser/user/delete": {
             "path": "/users/{user_id}/delete",
-            "controller": "App\\Controller\\UserDeleteController",
+            "controller": "JUser\\Controller\\UserDeleteController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/delete",
@@ -7689,7 +7689,7 @@
         },
         "juser/user/delete.locale": {
             "path": "/{_locale}/users/{user_id}/delete",
-            "controller": "App\\Controller\\UserDeleteController",
+            "controller": "JUser\\Controller\\UserDeleteController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/delete",
@@ -7699,7 +7699,7 @@
         },
         "juser/user/edit": {
             "path": "/users/{user_id}/edit",
-            "controller": "App\\Controller\\UserEditController",
+            "controller": "JUser\\Controller\\UserEditController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/edit",
@@ -7709,7 +7709,7 @@
         },
         "juser/user/edit.locale": {
             "path": "/{_locale}/users/{user_id}/edit",
-            "controller": "App\\Controller\\UserEditController",
+            "controller": "JUser\\Controller\\UserEditController",
             "access": {
                 "kind": "acl",
                 "resource": "route/juser/user/edit",
@@ -8929,7 +8929,7 @@
         },
         "zfcuser": {
             "path": "/user",
-            "controller": "App\\Controller\\SignInController::index",
+            "controller": "JUser\\Controller\\SignInController::index",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser",
@@ -8939,7 +8939,7 @@
         },
         "zfcuser.locale": {
             "path": "/{_locale}/user",
-            "controller": "App\\Controller\\SignInController::index",
+            "controller": "JUser\\Controller\\SignInController::index",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser",
@@ -8949,7 +8949,7 @@
         },
         "zfcuser/login": {
             "path": "/user/login",
-            "controller": "App\\Controller\\SignInController::form",
+            "controller": "JUser\\Controller\\SignInController::form",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser/login",
@@ -8959,7 +8959,7 @@
         },
         "zfcuser/login.locale": {
             "path": "/{_locale}/user/login",
-            "controller": "App\\Controller\\SignInController::form",
+            "controller": "JUser\\Controller\\SignInController::form",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser/login",
@@ -8969,7 +8969,7 @@
         },
         "zfcuser/logout": {
             "path": "/user/logout",
-            "controller": "App\\Controller\\LogoutController",
+            "controller": "JUser\\Controller\\LogoutController",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser/logout",
@@ -8979,7 +8979,7 @@
         },
         "zfcuser/logout.locale": {
             "path": "/{_locale}/user/logout",
-            "controller": "App\\Controller\\LogoutController",
+            "controller": "JUser\\Controller\\LogoutController",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser/logout",
@@ -8989,7 +8989,7 @@
         },
         "zfcuser/verify": {
             "path": "/user/verify",
-            "controller": "App\\Controller\\VerifyController",
+            "controller": "JUser\\Controller\\VerifyController",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser/verify",
@@ -8999,7 +8999,7 @@
         },
         "zfcuser/verify.locale": {
             "path": "/{_locale}/user/verify",
-            "controller": "App\\Controller\\VerifyController",
+            "controller": "JUser\\Controller\\VerifyController",
             "access": {
                 "kind": "acl",
                 "resource": "route/zfcuser/verify",

@@ -9,6 +9,7 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
+use JUser\Twig\JUserExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -120,7 +121,7 @@ final class TemplatesCompileTest extends TestCase
     #[\PHPUnit\Framework\Attributes\DataProvider('templates')]
     public function testEveryExtendsTargetExists(string $name): void
     {
-        $path   = dirname(__DIR__, 2) . '/templates/' . $name;
+        $path   = self::pathOf($name);
         $source = file_get_contents($path);
         if (false === $source) {
             self::markTestSkipped("cannot read $name");
@@ -134,11 +135,15 @@ final class TemplatesCompileTest extends TestCase
 
         foreach ($matches[1] as $parent) {
             $this->assertFileExists(
-                dirname(__DIR__, 2) . '/templates/' . $parent,
+                self::pathOf($parent),
                 "$name extends '$parent', which does not exist — the page will render as an empty 200"
             );
         }
 
+        //JUser's templates extend `juser_layout`, a Twig *global*, so there is no literal
+        //for the regex above to find and nothing here to assert. That indirection is checked
+        //where it can be — JUserHostContractTest renders a child through it — and the
+        //compile test above still loads every one of them.
         $this->assertTrue(true, "$name declares no unresolvable parent");
     }
 
@@ -160,24 +165,58 @@ final class TemplatesCompileTest extends TestCase
      */
     public static function templates(): iterable
     {
-        $root = dirname(__DIR__, 2) . '/templates';
+        foreach (self::roots() as $prefix => $root) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+            );
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
-        );
+            /** @var \SplFileInfo $file */
+            foreach ($iterator as $file) {
+                $path = $file->getPathname();
 
-        /** @var \SplFileInfo $file */
-        foreach ($iterator as $file) {
-            $path = $file->getPathname();
+                if (! str_ends_with($path, '.html.twig')) {
+                    continue;
+                }
 
-            if (! str_ends_with($path, '.html.twig')) {
-                continue;
+                $relative = str_starts_with($path, $root . '/') ? substr($path, strlen($root) + 1) : $path;
+                $name     = $prefix . $relative;
+
+                yield $name => [$name];
             }
-
-            $name = str_starts_with($path, $root . '/') ? substr($path, strlen($root) + 1) : $path;
-
-            yield $name => [$name];
         }
+    }
+
+    /**
+     * The directories Twig can load from, keyed by the prefix a template is addressed under.
+     *
+     * More than one since 2026-08-21, and the second is the point of this method: JUser
+     * ships its own eleven templates and they are addressed `@juser/…`. They are rendered in
+     * production by pages this application serves, so leaving them out would mean the *only*
+     * templates on the site nothing compiles are the ones on the sign-in path.
+     *
+     * The prefix has to be right for both tests here — `load()` resolves a name through the
+     * same loader the Kernel wires, and the `extends` check turns a name back into a path.
+     *
+     * @return array<string, string> prefix => absolute directory
+     */
+    private static function roots(): array
+    {
+        return [
+            ''       => dirname(__DIR__, 2) . '/templates',
+            '@juser/' => JUserExtension::templatePath(),
+        ];
+    }
+
+    /** A template name back to the file it came from, for the `extends` check. */
+    private static function pathOf(string $name): string
+    {
+        foreach (self::roots() as $prefix => $root) {
+            if ('' !== $prefix && str_starts_with($name, $prefix)) {
+                return $root . '/' . substr($name, strlen($prefix));
+            }
+        }
+
+        return dirname(__DIR__, 2) . '/templates/' . $name;
     }
 
     private static function twig(): Environment

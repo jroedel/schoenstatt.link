@@ -2212,6 +2212,34 @@ routes stay declared either way, so deleting the four declarations in
 rollback that needs no deploy of new code. Deleting the controller is a follow-up once
 production has run on this, and it is what unblocks JUser 3.0.0.
 
+**Done 2026-08-21: the switch happened.** All eleven routes of the JUser surface are served
+by `JUser\Controller\*` out of the module, and this application's eight controllers, four
+`App\JUser\*` support classes and eleven templates were deleted. What is left here is six
+adapters in `src/JUser/Host/` implementing `JUser\Host\*`, one exception class and one
+`_person-cell` template. The routes are declared by the module's own fragment, included from
+`config/symfony/routes.php` in the position the eleven explicit declarations occupied, so
+this file still reads as the migration status top to bottom.
+
+The evidence that authorization did not move: `docs/acl-baseline.json` changed on **44 lines
+and every one of them is a controller class name** — not one resource, role, guard or denial
+style differs. And all 628 smoke tests pass against the new controllers, including the
+thirteen of `AuthSmokeTest`, which drive single use, expiry, digest-at-rest, session-id
+regeneration, the resend throttle, the uniform response and all four deactivation doors over
+real HTTP.
+
+Three things now live in an adapter that used to live in a controller, and each fails
+silently rather than loudly: `Flash` must be one instance per request (a second
+FlashMessenger drops the first's messages), `RouteResolver` must strip the locale prefix and
+match on a clone with an empty base URL (or every `?redirect=` on the site is refused), and
+`UrlBuilder::url()` must prime the router's request URI (or the emailed link throws — nothing
+under a Symfony dispatch sets one, which is why `MailerFactory` had always done it by hand).
+
+**The rollback is asymmetric.** Removing the fragment include puts laminas back in charge of
+the four sign-in routes with no new code, because `JUser\Controller\LoginController` still
+exists and the laminas routes are still declared. The seven administration routes have no
+laminas controller — it was deleted when they were ported — so rolling those back is a
+deploy.
+
 **That follow-up started 2026-08-21 and runs in the opposite direction from every batch
 so far.** JUser 3.0.0 is meant to drop into another application — patres, as it moves to
 Symfony — so the ported code does not stay here: the eight controllers, the four
