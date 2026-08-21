@@ -143,6 +143,23 @@ suites run from the superproject working tree.
   SionModel's two files, this code holds level 8 and PSR-12 without its path saying so: a
   level-8 audit must name `module/JUser/src/Host` and `module/JUser/src/Twig` alongside
   `src`.
+  **Since 2026-08-21 the sign-in half of that surface exists twice**, and only one copy
+  runs. `JUser\Controller\{SignInController,VerifyController,LogoutController}` over
+  `JUser\Page\{SignIn,RedirectTarget,CookieExplainer}` and five templates under
+  `module/JUser/templates/` are the module's copies, rewritten against the interfaces;
+  `src/Controller/` and `src/JUser/` still hold the ones production serves, and nothing
+  wires the module's. So **an edit to the sign-in surface has to be made in both places
+  until the switch**, and the module's copy is where it will survive. Two of them are not
+  transcriptions and read differently on purpose: `JUser\Page\RedirectTarget` is 113 lines
+  against `App\JUser\RedirectTarget`'s 318, because the locale stripping, the cloned
+  router, the ACL and the role resolution became the host's side of two interfaces; and
+  the emailed link is assembled from the URL builder rather than inside
+  `JUser\Service\Mailer`, whose `sendLoginLink()` now takes a finished absolute URL while
+  `sendLoginLinkEmail()` keeps the router for the laminas path. That last one **is** live —
+  it is the only part of the port that changed code production runs — and the smoke suite
+  covers it end to end, since `test/Smoke/MagicLinkSignIn` reads the real message out of
+  Mailpit and follows the link it finds. `module/JUser/src/{Page,Controller,Routing}` hold
+  themselves to level 8 and PSR-12 like the rest of the module's new code.
   Three things to know before touching it. **`?redirect=` could not be transcribed:**
   `validRedirect()` ends in a laminas-router match, and through `ServiceBridge` that router
   has never seen SlmLocale, so it rejects every locale-prefixed path — a faithful port would
