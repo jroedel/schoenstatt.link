@@ -23,11 +23,15 @@ use Twig\Error\Error as TwigError;
  * whole point of the gate is that the link survives: `redeemToken()` spends a token only on
  * a successful redemption, so consenting and reloading works.
  *
- * **This is the only thing that renders the page.** The `sign-in-no-cookies` laminas route
- * exists and is not ported, and it has never been reachable: it has no guard entry, so
- * BjyAuthorize's default deny applies. The route-match swap worked only because it ran at
- * priority -5000, after the guard had already approved `zfcuser/login`. See the note on the
- * withdrawn route declaration in config/symfony/routes.php.
+ * **This is the only thing that renders the page**, and since 2026-08-21 the only thing that
+ * can be: the `sign-in-no-cookies` route was deleted from both front controllers. It had no
+ * guard entry, so default deny made the URL unreachable from the day it was written, and the
+ * only thing that ever showed the page was the route-match swap — which ran at priority
+ * -5000, after the guard had approved `zfcuser/login`, and built its RouteMatch by hand
+ * rather than naming a route. See config/symfony/routes.php.
+ *
+ * `Application\Controller\IndexController::signInNoCookiesAction()` and its .phtml survive
+ * for the rollback path only, and go with `JUser\Controller\LoginController`.
  */
 final class CookieExplainer
 {

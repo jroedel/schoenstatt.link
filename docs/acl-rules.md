@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 231 |
-| total routes | 137 |
-| unguarded routes | 19 |
-| unguarded routes matchable | 7 |
+| total routes | 136 |
+| unguarded routes | 18 |
+| unguarded routes matchable | 6 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (118 + 19 = 137). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (118 + 18 = 136). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -728,7 +728,7 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-7 of the 19 are endpoints reachable by nobody.
+6 of the 18 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
@@ -749,7 +749,6 @@ the matched route name, so the missing guard costs nothing. The `yes` rows are t
 | `libraries/library/delete` | **yes** |
 | `library-imports` | no |
 | `publication-upload-cover` | **yes** |
-| `sign-in-no-cookies` | **yes** |
 | `sion-model` | no |
 
 ## Phantom guard entries (guard names a route the router does not have)
