@@ -1,0 +1,65 @@
+-- db8.6 — un-ban the accounts that were never banned
+--
+-- @phase: pre
+-- @kind: dml
+-- @tables: user
+-- @verify: SELECT user_id, email FROM user WHERE state = 0 AND email_verified = 0
+--
+-- ## What changes, and why it has to happen before the code
+--
+-- JUser 2.1 makes `user`.`state` mean **may sign in**. Until now it could not mean
+-- anything: `LoginController::verifyAction()` activated whatever it redeemed, so every
+-- deactivated account reactivated itself on its next sign-in link, and nothing checked
+-- the column before issuing one. Two consequences, and this migration is about the
+-- second:
+--
+--   1. an administrator unticking Active on /users/{id}/edit revoked nothing;
+--   2. `createUserFromEmail()` created accounts with `state = 0`, so a stalled
+--      registration is indistinguishable from a deliberate deactivation.
+--
+-- After the code change, `state = 0` is a hard refusal. Every row sitting at 0 for
+-- reason (2) would therefore become **retroactively banned** — 32 real people locked
+-- out of accounts they can sign into today. So they move to 1 first.
+--
+-- `@phase: pre` for exactly that: the window between this and the swap is served by the
+-- old code, to which `state = 1` means "active", which these accounts effectively already
+-- were. Running it post would leave a window in which 32 accounts are refused.
+--
+-- ## Why every state = 0 row is safe to move, measured rather than assumed
+--
+-- Against the capsule (production data days old, 2026-08-21):
+--
+--   state  email_verified  accounts  oldest               newest
+--   -----  --------------  --------  -------------------  -------------------
+--       0               0        32  2018-10-09 20:33:44  2026-03-24 00:54:10
+--       1               0        19  2013-05-07 07:25:42  2019-08-09 14:07:53
+--       1               1       241  0000-00-00 00:00:00  2026-07-07 20:37:28
+--
+-- **No account is verified and deactivated.** If an administrator had ever turned off a
+-- real, confirmed account, it would sit at `state = 0, email_verified = 1`, and there is
+-- not one such row. So nothing here reverses a deliberate ban of a person who had ever
+-- used the site.
+--
+-- What cannot be told apart is an administrator deactivating an account that had never
+-- confirmed, versus a registration that simply stalled. There is no evidence either way:
+-- `user` has `report_changes` off, so no `sch_changes` row records any edit to it. The
+-- reading taken is "stalled registration", because that is what the old code produced by
+-- default and because the confirmation mail chain was itself dead for years (unreachable
+-- through `debug_backtrace()`, removed in JUser's "Retire the password era"). Restoring
+-- access these accounts have today is also the conservative direction: an administrator
+-- who does want one of them off can untick the box afterwards, and now it will hold.
+--
+-- The 19 rows already at `state = 1, email_verified = 0` are left alone — that is exactly
+-- the shape a new account has from now on, and they need no change.
+--
+-- ## @verify
+--
+-- "Select what is still wrong": any row left at `state = 0` with an unverified address is
+-- one this migration failed to move. It must return nothing. Written in that polarity
+-- deliberately — db8.4 shipped a `@verify` that asserted its own success and therefore
+-- failed on a correct run.
+
+UPDATE user
+   SET state = 1
+ WHERE state = 0
+   AND email_verified = 0;

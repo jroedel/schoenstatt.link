@@ -120,7 +120,48 @@ final class BotIdentity
 
         [$userId, $jti] = $claims;
 
-        return $this->tokenIsLive($jti, $userId) && $this->holdsRole($userId, $requiredRole) ? $userId : null;
+        return $this->tokenIsLive($jti, $userId)
+            && $this->accountIsActive($userId)
+            && $this->holdsRole($userId, $requiredRole)
+            ? $userId
+            : null;
+    }
+
+    /**
+     * Whether the account may act at all.
+     *
+     * `user`.`state` means "may sign in" as of 2026-08-21, and a bearer token is a
+     * sign-in that skips the sign-in page — so it has to answer to the same switch.
+     * Without this, unticking Active on `/users/{id}/edit` stopped a bot's *human* from
+     * getting a magic link and left its six-month credential working, which makes
+     * "deactivate" mean two different things depending on which door the caller uses.
+     * That is the confusion the state/email_verified split exists to remove.
+     *
+     * It is a **third** check rather than a clause bolted onto `holdsRole()`, and
+     * deliberately so: a deactivated account and an account that was never granted the
+     * role are different facts, and folding them into one query makes the log and the
+     * next reader unable to tell them apart. Revoking the token itself remains the
+     * narrower instrument — this is the one that revokes everything at once.
+     *
+     * Both API roles belong to accounts nobody signs in to, so this switch had no
+     * observable effect on them before today.
+     */
+    private function accountIsActive(int $userId): bool
+    {
+        /** @var Adapter $adapter */
+        $adapter = $this->laminas->get(Adapter::class);
+
+        $sql    = new Sql($adapter);
+        $select = $sql->select()
+            ->from('user')
+            ->columns(['user_id'])
+            ->where(['user_id' => $userId, 'state' => 1]);
+
+        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+
+        //`is_array || is_object`, matching holdsRole() below: laminas-db answers **false**
+        //for an empty set, and every `!== null` test against that inverts the answer.
+        return is_array($row) || is_object($row);
     }
 
     /**

@@ -164,6 +164,50 @@ class ApiV3SmokeTest extends SmokeTestCase
     }
 
     /**
+     * Deactivating the account refuses its tokens too.
+     *
+     * `user`.`state` means "may sign in" as of 2026-08-21. A bearer token is a sign-in
+     * that skips the sign-in page, so it answers to the same switch — otherwise unticking
+     * Active on `/users/{id}/edit` stops the account's human from getting a magic link and
+     * leaves its six-month credential working, and "deactivate" means two different things
+     * depending on which door the caller uses.
+     *
+     * Revoking the token stays the narrower instrument; this is the one that revokes
+     * everything the account can do, in one place, without having to enumerate its
+     * credentials.
+     *
+     * The 200 first is the same guard as the revocation test above: it proves the token was
+     * good beforehand, so the 401 cannot be blamed on anything else about it. And the row
+     * is put back in a `finally`, because leaving the shared bot account deactivated would
+     * fail every other test in this class.
+     */
+    public function testADeactivatedBotAccountIsRefused(): void
+    {
+        $userId = $this->botUserId();
+        $token  = $this->registeredToken($userId, time() + 600, $this->uniqueJti());
+
+        $this->assertSame(200, $this->getWithBearer($token)['status']);
+
+        $setState = $this->pdo()->prepare('UPDATE user SET state = :state WHERE user_id = :id');
+        try {
+            $setState->execute(['state' => 0, 'id' => $userId]);
+            $this->assertSame(
+                401,
+                $this->getWithBearer($token)['status'],
+                'a deactivated account must not act through a token either'
+            );
+        } finally {
+            $setState->execute(['state' => 1, 'id' => $userId]);
+        }
+
+        $this->assertSame(
+            200,
+            $this->getWithBearer($token)['status'],
+            'and reactivating restores it, so the check is on state and not on something else'
+        );
+    }
+
+    /**
      * Fail closed. A correctly signed token for a real bot account, with a `jti`
      * that was never recorded — refused, because "we have no record of issuing
      * this" and "this was revoked" are the same answer.
