@@ -4,7 +4,7 @@ namespace SchoenstattTest\Integration;
 
 use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
-use JUser\Service\AuthServiceActingUserProvider;
+use JUser\Bridge\Laminas\AuthServiceActingUserProvider;
 use Laminas\EventManager\Event;
 use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;

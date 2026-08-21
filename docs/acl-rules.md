@@ -27,10 +27,10 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | key | value |
 | --- | --- |
 | `default_role` | guest |
-| `identity_provider` | `JUser\Provider\Identity\ZfcUserZendDbPlusSelfAsRole` |
-| `unauthorized_strategy` | `JUser\View\RedirectionStrategy` |
+| `identity_provider` | `JUser\Bridge\Laminas\ZfcUserZendDbPlusSelfAsRole` |
+| `unauthorized_strategy` | `JUser\Bridge\Laminas\RedirectionStrategy` |
 | `cache_enabled` | false |
-| `role_providers` | `BjyAuthorize\Provider\Role\LaminasDb`, `JUser\Provider\Role\UserIdRoles` |
+| `role_providers` | `BjyAuthorize\Provider\Role\LaminasDb`, `JUser\Bridge\Laminas\UserIdRoles` |
 | `resource_providers` | `BjyAuthorize\Provider\Resource\Config`, `Books\Model\EventTextTable`, `Books\Model\LibraryTable` |
 | `rule_providers` | `BjyAuthorize\Provider\Rule\Config`, `Books\Model\LibraryTable` |
 | `guards` | `BjyAuthorize\Guard\Route` |
