@@ -2,21 +2,21 @@
     "bjyauthorize": {
         "cache_enabled": false,
         "default_role": "guest",
-        "identity_provider": "JUser\\Provider\\Identity\\ZfcUserZendDbPlusSelfAsRole",
+        "identity_provider": "JUser\\Bridge\\Laminas\\ZfcUserZendDbPlusSelfAsRole",
         "resource_providers": [
             "BjyAuthorize\\Provider\\Resource\\Config",
             "Books\\Model\\LibraryTable",
             "Books\\Model\\EventTextTable"
         ],
         "role_providers": [
-            "JUser\\Provider\\Role\\UserIdRoles",
+            "JUser\\Bridge\\Laminas\\UserIdRoles",
             "BjyAuthorize\\Provider\\Role\\LaminasDb"
         ],
         "rule_providers": [
             "BjyAuthorize\\Provider\\Rule\\Config",
             "Books\\Model\\LibraryTable"
         ],
-        "unauthorized_strategy": "JUser\\View\\RedirectionStrategy"
+        "unauthorized_strategy": "JUser\\Bridge\\Laminas\\RedirectionStrategy"
     },
     "controller_guards": [],
     "counts": {
