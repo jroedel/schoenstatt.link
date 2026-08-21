@@ -1,0 +1,70 @@
+{#
+  module/JUser/view/j-user/users/edit.phtml — one account's form, plus the delete modal.
+
+  **The `<h1>` is not translated and the `<title>` is.** `escapeHtml($title)` with no
+  `translate()` in the .phtml, next to a `headTitle($title)` the layout does translate — so
+  a Spanish administrator gets "Editar usuario" in the browser tab and "Edit User" on the
+  page. Reproduced here (`{{ page_title }}`, not `{{ translate(page_title) }}`) so the port
+  is a port; filed in docs/BACKLOG.md as a one-word fix on three pages of this surface.
+  As it happens "Edit User" is untranslated in all five locales anyway — it is a separate
+  phrase from "Edit user" — so today only create and create-role show the split.
+
+  **No `action` attribute on the outer form**, hence `form_open(form, '')`: the .phtml never
+  calls `setAttribute('action', …)`, so laminas emits none and the browser posts to the
+  current URL. The modal's form is the opposite — it posts to a different route and carries
+  one.
+
+  `false` on the two selects is `$this->formSelect()->setTranslatorEnabled(false)`. Role
+  names and person names are **data**, and translating data files one phrase row per row of
+  the table — see docs/translation.md. Labels are still translated; only the options are not.
+
+  The delete button sits *inside* the outer form and opens the modal, so the modal's form is
+  a sibling of it rather than a child: nesting forms is not legal HTML, which is why the
+  modal markup comes after `form_close()`.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ page_title }}</h1>
+
+{{ form_open(form, '') }}
+{{ form_row(form.get('userId')) }}
+{{ form_row(form.get('username')) }}
+{{ form_row(form.get('email')) }}
+{{ form_row(form.get('displayName')) }}
+{{ form_row(form.get('rolesList'), false) }}
+{% if show_person %}{{ form_row(form.get('personId'), false) }}{% endif %}
+{{ form_row(form.get('isMultiPersonUser')) }}
+{{ form_row(form.get('emailVerified')) }}
+{{ form_row(form.get('active')) }}
+{{ form_row(form.get('security')) }}
+{#- `?>` in the .phtml eats the newline that follows it, so laminas emits
+    `</button>&nbsp;\n<button` and not `</button>\n&nbsp;\n<button`. One whitespace run
+    fewer, and `&nbsp;` decodes to U+00A0 which the baseline harness deliberately does not
+    collapse — so the difference is real bytes rather than formatting. Same below, twice. -#}
+{{ form_submit(form.get('submit')) }}&nbsp;
+<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal">{{ translate('Delete') }}</button>
+{{ form_close() }}
+
+<!-- Modal -->
+<div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" id="deleteModal"
+aria-labelledby="mySmallModalLabel">
+<div class="modal-dialog modal-sm">
+<div class="modal-content">
+<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;
+</span></button>
+<h4 class="modal-title">{{ translate('Careful') }}...</h4>
+      </div>
+      <div class="modal-body">
+        <p>{{ translate('You are about to delete %s')|format(user.username) }}</p>
+        {{ form_open(delete_form, delete_action) }}
+        {{ form_row(delete_form.get('userId')) }}
+        {{ form_row(delete_form.get('security')) }}
+        {{ form_submit(delete_form.get('delete')) }}&nbsp;{{ form_button(delete_form.get('cancel')) }}
+        {{ form_close() }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
