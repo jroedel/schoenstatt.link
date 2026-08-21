@@ -99,9 +99,9 @@ class UserSmokeTest extends SmokeTestCase
      *
      * The Register button lived beside Sign in on every page of the site; retiring the
      * route without retiring the button would have left a link to a 404 in the site
-     * chrome. Checked on a Symfony-served page and a bridged one, because the two
-     * layouts are separate files and this is exactly the kind of change that lands in
-     * one of them.
+     * chrome. Checked on two pages rather than one because the chrome is assembled per
+     * layout and this is exactly the kind of change that lands in one place — see the
+     * provider on why both are Symfony-served now and where the laminas half went.
      */
     #[DataProvider('pagesFromBothFrontControllers')]
     public function testTheNavbarOffersSignInAndNotRegister(string $path): void
@@ -123,15 +123,34 @@ class UserSmokeTest extends SmokeTestCase
      * therefore satisfies both assertions while testing nothing. `/en/movement` was the
      * first choice here and is restricted to moderators, so it did exactly that.
      *
+     * ## The name is now aspirational, and saying so is the point
+     *
+     * The second entry was `/en/user/verify`, chosen because
+     * `Application\View\GdprStrategy` swapped an unconsented request for the cookie
+     * explainer, which rendered through LegacyBridge from
+     * `module/Application/view/layout/layout.phtml`. Batch 13 ported that route
+     * (2026-08-21), so **both entries are Symfony-served now** and this provider stopped
+     * covering the laminas layout without failing — the silent kind of rot.
+     *
+     * It cannot be fixed by picking another path, because there is no
+     * anonymous-reachable unported HTML page left: of 118 guarded laminas routes 105 are
+     * shadowed by a Symfony route, and of the remaining 13 the only one an anonymous
+     * visitor may reach renders no layout. Signing in to reach one would test the
+     * *signed-in* navbar, which is a different assertion — the Register button question is
+     * about what an anonymous visitor is offered.
+     *
+     * So the two entries are two ported pages with different controllers, which is what is
+     * left to vary, and the laminas half of this check now lives in
+     * `test/Smoke/ServingNoteSmokeTest::testAnUnportedRouteReportsTheBridge` — the one
+     * place that does sign in to observe the bridge at all.
+     *
      * @return iterable<string, array{string}>
      */
     public static function pagesFromBothFrontControllers(): iterable
     {
-        //ported: rendered from templates/layout.html.twig
-        yield 'symfony' => ['/en/shrines'];
-        //bridged: GdprStrategy swaps this for sign-in-no-cookies, which renders through
-        //LegacyBridge from module/Application/view/layout/layout.phtml
-        yield 'laminas' => ['/en/user/verify'];
+        //both ported: templates/layout.html.twig, two different controllers
+        yield 'symfony html route' => ['/en/shrines'];
+        yield 'symfony static page' => ['/en/acknowledgements'];
     }
 
     /**

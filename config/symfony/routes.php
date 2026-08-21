@@ -2183,26 +2183,25 @@ $ported(
     $textDomain('JUser')
 );
 
-// **`sign-in-no-cookies` is deliberately NOT ported, and finding out why is the one thing
-// this batch changed its mind about.** It was written, declared, and then withdrawn.
+// **There is no `sign-in-no-cookies` route here, and there is no longer one in laminas
+// either** — it was deleted on 2026-08-21, the day after this batch shipped.
 //
-// The page has never been reachable as its own URL. It has **no guard entry at all**, so
-// BjyAuthorize's default deny applies — `docs/acl-rules.md` has listed it under "routes with
-// no guard entry (nobody can reach these)" as a real endpoint for as long as that table has
-// existed. The only way anyone has ever seen it is the route-match swap in
-// `Application\View\GdprStrategy::onRoute()`, which runs at priority -5000 on
-// `MvcEvent::EVENT_ROUTE` — *after* the guard has already approved `zfcuser/login` — so the
-// swapped-in page renders without ever being authorized.
+// It had **no guard entry**, so BjyAuthorize's default deny made the URL unreachable from
+// the day it was written; `docs/acl-rules.md` listed it under "routes with no guard entry
+// (nobody can reach these)" as a real endpoint for as long as that table existed. Batch 13
+// wrote a Symfony declaration for it and withdrew it rather than commit a route that denies
+// everyone, which `tools/acl-table.php` reports as a standing warning. The question that
+// left open — should the page be public? — was answered by deleting the route instead:
+// nothing links to it, no visitor has ever reached it, and the page it served is still
+// served.
 //
-// Porting it therefore adds a Symfony route that denies everyone, and `tools/acl-table.php`
-// says so in a warning that would then sit in the committed snapshot forever: "no such
-// resource — denies everyone". A permanent warning about a page nothing links to is worse
-// than leaving the laminas route to go on denying everyone exactly as it does today.
-//
-// Nothing is lost. The template lives at templates/content/sign-in-no-cookies.html.twig and
-// is rendered by `App\JUser\CookieExplainer` for the two gated routes above, which is the
-// only way the page has ever been reached. Whether it *should* have a guard entry is a real
-// question and is filed in docs/BACKLOG.md rather than answered by a port.
+// The page is `templates/content/sign-in-no-cookies.html.twig`, rendered by
+// `App\JUser\CookieExplainer` for the two gated routes above. That is the only way it has
+// ever been reached: `Application\View\GdprStrategy::onRoute()` swapped the *route match*
+// for it at priority -5000, i.e. after the guard had already approved `zfcuser/login`, so
+// the swapped-in page rendered without being authorized at all. That swap needs no route —
+// it builds a RouteMatch by hand — which is why deleting the route cost the rollback path
+// nothing.
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

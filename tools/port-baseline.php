@@ -116,7 +116,7 @@ const MAILPIT_URL    = 'http://mailpit:8025';
  *
  * The value is the part worth stating. tools/form-regression.php sends this cookie
  * with the value `1`, which is not `'true'`, so the strategy sees an unconsented
- * visitor and rewrites every auth route to the sign-in-no-cookies explainer — a page
+ * visitor and rewrites every auth route to the cookie explainer — a page
  * with no form on it. That tool's sign-in therefore cannot work, and its failure
  * mode is the misleading "no CSRF token on the login form". Measured 2026-08-08,
  * after making the same mistake here.
