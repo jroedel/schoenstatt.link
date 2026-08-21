@@ -239,7 +239,7 @@ hostnames reached the table this way, through `formElementErrors` translating a
 validation message **after** laminas had interpolated `%hostname%` into it. The
 guard is to translate the *template* and interpolate afterwards, which is what
 `setTranslateMessages(false)` plus `AbstractValidator`'s own translator does — and
-what `App\Form\BootstrapFormRenderer` reproduces on the Symfony side (it does not
+what `SionModel\Form\BootstrapFormRenderer` reproduces on the Symfony side (it does not
 translate validation messages at all; `App\Laminas\TranslatorConfigurator` handles
 the templates).
 

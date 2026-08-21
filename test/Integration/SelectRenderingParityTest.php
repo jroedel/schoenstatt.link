@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use App\Form\BootstrapFormRenderer;
+use SionModel\Form\BootstrapFormRenderer;
 use Laminas\Form\Element\Select;
 use Laminas\Form\View\Helper\FormSelect;
 use Laminas\View\Renderer\PhpRenderer;
@@ -18,7 +18,7 @@ use function trim;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
- * `App\Form\BootstrapFormRenderer`'s `<select>` markup against `Laminas\Form\View\Helper\FormSelect`'s.
+ * `SionModel\Form\BootstrapFormRenderer`'s `<select>` markup against `Laminas\Form\View\Helper\FormSelect`'s.
  *
  * ## A two-sided parity test, which most of this port cannot have
  *
