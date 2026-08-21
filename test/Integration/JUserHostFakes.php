@@ -53,32 +53,22 @@ final class RecordingUrlBuilder implements UrlBuilderInterface
 /**
  * A Mailer that sends nothing.
  *
- * A subclass rather than a mock because the assertion is about which *method* is called:
- * `sendLoginLink()` takes a finished URL and `sendLoginLinkEmail()` assembles one from a
- * router. Overriding both makes a regression to the second visible instead of silent.
+ * A subclass rather than a mock because it stands in for a real class whose surface
+ * matters here: `sendLoginLink()` takes a finished URL, and until 3.0.0 there was a
+ * second entry point, `sendLoginLinkEmail()`, that assembled one from a router it
+ * held itself. This fake overrode both so that a regression to the router path would
+ * be visible rather than silent. The method is gone now, so the guard moved up a
+ * level — `JUserSignInLinkTest` asserts it does not come back, which is stronger than
+ * anything an override could say.
  */
 final class RecordingMailer extends Mailer
 {
     /** @var list<array{string, int}> */
     public array $sent = [];
 
-    /** @var list<string> */
-    public array $assembled = [];
-
     public function sendLoginLink(User $user, string $link, int $expirationMinutes = 15, ?float $start = null)
     {
         $this->sent[] = [$link, $expirationMinutes];
-
-        return null;
-    }
-
-    public function sendLoginLinkEmail(
-        User $user,
-        string $plaintextToken,
-        int $expirationMinutes = 15,
-        ?string $redirect = null
-    ) {
-        $this->assembled[] = $plaintextToken;
 
         return null;
     }

@@ -53,6 +53,25 @@ services:
       MARIADB_DATABASE: ourlink_db1
       MARIADB_USER: schoenstatt
       MARIADB_PASSWORD: schoenstatt
+      # The one setting that actually stops this container being OOM-killed, and it
+      # is not a MariaDB setting at all.
+      #
+      # thread_handling is one-thread-per-connection, and a `composer smoke` run
+      # opens roughly 3,000 connections in sequence. glibc gives each new thread its
+      # own malloc arena and never returns that memory to the OS, so RSS climbs with
+      # the *total* number of connections a run makes — not with how many are open at
+      # once. Measured: the db held 858 MB of anonymous memory (cgroup memory.stat,
+      # `file` was 7 MB, so page cache is not the story) while serving a smoke suite
+      # whose peak concurrency is **2**. MariaDB's own Memory_used accounted for only
+      # 451 MB of it; the rest was arena growth. Four OOM kills (exit 137,
+      # OOMKilled=true) across `tools/ci-local.sh` runs came from this, each one
+      # surfacing as ~300 smoke failures and `getaddrinfo for db failed` — which
+      # reads as a network fault, not a memory one.
+      #
+      # With the arenas bounded to 2, the identical full integration run holds at
+      # 160 MB against 858 MB before. Capping max_connections does nothing here: it
+      # bounds concurrency, and concurrency was never the multiplier.
+      MALLOC_ARENA_MAX: "2"
     volumes:
       - db-data:/var/lib/mysql
       # Contains the production dump plus the zz-db*.sql migrations newer than
@@ -63,6 +82,22 @@ services:
       - ./database/dumps:/docker-entrypoint-initdb.d:ro
     ports:
       - "33306:3306"
+    # 50, against MariaDB's default of 151, and it is a guard rail rather than the
+    # fix for anything — see MALLOC_ARENA_MAX above, which is the fix.
+    #
+    # The floor is measured, not guessed: with the cap lifted, one `composer
+    # integration` run peaks at 36 concurrent connections. An earlier attempt at 20
+    # sat under that floor and the failure was invisible — 21 connections refused,
+    # and 21 integration tests turned into *skips* rather than failures, because
+    # their setUp() catches a connection error and calls markTestSkipped('no
+    # reachable database'). `tools/ci-local.sh` printed `ok integration` for a run
+    # that had quietly stopped testing 21 things. A cap below the real demand is
+    # worse than no cap: it does not fail, it under-reports.
+    #
+    # 50 leaves headroom over 36 for a mysql client, a bin/console and a suite that
+    # grows, while still turning genuine exhaustion into "Too many connections" at
+    # the connection that could not be made.
+    command: --max-connections=50
     # 10.11's default innodb_buffer_pool_size is 128M; 1g leaves ample room for
     # sort buffers and temp tables on this dataset while capping a runaway join.
     mem_limit: 1g

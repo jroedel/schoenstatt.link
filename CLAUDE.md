@@ -335,6 +335,24 @@ suites run from the superproject working tree.
   - **This line said "a 2021-06-24 production dump" until 2026-08-13 and that was five years wrong.** The 2021 dump was only the first import, on the day the repo was reopened; a fresh export replaced it within days. The stale claim is worth flagging rather than just deleting, because it does not read as a bug — it reads as a reason to distrust the capsule, and it was repeated as fact in `docs/strangler.md` and in a dozen test comments. It cost a wrong risk assessment on the batch-6 deploy: "production has five years more data" was offered as a caveat when the capsule's data is days old. **The capsule's row counts and payload sizes are representative of production**; when they are not, say which table and measure it. **`user` is the one table where they are not, and the exception is the test suites' own doing:** on 2026-08-21, 6,011 of its 6,303 rows were `@example.com` accounts left behind by nine smoke classes that never purged, against 292 real ones — enough to make `getUsers()` cache 14 MiB instead of 0.55 MiB and `/users` render 6,303 rows instead of ~292. The leak is fixed (`MagicLinkSignIn` purges from an `#[After]` method, which a class's own `tearDown()` cannot silently override) but the lesson outlives it: **exclude `%@example.com` before taking a count off `user`**, and check the other end too — `trans_phrases` grows the same way, from ported pages filing missing phrases during a baseline capture.
 - `.env` holds HOST_UID/HOST_GID so Apache workers can write to the bind-mounted `data/` dir.
 - **Resource ceilings are deliberate — do not raise them casually.** `docker-compose.yml` caps each service (`mem_limit`/`memswap_limit`/`cpus`/`pids_limit`; app 4g/2 CPUs), and the image caps Apache at 6 prefork workers plus a 60s PHP `max_execution_time` (`docker/apache-limits.conf`, `docker/php-limits.ini`). These exist because on 2026-08-02 a wedged app under concurrent load exhausted 15.5 GB of host RAM twice and pinned every core: nothing bounded Apache's 150 default workers × the 512M `memory_limit` set in `public/index.php`. Changing a limit requires `docker compose build && docker compose up -d`.
+- **The `db` container's ceiling was never the problem; glibc was.** The db was OOM-killed
+  (`exit=137`, `OOMKilled=true`) on four separate `tools/ci-local.sh` runs, each time
+  part-way through the smoke suite and each time surfacing as ~300 test failures plus
+  `getaddrinfo for db failed` — which reads as a network fault, so **check
+  `docker inspect --format '{{.State.OOMKilled}}'` before believing a mass smoke failure**.
+  The cause is not concurrency and not the buffer pool: `thread_handling` is
+  `one-thread-per-connection`, a smoke run opens ~3,000 connections *in sequence*, and glibc
+  gives each new thread its own malloc arena and never returns it. Measured 2026-08-21 — the
+  db held **858 MB** of anonymous memory (cgroup `memory.stat`; `file` was 7 MB, so page
+  cache is not the story) while serving a suite whose **peak concurrency is 2**, and
+  MariaDB's own `Memory_used` accounted for only 451 MB of it. `MALLOC_ARENA_MAX=2` in the
+  service's `environment` fixes it: the same workload plateaus at **267 MB**, and a second
+  smoke run adds 307 KB. `--max-connections=50` sits alongside it as a guard rail, not a
+  fix — and note the floor, because a cap below it fails *invisibly*: the integration suite
+  peaks at **36** connections, and at a cap of 20 the 21 refused connections became 21
+  **skips**, not failures, since those tests treat a connection error as "no reachable
+  database". `ci-local.sh` printed `ok integration` for a run that had stopped testing 21
+  things.
 - Known latent issue: `SchoenstattTable::getRules()` is unfinished 2020 WIP referencing roles that don't exist in the DB; the bjyauthorize provider registration is disabled in `module/Schoenstatt/config/module.config.php` (see NOTE there). Do not re-enable without finishing the feature.
 
 ## Verifying code

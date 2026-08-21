@@ -98,6 +98,32 @@ final class JUserSignInLinkTest extends TestCase
         );
     }
 
+    /**
+     * The Mailer holds no router, and cannot assemble a link at all.
+     *
+     * Until 3.0.0 there was a second entry point, `sendLoginLinkEmail()`, which took a
+     * plaintext token and built the URL from a `Laminas\Router\RouteStackInterface` its
+     * own factory handed it. That is the code path the docblock above describes failing
+     * in production, and deleting it is what makes the failure unreproducible rather
+     * than merely unused: a caller reaching for it now is a fatal error at the call
+     * site, not a link quietly missing its locale prefix.
+     *
+     * Asserted here rather than in `JUserHostContractTest` because it is a fact about
+     * this class, and because the fake in `JUserHostFakes` used to carry the guard by
+     * overriding the method — which stops being possible once the method is gone.
+     */
+    public function testTheMailerCannotAssembleALinkItself(): void
+    {
+        self::assertFalse(
+            method_exists(Mailer::class, 'sendLoginLinkEmail'),
+            'sendLoginLinkEmail() was retired in 3.0.0 along with the Mailer\'s router'
+        );
+        self::assertFalse(
+            method_exists(Mailer::class, 'setRouter'),
+            'a Mailer that can be given a router is a Mailer that can assemble a link'
+        );
+    }
+
     public function testTheDestinationTravelsInTheLinkWhenThereIsOne(): void
     {
         $urls   = new RecordingUrlBuilder();
