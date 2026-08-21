@@ -1,13 +1,19 @@
 {#
   module/JUser/view/j-user/users/edit.phtml — one account's form, plus the delete modal.
 
-  **The `<h1>` is not translated and the `<title>` is.** `escapeHtml($title)` with no
-  `translate()` in the .phtml, next to a `headTitle($title)` the layout does translate — so
-  a Spanish administrator gets "Editar usuario" in the browser tab and "Edit User" on the
-  page. Reproduced here (`{{ page_title }}`, not `{{ translate(page_title) }}`) so the port
-  is a port; filed in docs/BACKLOG.md as a one-word fix on three pages of this surface.
-  As it happens "Edit User" is untranslated in all five locales anyway — it is a separate
-  phrase from "Edit user" — so today only create and create-role show the split.
+  **The `<h1>` is translated here and was not in the .phtml.** `escapeHtml($title)` with
+  no `translate()`, next to a `headTitle($title)` the layout *does* translate — so a
+  Spanish administrator got "Editar usuario" in the browser tab and "Edit User" on the
+  page. Batch 12 reproduced that, because the batch's only evidence that nothing else
+  moved was a byte-for-byte diff against the laminas rendering; the .phtml is gone now, so
+  there is nothing left to be faithful to and the heading translates (2026-08-21).
+
+  Measured across all five locales after the change: nine of the twelve non-English
+  headings now differ from English. The one that does not is this page in Italian —
+  "Edit User" is a separate phrase from "Edit user" and carries de/es/pt but no it_IT — so
+  asking for the translation is what puts that one on the worklist rather than what fills
+  it. (A note here claimed "Edit User" was untranslated in *all five*; that was wrong,
+  taken from a backlog entry rather than from the rendering.)
 
   **No `action` attribute on the outer form**, hence `form_open(form, '')`: the .phtml never
   calls `setAttribute('action', …)`, so laminas emits none and the browser posts to the
@@ -25,7 +31,7 @@
 {% extends 'layout.html.twig' %}
 
 {% block content %}
-<h1>{{ page_title }}</h1>
+<h1>{{ translate(page_title) }}</h1>
 
 {{ form_open(form, '') }}
 {{ form_row(form.get('userId')) }}
