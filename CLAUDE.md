@@ -143,8 +143,19 @@ suites run from the superproject working tree.
   SionModel's two files, this code holds level 8 and PSR-12 without its path saying so: a
   level-8 audit must name `module/JUser/src/Host` and `module/JUser/src/Twig` alongside
   `src`.
-  **Since 2026-08-21 the sign-in half of that surface exists twice**, and only one copy
-  runs. `JUser\Controller\{SignInController,VerifyController,LogoutController}` over
+  **Since 2026-08-21 the whole JUser surface exists twice**, and only one copy runs — the
+  user-administration half as well as the sign-in half, over `JUser\Page\UserAdmin` and
+  five controllers with six more templates. So **an edit anywhere on either surface has to
+  be made in both places until the switch**, and the module's copy is where it will
+  survive. Three differences on the admin half are decisions rather than transcriptions and
+  a diff will show them: `AccessInterface` gained `visitorMayReachRoute()` and the index
+  asks it **once per page** where the .phtml asked `is_allowed()` once per row (same answer,
+  584 fewer calls at 292 accounts); a person provider of the wrong type is no longer
+  representable, so `App\JUser\MisconfiguredPersonProvider` stays here with the config that
+  names it; and the Person column is rendered by a host template named through
+  `juser_person_template`, because JUser has no person model. The sign-in half is described
+  below.
+  **The sign-in half exists twice too**, and only one copy runs. `JUser\Controller\{SignInController,VerifyController,LogoutController}` over
   `JUser\Page\{SignIn,RedirectTarget,CookieExplainer}` and five templates under
   `module/JUser/templates/` are the module's copies, rewritten against the interfaces;
   `src/Controller/` and `src/JUser/` still hold the ones production serves, and nothing

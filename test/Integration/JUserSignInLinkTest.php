@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Throwable;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/JUserHostFakes.php';
 
 /**
  * The emailed sign-in link, and the session slot the destination travels in.
@@ -237,105 +238,5 @@ final class JUserSignInLinkTest extends TestCase
         $services->get('ModuleManager')->loadModules();
 
         return self::$services = $services;
-    }
-}
-
-/** Records which method was asked for, so `url()` vs `path()` is observable. */
-final class RecordingUrlBuilder implements UrlBuilderInterface
-{
-    /** @var list<array{string, string, array<string, mixed>, array<string, string>}> */
-    public array $calls = [];
-
-    public function path(string $route, array $params = [], array $query = []): string
-    {
-        $this->calls[] = ['path', $route, $params, $query];
-
-        return '/en/user/verify';
-    }
-
-    public function url(string $route, array $params = [], array $query = []): string
-    {
-        $this->calls[] = ['url', $route, $params, $query];
-
-        return 'http://example.test/en/user/verify';
-    }
-}
-
-/**
- * A Mailer that sends nothing.
- *
- * A subclass rather than a mock because the assertion is about which *method* is called:
- * `sendLoginLink()` takes a finished URL and `sendLoginLinkEmail()` assembles one from a
- * router. Overriding both makes a regression to the second visible instead of silent.
- */
-final class RecordingMailer extends Mailer
-{
-    /** @var list<array{string, int}> */
-    public array $sent = [];
-
-    /** @var list<string> */
-    public array $assembled = [];
-
-    public function sendLoginLink(User $user, string $link, int $expirationMinutes = 15, ?float $start = null)
-    {
-        $this->sent[] = [$link, $expirationMinutes];
-
-        return null;
-    }
-
-    public function sendLoginLinkEmail(
-        User $user,
-        string $plaintextToken,
-        int $expirationMinutes = 15,
-        ?string $redirect = null
-    ) {
-        $this->assembled[] = $plaintextToken;
-
-        return null;
-    }
-}
-
-final class ArraySession implements SessionInterface
-{
-    /** @var array<string, array<string, mixed>> */
-    public array $data = [];
-
-    public function get(string $namespace, string $key): mixed
-    {
-        return $this->data[$namespace][$key] ?? null;
-    }
-
-    public function set(string $namespace, string $key, mixed $value): void
-    {
-        $this->data[$namespace][$key] = $value;
-    }
-
-    public function remove(string $namespace, string $key): void
-    {
-        unset($this->data[$namespace][$key]);
-    }
-
-    public function regenerateId(bool $destroyOld = true): void
-    {
-    }
-
-    public function forgetMe(): void
-    {
-    }
-}
-
-final class RecordingFlash implements FlashInterface
-{
-    /** @var list<array{Severity, string|TranslatableMessage}> */
-    public array $messages = [];
-
-    public function flash(Severity $severity, string|TranslatableMessage $message): void
-    {
-        $this->messages[] = [$severity, $message];
-    }
-
-    public function now(Severity $severity, string|TranslatableMessage $message): void
-    {
-        $this->messages[] = [$severity, $message];
     }
 }
