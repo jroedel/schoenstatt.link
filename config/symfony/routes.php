@@ -26,8 +26,8 @@
 declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
+use JUser\Routing\RouteAudience;
 use App\Controller\AdminController;
-use App\Controller\ApiTokensController;
 use App\Controller\AssignmentSearchController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
@@ -77,13 +77,6 @@ use App\Controller\SitemapController;
 use App\Controller\TextController;
 use App\Controller\TextsController;
 use App\Controller\TimelineController;
-use App\Controller\UserCreateController;
-use App\Controller\UserDeleteController;
-use App\Controller\UserEditController;
-use App\Controller\LogoutController;
-use App\Controller\SignInController;
-use App\Controller\UsersController;
-use App\Controller\VerifyController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
@@ -2016,7 +2009,7 @@ $ported(
 
 // ---------------------------------------------------------------------------
 // Batch 12, ported 2026-08-21: the JUser user-administration surface — seven routes,
-// five controllers, one shared `App\JUser\UserAdmin`.
+// five controllers, one shared `JUser\Page\UserAdmin`.
 // ---------------------------------------------------------------------------
 //
 // Every one of them is `JUser\Controller\UsersController`'s own action rather than a
@@ -2042,145 +2035,57 @@ $ported(
 // what keeps `roles` out of `user_id`, so the constraint and not the order is doing the
 // work. Declaring the literals first anyway, because a constraint is a thing someone can
 // widen and a reader should not have to check one to know what `/users/roles/create` does.
-$ported(
-    'juser',
-    '/users',
-    UsersController::class,
-    RouteAccess::guardedBy('route/juser'),
-    $textDomain('JUser')
-);
-
-// The two create forms. `KIND` is what tells the one controller which record it is making,
-// which form to build and which of the two success messages to flash.
-$ported(
-    'juser/create',
-    '/users/create',
-    UserCreateController::class,
-    RouteAccess::guardedBy('route/juser/create'),
-    $textDomain('JUser') + [UserCreateController::KIND => UserCreateController::USER]
-);
-$ported(
-    'juser/create-role',
-    '/users/roles/create',
-    UserCreateController::class,
-    RouteAccess::guardedBy('route/juser/create-role'),
-    $textDomain('JUser') + [UserCreateController::KIND => UserCreateController::ROLE]
-);
-
-// One account's form. Renders the delete modal, which posts to the next route.
-$ported(
-    'juser/user/edit',
-    '/users/{user_id}/edit',
-    UserEditController::class,
-    RouteAccess::guardedBy('route/juser/user/edit'),
-    $textDomain('JUser'),
-    ['user_id' => '[0-9]{1,5}']
-);
-
-// GET renders a confirmation, POST deletes. Both verbs on one route, no method constraint —
-// the laminas route has none either, and adding one would turn a mistaken GET into a 405
-// where today it renders the page.
-$ported(
-    'juser/user/delete',
-    '/users/{user_id}/delete',
-    UserDeleteController::class,
-    RouteAccess::guardedBy('route/juser/user/delete'),
-    $textDomain('JUser'),
-    ['user_id' => '[0-9]{1,5}']
-);
-
-// The credential screen and its revoke twin. Two methods on one controller rather than two
-// controllers, because the second is not a view of the first: it takes a `token_id` of its
-// own, answers nothing but a redirect, and shares only the account it scopes to.
-$ported(
-    'juser/user/api-tokens',
-    '/users/{user_id}/api-tokens',
-    [ApiTokensController::class, 'screen'],
-    RouteAccess::guardedBy('route/juser/user/api-tokens'),
-    $textDomain('JUser'),
-    ['user_id' => '[0-9]{1,5}']
-);
-$ported(
-    'juser/user/api-token-revoke',
-    '/users/{user_id}/api-tokens/{token_id}/revoke',
-    [ApiTokensController::class, 'revoke'],
-    RouteAccess::guardedBy('route/juser/user/api-token-revoke'),
-    $textDomain('JUser'),
-    ['user_id' => '[0-9]{1,5}', 'token_id' => '[0-9]+']
-);
-
-// ---------------------------------------------------------------------------------------
-// Batch 13, ported 2026-08-21: the authentication surface. **The five routes that decide
-// whether anybody can get in**, and the last laminas-served pages JUser owns.
+// The eleven routes of the JUser surface are **declared by the module**, not here, since
+// 2026-08-21. `module/JUser/config/symfony-routes.php` returns a closure that calls back
+// into whatever a host uses to register a route, and the adapter below is this
+// application's answer: `$ported()` plus the two things a module cannot know about us —
+// the ACL resource its guard entry lives under, and the `JUser` text domain its templates
+// translate in.
 //
-// `JUser\Controller\LoginController` is deliberately **kept** for one release rather than
-// deleted with the port, unlike every previous batch. The laminas routes stay declared
-// either way — that is the `$ported()` contract — so keeping the controller means the flip
-// is reversible: remove the five declarations below and laminas answers these paths again.
-// Nowhere else on the site is being wrong unrecoverable from a browser. Deleting it is a
-// follow-up once production has run on this, and it is what unblocks JUser 3.0.0 (see
-// module/JUser/README.md).
+// **Reading the migration status of this file top to bottom still works**, which is the
+// property worth protecting: the fragment is included *here*, in the position these routes
+// used to occupy, so the order is unchanged and so is everything above and below.
 //
-// **Guards, and why three of these are `guest`.** `zfcuser`, `zfcuser/login` and
-// `zfcuser/verify` admit `guest` and `user`, because a page you visit in order to sign in
-// cannot require an identity; `zfcuser/logout` is `user`; `sign-in-no-cookies` is public.
-// The guard entries live in JUser's own module config, unusually — everything else on this
-// site is guarded from config/autoload — because a module that owns the sign-in routes has
-// to keep them reachable to be installable at all.
+// `RouteAccess::guardedBy('route/' . $name)` reconstructs exactly what the eleven explicit
+// declarations said, because that is how BjyAuthorize\Guard\Route keys its entries — one
+// guard entry per route name, and the same one both front controllers read. Which is why
+// `$audience` is **not** consulted: this application's guard entries predate the port and
+// are the authority; JUser declares the audience for a host that has none to reconstruct
+// from. tools/acl-table.php is the oracle either way, and a `route/juser…` entry that
+// stops matching shows up there rather than as a page that quietly works for more people.
 //
-// **The consent gate has no listener here.** `Application\View\GdprStrategy::onRoute()`
-// swapped the route match of login and verify for the explainer when the visitor had not
-// consented, and it runs on `MvcEvent::EVENT_ROUTE`, which a ported route never reaches.
-// Both controllers ask `App\JUser\SignIn::wantsCookiesFirst()` first and answer with
-// `App\JUser\CookieExplainer` — a 200 at the requested URL, not a redirect, so an emailed
-// link survives being consented to. The strategy's other half, `onFinish()`, was already
-// reproduced by `App\Http\GdprCookieListener`.
+// Two facts about these routes that used to be written out here and now live in the
+// fragment, where they travel with the code that depends on them: the `[0-9]{1,5}`
+// constraint is what keeps `roles` out of `user_id` on `/users/roles/create`, and
+// `/users/{user_id}/delete` carries **no method constraint**, because adding one would turn
+// a mistaken GET into a 405 where today it renders the confirmation.
 //
-// **`?redirect=` needed real work**, and it is the one thing here that a transcription
-// would have got wrong: `validRedirect()` ends in a laminas-router match, and through
-// App\Laminas\ServiceBridge that router has never seen SlmLocale, so it rejects every
-// locale-prefixed path. `App\JUser\RedirectTarget` strips the prefix first and matches on
-// a **clone** of the router with an empty base URL. Read its docblock before touching it;
-// getting it wrong sends every visitor to the home page instead of where they were going,
-// and nothing fails.
-
-// `/user` — nothing lives here; bounce the visitor to the form or, if they already have an
-// identity, to the post-login route.
-$ported(
-    'zfcuser',
-    '/user',
-    [SignInController::class, 'index'],
-    RouteAccess::guardedBy('route/zfcuser'),
-    $textDomain('JUser')
-);
-
-// The form. GET renders it, POST issues and mails a link — and answers identically whether
-// or not the address is known, which is the property the whole page exists to have.
-$ported(
-    'zfcuser/login',
-    '/user/login',
-    [SignInController::class, 'form'],
-    RouteAccess::guardedBy('route/zfcuser/login'),
-    $textDomain('JUser')
-);
-
-// Redemption: the one request on this site that creates an authenticated session.
-$ported(
-    'zfcuser/verify',
-    '/user/verify',
-    VerifyController::class,
-    RouteAccess::guardedBy('route/zfcuser/verify'),
-    $textDomain('JUser')
-);
-
-// Signing out. Guarded `user`, so an anonymous caller meets the guard rather than being
-// told "done".
-$ported(
-    'zfcuser/logout',
-    '/user/logout',
-    LogoutController::class,
-    RouteAccess::guardedBy('route/zfcuser/logout'),
-    $textDomain('JUser')
+// The sign-in half is where being wrong is not recoverable from a browser, and the rollback
+// is unchanged by this: `JUser\Controller\LoginController` still exists and the laminas
+// routes are still declared, so removing this include puts laminas back in charge of
+// `/user/login` with no new code. The administration half has no such twin — its laminas
+// controller was deleted when it was ported — so rolling *that* back is a deploy.
+(require __DIR__ . '/../../module/JUser/config/symfony-routes.php')(
+    static function (
+        string $name,
+        string $path,
+        string|array $controller,
+        RouteAudience $audience,
+        array $defaults = [],
+        array $requirements = []
+    ) use (
+        $ported,
+        $textDomain
+    ): void {
+        $ported(
+            $name,
+            $path,
+            $controller,
+            RouteAccess::guardedBy('route/' . $name),
+            $textDomain('JUser') + $defaults,
+            $requirements
+        );
+    }
 );
 
 // **There is no `sign-in-no-cookies` route here, and there is no longer one in laminas
@@ -2195,8 +2100,8 @@ $ported(
 // nothing links to it, no visitor has ever reached it, and the page it served is still
 // served.
 //
-// The page is `templates/content/sign-in-no-cookies.html.twig`, rendered by
-// `App\JUser\CookieExplainer` for the two gated routes above. That is the only way it has
+// The page is `module/JUser/templates/sign-in-no-cookies.html.twig`, rendered by
+// `JUser\Page\CookieExplainer` for the two gated routes above. That is the only way it has
 // ever been reached: `Application\View\GdprStrategy::onRoute()` swapped the *route match*
 // for it at priority -5000, i.e. after the guard had already approved `zfcuser/login`, so
 // the swapped-in page rendered without being authorized at all. That swap needs no route —
