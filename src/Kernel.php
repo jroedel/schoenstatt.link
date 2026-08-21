@@ -11,13 +11,38 @@ use App\Books\Import\ImportStorage;
 use App\Books\Import\ImportTemplate;
 use App\Books\Import\SpreadsheetUpload;
 use App\Books\LibraryPage;
-use App\JUser\CookieExplainer;
-use App\JUser\RedirectTarget;
-use App\JUser\SignIn;
-use App\JUser\UserAdmin;
+use JUser\Model\PersonValueOptionsProviderInterface;
+use SionModel\Service\ActingUserProviderInterface;
+use JUser\Model\UserTable;
+use JUser\Routing\Routes;
+use JUser\Service\ApiTokenService;
+use JUser\Service\LoginTokenService;
+use JUser\Service\Mailer;
+use Laminas\Db\Adapter\Adapter;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
+use JUser\Controller\ApiTokensController;
+use JUser\Controller\LogoutController;
+use JUser\Controller\SignInController;
+use JUser\Controller\UserCreateController;
+use JUser\Controller\UserDeleteController;
+use JUser\Controller\UserEditController;
+use JUser\Controller\UsersController;
+use JUser\Controller\VerifyController;
+use App\JUser\Host\FormLocator;
+use App\JUser\Host\Access;
+use App\JUser\Host\Flash;
+use App\JUser\Host\Identity;
+use App\JUser\Host\RouteResolver;
+use App\JUser\Host\Session as JUserSession;
+use App\JUser\Host\UrlBuilder as JUserUrlBuilder;
+use App\JUser\MisconfiguredPersonProvider;
+use JUser\Page\CookieExplainer;
+use JUser\Page\RedirectTarget;
+use JUser\Page\SignIn;
+use JUser\Page\UserAdmin;
 use App\Books\LibraryScopedForms;
 use App\Controller\AdminController;
-use App\Controller\ApiTokensController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
@@ -67,13 +92,6 @@ use App\Controller\SitemapController;
 use App\Controller\TextController;
 use App\Controller\TextsController;
 use App\Controller\TimelineController;
-use App\Controller\UserCreateController;
-use App\Controller\UserDeleteController;
-use App\Controller\UserEditController;
-use App\Controller\LogoutController;
-use App\Controller\SignInController;
-use App\Controller\UsersController;
-use App\Controller\VerifyController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\AuthorizationListener;
@@ -174,6 +192,12 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private SignIn $signIn;
     private RedirectTarget $redirectTarget;
     private CookieExplainer $cookieExplainer;
+    private JUserUrlBuilder $juserUrls;
+    private Flash $juserFlash;
+    private JUserSession $juserSession;
+    private Identity $juserIdentity;
+    private Access $juserAccess;
+    private RouteResolver $juserRoutes;
     private RouteUrl $routeUrl;
     private PreferredUrls $preferredUrls;
     private RouteGuard $routeGuard;
@@ -708,56 +732,58 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->routeUrl()
             ),
-            // Batch 12 — the user-administration surface. All five take the same
-            // App\JUser\UserAdmin, which is where the table, the person list, the acting
-            // user and the two messengers live; the index needs no RouteUrl because every
-            // link on it is a `laminas_path()` in the template.
+            // The whole JUser surface, served by the module's own controllers since
+            // 2026-08-21. Everything they reach for is one of the six adapters below —
+            // there is no ServiceBridge in any of them, which is what makes the module
+            // droppable into an application that has none. Read module/JUser/README.md
+            // for the contract; the adapters live in src/JUser/Host/.
             UsersController::class => fn (): UsersController => new UsersController(
                 $this->userAdmin(),
-                $this->twig()
+                $this->twig(),
+                $this->juserAccess()
             ),
             UserCreateController::class => fn (): UserCreateController => new UserCreateController(
                 $this->userAdmin(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->juserUrls()
             ),
             UserEditController::class => fn (): UserEditController => new UserEditController(
                 $this->userAdmin(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->juserUrls()
             ),
             UserDeleteController::class => fn (): UserDeleteController => new UserDeleteController(
                 $this->userAdmin(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->juserUrls()
             ),
             ApiTokensController::class => fn (): ApiTokensController => new ApiTokensController(
                 $this->userAdmin(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->juserUrls()
             ),
-            // Batch 13 — the authentication surface. App\JUser\SignIn is the shared
-            // plumbing, App\JUser\RedirectTarget answers everything about `?redirect=`,
-            // and App\JUser\CookieExplainer is the consent gate's page. `sign-in-no-cookies`
-            // needs no entry: it goes through ContentPageController like every other static
-            // page, and the two gated routes render the same template through the explainer.
             SignInController::class => fn (): SignInController => new SignInController(
                 $this->signIn(),
                 $this->redirectTarget(),
                 $this->cookieExplainer(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->juserUrls(),
+                $this->juserIdentity()
             ),
             VerifyController::class => fn (): VerifyController => new VerifyController(
                 $this->signIn(),
                 $this->redirectTarget(),
                 $this->cookieExplainer(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->juserUrls(),
+                $this->juserIdentity(),
+                $this->juserSession()
             ),
             LogoutController::class => fn (): LogoutController => new LogoutController(
                 $this->signIn(),
-                $this->routeUrl()
+                $this->juserUrls(),
+                $this->juserIdentity(),
+                $this->juserSession()
             ),
         ]);
     }
@@ -901,39 +927,227 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
 
     /** Shared by every batch-11b controller; see App\Books\LibraryPage. */
     /**
-     * The user-administration surface's shared plumbing. Shared per request, like
+     * The user-administration surface's shared plumbing — `JUser\Page\UserAdmin`, from the
+     * module, with every collaborator named rather than looked up. Shared per request, like
      * {@see libraryPage()}, and for the cheaper of that method's two reasons: it holds no
-     * memo, but the five controllers of the surface never run together, so building it once
-     * costs nothing and reads as one thing rather than five.
+     * memo, but the five controllers of the surface never run together.
+     *
+     * Two things the module used to work out for itself and this method now decides, because
+     * both are config this application owns:
+     *
+     * **The person provider.** `juser.person_provider` names a service, and a service of the
+     * wrong type is a configuration mistake with exactly one cause — hence the named
+     * exception rather than a silently empty column. The module takes a typed provider or
+     * null and so cannot be handed the mistake at all.
+     *
+     * **The database adapter.** `juser.db_adapter` is honoured rather than short-circuited to
+     * `Adapter::class`: this application sets it to exactly that, so the two agree today, and
+     * a host pointing JUser at a second database would find the difference only here.
      */
     private function userAdmin(): UserAdmin
     {
-        return $this->userAdmin ??= new UserAdmin($this->laminas());
+        return $this->userAdmin ??= new UserAdmin(
+            $this->laminas()->get(UserTable::class),
+            new FormLocator($this->laminas()),
+            $this->juserDbAdapter(),
+            $this->laminas()->get(ApiTokenService::class),
+            $this->juserSession(),
+            $this->juserFlash(),
+            $this->juserPersonProvider(),
+            $this->laminas()->has(ActingUserProviderInterface::class)
+                ? $this->laminas()->get(ActingUserProviderInterface::class)
+                : null,
+            $this->juserAdminLogger()
+        );
     }
 
     /**
      * The authentication surface's shared plumbing. Same reasoning as {@see userAdmin()}:
      * no memo to protect, but the three controllers never run together.
+     *
+     * The consent cookie comes from `App\Http\GdprCookieListener` rather than being written
+     * again here, because a gate keyed on a different string from the one that *strips* the
+     * cookies would be worse than no gate: the page would offer a form whose session cookie
+     * is then removed from the response.
+     *
+     * The two redirect routes are read the way `LoginControllerFactory` reads them — an
+     * absent or non-string value falls back, so a misconfigured key cannot leave the site
+     * with no post-login destination.
      */
     private function signIn(): SignIn
     {
-        return $this->signIn ??= new SignIn($this->laminas(), $this->routeUrl());
+        return $this->signIn ??= new SignIn(
+            $this->laminas()->get(UserTable::class),
+            $this->laminas()->get(LoginTokenService::class),
+            $this->laminas()->get(Mailer::class),
+            $this->juserUrls(),
+            $this->juserSession(),
+            $this->juserFlash(),
+            $this->juserSignInLogger(),
+            GdprCookieListener::CONSENT_COOKIE,
+            'true',
+            $this->juserConfiguredRoute('login_redirect_route', SignIn::DEFAULT_LOGIN_REDIRECT_ROUTE),
+            $this->juserConfiguredRoute('logout_redirect_route', Routes::LOGIN)
+        );
     }
 
     /**
-     * Shared for a reason that is not cosmetic: it clones the laminas router on every
-     * match, and `/user/verify` asks it up to three times in one request — once for the
-     * link's own `?redirect=`, once for the session's copy, and once again inside
-     * `refusedRoute()`.
+     * Shared for a reason that is not cosmetic: {@see juserRoutes()} clones the laminas
+     * router on every match, and `/user/verify` asks it up to three times in one request —
+     * once for the link's own `?redirect=`, once for the session's copy, and once again
+     * inside `refusedRoute()`.
      */
     private function redirectTarget(): RedirectTarget
     {
-        return $this->redirectTarget ??= new RedirectTarget($this->laminas());
+        return $this->redirectTarget ??= new RedirectTarget($this->juserRoutes(), $this->juserAccess());
     }
 
     private function cookieExplainer(): CookieExplainer
     {
         return $this->cookieExplainer ??= new CookieExplainer($this->twig());
+    }
+
+    /**
+     * The six adapters that make up JUser's host contract. All shared per request, and one of
+     * them **must** be: `App\JUser\Host\Flash` memoizes its FlashMessenger, because a second
+     * instance moves the first's message out of the session and drops it. See that class.
+     */
+    private function juserUrls(): JUserUrlBuilder
+    {
+        return $this->juserUrls ??= new JUserUrlBuilder($this->routeUrl(), $this->requests());
+    }
+
+    private function juserFlash(): Flash
+    {
+        return $this->juserFlash ??= new Flash($this->laminas());
+    }
+
+    private function juserSession(): JUserSession
+    {
+        return $this->juserSession ??= new JUserSession($this->laminas());
+    }
+
+    private function juserIdentity(): Identity
+    {
+        return $this->juserIdentity ??= new Identity($this->laminas());
+    }
+
+    private function juserAccess(): Access
+    {
+        return $this->juserAccess ??= new Access($this->laminas());
+    }
+
+    private function juserRoutes(): RouteResolver
+    {
+        return $this->juserRoutes ??= new RouteResolver($this->laminas());
+    }
+
+    /**
+     * `juser.person_provider`, resolved and type-checked. Null when this application
+     * configures none, which JUser reads as "render the Person column empty".
+     *
+     * @throws MisconfiguredPersonProvider
+     */
+    private function juserPersonProvider(): ?PersonValueOptionsProviderInterface
+    {
+        /** @var mixed $config */
+        $config = $this->laminas()->get('JUser\Config');
+        if (! is_array($config) || ! isset($config['person_provider'])) {
+            return null;
+        }
+
+        /** @var mixed $providerId */
+        $providerId = $config['person_provider'];
+        if (! is_string($providerId) || ! $this->laminas()->has($providerId)) {
+            return null;
+        }
+
+        /** @var mixed $provider */
+        $provider = $this->laminas()->get($providerId);
+        if (! $provider instanceof PersonValueOptionsProviderInterface) {
+            throw new MisconfiguredPersonProvider($providerId);
+        }
+
+        return $provider;
+    }
+
+    /** See {@see userAdmin()} on why the indirection is honoured rather than short-circuited. */
+    private function juserDbAdapter(): Adapter
+    {
+        /** @var mixed $juser */
+        $juser = $this->laminas()->config()['juser'] ?? [];
+        /** @var mixed $service */
+        $service = is_array($juser) ? ($juser['db_adapter'] ?? Adapter::class) : Adapter::class;
+
+        if (! is_string($service) || ! $this->laminas()->has($service)) {
+            throw new RuntimeException(
+                'Please set the [\'juser\'][\'db_adapter\'] config key for use with the JUser module.'
+            );
+        }
+
+        /** @var Adapter $adapter */
+        $adapter = $this->laminas()->get($service);
+
+        return $adapter;
+    }
+
+    /**
+     * The logger the administration surface has always used — the module's own alias, which
+     * this application points at the application logger.
+     */
+    private function juserAdminLogger(): ?LoggerInterface
+    {
+        if (! $this->laminas()->has('JUser\Logger')) {
+            return null;
+        }
+
+        /** @var mixed $logger */
+        $logger = $this->laminas()->get('JUser\Logger');
+
+        return $logger instanceof LoggerInterface ? $logger : null;
+    }
+
+    /**
+     * The sign-in surface's logger, resolved differently from {@see juserAdminLogger()} — and
+     * that difference is inherited rather than chosen: `LoginController` reads
+     * `juser.logger_service` and falls back to `LoggerInterface::class`, while the
+     * administration actions read the `JUser\Logger` alias. Both are kept as they were, so
+     * that no log line moves in the same change that moves the code writing it.
+     */
+    private function juserSignInLogger(): ?LoggerInterface
+    {
+        /** @var mixed $juser */
+        $juser = $this->laminas()->config()['juser'] ?? [];
+        /** @var mixed $service */
+        $service = is_array($juser) ? ($juser['logger_service'] ?? null) : null;
+
+        if (is_string($service) && $this->laminas()->has($service)) {
+            /** @var LoggerInterface $logger */
+            $logger = $this->laminas()->get($service);
+
+            return $logger;
+        }
+        if ($this->laminas()->has(LoggerInterface::class)) {
+            /** @var LoggerInterface $logger */
+            $logger = $this->laminas()->get(LoggerInterface::class);
+
+            return $logger;
+        }
+
+        return null;
+    }
+
+    /** A `juser` config route name, or the fallback when it is absent or not a string. */
+    private function juserConfiguredRoute(string $key, string $fallback): string
+    {
+        /** @var mixed $config */
+        $config = $this->laminas()->get('config');
+        /** @var mixed $juser */
+        $juser = is_array($config) ? ($config['juser'] ?? null) : null;
+        /** @var mixed $value */
+        $value = is_array($juser) ? ($juser[$key] ?? null) : null;
+
+        return is_string($value) && '' !== $value ? $value : $fallback;
     }
 
     private function libraryPage(): LibraryPage

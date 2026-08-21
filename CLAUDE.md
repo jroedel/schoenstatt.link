@@ -119,90 +119,74 @@ suites run from the superproject working tree.
   is `is_default = 1`. Read [docs/libraries.md](docs/libraries.md) before changing any of
   it: the permissive `checkout` rule is deliberate, and `refresh-sort` answers GET with a
   confirmation because the laminas action rewrote every book in the library on one.
-  **The authentication surface is Symfony-served since 2026-08-21** — `/user`,
-  `/user/login`, `/user/verify` and `/user/logout`, over `App\JUser\SignIn` (the plumbing),
-  `App\JUser\RedirectTarget` (everything about `?redirect=`) and `App\JUser\CookieExplainer`
-  (the consent gate's page). **`JUser\Controller\LoginController` is deliberately kept** for
-  one release: the laminas routes stay declared either way, so deleting the five Symfony
-  declarations puts laminas back in charge — the only place on this site where being wrong is
-  not recoverable from a browser. Deleting it is what unblocks JUser 3.0.0.
-  **JUser declares its 3.0.0 host contract as of 2026-08-21, and nothing here implements
-  it yet.** Six interfaces in `module/JUser/src/Host/` plus `JUser\Twig\JUserExtension`:
-  they are what the eight ported controllers and the four `App\JUser\*` support classes
-  get rewritten against when they move *into* the module, which is what makes 3.0.0
-  droppable into another application. Nothing is wired — no class implements one, no
-  template calls `juser_path()`, no dependency has left JUser's `require` — so the whole
-  of the contract's verification is `test/Integration/JUserHostContractTest`, which pins
-  the three properties that fail with no symptom: `Severity` matching the laminas flash
+  **The whole JUser surface is served by the module's own controllers since 2026-08-21** —
+  `/user`, `/user/login`, `/user/verify`, `/user/logout`, `/users`, the two create forms, the
+  account form, the delete confirmation and the API-token screen with its revoke twin.
+  `JUser\Controller\*` over `JUser\Page\{SignIn,RedirectTarget,UserAdmin,CookieExplainer}`,
+  templates in `module/JUser/templates/` addressed as `@juser/…`, and eleven routes declared
+  by `module/JUser/config/symfony-routes.php` — a closure this application calls back into
+  from `config/symfony/routes.php`, so that file still reads as the migration status top to
+  bottom. The application's own copies (eight controllers, four `App\JUser\*` classes,
+  eleven templates) were **deleted** with the switch: there is one copy again and it is the
+  module's, which is the point — JUser 3.0.0 is meant to drop into patres.
+  **What is left here is six adapters in `src/JUser/Host/`**, implementing the contract in
+  `module/JUser/src/Host/`, and they are where every laminas-shaped fact about this
+  application now lives. Three are worth knowing before touching anything on this surface,
+  and each fails silently rather than loudly. `Flash` **must stay one instance per request**:
+  a second `FlashMessenger` moves the first's messages out of the session and drops them —
+  measured on redemption, which reports "you are signed in" and "but not there" together and
+  showed only the second. `RouteResolver` holds the details that make a `?redirect=`
+  resolvable at all — strip the locale prefix, and match on a **clone** of the router with an
+  empty base URL, because `RouteUrl` mutates the shared one's base and the answer would
+  otherwise depend on whether a template rendered a link first; get either wrong and *every*
+  destination on the site is refused while nothing errors anywhere. And `UrlBuilder::url()`
+  **primes the router's request URI**, because nothing under a Symfony dispatch ever sets one
+  and `force_canonical` throws without it — that is the emailed sign-in link, the one thing
+  here whose breakage is invisible on every page.
+  `App\JUser\Host\Access` has the other half of that reasoning: `userMayReachRoute()` asks
+  about the account's own role *names* (off `linkUser()`, **not** `rolesList`, which holds
+  numeric ids) rather than calling `isAllowed()`, because `Authorize::load()` bakes the
+  identity's roles into the ACL once per request and the guard already ran while the visitor
+  was anonymous. `visitorMayReachRoute()` is the ordinary question and does call it.
+  Two things did not move: `App\JUser\MisconfiguredPersonProvider` (the module takes a typed
+  provider or null, so the config check stays with the config that names it) and
+  `templates/juser/_person-cell.html.twig`, which JUser includes through the
+  `juser_person_template` Twig global because it has no person model.
+  **`JUser\Controller\LoginController` is still deliberately kept** for one release: the
+  laminas routes stay declared either way, so removing the fragment include from
+  `config/symfony/routes.php` puts laminas back in charge of the sign-in flow with no new
+  code — the only place on this site where being wrong is not recoverable from a browser.
+  **The administration half has no such twin** — its laminas controller and six view scripts
+  were deleted when it was ported — so rolling *that* back is a deploy. Deleting
+  `LoginController` is what unblocks JUser 3.0.0; see `module/JUser/README.md`.
+  **`sign-in-no-cookies` is gone as a route** — deleted from both front controllers
+  2026-08-21, having never been reachable: no guard entry, so default deny, and the only
+  thing that ever showed the page was `GdprStrategy::onRoute()`'s route-match swap, which
+  runs after the guard approves a *different* route and builds its match by hand. The page
+  survives as `module/JUser/templates/sign-in-no-cookies.html.twig`, rendered by
+  `JUser\Page\CookieExplainer` at whatever URL asked for it, with a 200 rather than a
+  redirect — so an emailed link still works once the visitor consents.
+  `IndexController::signInNoCookiesAction()`, its `.phtml` and `GdprStrategy::onRoute()` are
+  alive for the rollback path only and go with `LoginController`.
+  **The contract itself is verified by `test/Integration/JUserHostContractTest`**, which
+  pins the three properties that fail with no symptom: `Severity` matching the laminas flash
   namespaces (a flash crosses a redirect *in the session*, so both front controllers must
   agree on the string or a message is silently never rendered), `juser_layout` resolving
-  inside `{% extends %}`, and no framework type reachable from the contract's **code**.
-  That last one deliberately allows the prose — every docblock there names the laminas
-  class it replaces, which is the opposite of a coupling, and a blanket string search
-  reported four of six files as violations for documenting their own purpose. Like
-  SionModel's two files, this code holds level 8 and PSR-12 without its path saying so: a
-  level-8 audit must name `module/JUser/src/Host` and `module/JUser/src/Twig` alongside
-  `src`.
-  **Since 2026-08-21 the whole JUser surface exists twice**, and only one copy runs — the
-  user-administration half as well as the sign-in half, over `JUser\Page\UserAdmin` and
-  five controllers with six more templates. So **an edit anywhere on either surface has to
-  be made in both places until the switch**, and the module's copy is where it will
-  survive. Three differences on the admin half are decisions rather than transcriptions and
-  a diff will show them: `AccessInterface` gained `visitorMayReachRoute()` and the index
-  asks it **once per page** where the .phtml asked `is_allowed()` once per row (same answer,
-  584 fewer calls at 292 accounts); a person provider of the wrong type is no longer
-  representable, so `App\JUser\MisconfiguredPersonProvider` stays here with the config that
-  names it; and the Person column is rendered by a host template named through
-  `juser_person_template`, because JUser has no person model. The sign-in half is described
-  below.
-  **The sign-in half exists twice too**, and only one copy runs. `JUser\Controller\{SignInController,VerifyController,LogoutController}` over
-  `JUser\Page\{SignIn,RedirectTarget,CookieExplainer}` and five templates under
-  `module/JUser/templates/` are the module's copies, rewritten against the interfaces;
-  `src/Controller/` and `src/JUser/` still hold the ones production serves, and nothing
-  wires the module's. So **an edit to the sign-in surface has to be made in both places
-  until the switch**, and the module's copy is where it will survive. Two of them are not
-  transcriptions and read differently on purpose: `JUser\Page\RedirectTarget` is 113 lines
-  against `App\JUser\RedirectTarget`'s 318, because the locale stripping, the cloned
-  router, the ACL and the role resolution became the host's side of two interfaces; and
-  the emailed link is assembled from the URL builder rather than inside
-  `JUser\Service\Mailer`, whose `sendLoginLink()` now takes a finished absolute URL while
-  `sendLoginLinkEmail()` keeps the router for the laminas path. That last one **is** live —
-  it is the only part of the port that changed code production runs — and the smoke suite
-  covers it end to end, since `test/Smoke/MagicLinkSignIn` reads the real message out of
-  Mailpit and follows the link it finds. `module/JUser/src/{Page,Controller,Routing}` hold
-  themselves to level 8 and PSR-12 like the rest of the module's new code.
-  Three things to know before touching it. **`?redirect=` could not be transcribed:**
-  `validRedirect()` ends in a laminas-router match, and through `ServiceBridge` that router
-  has never seen SlmLocale, so it rejects every locale-prefixed path — a faithful port would
-  have refused every destination the guards emit and sent everyone to the home page,
-  silently. `RedirectTarget` strips the prefix and matches on a **clone** of the router with
-  an empty base URL, because `RouteUrl` mutates the shared router's base and the answer would
-  otherwise depend on whether a template had rendered a link first. **The emailed link needs
-  the prepared router:** `JUser\Service\Mailer` assembles it itself with `force_canonical`,
-  and given the raw container router it produced `/user/verify?token=…` with no locale prefix
-  — the unprefixed twin, which 302s. **And a flash messenger must be reused:** a fresh
-  `new FlashMessenger()` per message moves the previous one out of the session and drops it,
-  so redemption's two messages became one. **`sign-in-no-cookies` is gone** — deleted from
-  both front controllers 2026-08-21, having never been reachable: no guard entry, so default
-  deny, and the only thing that ever showed the page was `GdprStrategy::onRoute()`'s
-  route-match swap, which runs after the guard approves a different route and builds its
-  match by hand. The page survives as `templates/content/sign-in-no-cookies.html.twig`,
-  rendered by `CookieExplainer`; `IndexController::signInNoCookiesAction()`, its `.phtml` and
-  `GdprStrategy::onRoute()` are alive for the rollback path only and go with
-  `LoginController`.
-  **The JUser user-administration surface is Symfony-served since 2026-08-21** — `/users`,
-  the two create forms, the account form, the delete confirmation and the API-token screen
-  with its revoke twin. Five controllers over one `App\JUser\UserAdmin`, and the second
-  route tree here with **no laminas controller at all**: `JUser\Controller\UsersController`
-  and its six view scripts were deleted with the port, leaving `LoginController` as the
-  module's last laminas-mvc class (which is what JUser 3.0.0 removes — see
-  `module/JUser/README.md`). Two things are worth knowing before touching it. **The route
-  guard is the whole protection**, unusually for this site: all seven name `administrator`,
-  which is *not* `is_default = 1`, so there is no per-row check and `UserAdmin` deliberately
-  has no `refuse()`. And **`/users/roles/create` had never once created a role** until this
-  port — the `user-role` spec's `required_columns_for_creation` was copy-pasted from the
-  `user` entity, so every submission threw; the same block still carries three more
-  copy-pasted fields that are dead only because nothing dispatches them (docs/BACKLOG.md).
+  inside `{% extends %}`, and no framework type reachable from the contract's **code** —
+  that last one deliberately allows the prose, since every docblock there names the laminas
+  class it replaces, and a blanket string search reported four of six files as violations
+  for documenting their own purpose. Like SionModel's two files, the module's new code holds
+  level 8 and PSR-12 without its path saying so: a level-8 audit must name
+  `module/JUser/src/{Host,Page,Controller,Routing,Twig}` alongside `src`, and analysing
+  `module/JUser/src/Controller` as a *directory* sweeps in the legacy `LoginController`,
+  whose 17 findings are level-0 legacy and not new.
+  **Two guard facts about this surface.** The seven `juser/*` routes all name `administrator`,
+  which is *not* `is_default = 1`, so unusually for this site the route guard really is the
+  whole protection and `UserAdmin` deliberately has no `refuse()`. And **`/users/roles/create`
+  had never once created a role** until the port — the `user-role` spec's
+  `required_columns_for_creation` was copy-pasted from the `user` entity, so every submission
+  threw; the same block still carries three more copy-pasted fields that are dead only
+  because nothing dispatches them (docs/BACKLOG.md).
   **The spreadsheet import is Symfony-only since 2026-08-18** — `/library-imports` is the
   first route tree here with **no laminas controller at all**, its routes kept solely so
   `laminas_path()` and the BjyAuthorize guards can name them. The engine is
@@ -380,7 +364,7 @@ suites run from the superproject working tree.
 - **Authorization changes must be diffed, not just tested.** `docker compose exec -T app php tools/acl-table.php` emits a reviewable table of every role, guard and rule; `--format=json` emits the sorted, diffable form. `docs/acl-rules.md` and `docs/acl-baseline.json` are the committed snapshots. Regenerate and diff them after any change to a route, a guard entry or a role — a rule that quietly stops matching makes a page work for *more* people and nothing fails.
 - Beyond smoke, verification is lint + coding standard:
   - Syntax check any file you touch: `php -l path/to/File.php`.
-  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard), the two files that left `src` for SionModel on 2026-08-21, and `module/JUser/src/{Host,Twig}` — each covered by its own submodule's `phpcs.xml`. `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
+  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard), the two files that left `src` for SionModel on 2026-08-21, and `module/JUser/src/{Host,Page,Controller,Routing,Twig}` — each covered by its own submodule's `phpcs.xml`. `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
   - Auto-fix: `php composer.phar cs-fix` — ask the user before running it broadly.
 - Local dev server: `php composer.phar run serve` (PHP built-in server on 127.0.0.1:8080 serving `public/`).
 - `bin/console` is the headless entry point (symfony/console): it builds the

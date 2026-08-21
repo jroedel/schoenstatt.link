@@ -6,10 +6,12 @@ namespace App\Twig;
 
 use App\Books\CurrentLibrary;
 use App\Http\CspNonce;
+use App\JUser\Host\UrlBuilder as JUserUrlBuilder;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\View\SiteChrome;
+use JUser\Twig\JUserExtension;
 use SionModel\Form\BootstrapFormRenderer;
 use SionModel\Twig\FormExtension;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -87,7 +89,9 @@ final class TwigFactory
 
         $cacheDir = $this->cacheDir($root . '/' . self::CACHE_DIR);
 
-        $twig = new Environment(new FilesystemLoader($root . '/' . self::TEMPLATE_DIR, $root), [
+        $loader = new FilesystemLoader($root . '/' . self::TEMPLATE_DIR, $root);
+
+        $twig = new Environment($loader, [
             'autoescape'       => 'html',
             'strict_variables' => true,
             //FORCE_BYTECODE_INVALIDATION is not decoration: it is what Environment
@@ -120,6 +124,25 @@ final class TwigFactory
             ),
             $requests,
             $nonce
+        ));
+        //JUser's own templates, addressed as `@juser/…`. A namespace rather than another
+        //search path, so that its `login.html.twig` and any of ours cannot collide.
+        //
+        //`juser_layout` points at this application's layout and `juser_person_template` at
+        //the one-line host template that renders the Person column of its user index — the
+        //module has no person model, so that cell is ours to draw. Both are the whole of
+        //what its templates know about us.
+        //
+        //The URL builder is constructed here rather than passed in, which keeps the promise
+        //this class's docblock makes: App\Kernel and the integration tests build the *same*
+        //environment. A parameter would let a test hand in a different one and then prove
+        //very little about the page a visitor gets. It is a stateless adapter over $urls,
+        //so the Kernel building its own for the controllers costs nothing and cannot drift.
+        $loader->addPath(JUserExtension::templatePath(), JUserExtension::TEMPLATE_NAMESPACE);
+        $twig->addExtension(new JUserExtension(
+            new JUserUrlBuilder($urls, $requests),
+            'layout.html.twig',
+            'juser/_person-cell.html.twig'
         ));
         $twig->addExtension(new MarkdownExtension());
         //One page minifies its inline script on laminas; see the extension's docblock.

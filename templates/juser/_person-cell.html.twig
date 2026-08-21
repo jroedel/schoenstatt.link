@@ -1,0 +1,21 @@
+{#
+  One person, for the Person column of JUser's user index.
+
+  **This is the host's half of a contract JUser declares**, named through
+  `juser_person_template` on `JUser\Twig\JUserExtension`. JUser has no person model — only
+  `PersonValueOptionsProviderInterface` and whatever rows this application answers it with —
+  so the module includes this with the row as `person` and knows nothing else about it.
+
+  A one-line template rather than the macro call inlined into JUser's own index, which is
+  what it was before 2026-08-21: the module cannot import a template it does not ship, and a
+  Twig function returning pre-escaped HTML would be the same coupling with worse failure
+  modes.
+
+  `fmt.person()` reproduces the laminas `FormatPerson` view helper, pencil included. JUser
+  passed `['editPencil' => true]` to the helper, which reads `displayEditPencil` and so has
+  never read that key — the default, pencil on, is what both sides have always rendered.
+
+  Whitespace is trimmed at both ends because this lands inside a `<td>`.
+#}
+{%- import 'schoenstatt/_entity-format.html.twig' as fmt -%}
+{{- fmt.person(person) -}}

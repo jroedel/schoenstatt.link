@@ -133,10 +133,12 @@ final class RouteUrl
      * token. Measured 2026-08-21, and it is what batch 13 got wrong first.
      *
      * Handing over the prepared router rather than having callers prime it by side effect
-     * is the whole point: `App\JUser\SignIn::mailer()` calls this explicitly, so the
-     * answer does not depend on whether some template happened to render a link first.
-     * `App\JUser\RedirectTarget` has the same hazard from the other direction and solves
-     * it by matching on a clone with an empty base.
+     * is the whole point, and since 2026-08-21 the caller is `App\JUser\Host\UrlBuilder`,
+     * which asks for an absolute URL through `path()` with `force_canonical` — so the
+     * emailed link comes off the same builder as every link on every page, and the answer
+     * does not depend on whether some template happened to render one first.
+     * `App\JUser\Host\RouteResolver` has the same hazard from the other direction and
+     * solves it by matching on a clone with an empty base.
      *
      * @param string|null $locale null means the request's own default
      * @return TreeRouteStack<HttpRouteInterface>
