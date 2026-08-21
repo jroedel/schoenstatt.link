@@ -132,7 +132,9 @@ class AssociationsController extends SionController
         /** @var \Schoenstatt\Model\SchoenstattTable $table */
         $table = $this->getSionTable();
         $association = $view->getVariable('entity');
-        if (! $this->zfcUserAuthentication()->hasIdentity()
+        //`identity()` rather than JUser's retired `zfcUserAuthentication()` plugin — see
+        //Schoenstatt\Controller\SchoenstattController::indexAction().
+        if (null === $this->identity()
             && $association['kind'] !== 'sch-shrine'
             && $association['kind'] !== 'sch-wayside-shrine'
         ) {

@@ -152,22 +152,43 @@ suites run from the superproject working tree.
   provider or null, so the config check stays with the config that names it) and
   `templates/juser/_person-cell.html.twig`, which JUser includes through the
   `juser_person_template` Twig global because it has no person model.
-  **`JUser\Controller\LoginController` is still deliberately kept** for one release: the
-  laminas routes stay declared either way, so removing the fragment include from
-  `config/symfony/routes.php` puts laminas back in charge of the sign-in flow with no new
-  code — the only place on this site where being wrong is not recoverable from a browser.
-  **The administration half has no such twin** — its laminas controller and six view scripts
-  were deleted when it was ported — so rolling *that* back is a deploy. Deleting
-  `LoginController` is what unblocks JUser 3.0.0; see `module/JUser/README.md`.
-  **`sign-in-no-cookies` is gone as a route** — deleted from both front controllers
-  2026-08-21, having never been reachable: no guard entry, so default deny, and the only
-  thing that ever showed the page was `GdprStrategy::onRoute()`'s route-match swap, which
-  runs after the guard approves a *different* route and builds its match by hand. The page
-  survives as `module/JUser/templates/sign-in-no-cookies.html.twig`, rendered by
+  **`JUser\Controller\LoginController` is gone as of 2026-08-21, and with it the no-deploy
+  rollback.** Removing the module's route fragment from `config/symfony/routes.php` used to
+  hand `/user/login` back to laminas; there is nothing to hand it back to now. Rolling any of
+  this back is a deploy, on both halves of the surface. **JUser registers nothing with
+  laminas-mvc any more** — no controllers, no controller plugins, no view manager, and
+  `JUser\Module` is `getConfig()` and nothing else.
+  Two things moved here as a result. **The session is started by
+  `Application\Session\SessionBootstrap`**, attached through
+  `config/application.config.php`'s `listeners` key at priority 10000 — *not* from a module
+  `onBootstrap()`, and that is the whole point of the class. Module hooks run in
+  `config/modules.config.php` order at one priority; `JUser` sat at 42 and `Application` sits
+  at 47, and **`SionModel` at 43 calls `Authorize::getIdentity()` in its own hook**, which
+  triggers `Authorize::load()` and bakes the identity's roles into the ACL for the whole
+  request. Started later than that, it bakes `guest` and every `isAllowed()` on the request
+  answers anonymous — and it would not show up in testing, because under the Symfony front
+  controller `App\Http\SessionListener` starts the session before `LegacyBridge` builds the
+  laminas application at all. The path this protects is `SYMFONY_KERNEL=0`.
+  And **`zfcUserAuthentication()` is gone**; its two call sites in
+  `module/Schoenstatt/src/Controller/` use `identity()` from `laminas-mvc-plugin-identity`,
+  whose factory resolves `Laminas\Authentication\AuthenticationService` — which JUser
+  aliases to its own service, so the storage is still `SessionUser` and `null` still means
+  anonymous. Both of those controllers are rollback-path code: `/movement` and
+  `/associations` are Symfony-served, so neither action dispatches today.
+  **`GdprStrategy` is `onFinish()` only.** `onRoute()`, the route-match swap that showed the
+  cookie explainer, went with `LoginController`, along with
+  `IndexController::signInNoCookiesAction()` and its `.phtml`. The gate is
+  `JUser\Page\SignIn` plus `JUser\Page\CookieExplainer`, which answer at the requested URL
+  with a 200 exactly as the swap did — and note what the swap *was*, because it explains why
+  its page never needed a route: priority -5000, i.e. after the guard had already approved a
+  *different* route, with a `RouteMatch` built by hand.
+  **`sign-in-no-cookies` never was reachable and is now gone entirely** — the route was
+  deleted from both front controllers 2026-08-21, and its laminas action, `.phtml` and the
+  swap that showed it followed the same day. It had no guard entry, so default deny made the
+  URL unreachable from the day it was written. The page survives as
+  `module/JUser/templates/sign-in-no-cookies.html.twig`, rendered by
   `JUser\Page\CookieExplainer` at whatever URL asked for it, with a 200 rather than a
   redirect — so an emailed link still works once the visitor consents.
-  `IndexController::signInNoCookiesAction()`, its `.phtml` and `GdprStrategy::onRoute()` are
-  alive for the rollback path only and go with `LoginController`.
   **The contract itself is verified by `test/Integration/JUserHostContractTest`**, which
   pins the three properties that fail with no symptom: `Severity` matching the laminas flash
   namespaces (a flash crosses a redirect *in the session*, so both front controllers must
