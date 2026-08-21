@@ -16,7 +16,7 @@ use JTranslate\View\Helper\CountryName;
 use JTranslate\View\Helper\Flag;
 use JTranslate\View\Helper\LanguageName;
 use JTranslate\View\Helper\NowMessenger as NowMessengerHelper;
-use JUser\View\Helper\ZfcUserDisplayName;
+use JUser\Bridge\Laminas\ZfcUserDisplayName;
 use Laminas\I18n\View\Helper\DateFormat;
 use Laminas\I18n\View\Helper\Translate;
 use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
