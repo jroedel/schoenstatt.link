@@ -2212,6 +2212,16 @@ routes stay declared either way, so deleting the four declarations in
 rollback that needs no deploy of new code. Deleting the controller is a follow-up once
 production has run on this, and it is what unblocks JUser 3.0.0.
 
+**That follow-up started 2026-08-21 and runs in the opposite direction from every batch
+so far.** JUser 3.0.0 is meant to drop into another application — patres, as it moves to
+Symfony — so the ported code does not stay here: the eight controllers, the four
+`App\JUser\*` support classes and the ten templates move *into* the module, rewritten
+against six interfaces it now declares in `module/JUser/src/Host/`. That is why this
+batch's port is worth reading as a specification rather than as a destination. Nothing is
+wired yet and no URL is affected; JUser's own README carries the contract, and
+`test/Integration/JUserHostContractTest` is its only verification while nothing
+implements it.
+
 **The safety net came first, for the first time in this migration.** The 13 tests of
 `test/Smoke/AuthSmokeTest` — single use, expiry, digest-at-rest, session-id regeneration,
 the resend throttle, the uniform response, and all four deactivation doors — plus the five
