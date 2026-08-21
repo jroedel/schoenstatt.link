@@ -96,6 +96,7 @@ class LibraryTable extends SionTable implements
 
     const PROBLEM_BOOK_MISSING_CALL_NUMBER = 'book-missing-call-number';
     const PROBLEM_BOOK_INVALID_CALL_NUMBER = 'book-invalid-call-number';
+    const PROBLEM_BOOK_MISSING_SORT_TEXT = 'book-missing-sort-text';
     const PROBLEM_LIBRARY_MISSING_CALL_NUMBER_FORMAT = 'library-missing-call-number-format';
     const PROBLEM_LIBRARY_INVALID_CALL_NUMBER_FORMAT = 'library-invalid-call-number-format';
     const PROBLEM_LIBRARY_MISSING_SORT_TEXT_FORMAT = 'library-missing-sort-text-format';
@@ -1669,17 +1670,25 @@ ORDER BY `publisher`";
         if (! key_exists($libraryId, $collectionLibraryFilters)) {
             $collectionLibraryFilters[$libraryId] = [];
         }
-        if (! key_exists($collectionId, $collectionLibraryFilters[$libraryId])) {
+        //A collectionless book has $collectionId === null, and PHP 8.5 deprecates null as
+        //an array offset — it becomes an error in 9. Nothing had reported it because the
+        //application narrows error_reporting to exclude E_DEPRECATED, so on production
+        //this was silent; test/Integration/SortTextCoverageTest surfaced 16,692 of them in
+        //one pass. Only the memo key changes: '' and null both mean "no collection", and
+        //getCollectionSortTextFilter() is still asked the original $collectionId.
+        $memoKey = $collectionId ?? '';
+        if (! key_exists($memoKey, $collectionLibraryFilters[$libraryId])) {
             try {
-                $collectionLibraryFilters[$libraryId][$collectionId] = $this->getCollectionSortTextFilter($collectionId, $libraryId);
+                $collectionLibraryFilters[$libraryId][$memoKey]
+                    = $this->getCollectionSortTextFilter($collectionId, $libraryId);
             } catch (\Exception $e) {
                 //@todo log this
                 //@todo also create a problem for getCollectionSortTextFilterthis
-                $collectionLibraryFilters[$libraryId][$collectionId] = null;
+                $collectionLibraryFilters[$libraryId][$memoKey] = null;
             }
         }
-        if ($collectionLibraryFilters[$libraryId][$collectionId] instanceof SortText) {
-            $sortText = $collectionLibraryFilters[$libraryId][$collectionId]->filter($book);
+        if ($collectionLibraryFilters[$libraryId][$memoKey] instanceof SortText) {
+            $sortText = $collectionLibraryFilters[$libraryId][$memoKey]->filter($book);
             return $sortText;
         }
         return null;
@@ -1861,7 +1870,9 @@ ORDER BY CreatedOn DESC";
         static $today;
         if (! isset($today)) {
             $tz = new \DateTimeZone('UTC');
-            $today = new \DateTime(null, $tz);
+            //'now', not null: null is what DateTime already defaults to, and passing it
+            //explicitly is deprecated in 8.5 and an error in 9. Same instant either way.
+            $today = new \DateTime('now', $tz);
         }
         $id = $this->filterDbId($row['CheckoutId']);
         $dueOn = $this->filterDbDate($row['DueOn']);
@@ -2157,6 +2168,68 @@ ORDER BY CreatedOn DESC";
     }
 
     /**
+     * The sort-text problem for ONE library, if it has active books that lack sort text
+     * and no format that could ever give them one.
+     *
+     * ## Why this had to be added rather than being a display change
+     *
+     * The auto-fix page reports only what it *can* fix, and says nothing at all about the
+     * rest. Measured on the capsule 2026-08-21: **27,910 active books have no sort text**,
+     * of which the page offers to fix 9,764 — every one of them in Colegio Mayor. The
+     * other 17,207 are simply absent from it, so the number on screen reads as the whole
+     * problem when it is 35% of it. PUC's entire catalogue, all 16,383 active books, is in
+     * the invisible part.
+     *
+     * The vocabulary for saying so already existed and had never been wired up:
+     * PROBLEM_LIBRARY_MISSING_SORT_TEXT_FORMAT and its collection twin were declared,
+     * given `problem_specifications` entries with display text, and emitted by nothing.
+     *
+     * Reported per **library** rather than per book, deliberately. 17,207 rows would be a
+     * page nobody reads, and the action is the same for every book behind one library:
+     * give the library or its collections a `SortTextFormat` (and a `CallNumberRegex` —
+     * getSortTextFilter() needs both, which is why Bellavista's configured format does
+     * nothing today). One row per library is one decision per library.
+     *
+     * Emitted from getLibraryProblems() so that it reaches **both** surfaces: the global
+     * report through getProblems(), and the per-library page through
+     * LibrariesController::getProblemCounts(), which is where a librarian actually looks
+     * and which only ever calls the per-library method.
+     *
+     * @param array $libraryObject
+     * @return array<int, EntityProblem>
+     */
+    protected function getSortTextFormatProblems(array $libraryObject)
+    {
+        $libraryId = $this->filterDbId($libraryObject['libraryId'] ?? null);
+        if (! isset($libraryId)) {
+            return [];
+        }
+
+        //Memoized: getLibraryProblems() is called once per library by
+        //getLibrariesProblems(), and the coverage query answers for all of them at once.
+        //Without this, six libraries meant six identical grouped queries.
+        if (! isset($this->sortTextCoverage)) {
+            $this->sortTextCoverage = $this->getSortTextCoverage();
+        }
+        $counts = $this->sortTextCoverage['byLibrary'][$libraryId] ?? null;
+        if (null === $counts || $counts['withoutFormat'] < 1) {
+            return [];
+        }
+
+        $obj = clone $this->entityProblemPrototype;
+        $obj->setProblem(self::PROBLEM_LIBRARY_MISSING_SORT_TEXT_FORMAT)
+            ->setData($libraryObject);
+
+        return [$obj];
+    }
+
+    /**
+     * @var array|null $sortTextCoverage memoized getSortTextCoverage() result; see
+     *      getSortTextFormatProblems()
+     */
+    protected $sortTextCoverage;
+
+    /**
      * @todo add problems for unacceptable call numbers
      * @param number $libraryId
      * @param string $minimumSeverity
@@ -2216,6 +2289,7 @@ ORDER BY CreatedOn DESC";
         }
         $collectionsProblems = $this->getLibraryCollectionProblems($libraryObject, $minimumSeverity);
         $problems = array_merge($problems, $collectionsProblems);
+        $problems = array_merge($problems, $this->getSortTextFormatProblems($libraryObject));
         return $problems;
     }
 
@@ -2225,7 +2299,11 @@ ORDER BY CreatedOn DESC";
         //look for configuration problems
         $objects = $this->getObjects('library');
         foreach ($objects as $object) {
-            $problems = $this->getLibraryCollectionProblems($object);
+            //array_merge, not assignment: this overwrote on every iteration, so only the
+            //last library's collection problems ever survived the loop. Six libraries in,
+            //that meant five libraries' worth of collection problems were silently
+            //discarded on the data-problems report.
+            $problems = array_merge($problems, $this->getLibraryCollectionProblems($object, $minimumSeverity));
         }
         return $problems;
     }
@@ -2261,6 +2339,83 @@ ORDER BY CreatedOn DESC";
     }
 
     /**
+     * How many active books lack sort text, split by whether a sort-text format exists
+     * for them at all — one grouped query plus a handful of filter builds.
+     *
+     * ## Why this exists rather than counting what autoFixProblems() returns
+     *
+     * The library admin index puts a badge on the auto-fix menu entry, and it used to get
+     * that number by running the whole simulation: 27,910 rows fetched, a sort text
+     * computed for each, and 9,764 EntityProblem objects built to display one integer.
+     * Measured on the capsule at 0.54s and a 120 MB peak, on a page a librarian opens to
+     * get somewhere else.
+     *
+     * Fixability is a property of the (library, collection) pair, not of the book — a
+     * filter exists or it does not — so it needs asking once per pair rather than once
+     * per book. There are eight pairs.
+     *
+     * ## `withFormat` is an upper bound, deliberately
+     *
+     * It counts books whose library or collection *has* a usable sort-text filter — not
+     * books that will certainly get one. A filter can still decline an individual call
+     * number that its regex does not match, which is why this reports 10,703 where a full
+     * autoFixProblems() pass writes 9,764 (measured on the capsule, 2026-08-20). For a
+     * badge that is the right trade: an indicator costing one query, not a report.
+     *
+     * Matches the auto-fix path's own predicate — `sort_text IS NULL`, not also `= ''` —
+     * so the two can never disagree about which books are in scope. There are no
+     * empty-string rows today; both counts come to 27,910.
+     *
+     * @return array{withFormat: int, withoutFormat: int,
+     *     byLibrary: array<int, array{withFormat: int, withoutFormat: int}>}
+     */
+    public function getSortTextCoverage()
+    {
+        $select = new Select('lib_books');
+        $select->columns([
+            'library_id',
+            'collection_id',
+            'affected' => new Expression('COUNT(*)'),
+        ]);
+        $select->where([
+            new Operator('is_active', Operator::OPERATOR_EQUAL_TO, 1),
+            new Predicate([new IsNull('sort_text')], PredicateSet::OP_OR),
+        ]);
+        $select->group(['library_id', 'collection_id']);
+        $rows = $this->getTableGateway('lib_books')->selectWith($select);
+
+        $coverage = ['withFormat' => 0, 'withoutFormat' => 0, 'byLibrary' => []];
+        foreach ($rows as $row) {
+            $libraryId    = $this->filterDbId($row['library_id']);
+            $collectionId = $this->filterDbId($row['collection_id']);
+            $affected     = (int) $row['affected'];
+            if (! isset($libraryId)) {
+                continue;
+            }
+
+            //getCollectionSortTextFilter() throws on a format that does not parse —
+            //library 7's `%1{author}{title}` is the live example — and an unparseable
+            //format is exactly as unfixable as an absent one.
+            $filter = null;
+            try {
+                $filter = $this->getCollectionSortTextFilter($collectionId, $libraryId);
+            } catch (\Exception $e) {
+                $filter = null;
+            }
+
+            $bucket = $filter instanceof SortText ? 'withFormat' : 'withoutFormat';
+            $coverage[$bucket] += $affected;
+            if (! isset($coverage['byLibrary'][$libraryId])) {
+                $coverage['byLibrary'][$libraryId] = ['withFormat' => 0, 'withoutFormat' => 0];
+            }
+            $coverage['byLibrary'][$libraryId][$bucket] += $affected;
+        }
+        ksort($coverage['byLibrary']);
+
+        return $coverage;
+    }
+
+    /**
      * {@inheritDoc}
      * @see \SionModel\Problem\ProblemProviderInterface::autoFixProblems()
      */
@@ -2273,7 +2428,12 @@ ORDER BY CreatedOn DESC";
             $sortText = $this->getBookSortText($object);
             if (isset($sortText)) {
                 $obj = clone $this->entityProblemPrototype;
-                $obj->setProblem(self::PROBLEM_COLLECTION_INVALID_CALL_NUMBER_FORMAT)
+                //Was PROBLEM_COLLECTION_INVALID_CALL_NUMBER_FORMAT until 2026-08-20, which
+                //named the wrong entity *and* the wrong fault: these are books whose
+                //sort text is missing, not collections whose call-number format is
+                //invalid. An administrator reading the old label was told to go and look
+                //at a collection that is fine.
+                $obj->setProblem(self::PROBLEM_BOOK_MISSING_SORT_TEXT)
                     ->setData($object);
                 $problems[] = $obj;
                 if (! $simulate) {
