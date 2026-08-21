@@ -122,10 +122,26 @@ final class RouteUrl
     }
 
     /**
+     * The shared laminas router, its base URL set to carry the locale prefix.
+     *
+     * **Public because one collaborator assembles for itself rather than through
+     * `path()`:** `JUser\Service\Mailer` builds the sign-in link with
+     * `force_canonical`, on a router handed to it by its own factory. Given the raw
+     * container router it assembles `/user/verify?token=…` with no locale prefix — which
+     * is the *unprefixed twin* of a ported route, so the emailed link 302s before it is
+     * redeemed, and a mail client or a scanner that does not follow the hop loses the
+     * token. Measured 2026-08-21, and it is what batch 13 got wrong first.
+     *
+     * Handing over the prepared router rather than having callers prime it by side effect
+     * is the whole point: `App\JUser\SignIn::mailer()` calls this explicitly, so the
+     * answer does not depend on whether some template happened to render a link first.
+     * `App\JUser\RedirectTarget` has the same hazard from the other direction and solves
+     * it by matching on a clone with an empty base.
+     *
      * @param string|null $locale null means the request's own default
      * @return TreeRouteStack<HttpRouteInterface>
      */
-    private function router(?string $locale = null): TreeRouteStack
+    public function router(?string $locale = null): TreeRouteStack
     {
         $alias = Locales::aliasFor($locale ?? Locale::getDefault());
 

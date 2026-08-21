@@ -2201,6 +2201,107 @@ counts those rows and says so. Nothing but a round trip would have surfaced it.
   the second firing once per publication row. Invisible in production, which narrows
   `error_reporting`, and noisy in every console run.
 
+### The authentication surface — batch 13, 2026-08-21
+
+Four routes: `/user`, `/user/login`, `/user/verify`, `/user/logout`. The flow every human
+uses, and the only place on this site where being wrong is not recoverable from a browser.
+
+**`JUser\Controller\LoginController` is kept**, unlike every previous batch. The laminas
+routes stay declared either way, so deleting the four declarations in
+`config/symfony/routes.php` puts laminas back in charge of the sign-in flow — a one-line
+rollback that needs no deploy of new code. Deleting the controller is a follow-up once
+production has run on this, and it is what unblocks JUser 3.0.0.
+
+**The safety net came first, for the first time in this migration.** The 13 tests of
+`test/Smoke/AuthSmokeTest` — single use, expiry, digest-at-rest, session-id regeneration,
+the resend throttle, the uniform response, and all four deactivation doors — plus the five
+open-redirect cases in `UserSmokeTest` were written in the *previous* PR, before any of this
+existed. Three of them failed on the first run of the port and each was a real defect.
+
+#### Three things a transcription got wrong
+
+**`?redirect=` refused every destination on the site.** `validRedirect()` ends in a
+laminas-router match, and through `App\Laminas\ServiceBridge` that router has never seen
+SlmLocale — so it rejects every locale-prefixed path. Measured: `/en/shrines` no match,
+`/shrines` matches. Every `?redirect=` the guards emit carries the prefix, so a faithful
+port would have signed everyone in and landed them on the home page, silently, looking
+exactly like the defect fixed on 2026-08-20. `App\JUser\RedirectTarget` strips the prefix
+and matches on a **clone** of the router with an empty base URL — a clone because
+`App\Laminas\RouteUrl` sets the shared router's base to `/en` so that assembled links carry
+the prefix, and `TreeRouteStack::match()` uses `strlen($baseUrl)` as a *path offset*. Left
+shared, the answer would depend on whether a template had rendered a link first.
+
+The same probe settled something about the open-redirect defence: `matchUrl()` accepts
+`//evil.example.com/` and `https://evil.example.com/`, because `Request::setUri()` parses the
+URL and the router matches its **path**, discarding the host. The router is no defence at
+all; the leading-slash and `//` checks are the whole of it, and their *order* — string tests
+before the match — is load-bearing.
+
+**The emailed link had no locale prefix.** `JUser\Service\Mailer` assembles it itself with
+`force_canonical`, on whatever router its factory handed it, and under a Symfony dispatch
+that is the raw container router. It produced `http://host/user/verify?token=…` — the
+*unprefixed twin* of a ported route, which answers a 302. A browser survives that; a mail
+client that pre-fetches, a scanner, or anything that does not follow the hop does not, and
+the token is single-use. `App\JUser\SignIn::mailer()` pushes `RouteUrl::router()` in
+explicitly, rather than relying on something else having primed it earlier in the request.
+
+**Two flash messages became one.** `FlashMessenger::addMessage()` calls
+`getMessagesFromContainer()` the first time an *instance* is used, which moves every
+namespace out of the session container into that instance and unsets it from the container.
+A fresh `new FlashMessenger()` per message therefore takes the previous message out of the
+session and holds it in an object discarded at the end of the request. Redemption reports
+"You are signed in." and "but not there" together, so it lost the first. The laminas
+controller never had this problem because `$this->flashMessenger()` is a *shared* controller
+plugin. `App\JUser\SignIn` and `App\JUser\UserAdmin` both memoize one instance now — the
+admin surface had the same latent bug and no path that flashed twice.
+
+#### The consent gate, which has no listener
+
+`Application\View\GdprStrategy::onRoute()` swapped the route match of `zfcuser/login` and
+`zfcuser/verify` for the cookie explainer when the visitor had not consented. It runs on
+`MvcEvent::EVENT_ROUTE`, which a ported route never reaches. Both controllers ask
+`App\JUser\SignIn::wantsCookiesFirst()` first and answer with `App\JUser\CookieExplainer` —
+**a 200 at the requested URL, not a redirect**, because a redirect would rewrite the address
+bar of someone who had just clicked an emailed link, and the point of the gate is that the
+link survives. The strategy's other half, `onFinish()`, was already reproduced by
+`App\Http\GdprCookieListener`.
+
+#### `sign-in-no-cookies` was ported and then withdrawn
+
+It has **no guard entry**, so default deny applies and it has never been reachable as a URL.
+The only thing that ever rendered it is the route-match swap, which works because it runs at
+priority -5000 — *after* the guard has approved a different route. Declaring a Symfony route
+for it makes `tools/acl-table.php` write "no such resource — denies everyone" into the
+committed snapshot permanently, which is worse than leaving the laminas route to deny
+everyone quietly. The template lives at `templates/content/sign-in-no-cookies.html.twig` and
+`CookieExplainer` renders it. Whether the page should be public is filed in `docs/BACKLOG.md`.
+
+#### Two measurements worth keeping
+
+**No anonymous-reachable unported HTML page is left.** Of 118 guarded laminas routes, 105
+are now shadowed by a Symfony route; of the 13 that are not, the only one an anonymous
+visitor may reach is `redirect-pre-april-2020-sl-id`, which renders no layout.
+`ServingNoteSmokeTest` had to start signing in to observe the bridge at all, and when the
+remaining twelve port, `App\Http\LegacyBridge` has nothing left to bridge.
+
+**The smoke suite runs in half the time**: 627 tests in 2:24, against 4:19 for the same 627
+before the port. Every suite that signs in was booting laminas-mvc to do it.
+
+#### The baseline diff
+
+`tools/port-baseline.php` carries `/user` and `/user/login` — 24 captures across five
+locales and both identities, **all byte-identical** before and after. `/user/verify` and
+`/user/logout` cannot be in that list: verify needs a live single-use token the harness
+cannot mint and would burn on the first of twelve fetches, and logout would destroy the
+signed-in session mid-capture, making every later path read as an authorization regression.
+Both are characterized end to end by `AuthSmokeTest`, which mints real tokens through
+Mailpit and owns its own session.
+
+Fifty of the 1,272 captures differ and none is an auth path: ten pages × five locales, all
+of them signed-in pages reading data the suites wrote between the two captures (`users` grew
+test accounts, `admin`'s translation badge went 2,546 → 2,549 as the new templates filed
+their phrases, `users-create` gained the eight bytes of `checked` from the previous PR).
+
 ### The user-administration surface — batch 12, 2026-08-21
 
 The seven `juser/*` routes: the index, the two create forms, the account form, the delete
