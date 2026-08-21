@@ -2212,6 +2212,37 @@ routes stay declared either way, so deleting the four declarations in
 rollback that needs no deploy of new code. Deleting the controller is a follow-up once
 production has run on this, and it is what unblocks JUser 3.0.0.
 
+**Done 2026-08-21, and it removed the rollback: `JUser\Controller\LoginController` is
+deleted.** With it went its factory, four view scripts, JUser's whole `view/` tree, and the
+module's `controllers`, `controller_plugins` and `view_manager` config — JUser registers
+nothing with laminas-mvc any more. Every previous batch could be undone by deleting route
+declarations; from here, undoing any of this surface is a deploy.
+
+Two things landed here as a consequence, and one of them is the kind of ordering bug this
+migration keeps producing.
+
+**`Application\Session\SessionBootstrap`** starts the session, attached through
+`config/application.config.php`'s `listeners` key at priority 10000. The obvious home was
+`Application\Module::onBootstrap()` and it is wrong: module hooks run in
+`config/modules.config.php` order at one priority, `JUser` sat at 42 and `Application` sits
+at 47, and **`SionModel` at 43 calls `Authorize::getIdentity()` in its own hook** — which
+triggers `Authorize::load()` and bakes the identity's roles into the ACL for the whole
+request. Started after that, it bakes `guest`, and every `isAllowed()` on the request answers
+anonymous while nothing fails. It would also not have shown up in any test: under the Symfony
+front controller `App\Http\SessionListener` starts the session before `LegacyBridge` builds
+the laminas application, so module order is invisible there. The path it protects is
+`SYMFONY_KERNEL=0` — the documented rollback, i.e. the path that has to work when something
+else has already gone wrong.
+
+**`zfcUserAuthentication()` became `identity()`** at its two call sites in
+`module/Schoenstatt/src/Controller/`. Measured rather than assumed: the plugin resolves an
+`AuthenticationService` whose storage is `JUser\Authentication\Storage\SessionUser`, the
+same object the old plugin wrapped. Both of those actions are rollback-path code anyway —
+`/movement` and `/associations` are Symfony-served.
+
+**`GdprStrategy` is `onFinish()` only.** The `onRoute()` route-match swap went with
+`LoginController`, along with `IndexController::signInNoCookiesAction()` and its `.phtml`.
+
 **Done 2026-08-21: the switch happened.** All eleven routes of the JUser surface are served
 by `JUser\Controller\*` out of the module, and this application's eight controllers, four
 `App\JUser\*` support classes and eleven templates were deleted. What is left here is six

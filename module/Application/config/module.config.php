@@ -18,7 +18,10 @@ use Laminas\I18n\Translator\TranslatorServiceFactory;
 use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
 use BjyAuthorize\Guard\Route;
 use Laminas\Cache\Storage\StorageInterface;
+use Application\Session\SessionBootstrap;
 use Application\View\GdprStrategy;
+use Laminas\Session\ManagerInterface as SessionManagerInterface;
+use Psr\Container\ContainerInterface;
 use Laminas\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Psr\Log\LoggerInterface;
@@ -118,6 +121,17 @@ return [
             //default persistent storage, configured in cache.local.php
             StorageInterface::class => Service\CacheFactory::class,
             GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
+            /*
+             * Starts the session, and is attached from `config/application.config.php`'s
+             * `listeners` key rather than from a module `onBootstrap()` — it has to outrank
+             * every module hook, because SionModel's asks BjyAuthorize for the identity and
+             * that bakes the ACL's roles for the rest of the request. See the class.
+             *
+             * A closure rather than a factory class: one constructor argument, and the
+             * indirection would only hide which service that is.
+             */
+            SessionBootstrap::class => static fn (ContainerInterface $c): SessionBootstrap
+                => new SessionBootstrap($c->get(SessionManagerInterface::class)),
             //The sitemap builder. An App\ class registered from a laminas module config
             //because bin/console resolves commands out of this container — see
             //App\Console\Command\BuildSitemapCommandFactory for what it does and does not

@@ -16,8 +16,6 @@ use Laminas\Mvc\MvcEvent;
 use Laminas\Stdlib\ResponseInterface as Response;
 use Laminas\Session\SessionManager;
 use Laminas\View\Model\ViewModel;
-use Application\Controller\IndexController;
-use Laminas\Router\Http\RouteMatch;
 
 class GdprStrategy implements ListenerAggregateInterface
 {
@@ -44,7 +42,19 @@ class GdprStrategy implements ListenerAggregateInterface
      */
     public function attach(EventManagerInterface $events, $priority = 1)
     {
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, [$this, 'onRoute'], -5000);
+        //**Only `onFinish()` since 2026-08-21.** `onRoute()` swapped the route match of
+        //`zfcuser/login` and `zfcuser/verify` for a cookie explainer when the visitor had
+        //not consented — and JUser's `LoginController`, the only thing that ever served
+        //those paths under laminas, is gone. The gate lives in `JUser\Page\SignIn` and
+        //`JUser\Page\CookieExplainer` now, which answer at the requested URL with a 200
+        //exactly as the swap did.
+        //
+        //Worth knowing what the swap *was*, because it is the reason the page it served had
+        //no route: it ran at priority -5000, i.e. after BjyAuthorize's guard had already
+        //approved a *different* route, and built its RouteMatch by hand. So the page it
+        //swapped in rendered without ever being authorized, and `/sign-in-no-cookies` — a
+        //real route with no guard entry, therefore denied to everyone — was unreachable for
+        //the whole of its existence.
         $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, [$this, 'onFinish'], 5000);
     }
 
@@ -74,45 +84,6 @@ class GdprStrategy implements ListenerAggregateInterface
     public function getTemplate()
     {
         return $this->template;
-    }
-
-    /**
-     * Callback used when a dispatch error occurs. Modifies the
-     * response object with an according error if the application
-     * event contains an exception related with authorization.
-     *
-     * @param MvcEvent $event
-     *
-     * @return void
-     */
-    public function onRoute(MvcEvent $event)
-    {
-        $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
-        $route = $event->getRouteMatch();
-        //all auth entry points need cookies (session + CSRF); without consent,
-        //onFinish() strips Set-Cookie, so sign-in would silently fail. Show the
-        //explainer instead. Magic-link tokens are only consumed on successful
-        //redemption, so the emailed link still works after consenting.
-        //`zfcuser/register` was in this list until 2026-08-20, when the route was
-        //retired: registering and signing in are one request under magic links.
-        //Both of these are Symfony-served since batch 13 (2026-08-21), where the gate is
-        //App\JUser\CookieExplainer, so this listener no longer fires in normal traffic —
-        //the laminas application is not entered for a ported route at all. It is kept for
-        //the rollback path: removing the four `zfcuser/*` declarations from
-        //config/symfony/routes.php hands these paths back to LoginController, and without
-        //this swap an unconsented visitor would get a form whose session cookie onFinish()
-        //then strips, i.e. a sign-in that fails with nothing to show them. Goes with
-        //LoginController.
-        //
-        //The route `sign-in-no-cookies` was deleted the same day and this does not need it:
-        //the RouteMatch below is built by hand and setMatchedRouteName() only labels it.
-        $authRoutes = ['zfcuser/login', 'zfcuser/verify'];
-        if (! $hasConsented && in_array($route->getMatchedRouteName(), $authRoutes, true)) {
-            $newMatch = new RouteMatch(['controller' => IndexController::class, 'action' => 'sign-in-no-cookies']);
-            $newMatch->setMatchedRouteName('sign-in-no-cookies');
-            $event->setRouteMatch($newMatch);
-        }
-        return $event;
     }
 
     public function onFinish(MvcEvent $event)
