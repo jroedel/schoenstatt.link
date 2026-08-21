@@ -80,7 +80,10 @@ use App\Controller\TimelineController;
 use App\Controller\UserCreateController;
 use App\Controller\UserDeleteController;
 use App\Controller\UserEditController;
+use App\Controller\LogoutController;
+use App\Controller\SignInController;
 use App\Controller\UsersController;
+use App\Controller\VerifyController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
@@ -2031,10 +2034,7 @@ $ported(
 // a second check. Said out loud because the *absence* of one is what a reader coming from
 // the library surface will notice.
 //
-// **What is NOT here: the four `zfcuser/*` sign-in routes.** They are batch 13 and they
-// are gated on JUser 3.0.0 rather than on effort: `LoginController` is the module's last
-// laminas-mvc controller, and porting it is what lets the package drop laminas-mvc
-// entirely. See module/JUser/README.md for the release plan.
+// The four `zfcuser/*` sign-in routes are **batch 13**, declared at the end of this file.
 //
 // **Order.** The two literal create paths come first, and — unlike batch 9, where order
 // genuinely did not matter — one of the two really does need to. `/users/roles/create` is
@@ -2108,6 +2108,101 @@ $ported(
     $textDomain('JUser'),
     ['user_id' => '[0-9]{1,5}', 'token_id' => '[0-9]+']
 );
+
+// ---------------------------------------------------------------------------------------
+// Batch 13, ported 2026-08-21: the authentication surface. **The five routes that decide
+// whether anybody can get in**, and the last laminas-served pages JUser owns.
+//
+// `JUser\Controller\LoginController` is deliberately **kept** for one release rather than
+// deleted with the port, unlike every previous batch. The laminas routes stay declared
+// either way — that is the `$ported()` contract — so keeping the controller means the flip
+// is reversible: remove the five declarations below and laminas answers these paths again.
+// Nowhere else on the site is being wrong unrecoverable from a browser. Deleting it is a
+// follow-up once production has run on this, and it is what unblocks JUser 3.0.0 (see
+// module/JUser/README.md).
+//
+// **Guards, and why three of these are `guest`.** `zfcuser`, `zfcuser/login` and
+// `zfcuser/verify` admit `guest` and `user`, because a page you visit in order to sign in
+// cannot require an identity; `zfcuser/logout` is `user`; `sign-in-no-cookies` is public.
+// The guard entries live in JUser's own module config, unusually — everything else on this
+// site is guarded from config/autoload — because a module that owns the sign-in routes has
+// to keep them reachable to be installable at all.
+//
+// **The consent gate has no listener here.** `Application\View\GdprStrategy::onRoute()`
+// swapped the route match of login and verify for the explainer when the visitor had not
+// consented, and it runs on `MvcEvent::EVENT_ROUTE`, which a ported route never reaches.
+// Both controllers ask `App\JUser\SignIn::wantsCookiesFirst()` first and answer with
+// `App\JUser\CookieExplainer` — a 200 at the requested URL, not a redirect, so an emailed
+// link survives being consented to. The strategy's other half, `onFinish()`, was already
+// reproduced by `App\Http\GdprCookieListener`.
+//
+// **`?redirect=` needed real work**, and it is the one thing here that a transcription
+// would have got wrong: `validRedirect()` ends in a laminas-router match, and through
+// App\Laminas\ServiceBridge that router has never seen SlmLocale, so it rejects every
+// locale-prefixed path. `App\JUser\RedirectTarget` strips the prefix first and matches on
+// a **clone** of the router with an empty base URL. Read its docblock before touching it;
+// getting it wrong sends every visitor to the home page instead of where they were going,
+// and nothing fails.
+
+// `/user` — nothing lives here; bounce the visitor to the form or, if they already have an
+// identity, to the post-login route.
+$ported(
+    'zfcuser',
+    '/user',
+    [SignInController::class, 'index'],
+    RouteAccess::guardedBy('route/zfcuser'),
+    $textDomain('JUser')
+);
+
+// The form. GET renders it, POST issues and mails a link — and answers identically whether
+// or not the address is known, which is the property the whole page exists to have.
+$ported(
+    'zfcuser/login',
+    '/user/login',
+    [SignInController::class, 'form'],
+    RouteAccess::guardedBy('route/zfcuser/login'),
+    $textDomain('JUser')
+);
+
+// Redemption: the one request on this site that creates an authenticated session.
+$ported(
+    'zfcuser/verify',
+    '/user/verify',
+    VerifyController::class,
+    RouteAccess::guardedBy('route/zfcuser/verify'),
+    $textDomain('JUser')
+);
+
+// Signing out. Guarded `user`, so an anonymous caller meets the guard rather than being
+// told "done".
+$ported(
+    'zfcuser/logout',
+    '/user/logout',
+    LogoutController::class,
+    RouteAccess::guardedBy('route/zfcuser/logout'),
+    $textDomain('JUser')
+);
+
+// **`sign-in-no-cookies` is deliberately NOT ported, and finding out why is the one thing
+// this batch changed its mind about.** It was written, declared, and then withdrawn.
+//
+// The page has never been reachable as its own URL. It has **no guard entry at all**, so
+// BjyAuthorize's default deny applies — `docs/acl-rules.md` has listed it under "routes with
+// no guard entry (nobody can reach these)" as a real endpoint for as long as that table has
+// existed. The only way anyone has ever seen it is the route-match swap in
+// `Application\View\GdprStrategy::onRoute()`, which runs at priority -5000 on
+// `MvcEvent::EVENT_ROUTE` — *after* the guard has already approved `zfcuser/login` — so the
+// swapped-in page renders without ever being authorized.
+//
+// Porting it therefore adds a Symfony route that denies everyone, and `tools/acl-table.php`
+// says so in a warning that would then sit in the committed snapshot forever: "no such
+// resource — denies everyone". A permanent warning about a page nothing links to is worse
+// than leaving the laminas route to go on denying everyone exactly as it does today.
+//
+// Nothing is lost. The template lives at templates/content/sign-in-no-cookies.html.twig and
+// is rendered by `App\JUser\CookieExplainer` for the two gated routes above, which is the
+// only way the page has ever been reached. Whether it *should* have a guard entry is a real
+// question and is filed in docs/BACKLOG.md rather than answered by a port.
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

@@ -27,6 +27,16 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class ServingNoteSmokeTest extends SmokeTestCase
 {
+    use MagicLinkSignIn;
+
+    /** Distinct from every other class's, or one tearDown deletes another's accounts. */
+    private const EMAIL_PREFIX = 'serving-note-smoke-';
+
+    protected function emailPrefix(): string
+    {
+        return self::EMAIL_PREFIX;
+    }
+
     /** A ported route: Twig, no bridge. */
     public function testAPortedRouteReportsTwig(): void
     {
@@ -45,10 +55,29 @@ class ServingNoteSmokeTest extends SmokeTestCase
      * An unported route: the same front controller, a laminas rendering. This is the
      * combination the note exists to make visible, because the page itself looks exactly
      * like a laminas-served one.
+     *
+     * ## This test has to sign in now, and the reason is a milestone rather than a nuisance
+     *
+     * It used `/en/user/login` until batch 13 ported it (2026-08-21). Finding a replacement
+     * turned up that **there is no anonymous-reachable unported HTML page left**: of the 118
+     * guarded laminas routes, 106 are now shadowed by a Symfony route, and of the 13 that
+     * are not, the only one an anonymous visitor may reach is
+     * `redirect-pre-april-2020-sl-id` — which is a redirect and renders no layout at all.
+     *
+     * So the bridge can only be observed from behind a guard, and `jtranslate`
+     * (`/admin/translations`, `sch_general_moderator` or `translator`) is the clearest of
+     * the twelve: a real HTML page with the shared layout, no write, and cheap to render.
+     * When it ports too, this test needs another of the twelve — and when the twelve run
+     * out, `App\Http\LegacyBridge` has nothing left to bridge and this half of the note is
+     * dead code, which is the point of the migration and should be deleted rather than
+     * patched.
      */
     public function testAnUnportedRouteReportsTheBridge(): void
     {
-        $note = $this->noteOn('/en/user/login');
+        $jar = $this->newCookieJar();
+        $this->signIn($jar, ['translator']);
+
+        $note = $this->noteOn('/en/admin/translations', $jar);
 
         self::assertStringContainsString(ServingNote::RENDERER_PHTML, $note);
         self::assertStringContainsString('via LegacyBridge', $note);

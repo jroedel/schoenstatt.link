@@ -886,6 +886,26 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **`sign-in-no-cookies` has no guard entry, so nobody can reach it as a URL.** The page
+  that explains why signing in needs cookies is served *only* by the route-match swap in
+  `Application\View\GdprStrategy::onRoute()` — which works because it runs at priority -5000
+  on `MvcEvent::EVENT_ROUTE`, after `BjyAuthorize\Guard\Route` has already approved
+  `zfcuser/login`. Typing the URL yields the default-deny redirect. It has been in
+  `docs/acl-rules.md`'s "routes with no guard entry (nobody can reach these)" list, flagged as
+  a real endpoint, for as long as that table has existed. Batch 13 (2026-08-21) wrote the port
+  for it and then **withdrew it**: a Symfony route checking a resource nothing defines makes
+  `tools/acl-table.php` emit "no such resource — denies everyone" into the committed snapshot
+  forever, which is worse than leaving the laminas route to deny everyone quietly. The
+  question to answer is whether it should be public — it is a static explanation with no data
+  and nothing links to it — and if yes, it wants a guard entry *and* the withdrawn
+  declaration, which is a few lines away in `config/symfony/routes.php`.
+
+- [ ] **The cookie explainer's one paragraph is not translated.** `templates/content/sign-in-no-cookies.html.twig`
+  prints it as a raw English literal, faithfully reproducing the .phtml, so a German visitor
+  who has refused cookies reads English on the one page that is trying to tell them how to
+  proceed. The `<h1>` next to it *is* translated. One `translate()` call, and the phrase is
+  not yet in the table.
+
 - [ ] **`Entity::$actionRouteProperties` names two properties `Entity` does not have.**
   `create => 'createRoute'` and `touch => 'touchRoute'`, in
   `module/SionModel/src/Entity/Entity.php`. `FormatEntity::isActionAllowed()` and

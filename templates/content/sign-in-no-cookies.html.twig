@@ -1,0 +1,40 @@
+{#
+  module/Application/view/application/index/sign-in-no-cookies.phtml — why signing in needs
+  cookies.
+
+  **Rendered by no route.** It is what `/user/login` and `/user/verify` answer with when the
+  visitor has not consented, through App\JUser\CookieExplainer — at the requested URL, with a
+  200, rather than by redirecting, which is what `Application\View\GdprStrategy::onRoute()`
+  achieved by swapping the route match. A redirect would rewrite the address bar of someone
+  who had just clicked an emailed link, and the point is that the link is still good once
+  they consent: the token is spent only on a successful redemption.
+
+  It sits under templates/content/ anyway, next to the pages ContentPageController serves,
+  because that is where an Application-module static page belongs and because giving it a
+  route is a one-line change if the `sign-in-no-cookies` guard question in docs/BACKLOG.md is
+  ever answered yes. It has never been reachable as its own URL: the laminas route has no
+  guard entry, so default deny applies, and the only thing that ever showed the page was the
+  route-match swap — which runs *after* the guard has approved a different route.
+
+  Two faithful oddities, reproduced rather than fixed, because this port's evidence that
+  nothing else moved is a byte-for-byte diff:
+
+  - **the `<h1>` is "Sign In" and the sign-in page's is "Sign in".** Two separate phrases in
+    the table, and that difference is how test/Smoke/UserSmokeTest tells which of the two
+    pages it is looking at.
+  - **the paragraph is not translated.** The .phtml prints it as a raw English literal with
+    no `translate()` around it, so a German visitor who has refused cookies reads English.
+    Filed in docs/BACKLOG.md rather than folded in — fixing it would put a new phrase in the
+    table in the same change that moves the route.
+
+  The .phtml sets no `headTitle()`, so the page title is passed **empty**. Absent would be a
+  fatal: the layout reads `page_title` with no `is defined` guard under strict_variables, and
+  the fatal arrives as a 200 with an empty body.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Sign In') }}</h1>
+
+<p class="text-danger">Warning, without consenting to using cookies on this website, there is no way to sign in. Please accept consent, and <strong>reload the page</strong>.</p>
+{% endblock %}
