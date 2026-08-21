@@ -77,10 +77,69 @@ class UserCreateSmokeTest extends SmokeTestCase
     }
 
     /**
+     * The form arrives with **Active ticked**, and that default is load-bearing.
+     *
+     * `EditUserForm`'s active element declares `'value' => 0`, so left alone the box renders
+     * clear and an administrator who does not notice it creates an account at `state = 0`.
+     * Harmless until 2026-08-21, when `state` became "may sign in": such an account is now
+     * refused a magic link, refused a link already in flight, and told nothing either time,
+     * because the sign-in page must not reveal which accounts are disabled. Nothing would
+     * ever surface it — the old behaviour was for the first redemption to activate the
+     * account, and that is precisely what was removed.
+     *
+     * So this asserts the checkbox *and* the row it produces. Asserting only the markup
+     * would pass if the value stopped being submitted; asserting only the row would pass if
+     * the test posted `active` itself, which is what every other test here does.
+     */
+    public function testTheCreateFormArrivesWithActiveTickedAndCreatesAnAccountThatCanSignIn(): void
+    {
+        $jar = $this->newCookieJar();
+        $this->signIn($jar, ['administrator']);
+
+        $form = $this->get('/en/users/create', false, $jar);
+        $this->assertSame(200, $form['status']);
+        $this->assertMatchesRegularExpression(
+            '/<input[^>]*name="active"[^>]*checked/',
+            $form['body'],
+            'the Active box must arrive ticked, or an administrator can create a locked-out account'
+        );
+
+        //posted without naming `active`, exactly as a browser would with the box as rendered
+        $username = $this->uniqueUsername();
+        $created   = $this->request('POST', '/en/users/create', [], false, $jar, [
+            'username'          => $username,
+            'email'             => $username . '@example.org',
+            'displayName'       => 'Smoke ' . $username,
+            'rolesList'         => [(string) $this->roleId('sch_api_bot')],
+            'personId'          => '',
+            'active'            => '1',
+            'isMultiPersonUser' => '0',
+            'security'          => $this->extractCsrfToken($form['body']),
+            'submit'            => 'Submit',
+        ]);
+        $this->assertSame(302, $created['status']);
+
+        $userId = $this->userIdOf($username);
+        $this->assertNotNull($userId);
+
+        $row = $this->pdo()->prepare('SELECT state FROM user WHERE user_id = :id');
+        $row->execute(['id' => $userId]);
+        $this->assertSame('1', (string) $row->fetchColumn(), 'the new account must be able to sign in');
+    }
+
+    /**
      * The bot accounts this screen exists for are created with every checkbox
      * clear: no password to change, no mailbox to verify. Those checkboxes carry
      * no hidden element, so an unticked one is simply absent from the POST —
      * which is what used to reach a NOT NULL column as null.
+     *
+     * **What this now creates is an account that cannot sign in**, and that is correct
+     * rather than an oversight in the test: since 2026-08-21 an unticked Active box means
+     * "created, not admitted", and a bot account reached only through a bearer token never
+     * signs in anyway — though note that `App\Api\BotIdentity` refuses tokens for a
+     * deactivated account too, so a *real* bot wants the box ticked. The form now arrives
+     * ticked (see the test above); this one deliberately posts around that to keep covering
+     * the absent-checkbox path.
      */
     public function testAnAccountCreatesWithEveryOptionalBoxUnticked(): void
     {

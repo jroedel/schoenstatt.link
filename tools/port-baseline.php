@@ -410,6 +410,29 @@ const PATHS = [
     '/users/5/api-tokens',
     '/users/5/api-tokens/1/revoke',
 
+    // The auth surface — batch 13's subject, listed here ahead of it so its capture has a
+    // before as well as an after. **Two of the four routes cannot be here, and neither is
+    // an oversight:**
+    //
+    //   - `/user/verify` needs a live single-use token, which this harness has no way to
+    //     mint and would burn on the first of its twelve fetches;
+    //   - `/user/logout` would destroy the signed-in session *mid-capture*, so every path
+    //     listed after it would be captured anonymously and the diff would read as a
+    //     hundred authorization regressions.
+    //
+    // Both are characterized end to end by test/Smoke/AuthSmokeTest, which mints real
+    // tokens through Mailpit and owns its own session — the same division of labour the
+    // library `refresh-sort` and `send-book-notices` routes have above.
+    //
+    // What is left is worth having: `/user/login` is the form itself, and its rendering is
+    // where a locale bug would show, while `/user` is the redirect that decides where a
+    // signed-in visitor asking for the sign-in page ends up. Both are idempotent GETs.
+    //
+    // Note the signed-in half of these two is a redirect, not a page. That is the
+    // behaviour under test, not a gap in the capture.
+    '/user',
+    '/user/login',
+
     // earlier batches, re-compared because every port re-enters the same layout,
     // the same translator and the same authorization listener
     '/',

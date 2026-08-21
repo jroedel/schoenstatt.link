@@ -178,6 +178,15 @@ class AuthSmokeTest extends SmokeTestCase
      * (via activateUser) ever got email_verified set: an account that was
      * already active but never verified could sign in forever without the
      * flag flipping.
+     *
+     * **Since 2026-08-21 that is the only case there is**, which makes this test more
+     * central than it was rather than redundant. `createUserFromEmail()` now creates
+     * accounts active-and-unverified — it had to, once `state = 0` became a hard refusal —
+     * so `clearVerificationToken()` is the *sole* thing that ever sets `email_verified`,
+     * and `activateUser()` has no caller at all. The explicit UPDATE below is kept because
+     * the test must not depend on the default shape of a new row to be testing the right
+     * thing; it just no longer changes anything, hence the row-exists check rather than a
+     * rows-changed one (PDO counts changed rows, not matched ones).
      */
     public function testSignInMarksEmailVerifiedEvenForActiveAccounts(): void
     {
@@ -188,10 +197,13 @@ class AuthSmokeTest extends SmokeTestCase
         $this->requestSignInLink($jar, $email);
         $verifyPath = $this->toLocalPath($this->extractVerifyUrl($this->awaitMessageFor($email)['Text']));
 
-        // force the gap scenario: active, but email never verified
-        $update = $this->pdo()->prepare('UPDATE user SET state = 1, email_verified = 0 WHERE email = :email');
-        $update->execute(['email' => $email]);
-        $this->assertSame(1, $update->rowCount(), 'the account should exist by now');
+        // state the gap scenario explicitly: active, but email never verified
+        $this->pdo()
+            ->prepare('UPDATE user SET state = 1, email_verified = 0 WHERE email = :email')
+            ->execute(['email' => $email]);
+        $exists = $this->pdo()->prepare('SELECT COUNT(*) FROM user WHERE email = :email');
+        $exists->execute(['email' => $email]);
+        $this->assertSame(1, (int) $exists->fetchColumn(), 'the account should exist by now');
 
         $verify = $this->get($verifyPath, false, $jar);
         $this->assertSame(302, $verify['status'], 'the link should still sign the user in');
@@ -217,6 +229,272 @@ class AuthSmokeTest extends SmokeTestCase
 
         $this->assertSame(200, $response['status'], 'no consent means an explainer, not a rejection');
         $this->assertStringContainsString('<h1>Sign In</h1>', $response['body']);
+    }
+
+    // ------------------------------------------------- the properties of the token
+
+    /**
+     * A token past its expiry is refused, and the clock is the only thing that changed.
+     *
+     * Expiry is one of the four things a single-use emailed credential rests on and it was
+     * the one with no test at all until 2026-08-21 — single use is asserted in step 5 of
+     * the round trip above, the throttle and the uniform response have their own tests,
+     * and this did not, because a test cannot wait out the window.
+     *
+     * So the window is moved instead of waited out: the row's `verification_expiration` is
+     * pushed into the past, which is exactly the state a link left in a mailbox overnight
+     * reaches on its own. Nothing else is touched — same token, same account, same
+     * session.
+     *
+     * The token is deliberately **not** consumed on this path (`redeemToken()` returns
+     * before burning it), and that is asserted too: it costs nothing, since an expired
+     * digest can never be redeemed again, and if the order ever inverted, a *live* token
+     * would start being spent by a failed attempt.
+     */
+    public function testAnExpiredTokenIsRefused(): void
+    {
+        $email = $this->uniqueEmail();
+        $jar   = $this->newCookieJar();
+
+        $this->requestSignInLink($jar, $email);
+        $verifyPath = $this->toLocalPath($this->extractVerifyUrl($this->awaitMessageFor($email)['Text']));
+
+        $expire = $this->pdo()->prepare(
+            'UPDATE user SET verification_expiration = :past WHERE email = :email'
+        );
+        $expire->execute(['past' => '2020-01-01 00:00:00', 'email' => $email]);
+        $this->assertSame(1, $expire->rowCount(), 'the account should exist by now');
+
+        $verify = $this->get($verifyPath, false, $jar);
+        $this->assertSame(400, $verify['status'], 'an expired link must not sign anyone in');
+        $this->assertStringContainsString('sign-in link didn', $verify['body']);
+
+        $home = $this->get('/en/', false, $jar);
+        $this->assertStringContainsString('>Sign in</a>', $home['body'], 'the session must still be anonymous');
+
+        $row = $this->pdo()->prepare('SELECT verification_token FROM user WHERE email = :email');
+        $row->execute(['email' => $email]);
+        $this->assertNotNull(
+            $row->fetchColumn(),
+            'an expired token is refused before it is burned; if that inverts, a live token '
+            . 'would be spent by a failed attempt'
+        );
+    }
+
+    /**
+     * Only a digest of the emailed token is stored.
+     *
+     * The plaintext exists in exactly two places — the email, and the reader's browser
+     * when they click — and never in the database. So a read of `user` is not a set of
+     * bearer credentials, which is the whole reason `UserTable::hashToken()` exists.
+     *
+     * Asserted by recomputing the digest rather than merely checking that the column
+     * differs from the plaintext: "different" would also be satisfied by a truncation, an
+     * encoding, or the wrong token entirely.
+     */
+    public function testOnlyADigestOfTheEmailedTokenIsStored(): void
+    {
+        $email = $this->uniqueEmail();
+
+        $this->requestSignInLink($this->newCookieJar(), $email);
+        $verifyUrl = $this->extractVerifyUrl($this->awaitMessageFor($email)['Text']);
+
+        $this->assertSame(1, preg_match('/token=([0-9a-f]{64})/', $verifyUrl, $m), 'the emailed token');
+        $plaintext = $m[1];
+
+        $row = $this->pdo()->prepare('SELECT verification_token FROM user WHERE email = :email');
+        $row->execute(['email' => $email]);
+        $stored = (string) $row->fetchColumn();
+
+        $this->assertNotSame($plaintext, $stored, 'the plaintext token must never be stored');
+        $this->assertSame(hash('sha256', $plaintext), $stored, 'the column holds its sha256 digest');
+    }
+
+    /**
+     * Signing in issues a new session id.
+     *
+     * The session-fixation defence: an attacker who can fix a victim's session id before
+     * they authenticate holds an authenticated session afterwards, unless the id changes
+     * at the moment the privilege level does. `verifyAction()` calls
+     * `regenerateId(true)` for that, one line with a three-word comment and, until
+     * 2026-08-21, no test — and a port that establishes the identity without it would
+     * pass every other assertion in this file.
+     */
+    public function testSigningInIssuesANewSessionId(): void
+    {
+        $email = $this->uniqueEmail();
+        $jar   = $this->newCookieJar();
+
+        $this->requestSignInLink($jar, $email);
+        $before = $this->sessionIdIn($jar);
+        $this->assertNotSame('', $before, 'asking for a link should already have started a session');
+
+        $verifyPath = $this->toLocalPath($this->extractVerifyUrl($this->awaitMessageFor($email)['Text']));
+        $this->assertSame(302, $this->get($verifyPath, false, $jar)['status']);
+
+        $this->assertNotSame(
+            $before,
+            $this->sessionIdIn($jar),
+            'the session id must change when the privilege level does'
+        );
+    }
+
+    // ------------------------------------------------------- deactivated accounts
+
+    /**
+     * A deactivated account is sent no link — and the page does not say so.
+     *
+     * Both halves matter. `user`.`state` means "may sign in" as of 2026-08-21; before
+     * that it meant nothing at all, because `verifyAction()` activated whatever it
+     * redeemed, so every deactivated account reactivated itself on its next sign-in link.
+     * 32 of 292 real accounts sat at `state = 0` and could all sign in.
+     *
+     * The second half is the response. It has to be byte-identical to the one a live
+     * account gets, for the same reason an unknown address gets the "check your email"
+     * page: a distinguishable answer turns the sign-in form into an oracle, here for
+     * which accounts an administrator has disabled.
+     */
+    public function testADeactivatedAccountIsSentNoLinkAndIsNotToldSo(): void
+    {
+        $email = $this->uniqueEmail();
+
+        //created by the first request, which is also the only way to make one here
+        $this->requestSignInLink($this->newCookieJar(), $email);
+        $this->awaitMessageFor($email);
+        $this->purgeMail();
+
+        $deactivate = $this->pdo()->prepare('UPDATE user SET state = 0 WHERE email = :email');
+        $deactivate->execute(['email' => $email]);
+        $this->assertSame(1, $deactivate->rowCount());
+
+        $response = $this->requestSignInLink($this->newCookieJar(), $email);
+        $this->assertSame(200, $response['status']);
+        $this->assertStringContainsString(
+            '<h1>Check your email</h1>',
+            $response['body'],
+            'the answer must not reveal that the account is disabled'
+        );
+
+        //as long as a real mail took to arrive, above
+        usleep(self::MAIL_POLL_MICROSECONDS * 4);
+        $this->assertSame([], $this->searchMailFor($email), 'no link may be mailed to a deactivated account');
+    }
+
+    /**
+     * …and a link that was already in flight stops working.
+     *
+     * The defence-in-depth half, and the one that decides whether "deactivate" means
+     * *now* or *after whatever is in that inbox expires*. An administrator revoking
+     * access has to mean now.
+     *
+     * A different page and a different status from the expired/unknown case, deliberately:
+     * "the link did not work" invites a retry that will fail forever, while "access has
+     * been turned off" names the only thing that fixes it. Saying so leaks nothing —
+     * reaching this page requires holding a live token for that very account.
+     */
+    public function testALiveLinkForADeactivatedAccountIsRefused(): void
+    {
+        $email = $this->uniqueEmail();
+        $jar   = $this->newCookieJar();
+
+        $this->requestSignInLink($jar, $email);
+        $verifyPath = $this->toLocalPath($this->extractVerifyUrl($this->awaitMessageFor($email)['Text']));
+
+        $deactivate = $this->pdo()->prepare('UPDATE user SET state = 0 WHERE email = :email');
+        $deactivate->execute(['email' => $email]);
+        $this->assertSame(1, $deactivate->rowCount());
+
+        $verify = $this->get($verifyPath, false, $jar);
+        $this->assertSame(403, $verify['status'], 'a deactivated account may not sign in');
+        $this->assertStringContainsString('deactivated', $verify['body']);
+        $this->assertStringNotContainsString(
+            'Send me a new link',
+            $verify['body'],
+            'offering another link here would be an invitation to retry forever'
+        );
+
+        $home = $this->get('/en/', false, $jar);
+        $this->assertStringContainsString('>Sign in</a>', $home['body'], 'the session must still be anonymous');
+    }
+
+    /**
+     * Deactivation reaches a session that is already open, on its next request.
+     *
+     * The half that decides whether `state = 0` means "cannot act" or merely "cannot sign
+     * in again". Without it, an administrator revoking access to a compromised account
+     * would be waiting on a session timeout they cannot see, influence or verify.
+     *
+     * Nothing was built for this: `JUser\Authentication\Storage\SessionUser` keeps only
+     * the user id in the session and re-reads the row every request, so refusing to resolve
+     * a deactivated one is all it takes — and `isEmpty()` already *clears* the storage when
+     * a read comes back null, which it did for deleted accounts, the same problem one step
+     * further along.
+     *
+     * Asserted through a guarded page rather than the navbar, so the claim is about
+     * authorization and not about which links are rendered.
+     */
+    public function testDeactivationEndsASessionThatIsAlreadyOpen(): void
+    {
+        //signIn() invents its own address from emailPrefix(), which is also what
+        //tearDown purges on, so this test needs no address of its own.
+        $jar = $this->newCookieJar();
+
+        $this->signIn($jar, ['administrator'], '/en/user/login');
+        $this->assertSame(200, $this->get('/en/users', false, $jar)['status'], 'the session should be admin');
+
+        //signIn() invents its own address; find the account it just made
+        $row = $this->pdo()->prepare(
+            'SELECT user_id FROM user WHERE email LIKE :prefix ORDER BY user_id DESC LIMIT 1'
+        );
+        $row->execute(['prefix' => $this->emailPrefix() . '%']);
+        $userId = $row->fetchColumn();
+        $this->assertNotFalse($userId, 'signIn() should have created an account');
+
+        $this->pdo()
+            ->prepare('UPDATE user SET state = 0 WHERE user_id = :id')
+            ->execute(['id' => $userId]);
+
+        $refused = $this->get('/en/users', false, $jar);
+        $this->assertSame(302, $refused['status'], 'the open session must stop being an identity');
+        $this->assertStringContainsString('/user/login', (string) $refused['redirect']);
+
+        $home = $this->get('/en/', false, $jar);
+        $this->assertStringContainsString('>Sign in</a>', $home['body'], 'and the session is anonymous again');
+    }
+
+    /**
+     * A brand-new account is created **active** and **unverified**.
+     *
+     * This is what keeps open registration working now that `state = 0` is a hard
+     * refusal: an account created inactive would have its very first magic link declined
+     * by the check above, and registration — which is the same request as signing in —
+     * would stop working entirely for everyone.
+     *
+     * It is also what makes `state = 0` mean something. After this, the only way an
+     * account reaches it is an administrator unticking the box.
+     */
+    public function testANewAccountIsCreatedActiveAndUnverified(): void
+    {
+        $email = $this->uniqueEmail();
+
+        $this->requestSignInLink($this->newCookieJar(), $email);
+        $this->awaitMessageFor($email);
+
+        $row = $this->pdo()->prepare('SELECT state, email_verified FROM user WHERE email = :email');
+        $row->execute(['email' => $email]);
+        $account = $row->fetch(PDO::FETCH_ASSOC);
+
+        $this->assertNotFalse($account, 'an unknown address should have been registered');
+        $this->assertSame('1', (string) $account['state'], 'a new account must be able to sign in');
+        $this->assertSame('0', (string) $account['email_verified'], 'nobody has proved they read mail there yet');
+    }
+
+    /** The PHPSESSID value curl has written into a cookie jar, or '' when there is none. */
+    private function sessionIdIn(string $jar): string
+    {
+        $contents = (string) file_get_contents($jar);
+
+        return preg_match('/\bPHPSESSID\s+(\S+)/', $contents, $m) === 1 ? $m[1] : '';
     }
 
     /**
