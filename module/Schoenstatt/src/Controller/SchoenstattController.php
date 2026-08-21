@@ -33,7 +33,13 @@ class SchoenstattController extends AbstractActionController
 
     public function indexAction()
     {
-        if (! $this->zfcUserAuthentication()->hasIdentity()) {
+        //`identity()` from laminas-mvc-plugin-identity, which this application requires
+        //directly. It replaced JUser's own `zfcUserAuthentication()` plugin on 2026-08-21:
+        //that plugin existed only to wrap the same AuthenticationService, and JUser 3.0.0
+        //has no laminas-mvc controllers left to register a plugin for. Identical answer —
+        //the plugin's factory resolves `Laminas\Authentication\AuthenticationService`,
+        //which JUser aliases to its own service — and null means anonymous.
+        if (null === $this->identity()) {
             return $this->redirect()->toRoute('welcome');
         }
 
