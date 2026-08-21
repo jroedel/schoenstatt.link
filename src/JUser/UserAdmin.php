@@ -58,6 +58,9 @@ use function ucfirst;
  */
 final class UserAdmin
 {
+    /** Shared across every call to {@see flash()} — see that method on why it must be. */
+    private ?FlashMessenger $flashMessenger = null;
+
     public function __construct(private readonly ServiceBridge $laminas)
     {
     }
@@ -261,11 +264,24 @@ final class UserAdmin
      * whatever page the administrator opens next instead of on the form they are looking
      * at. Reproduced deliberately, filed in docs/BACKLOG.md, and not quietly corrected
      * here: it is a behaviour change on a page whose port should be readable as a port.
+     * (That reproduction was corrected on 2026-08-21, once the .phtml it was faithful to
+     * was deleted; `App\Controller\UserEditController` uses {@see now()} there now.)
+     *
+     * **One instance, shared**, and the reason is not efficiency. `addMessage()` calls
+     * `getMessagesFromContainer()` the first time an instance is used, which moves every
+     * namespace out of the session container into that instance and unsets it from the
+     * container. A *second* instance doing that after the first has written takes the
+     * first's message out of the session and holds it in an object discarded at the end of
+     * the request — so two messages become one, silently. Nothing on this surface flashes
+     * twice today, which is why it never showed here; it showed on the sign-in flow, where
+     * redemption reports "you are signed in" and "but not there" together. See
+     * `App\JUser\SignIn::flash()` for the measurement.
      */
     public function flash(string $namespace, mixed $message): void
     {
+        $this->flashMessenger ??= new FlashMessenger();
         /** @phpstan-ignore argument.type (see the docblock: the declared `string` is wrong) */
-        (new FlashMessenger())->setNamespace($namespace)->addMessage($message);
+        $this->flashMessenger->setNamespace($namespace)->addMessage($message);
     }
 
     /**

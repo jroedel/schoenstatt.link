@@ -28,13 +28,13 @@
         "roles": 45,
         "route_guard_entries": 119,
         "routes_declared_twice": 1,
-        "routes_shadowed_by_symfony": 101,
+        "routes_shadowed_by_symfony": 105,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 196,
+        "symfony_routes_acl_checked": 204,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 223,
+        "symfony_served_routes": 231,
         "total_routes": 137,
         "unguarded_routes": 19,
         "unguarded_routes_matchable": 7
@@ -5231,6 +5231,46 @@
             "now_checks": "route/welcome",
             "access_kind": "acl",
             "probe": "/"
+        },
+        {
+            "laminas_route": "zfcuser",
+            "path": "/user",
+            "symfony_route": "zfcuser",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/zfcuser",
+            "access_kind": "acl",
+            "probe": "/user"
+        },
+        {
+            "laminas_route": "zfcuser/login",
+            "path": "/user/login",
+            "symfony_route": "zfcuser/login",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/zfcuser/login",
+            "access_kind": "acl",
+            "probe": "/user/login"
+        },
+        {
+            "laminas_route": "zfcuser/logout",
+            "path": "/user/logout",
+            "symfony_route": "zfcuser/logout",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/zfcuser/logout",
+            "access_kind": "acl",
+            "probe": "/user/logout"
+        },
+        {
+            "laminas_route": "zfcuser/verify",
+            "path": "/user/verify",
+            "symfony_route": "zfcuser/verify",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/zfcuser/verify",
+            "access_kind": "acl",
+            "probe": "/user/verify"
         }
     ],
     "laminas_routes_uncomparable": [],
@@ -8883,6 +8923,86 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/welcome",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser": {
+            "path": "/user",
+            "controller": "App\\Controller\\SignInController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser.locale": {
+            "path": "/{_locale}/user",
+            "controller": "App\\Controller\\SignInController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser/login": {
+            "path": "/user/login",
+            "controller": "App\\Controller\\SignInController::form",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser/login",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser/login.locale": {
+            "path": "/{_locale}/user/login",
+            "controller": "App\\Controller\\SignInController::form",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser/login",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser/logout": {
+            "path": "/user/logout",
+            "controller": "App\\Controller\\LogoutController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser/logout",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser/logout.locale": {
+            "path": "/{_locale}/user/logout",
+            "controller": "App\\Controller\\LogoutController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser/logout",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser/verify": {
+            "path": "/user/verify",
+            "controller": "App\\Controller\\VerifyController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser/verify",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "zfcuser/verify.locale": {
+            "path": "/{_locale}/user/verify",
+            "controller": "App\\Controller\\VerifyController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/zfcuser/verify",
                 "reason": null,
                 "denial_style": "html"
             }

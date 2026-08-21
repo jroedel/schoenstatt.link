@@ -112,6 +112,27 @@ suites run from the superproject working tree.
   is `is_default = 1`. Read [docs/libraries.md](docs/libraries.md) before changing any of
   it: the permissive `checkout` rule is deliberate, and `refresh-sort` answers GET with a
   confirmation because the laminas action rewrote every book in the library on one.
+  **The authentication surface is Symfony-served since 2026-08-21** — `/user`,
+  `/user/login`, `/user/verify` and `/user/logout`, over `App\JUser\SignIn` (the plumbing),
+  `App\JUser\RedirectTarget` (everything about `?redirect=`) and `App\JUser\CookieExplainer`
+  (the consent gate's page). **`JUser\Controller\LoginController` is deliberately kept** for
+  one release: the laminas routes stay declared either way, so deleting the five Symfony
+  declarations puts laminas back in charge — the only place on this site where being wrong is
+  not recoverable from a browser. Deleting it is what unblocks JUser 3.0.0.
+  Three things to know before touching it. **`?redirect=` could not be transcribed:**
+  `validRedirect()` ends in a laminas-router match, and through `ServiceBridge` that router
+  has never seen SlmLocale, so it rejects every locale-prefixed path — a faithful port would
+  have refused every destination the guards emit and sent everyone to the home page,
+  silently. `RedirectTarget` strips the prefix and matches on a **clone** of the router with
+  an empty base URL, because `RouteUrl` mutates the shared router's base and the answer would
+  otherwise depend on whether a template had rendered a link first. **The emailed link needs
+  the prepared router:** `JUser\Service\Mailer` assembles it itself with `force_canonical`,
+  and given the raw container router it produced `/user/verify?token=…` with no locale prefix
+  — the unprefixed twin, which 302s. **And a flash messenger must be reused:** a fresh
+  `new FlashMessenger()` per message moves the previous one out of the session and drops it,
+  so redemption's two messages became one. `sign-in-no-cookies` is **not** ported and never
+  was reachable — no guard entry, so default deny; the swap worked only because it ran after
+  the guard approved a different route.
   **The JUser user-administration surface is Symfony-served since 2026-08-21** — `/users`,
   the two create forms, the account form, the delete confirmation and the API-token screen
   with its revoke twin. Five controllers over one `App\JUser\UserAdmin`, and the second

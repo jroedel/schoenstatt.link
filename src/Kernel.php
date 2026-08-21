@@ -11,6 +11,9 @@ use App\Books\Import\ImportStorage;
 use App\Books\Import\ImportTemplate;
 use App\Books\Import\SpreadsheetUpload;
 use App\Books\LibraryPage;
+use App\JUser\CookieExplainer;
+use App\JUser\RedirectTarget;
+use App\JUser\SignIn;
 use App\JUser\UserAdmin;
 use App\Books\LibraryScopedForms;
 use App\Controller\AdminController;
@@ -67,7 +70,10 @@ use App\Controller\TimelineController;
 use App\Controller\UserCreateController;
 use App\Controller\UserDeleteController;
 use App\Controller\UserEditController;
+use App\Controller\LogoutController;
+use App\Controller\SignInController;
 use App\Controller\UsersController;
+use App\Controller\VerifyController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\AuthorizationListener;
@@ -165,6 +171,9 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private ViewHelpers $viewHelpers;
     private LibraryPage $libraryPage;
     private UserAdmin $userAdmin;
+    private SignIn $signIn;
+    private RedirectTarget $redirectTarget;
+    private CookieExplainer $cookieExplainer;
     private RouteUrl $routeUrl;
     private PreferredUrls $preferredUrls;
     private RouteGuard $routeGuard;
@@ -727,6 +736,29 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl()
             ),
+            // Batch 13 — the authentication surface. App\JUser\SignIn is the shared
+            // plumbing, App\JUser\RedirectTarget answers everything about `?redirect=`,
+            // and App\JUser\CookieExplainer is the consent gate's page. `sign-in-no-cookies`
+            // needs no entry: it goes through ContentPageController like every other static
+            // page, and the two gated routes render the same template through the explainer.
+            SignInController::class => fn (): SignInController => new SignInController(
+                $this->signIn(),
+                $this->redirectTarget(),
+                $this->cookieExplainer(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            VerifyController::class => fn (): VerifyController => new VerifyController(
+                $this->signIn(),
+                $this->redirectTarget(),
+                $this->cookieExplainer(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            LogoutController::class => fn (): LogoutController => new LogoutController(
+                $this->signIn(),
+                $this->routeUrl()
+            ),
         ]);
     }
 
@@ -877,6 +909,31 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private function userAdmin(): UserAdmin
     {
         return $this->userAdmin ??= new UserAdmin($this->laminas());
+    }
+
+    /**
+     * The authentication surface's shared plumbing. Same reasoning as {@see userAdmin()}:
+     * no memo to protect, but the three controllers never run together.
+     */
+    private function signIn(): SignIn
+    {
+        return $this->signIn ??= new SignIn($this->laminas(), $this->routeUrl());
+    }
+
+    /**
+     * Shared for a reason that is not cosmetic: it clones the laminas router on every
+     * match, and `/user/verify` asks it up to three times in one request — once for the
+     * link's own `?redirect=`, once for the session's copy, and once again inside
+     * `refusedRoute()`.
+     */
+    private function redirectTarget(): RedirectTarget
+    {
+        return $this->redirectTarget ??= new RedirectTarget($this->laminas());
+    }
+
+    private function cookieExplainer(): CookieExplainer
+    {
+        return $this->cookieExplainer ??= new CookieExplainer($this->twig());
     }
 
     private function libraryPage(): LibraryPage
