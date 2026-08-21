@@ -105,6 +105,16 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $enableCheckouts = false;
     /**
+     * Should this library appear on the public library list?
+     *
+     * Declared 2026-08-21. The constructor has always assigned it, so until now it was a
+     * dynamic property — deprecated since PHP 8.2 and an error in 9. Invisible on
+     * production, which narrows error_reporting to exclude E_DEPRECATED.
+     *
+     * @var bool $isPublicallyListed
+     */
+    public $isPublicallyListed = false;
+    /**
      * Which list of borrowers should we show?
      * @var string $defaultCheckoutTimePeriodInDays
      */
