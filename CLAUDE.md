@@ -101,9 +101,16 @@ suites run from the superproject working tree.
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
   itself to PHPStan **level 8** (not the legacy level 0), and its routes are
   declared in `config/symfony/routes.php`, whose order *is* the migration status.
-  Form routes are no longer blocked: `src/Form/BootstrapFormRenderer` reproduces
+  Form routes are no longer blocked: `SionModel\Form\BootstrapFormRenderer` reproduces
   TwbBundle's markup and `association-edit` is ported (byte-identical to the laminas
-  rendering apart from inter-tag whitespace).
+  rendering apart from inter-tag whitespace). **That renderer and its Twig binding
+  (`SionModel\Twig\FormExtension`) live in the SionModel submodule since 2026-08-21**,
+  not in `src/` — they are the reusable half of the form layer, and the package they
+  reproduce (`SionModel\Form\View\Helper\SionFormRow`) was already there. They are
+  still Symfony-side code and still hold themselves to level 8 and PSR-12, which no
+  longer follows from their path: SionModel's own `phpcs.xml` covers them, and a level-8
+  audit must name `module/SionModel/src/Form/BootstrapFormRenderer.php` and
+  `module/SionModel/src/Twig/` explicitly alongside `src`.
   **The library circulation surface is Symfony-served since 2026-08-18** — the library
   page, its admin menu, the lending and check-in forms, the checkout lists, the book and
   borrower pages and the imports. `App\Books\LibraryPage` holds what every one of those
@@ -328,7 +335,7 @@ suites run from the superproject working tree.
 - **Authorization changes must be diffed, not just tested.** `docker compose exec -T app php tools/acl-table.php` emits a reviewable table of every role, guard and rule; `--format=json` emits the sorted, diffable form. `docs/acl-rules.md` and `docs/acl-baseline.json` are the committed snapshots. Regenerate and diff them after any change to a route, a guard entry or a role — a rule that quietly stops matching makes a page work for *more* people and nothing fails.
 - Beyond smoke, verification is lint + coding standard:
   - Syntax check any file you touch: `php -l path/to/File.php`.
-  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard). `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
+  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard), and the two files that left `src` for SionModel on 2026-08-21, which the submodule's own `phpcs.xml` covers. `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
   - Auto-fix: `php composer.phar cs-fix` — ask the user before running it broadly.
 - Local dev server: `php composer.phar run serve` (PHP built-in server on 127.0.0.1:8080 serving `public/`).
 - `bin/console` is the headless entry point (symfony/console): it builds the

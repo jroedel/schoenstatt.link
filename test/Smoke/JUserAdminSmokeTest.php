@@ -26,7 +26,7 @@ use function sprintf;
  * `testSavingAnAccountKeepsEveryRoleItHad` guards a defect that the port introduced and
  * that nothing else here could have caught. `JUser\Form\EditUserForm` declares its roles
  * select as `'multiple' => 'multiple'` — the string, which is what the HTML attribute's
- * value is — and `App\Form\BootstrapFormRenderer` appended the `[]` a multiple select's
+ * value is — and `SionModel\Form\BootstrapFormRenderer` appended the `[]` a multiple select's
  * name needs only when the attribute was the boolean `true`. Without the brackets a browser
  * posts `rolesList=1&rolesList=41&…`, PHP keeps **only the last one**, and pressing Submit
  * on an unchanged form reduces the account to a single role. Nothing fails, nothing is

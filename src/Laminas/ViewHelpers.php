@@ -395,7 +395,7 @@ final class ViewHelpers
      * keeps the construction default — `default`. Ten of the twelve do not matter here
      * because nothing on the Symfony side reaches them: Twig writes its own `<title>`,
      * `templates/layout.html.twig` passes the navigation domain explicitly, and
-     * `App\Form\BootstrapFormRenderer` routes every form string through
+     * `SionModel\Form\BootstrapFormRenderer` routes every form string through
      * `LaminasExtension::translate()`. `translate` is handled above. This is the twelfth.
      *
      * Left unset it costs twice. A flash set by a laminas action and rendered on a ported

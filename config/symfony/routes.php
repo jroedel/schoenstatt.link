@@ -556,7 +556,7 @@ $ported(
 //
 // docs/strangler.md called the form routes the largest single thing left, blocked on
 // two things: no form layer, and JUser's unreproduced static table adapter. The first
-// was true and App\Form\BootstrapFormRenderer answers it. The second turned out not to
+// was true and SionModel\Form\BootstrapFormRenderer answers it. The second turned out not to
 // apply here — only CreateRoleForm, EditUserForm, DeleteUserForm and EditPhraseForm
 // read that adapter, through a NoRecordExists validator, and AssociationForm touches
 // neither. So this form could move while the user forms could not. Both are settled
@@ -645,7 +645,7 @@ $edit = static function (
 
 // A document from the Kentenich corpus. First of the batch, and the simplest: every field
 // goes through a plain row, and TextForm declares only element types
-// App\Form\BootstrapFormRenderer already rendered for the association form.
+// SionModel\Form\BootstrapFormRenderer already rendered for the association form.
 //
 // `sw_id` rather than a numeric id, so ID_KIND names the entity whose identifier regex to
 // translate — the same job TextsController::getEntityIdParam() does on laminas.
@@ -859,7 +859,7 @@ $edit(
 // Three things it needs that none of the eight did:
 //
 //   - `form_select_without_options`, for five pickers whose option lists are the whole
-//     person and publication tables. See App\Form\BootstrapFormRenderer.
+//     person and publication tables. See SionModel\Form\BootstrapFormRenderer.
 //   - EXTRA_VARIABLES, for the JSON those pickers hand to selectize. The provider
 //     reproduces PublicationsController::injectPublicationValueOptions(), including its
 //     removal of the publication's own id from the "main edition" list.

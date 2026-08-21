@@ -1297,7 +1297,7 @@ listed: `/associations/create` rendered **two empty options** on its time-zone s
 laminas renders one. `FormSelect::render()` merges the empty option into the value options
 with `['' => $emptyOption] + $options` — a union, so an element declaring both an
 `empty_option` and a literal `''` value option gets exactly one — and
-`App\Form\BootstrapFormRenderer` emitted it as separate markup and then iterated the value
+`SionModel\Form\BootstrapFormRenderer` emitted it as separate markup and then iterated the value
 options. `AssociationForm::timeZoneId` is the only element in the application that declares
 both, which is why four batches of edit forms went past without showing it, and it took a
 *create* page because the second half of the bug needs a null value:
@@ -1700,7 +1700,7 @@ either front controller is accepted by the other — and the write goes through
 
 **A GET form is a form too, and batch 6 is what proved the renderer only knew edit forms.**
 `/assignments/advanced-search` is the first ported form that is not an edit form, and it
-found five gaps in `App\Form\BootstrapFormRenderer` — every one invisible until a form
+found five gaps in `SionModel\Form\BootstrapFormRenderer` — every one invisible until a form
 declared the thing that triggers it, and every one a difference in the bytes rather than a
 failure:
 
@@ -1907,7 +1907,7 @@ rows. `fields-partial.phtml` builds five `form-group`s by hand around
 `formSelectWithoutOptions`, a helper that renders a `<select>` containing **only the options
 already selected** — their full lists are the person and publication tables, and shipping
 them would take the page from 526 KB to megabytes. Selectize fetches the rest from three
-JSON blobs the controller provides. `App\Form\BootstrapFormRenderer::selectWithoutOptions()`
+JSON blobs the controller provides. `SionModel\Form\BootstrapFormRenderer::selectWithoutOptions()`
 reproduces it, and three of its four differences from the original were found by the
 baseline rather than by any test:
 
