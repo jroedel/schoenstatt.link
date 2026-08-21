@@ -242,6 +242,22 @@ class IndexController extends AbstractActionController
         return (string) $referer->getFieldValue();
     }
 
+    /**
+     * The cookie explainer, reachable **only** through the route-match swap in
+     * Application\View\GdprStrategy::onRoute().
+     *
+     * Its route `/sign-in-no-cookies` was deleted 2026-08-21 and it lost nothing: the route
+     * had no guard entry, so BjyAuthorize's default deny made the URL unreachable from the
+     * day it was written, and the swap does not need it — `onRoute()` builds a `RouteMatch`
+     * by hand from this controller and action, and only *names* the route with
+     * `setMatchedRouteName()`. Nothing assembles it.
+     *
+     * This action and its .phtml are alive for exactly one caller: a request that reaches
+     * laminas for `zfcuser/login` or `zfcuser/verify`. Both are Symfony-served since batch
+     * 13, where the gate is `App\JUser\CookieExplainer`, so today that means the rollback
+     * path — remove the four Symfony declarations and laminas answers those paths again,
+     * needing this. It goes when `JUser\Controller\LoginController` goes, and not before.
+     */
     public function signInNoCookiesAction()
     {
         return new ViewModel();

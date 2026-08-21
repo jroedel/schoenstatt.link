@@ -22,7 +22,7 @@ use function is_array;
 use function is_string;
 
 /**
- * What all five ported sign-in routes need, in one place.
+ * What all four ported sign-in routes need, in one place.
  *
  * The counterpart of `App\JUser\UserAdmin` for the *other* JUser surface, and the same
  * shape: lazy accessors over `App\Laminas\ServiceBridge`, so no controller holds a laminas
@@ -31,12 +31,11 @@ use function is_string;
  * ## Nothing here is authorization
  *
  * `UserAdmin` has no `refuse()` because the seven admin routes are guarded
- * `administrator`. These five are the opposite end: `zfcuser`, `zfcuser/login` and
+ * `administrator`. These four are the opposite end: `zfcuser`, `zfcuser/login` and
  * `zfcuser/verify` are reachable by `guest`, because a page you visit *in order to* sign in
- * cannot require an identity. `zfcuser/logout` is guarded `user`. `sign-in-no-cookies` is
- * an Application route and public. So the route guards are the whole of it and there is
- * nothing for a controller to check — except the one thing below, which is not
- * authorization at all.
+ * cannot require an identity. `zfcuser/logout` is guarded `user`. So the route guards are
+ * the whole of it and there is nothing for a controller to check — except the one thing
+ * below, which is not authorization at all.
  *
  * ## The consent gate is not authorization and not a redirect
  *

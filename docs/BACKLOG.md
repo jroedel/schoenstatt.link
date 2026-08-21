@@ -886,20 +886,6 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
-- [ ] **`sign-in-no-cookies` has no guard entry, so nobody can reach it as a URL.** The page
-  that explains why signing in needs cookies is served *only* by the route-match swap in
-  `Application\View\GdprStrategy::onRoute()` — which works because it runs at priority -5000
-  on `MvcEvent::EVENT_ROUTE`, after `BjyAuthorize\Guard\Route` has already approved
-  `zfcuser/login`. Typing the URL yields the default-deny redirect. It has been in
-  `docs/acl-rules.md`'s "routes with no guard entry (nobody can reach these)" list, flagged as
-  a real endpoint, for as long as that table has existed. Batch 13 (2026-08-21) wrote the port
-  for it and then **withdrew it**: a Symfony route checking a resource nothing defines makes
-  `tools/acl-table.php` emit "no such resource — denies everyone" into the committed snapshot
-  forever, which is worse than leaving the laminas route to deny everyone quietly. The
-  question to answer is whether it should be public — it is a static explanation with no data
-  and nothing links to it — and if yes, it wants a guard entry *and* the withdrawn
-  declaration, which is a few lines away in `config/symfony/routes.php`.
-
 - [ ] **The cookie explainer's one paragraph is not translated.** `templates/content/sign-in-no-cookies.html.twig`
   prints it as a raw English literal, faithfully reproducing the .phtml, so a German visitor
   who has refused cookies reads English on the one page that is trying to tell them how to
@@ -1695,18 +1681,20 @@ rediscovered.
       `Cover`/`File` column at all, so `updateEntity()` would discard it. Granting
       `pub_moderator` would produce a page that looks like it works and silently
       loses every upload. See the cover-upload item below.
-  - **`sign-in-no-cookies` is already reachable, by accident of listener
-    priority** — worth writing down because the obvious reading is wrong. It
-    looks like the cookieless sign-in explainer must be broken under
-    default-deny, and it is not: `GdprStrategy::onRoute()` swaps the RouteMatch
-    for this route at priority **-5000**, while `BjyAuthorize\Guard\Route`
-    checks at **-1000**, and higher priority runs first. So the guard evaluates
-    `zfcuser/login` (which is granted), approves it, and only afterwards does
-    the strategy rewrite the match. The guard never sees this route's name.
-    It should still get a public entry (`['guest', 'user', null]`) so that
-    direct navigation works and so reachability stops depending on two
-    listeners' relative priorities — but it is a robustness fix, not a live
-    bug, and it should not be described as one.
+  - ~~**`sign-in-no-cookies` is already reachable, by accident of listener
+    priority**~~ — **resolved 2026-08-21 by deleting the route.** The mechanism was
+    right and worth keeping: `GdprStrategy::onRoute()` swaps the RouteMatch at
+    priority **-5000** while `BjyAuthorize\Guard\Route` checks at **-1000**, so the
+    guard evaluated and approved `zfcuser/login` and only then did the strategy
+    rewrite the match — the guard never saw this route's name, and the *page* was
+    reachable while the *URL* was not. The conclusion drawn from it was wrong: this
+    said the route should get a public entry so that direct navigation works. Nothing
+    wanted direct navigation. Nothing links to the URL, no visitor has ever used it,
+    and granting it would have added a public route to defend for no gain. The route
+    is gone from both front controllers; the page is
+    `templates/content/sign-in-no-cookies.html.twig`, rendered by
+    `App\JUser\CookieExplainer`, and the swap never needed a route because it builds
+    its RouteMatch by hand.
   - ~~**`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
     `lib_user` its siblings carry: it is the destructive one in that tree and
     `lib_administrator` already exists for exactly this.~~ **Also dead config,
@@ -1716,12 +1704,14 @@ rediscovered.
     `delete_action_acl_permission` and `delete_action_redirect_route`. The role
     choice is still the right one *if* the feature is ever finished; it is the
     "needs only a guard entry" part that was false.
-  - **`sign-in-no-cookies` is the one that really does need only a guard entry**,
-    re-checked 2026-08-17: `IndexController::signInNoCookiesAction()` exists and
-    `module/Application/view/application/index/sign-in-no-cookies.phtml` renders
-    it. It is also the one that is already reachable, per the note below — so the
-    only route in this list that is safe to grant is the one where granting
-    changes the least.
+  - ~~**`sign-in-no-cookies` is the one that really does need only a guard entry**~~ —
+    **moot 2026-08-21: the route was deleted.** The action and its .phtml do still
+    exist and still render, but only through the route-match swap, and only for the
+    rollback path — both auth routes are Symfony-served, where the gate is
+    `App\JUser\CookieExplainer`. They go with `JUser\Controller\LoginController`.
+    So the "safe to grant because granting changes the least" reasoning inverted:
+    granting changed nothing anyone wanted, and deleting changed nothing either —
+    which is the better of the two.
   - ~~**`api-v1/libraries/books/patch-list` → `guest, user`**~~ — **moot
     2026-08-14: the route was deleted with the rest of `/api/v1`.** It was one of
     the two unguarded routes among the 26, which is why the ACL baseline's

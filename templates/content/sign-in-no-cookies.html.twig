@@ -9,12 +9,12 @@
   who had just clicked an emailed link, and the point is that the link is still good once
   they consent: the token is spent only on a successful redemption.
 
-  It sits under templates/content/ anyway, next to the pages ContentPageController serves,
-  because that is where an Application-module static page belongs and because giving it a
-  route is a one-line change if the `sign-in-no-cookies` guard question in docs/BACKLOG.md is
-  ever answered yes. It has never been reachable as its own URL: the laminas route has no
-  guard entry, so default deny applies, and the only thing that ever showed the page was the
-  route-match swap — which runs *after* the guard has approved a different route.
+  It sits under templates/content/ next to the pages ContentPageController serves, because
+  that is where an Application-module static page belongs — but it has no route and will not
+  get one. `/sign-in-no-cookies` was deleted from both front controllers on 2026-08-21: it
+  had no guard entry, so default deny made it unreachable from the day it was written, and
+  the only thing that ever showed the page was the route-match swap, which runs *after* the
+  guard has approved a different route and needs no route of its own.
 
   Two faithful oddities, reproduced rather than fixed, because this port's evidence that
   nothing else moved is a byte-for-byte diff:

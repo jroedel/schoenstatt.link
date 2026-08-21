@@ -95,6 +95,17 @@ class GdprStrategy implements ListenerAggregateInterface
         //redemption, so the emailed link still works after consenting.
         //`zfcuser/register` was in this list until 2026-08-20, when the route was
         //retired: registering and signing in are one request under magic links.
+        //Both of these are Symfony-served since batch 13 (2026-08-21), where the gate is
+        //App\JUser\CookieExplainer, so this listener no longer fires in normal traffic —
+        //the laminas application is not entered for a ported route at all. It is kept for
+        //the rollback path: removing the four `zfcuser/*` declarations from
+        //config/symfony/routes.php hands these paths back to LoginController, and without
+        //this swap an unconsented visitor would get a form whose session cookie onFinish()
+        //then strips, i.e. a sign-in that fails with nothing to show them. Goes with
+        //LoginController.
+        //
+        //The route `sign-in-no-cookies` was deleted the same day and this does not need it:
+        //the RouteMatch below is built by hand and setMatchedRouteName() only labels it.
         $authRoutes = ['zfcuser/login', 'zfcuser/verify'];
         if (! $hasConsented && in_array($route->getMatchedRouteName(), $authRoutes, true)) {
             $newMatch = new RouteMatch(['controller' => IndexController::class, 'action' => 'sign-in-no-cookies']);
