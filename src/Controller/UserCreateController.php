@@ -152,7 +152,7 @@ final class UserCreateController
         //Neither laminas view calls `setAttribute('action', …)`, so `openTag()` emits none
         //and the browser posts to the current URL — and `action=""` is not the same thing
         //to a browser resolving a relative reference, which is what an empty string passed
-        //to the renderer would otherwise become. See App\Form\BootstrapFormRenderer::open().
+        //to the renderer would otherwise become. See SionModel\Form\BootstrapFormRenderer::open().
         return new Response($this->twig->render($template, [
             'page_title' => $heading,
             'form'       => $form,

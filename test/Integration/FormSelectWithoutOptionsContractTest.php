@@ -2,7 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
-use App\Form\BootstrapFormRenderer;
+use SionModel\Form\BootstrapFormRenderer;
 use Books\View\Helper\FormSelectWithoutOptions;
 use Laminas\Form\Element\Select;
 use Laminas\I18n\Translator\Loader\PhpMemoryArray;
@@ -150,7 +150,7 @@ class FormSelectWithoutOptionsContractTest extends TestCase
     // -- the Symfony-side reproduction ---------------------------------------
 
     /**
-     * `App\Form\BootstrapFormRenderer::selectWithoutOptions()` renders the same choices.
+     * `SionModel\Form\BootstrapFormRenderer::selectWithoutOptions()` renders the same choices.
      *
      * The publication edit form is served by the Symfony kernel, where none of the
      * laminas view helpers can be reached — each ends in `$this->view->…`, which wants an

@@ -21,7 +21,7 @@ use function sort;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
- * `App\Form\BootstrapFormRenderer` filters an input's attributes by input type, the way
+ * `SionModel\Form\BootstrapFormRenderer` filters an input's attributes by input type, the way
  * `Laminas\Form\View\Helper\AbstractHelper::createAttributesString()` does — and it does
  * so from lists **transcribed by hand** out of the laminas helpers. This is the test that
  * the transcription is right.
@@ -97,7 +97,7 @@ class BootstrapFormRendererTest extends TestCase
         $this->assertSame(
             $expected,
             $actual,
-            "App\\Form\\BootstrapFormRenderer's '$type' attribute list has drifted from "
+            "SionModel\\Form\\BootstrapFormRenderer's '$type' attribute list has drifted from "
             . "$helper::\$validTagAttributes. A missing entry silently drops an attribute laminas "
             . 'renders; an extra one renders an attribute laminas drops. Either is a byte-level '
             . 'difference no browser would show you.'
@@ -159,7 +159,7 @@ class BootstrapFormRendererTest extends TestCase
             $candidates[$name] = 'x';
         }
 
-        $method = (new ReflectionClass(\App\Form\BootstrapFormRenderer::class))
+        $method = (new ReflectionClass(\SionModel\Form\BootstrapFormRenderer::class))
             ->getMethod('filteredByInputType');
 
         /** @var array<string, scalar> $survivors */

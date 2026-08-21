@@ -11,7 +11,7 @@
   Unlike the association form, every field here goes through a plain row — the partial
   builds no groups by hand — so this template is the shape most of batch 7's ten take.
   `security` (the CSRF token) and `kind` (a hidden input) are rendered through
-  `form_row` exactly as the partial does, and App\Form\BootstrapFormRenderer::row()
+  `form_row` exactly as the partial does, and SionModel\Form\BootstrapFormRenderer::row()
   answers both by emitting the bare element with no form-group around it, which is what
   TwbBundle does.
 
