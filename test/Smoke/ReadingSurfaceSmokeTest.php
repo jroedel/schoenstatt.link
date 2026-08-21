@@ -258,7 +258,7 @@ class ReadingSurfaceSmokeTest extends SmokeTestCase
      *
      * `Laminas\Form\View\Helper\AbstractHelper::translateHtmlAttributeValue()` translates
      * `placeholder` and `title` on every element a form view helper renders;
-     * App\Form\BootstrapFormRenderer did not, so the box read "Search Catalogs" in all
+     * SionModel\Form\BootstrapFormRenderer did not, so the box read "Search Catalogs" in all
      * five locales against laminas' "Busca nos catálogos". It is asserted here on the
      * *escaped* form, because laminas-escaper writes the spaces as `&#x20;` and a test
      * against the plain string passes for the wrong reason on a page that also contains

@@ -30,7 +30,7 @@ use function is_string;
  * migration. Two claims in that document turned out to be one claim too many:
  *
  * - "There is no form layer on the Symfony side" was true, and
- *   App\Form\BootstrapFormRenderer is now it.
+ *   SionModel\Form\BootstrapFormRenderer is now it.
  * - "`JUser\Module::onBootstrap()`'s `GlobalAdapterFeature::setStaticAdapter()` has
  *   to be dealt with before the first form route moves" was true of *some* forms and
  *   not this one. Only `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and

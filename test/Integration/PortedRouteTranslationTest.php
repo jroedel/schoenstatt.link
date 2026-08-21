@@ -266,7 +266,7 @@ class PortedRouteTranslationTest extends TestCase
      * `AbstractActionController::dispatch`, and a Symfony-served request dispatches no
      * laminas controller, so none of the twelve is set. Ten do not matter — Twig writes its
      * own `<title>`, the layout passes the navigation domain explicitly, and
-     * App\Form\BootstrapFormRenderer routes every form string through
+     * SionModel\Form\BootstrapFormRenderer routes every form string through
      * LaminasExtension::translate(). `translate` is handled by ViewHelpers::useTextDomain().
      * `flashMessenger` was the twelfth and was handled by nothing, so a flash set by a
      * laminas action and rendered on a ported page was looked up in `default`: rendered as

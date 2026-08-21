@@ -164,7 +164,7 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //the laminas side; a discrepancy would mean the two front controllers filed
         //different phrases for the same failed form. The renderers that used to
         //translate the finished message are off in step with this — see
-        //App\Form\BootstrapFormRenderer::errors().
+        //SionModel\Form\BootstrapFormRenderer::errors().
         //
         //The static setter is what laminas-validator itself offers; it is set on the
         //Mvc wrapper because that, not the inner translator, is what implements
