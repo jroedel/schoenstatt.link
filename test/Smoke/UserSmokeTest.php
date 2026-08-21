@@ -214,6 +214,82 @@ class UserSmokeTest extends SmokeTestCase
         );
     }
 
+    // ------------------------------------------------ and the destinations it refuses
+
+    /**
+     * A hostile `?redirect=` is dropped, and the three shapes are tested separately
+     * because `LoginController::validRedirect()` refuses them with three different rules.
+     *
+     * ## Why this is worth its own test rather than being obvious
+     *
+     * The destination is attacker-controllable by construction: it arrives as a query
+     * parameter on a public page, it is put into a form, it travels in an email, and it
+     * ends as an argument to `$this->redirect()->toUrl()`. That is the exact shape of an
+     * open redirect, and an open redirect on the *sign-in* URL is the good one to have —
+     * the link is from the site, it is the page a visitor expects to be asked for
+     * credentials on, and the hop happens after a successful sign-in when nobody is
+     * suspicious any more.
+     *
+     * Nothing tested any of the three rules until 2026-08-21. A dozen suites assert that
+     * the route guard *emits* `?redirect=…` and two assert the happy round trip, so a
+     * reimplementation that accepted anything would have passed the whole suite.
+     *
+     * The three rules, and the reason each one is not redundant:
+     *
+     *  - **must start with `/`** — refuses `https://host/`, the obvious form;
+     *  - **must not start with `//`** — refuses `//host/`, which *does* start with a
+     *    slash and is a protocol-relative URL, i.e. an absolute one. This is the rule a
+     *    reimplementation forgets, because `str_starts_with($url, '/')` reads like it
+     *    already covers it;
+     *  - **must match a route** — refuses `/en/anything-at-all`, which is neither of the
+     *    above and would otherwise let the parameter address something the router does
+     *    not serve.
+     *
+     * ## Asserted on the form, not on the redirect
+     *
+     * The GET is where `validRedirect()` runs first, and a refused value produces an empty
+     * hidden field. Driving it all the way through a sign-in would test the same call
+     * through more machinery, and would need a live token per case; the field is the
+     * decision, rendered.
+     */
+    #[DataProvider('hostileRedirectProvider')]
+    public function testAHostileRedirectIsNotCarriedIntoTheForm(string $redirect, string $why): void
+    {
+        $response = $this->get('/en/user/login?redirect=' . urlencode($redirect), false, $this->newCookieJar());
+
+        $this->assertSame(200, $response['status'], 'the sign-in form should still render');
+        $this->assertSame(
+            '',
+            $this->extractRedirectField($response['body']),
+            $why . ' — validRedirect() must drop it, or the sign-in page is an open redirect'
+        );
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function hostileRedirectProvider(): array
+    {
+        return [
+            'protocol-relative' => ['//evil.example.com/', 'a protocol-relative URL is an absolute one'],
+            'absolute https'    => ['https://evil.example.com/', 'an absolute URL is not a local path'],
+            'absolute http'     => ['http://evil.example.com/', 'an absolute URL is not a local path'],
+            'backslash host'    => ['/\\evil.example.com', 'some agents read a backslash as a slash'],
+            'matches no route'  => ['/en/no-such-page-exists', 'a local path still has to be a route'],
+        ];
+    }
+
+    /**
+     * The counterpart, so the test above cannot pass by refusing everything.
+     *
+     * A refusal-only assertion is satisfied by `return null;`, which would break sign-in
+     * for every guarded page on the site and fail nothing here.
+     */
+    public function testALegitimateRedirectIsCarriedIntoTheForm(): void
+    {
+        $response = $this->get('/en/user/login?redirect=/en/shrines', false, $this->newCookieJar());
+
+        $this->assertSame('/en/shrines', $this->extractRedirectField($response['body']));
+    }
+
     /**
      * Signing in with a destination the account may not reach.
      *
