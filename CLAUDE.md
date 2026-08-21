@@ -175,6 +175,21 @@ suites run from the superproject working tree.
   aliases to its own service, so the storage is still `SessionUser` and `null` still means
   anonymous. Both of those controllers are rollback-path code: `/movement` and
   `/associations` are Symfony-served, so neither action dispatches today.
+  **The module's laminas-shaped code lives in `JUser\Bridge\Laminas\` since 2026-08-21** —
+  fifteen classes, all of which this site still uses and a Symfony-only host would not: the
+  session storage and auth-service factory behind `zfcuser_auth_service`, the historical
+  `zfcuser_user_service`, SionModel's acting-user provider, the two `.phtml` view helpers a
+  bridged layout still calls, BjyAuthorize's identity and role providers, its role entity, and
+  `RedirectionStrategy`. Class names did not change, only namespaces, so `git log --follow`
+  and a grep from an old incident note both still work — but three config keys did move, and
+  they are in `docs/acl-baseline.json`: `identity_provider`, `role_providers` and
+  `unauthorized_strategy`. That diff was three lines and no rule, role or resource changed,
+  which is the check to repeat if any of them moves again.
+  Nothing in `JUser\Page\*`, `JUser\Controller\*` or `JUser\Host\*` reaches into the
+  bridge: the dependency runs one way, this application wiring those classes *as*
+  implementations of the contract. Two app-side references had to follow the move —
+  `src/Laminas/ViewHelpers.php` and `test/Integration/PhraseDiscoveryTest.php` — plus a path
+  in `phpstan-baseline.neon`.
   **`GdprStrategy` is `onFinish()` only.** `onRoute()`, the route-match swap that showed the
   cookie explainer, went with `LoginController`, along with
   `IndexController::signInNoCookiesAction()` and its `.phtml`. The gate is

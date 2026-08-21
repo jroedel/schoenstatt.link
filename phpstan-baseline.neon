@@ -68,7 +68,7 @@ parameters:
 		-
 			message: "#^Result of method BjyAuthorize\\\\View\\\\UnauthorizedStrategy\\:\\:onDispatchError\\(\\) \\(void\\) is used\\.$#"
 			count: 1
-			path: module/JUser/src/View/RedirectionStrategy.php
+			path: module/JUser/src/Bridge/Laminas/RedirectionStrategy.php
 
 		-
 			message: "#^Method Schoenstatt\\\\Model\\\\SchoenstattTable\\:\\:associationPostprocessor\\(\\) should return float\\|int but return statement is missing\\.$#"
