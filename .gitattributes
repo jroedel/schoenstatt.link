@@ -1,0 +1,40 @@
+# Line endings. Every text file is LF in the repository and LF in the working
+# tree, on every platform. `text=auto` still lets git detect binary content and
+# leave it alone; the explicit `-text` entries below are belt-and-braces for
+# formats where a single converted byte corrupts the file.
+#
+# Added 2026-08-21. Before it the tree was almost all LF already — 8 files of
+# 1533 were CRLF — but nothing enforced that, and an editor writing CRLF was
+# invisible until a diff showed a whole file rewritten. Measure with
+# `git ls-files --eol`, which is the authoritative tool here; a grep for a
+# carriage return is easy to get wrong.
+* text=auto eol=lf
+
+# Binary: never convert, never diff as text.
+*.phar  -text
+*.png   -text
+*.jpg   -text
+*.ico   -text
+*.eot   -text
+*.otf   -text
+*.ttf   -text
+*.woff  -text
+*.woff2 -text
+
+# THE MIGRATION LEDGER FREEZES THESE FOUR FILES' BYTES.
+#
+# `sch_migration` records `sha256sum` of each applied migration and
+# tools/migrate.sh refuses to run when a recorded hash no longer matches what is
+# on disk — it is called by the deploy at both the pre and post phase, so a
+# changed byte here does not fail a test, it fails the next deploy. These four
+# are the only migrations still CRLF, and normalising them would change all four
+# hashes. `-text` is what makes git incapable of converting them.
+#
+# The cost is that git shows them as binary rather than diffing them, which for a
+# file whose bytes are frozen by design is closer to the truth than a diff view.
+# The other 74 migrations are already LF and stay diffable; a new migration is
+# written LF and hashed LF, so this never grows.
+database/db0.0.sql -text
+database/db0.3.sql -text
+database/db0.4.sql -text
+database/db0.5.sql -text
