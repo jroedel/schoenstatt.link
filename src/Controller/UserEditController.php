@@ -44,16 +44,21 @@ use function is_scalar;
  *    per call rather than fetched: a form carries the data and the messages of whatever
  *    was last validated through it, and the ServiceManager shares by default.
  *
- * ## One reproduced defect
+ * ## The one defect batch 12 reproduced, fixed 2026-08-21
  *
- * A failed validation is reported with a **flash** and then the form is re-rendered. A
- * flash is read by the *next* page, so the administrator sees a clean form with no
- * explanation and then finds "Error in form submission, please review." decorating
- * whatever they open next. Every sibling action in this module uses `nowMessenger` here
- * and is right to. Reproduced anyway — see `App\JUser\UserAdmin::flash()` and
- * docs/BACKLOG.md — because it is a behaviour change on a page whose port should read as
- * a port, and because fixing it in the same commit would mean the baseline diff no longer
- * proves the port is faithful.
+ * A failed validation used to be reported with a **flash** and the form then re-rendered.
+ * A flash is read by the *next* page, so the administrator saw a clean form with no
+ * explanation and then found "Error in form submission, please review." decorating
+ * whatever they opened next — while the field-level errors, which do render, sat there
+ * unexplained. Every sibling action on this surface uses `nowMessenger`, which renders on
+ * the response being returned, and is right to.
+ *
+ * Batch 12 reproduced it on purpose: its only evidence that nothing *else* moved was a
+ * byte-for-byte diff against the laminas rendering, and a message that appears on a
+ * different page changes both sides of that diff. The laminas view is deleted now, so the
+ * two re-rendering branches use `now()` and only the two that redirect still flash. Which
+ * is the whole distinction: a message belongs in the flash bag exactly when the response
+ * carrying it is a redirect.
  */
 final class UserEditController
 {
@@ -124,9 +129,12 @@ final class UserEditController
                     return $this->toIndex();
                 }
 
-                $this->admin->flash(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                //now(), not flash(): this branch re-renders the form below rather than
+                //redirecting, so the message has to be on *this* response. See the class
+                //docblock.
+                $this->admin->now(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
             } else {
-                $this->admin->flash(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                $this->admin->now(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
             }
         }
 
