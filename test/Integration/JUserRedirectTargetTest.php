@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use JUser\Host\AccessInterface;
-use JUser\Host\RouteResolverInterface;
 use JUser\Model\User;
 use JUser\Page\RedirectTarget;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/JUserHostFakes.php';
 
 /**
  * `JUser\Page\RedirectTarget` — the class that decides where a visitor goes after signing
@@ -59,7 +58,7 @@ final class JUserRedirectTargetTest extends TestCase
     #[DataProvider('hostileRedirects')]
     public function testAHostileRedirectIsRefusedEvenByAPermissiveHost(string $redirect): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'welcome'), $this->access(true));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'welcome'), new RecordingAccess());
 
         $this->assertNull($targets->valid($redirect));
     }
@@ -71,27 +70,20 @@ final class JUserRedirectTargetTest extends TestCase
      */
     public function testTheResolverIsNotEvenAskedAboutAnOffSiteDestination(): void
     {
-        $asked   = [];
-        $targets = new RedirectTarget(
-            $this->resolver(function (string $path) use (&$asked): ?string {
-                $asked[] = $path;
-
-                return 'welcome';
-            }),
-            $this->access(true)
-        );
+        $resolver = new RecordingRouteResolver(fn(): string => 'welcome');
+        $targets  = new RedirectTarget($resolver, new RecordingAccess());
 
         $targets->valid('//evil.example.com/');
         $targets->valid('https://evil.example.com/');
         $targets->valid('');
 
-        $this->assertSame([], $asked);
+        $this->assertSame([], $resolver->asked);
     }
 
     /** A non-string is not a destination, and `?redirect=` can arrive as anything. */
     public function testANonStringIsRefused(): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'welcome'), $this->access(true));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'welcome'), new RecordingAccess());
 
         $this->assertNull($targets->valid(null));
         $this->assertNull($targets->valid(42));
@@ -101,7 +93,7 @@ final class JUserRedirectTargetTest extends TestCase
 
     public function testARootRelativePathThatResolvesIsAccepted(): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'shrines'), $this->access(true));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'shrines'), new RecordingAccess());
 
         $this->assertSame('/en/shrines', $targets->valid('/en/shrines'));
         $this->assertSame('/en/shrines?page=2', $targets->valid('/en/shrines?page=2'));
@@ -117,21 +109,21 @@ final class JUserRedirectTargetTest extends TestCase
      */
     public function testAPathThatResolvesToNothingIsRefused(): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): ?string => null), $this->access(true));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): ?string => null), new RecordingAccess());
 
         $this->assertNull($targets->valid('/en/shrines'));
     }
 
     public function testRefusedRouteNamesTheRouteWhenTheAccountMayNotReachIt(): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'admin'), $this->access(false));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'admin'), new RecordingAccess(false));
 
         $this->assertSame('admin', $targets->refusedRoute('/en/admin', $this->user()));
     }
 
     public function testRefusedRouteIsNullWhenTheAccountMayReachIt(): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'admin'), $this->access(true));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'admin'), new RecordingAccess());
 
         $this->assertNull($targets->refusedRoute('/en/admin', $this->user()));
     }
@@ -144,23 +136,11 @@ final class JUserRedirectTargetTest extends TestCase
      */
     public function testAnUnresolvableDestinationIsNotARefusal(): void
     {
-        $asked   = 0;
-        $access  = new class ($asked) implements AccessInterface {
-            public function __construct(private int &$asked)
-            {
-            }
-
-            public function userMayReachRoute(User $user, string $route): bool
-            {
-                $this->asked++;
-
-                return true;
-            }
-        };
-        $targets = new RedirectTarget($this->resolver(fn(): ?string => null), $access);
+        $access  = new RecordingAccess();
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): ?string => null), $access);
 
         $this->assertNull($targets->refusedRoute('/en/nowhere', $this->user()));
-        $this->assertSame(0, $asked);
+        $this->assertSame([], $access->aboutAccount);
     }
 
     /**
@@ -171,26 +151,13 @@ final class JUserRedirectTargetTest extends TestCase
      */
     public function testTheAccountAskedAboutIsTheOnePassedIn(): void
     {
-        $seen    = null;
-        $access  = new class ($seen) implements AccessInterface {
-            /** @param User|null $seen */
-            public function __construct(private mixed &$seen)
-            {
-            }
-
-            public function userMayReachRoute(User $user, string $route): bool
-            {
-                $this->seen = $user;
-
-                return true;
-            }
-        };
+        $access  = new RecordingAccess();
         $user    = $this->user(99);
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'admin'), $access);
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'admin'), $access);
 
         $targets->refusedRoute('/en/admin', $user);
 
-        $this->assertSame($user, $seen);
+        $this->assertSame([[$user, 'admin']], $access->aboutAccount);
     }
 
     /**
@@ -201,7 +168,7 @@ final class JUserRedirectTargetTest extends TestCase
      */
     public function testPathOfKeepsOnlyThePathAndQuery(): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'welcome'), $this->access(true));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'welcome'), new RecordingAccess());
 
         $this->assertSame('/en/admin', $targets->pathOf('https://example.test/en/admin'));
         $this->assertSame('/en/admin?tab=2', $targets->pathOf('https://example.test/en/admin?tab=2'));
@@ -212,39 +179,9 @@ final class JUserRedirectTargetTest extends TestCase
     /** A URL with no path at all comes back unchanged rather than as an empty string. */
     public function testPathOfFallsBackToTheWholeUrlWhenThereIsNoPath(): void
     {
-        $targets = new RedirectTarget($this->resolver(fn(): string => 'welcome'), $this->access(true));
+        $targets = new RedirectTarget(new RecordingRouteResolver(fn(): string => 'welcome'), new RecordingAccess());
 
         $this->assertSame('https://example.test', $targets->pathOf('https://example.test'));
-    }
-
-    /** @param callable(string): ?string $answer */
-    private function resolver(callable $answer): RouteResolverInterface
-    {
-        return new class ($answer) implements RouteResolverInterface {
-            /** @param callable(string): ?string $answer */
-            public function __construct(private readonly mixed $answer)
-            {
-            }
-
-            public function routeFor(string $path): ?string
-            {
-                return ($this->answer)($path);
-            }
-        };
-    }
-
-    private function access(bool $allowed): AccessInterface
-    {
-        return new class ($allowed) implements AccessInterface {
-            public function __construct(private readonly bool $allowed)
-            {
-            }
-
-            public function userMayReachRoute(User $user, string $route): bool
-            {
-                return $this->allowed;
-            }
-        };
     }
 
     private function user(int $id = 7): User
