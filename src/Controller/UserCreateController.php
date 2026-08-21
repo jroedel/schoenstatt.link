@@ -52,7 +52,8 @@ use function is_string;
  * 2. **Only the user form pre-selects anything.** A GET of `juser/create` sets
  *    `rolesList` to `getDefaultRoles()` — `lib_user`, `pub_user`, `sch_user`, `bib_user`,
  *    the four `is_default = 1` rows — so a new account starts with what registration would
- *    have given it. Nothing pre-fills the role form.
+ *    have given it, **and ticks Active**, without which an administrator can create an
+ *    account that is silently unable to ever sign in. Nothing pre-fills the role form.
  *
  * ## The shared form instance, and why fetching it here is correct
  *
@@ -127,6 +128,24 @@ final class UserCreateController
             }
         } elseif (self::USER === $kind) {
             $form->get('rolesList')->setValue(array_keys($this->admin->table()->getDefaultRoles()));
+            /*
+             * **Active, ticked.** The element declares `'value' => 0`, so without this the
+             * box renders unchecked and an administrator who does not notice it creates an
+             * account at `state = 0`.
+             *
+             * That was harmless until 2026-08-21 and is a permanent silent lockout now:
+             * `state = 0` means "may not sign in", so the account is refused a magic link,
+             * refused a link already in flight, and told nothing either time — the page
+             * still says "check your email", because it must not reveal which accounts are
+             * disabled. Nothing would ever surface it, since the previous behaviour was for
+             * the first redemption to activate the account, and that is exactly what was
+             * removed.
+             *
+             * So the default has to match what creating an account means. Unticking it is
+             * still available and is now an explicit choice: create it, do not let them in
+             * yet.
+             */
+            $form->get('active')->setValue(1);
         }
 
         //**No `action` attribute**, which is why the templates call `form_open(form, '')`.

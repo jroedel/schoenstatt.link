@@ -196,6 +196,30 @@ suites run from the superproject working tree.
   them (`database/db8.4.sql`, `db8.5.sql`). The live token store is
   `user.verification_token` + `verification_expiration`, which look like password-era
   artefacts and are the opposite: see `JUser\Service\LoginTokenService`.
+  **`user.state` and `user.email_verified` mean two different things, and only since
+  2026-08-21.** `state` — the Active checkbox on `/users/{id}/edit` — means *may sign in*,
+  and it is now enforced in **four** places: no link is mailed to a deactivated account, a
+  link already in flight is refused with a 403, `App\Api\BotIdentity` refuses its API
+  tokens (a bearer token is a sign-in that skips the sign-in page, so it answers to the
+  same switch), and `JUser\Authentication\Storage\SessionUser::read()` refuses to resolve
+  it — which is the one that reaches a session already open, so revoking access takes
+  effect on the next request rather than at some invisible session timeout. That fourth one
+  needed no new machinery: only the user id is in the session, so the row is re-read every
+  request, and `isEmpty()` already clears the storage when a read comes back null. The
+  create form ticks Active for the same reason it all hangs together —
+  `EditUserForm` declares `'value' => 0`, so without
+  `App\Controller\UserCreateController` setting it an administrator would create accounts
+  that can never sign in and are never told why. `email_verified` means *someone has proved they read mail here*, and
+  redeeming a link is what sets it, in `clearVerificationToken()`. Before this, `state`
+  could not express anything: new accounts were created inactive and `verifyAction()`
+  activated whatever it redeemed, so every deactivated account reactivated itself on its
+  next link — 32 of 292 real accounts sat at `state = 0` and could all sign in.
+  `database/db8.6.sql` moved those 32 to `state = 1` **before** the code shipped, because
+  they were stalled registrations rather than bans and would otherwise have been
+  retroactively locked out. A new account is therefore created **active and unverified**;
+  creating it inactive would have the deactivation check refuse the very first magic link
+  and break open registration entirely. Guarded by `test/Smoke/AuthSmokeTest` (six of its
+  twelve tests) and `ApiV3SmokeTest::testADeactivatedBotAccountIsRefused`.
 - **Borrowers reach their own books without an account.** An overdue notice carries a scoped link to `/library/my-books?t=…`; the token (`Books\Model\BorrowerTokenTable`, table `lib_borrower_tokens`) authorises exactly one person at one library, is stored as a sha256 digest, expires, and is deliberately **not** single-use. It exists instead of giving borrowers accounts because this database has **no user-to-person link at all** and every account inherits `lib_user`, which is `is_default = 1`. The page is Symfony-side precisely so its authorization is ordinary code rather than a role: no `person_id` may ever appear in that URL. Renewal is `LibraryTable::renewBook()` — it persists, counts, and enforces `lib_libraries.MaximumBookRenewals` (default 3); overdue books renew from *today*. Notices go out via `bin/console books:send-notices --library=N [--dry-run]`, which needs no API key.
 - **Association/shrine validation lives in `App\Schoenstatt\Association`**, not in the form.
   `AssociationInputFilterSpec` holds the rules, `AssociationForm` delegates to it, and
