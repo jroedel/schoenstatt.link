@@ -128,6 +128,11 @@
             "SionModel\\": "module/SionModel/src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "SchoenstattPerf\\": "tools/perf/src/"
+        }
+    },
     "scripts": {
         "cs-check": "phpcs",
         "cs-fix": "phpcbf",
