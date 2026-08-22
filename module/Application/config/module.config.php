@@ -10,6 +10,7 @@
 
 namespace Application;
 
+use App\Acl\AclCacheInvalidator;
 use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
 use Laminas\Router\Http\Literal;
@@ -24,6 +25,7 @@ use Laminas\Session\ManagerInterface as SessionManagerInterface;
 use Psr\Container\ContainerInterface;
 use Laminas\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use SionModel\Cache\EntityChangeListeners;
 use Psr\Log\LoggerInterface;
 
 return [
@@ -137,6 +139,27 @@ return [
             //App\Console\Command\BuildSitemapCommandFactory for what it does and does not
             //build.
             BuildSitemapCommand::class => BuildSitemapCommandFactory::class,
+            /*
+             * Told whenever any SionTable invalidates an entity, so the cached
+             * BjyAuthorize ACL can go with it. Registered here rather than from the
+             * Symfony kernel because it has to exist under *both* front controllers and
+             * before any table is built: SionTableWiring asks the container for it as it
+             * wires each table, and this config is what both containers load.
+             *
+             * An ordinary shared service, unlike SionModel's CacheFlushQueue — it holds
+             * no per-request state. Resolving it builds the ACL cache storage, which is
+             * an APCu handle and nothing more.
+             */
+            EntityChangeListeners::class => static function (ContainerInterface $c): EntityChangeListeners {
+                $listeners = new EntityChangeListeners();
+                /** @var array<string, mixed> $bjy */
+                $bjy = $c->get('BjyAuthorize\Config');
+                /** @var StorageInterface $cache */
+                $cache = $c->get('BjyAuthorize\Cache');
+                $listeners->add(new AclCacheInvalidator($cache, (string) ($bjy['cache_key'] ?? 'acl')));
+
+                return $listeners;
+            },
         ],
         'aliases' => [
             //this helps clarify throughout the app which kind of Logger we should expect.

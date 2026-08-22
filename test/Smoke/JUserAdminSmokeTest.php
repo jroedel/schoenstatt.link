@@ -279,6 +279,61 @@ class JUserAdminSmokeTest extends SmokeTestCase
         );
     }
 
+    /**
+     * A role created a moment ago can be granted, and the account holding it still gets a page.
+     *
+     * The assembled BjyAuthorize ACL is cached in APCu (2026-08-22). What makes that
+     * dangerous rather than merely stale is `Laminas\Permissions\Acl\Acl::addRole()`:
+     * `Authorize::load()` hands it the identity's roles as *parent* roles, and it throws on
+     * a parent it has never heard of. So an ACL cached before this role existed is not a
+     * missing permission — it is a **500 on every request** by whoever holds the role, until
+     * the item's TTL runs out.
+     *
+     * Nothing about that is visible from reading the cache config, and the TTL means it
+     * heals itself before anyone can reproduce it by hand. Hence an end-to-end test: create
+     * the role through the form (which is what must expire the cache, via
+     * `SionCacheTrait::removeDependentCacheItems()` and `App\Acl\AclCacheInvalidator`), grant
+     * it with a raw INSERT — deliberately, because granting a role is a `user-role-link`
+     * write and must *not* expire anything — and then load a page as that account.
+     */
+    public function testAnAccountGrantedABrandNewRoleStillGetsAPage(): void
+    {
+        $admin = $this->newCookieJar();
+        $this->signIn($admin, ['administrator']);
+
+        $form = $this->get('/en/users/roles/create', false, $admin);
+        $this->assertSame(200, $form['status']);
+
+        $roleId  = 'juser_smoke_fresh_role';
+        $created = $this->request('POST', '/en/users/roles/create', [], false, $admin, [
+            'name'      => $roleId,
+            'parentId'  => '',
+            'isDefault' => '0',
+            'security'  => $this->extractCsrfToken($form['body']),
+            'submit'    => 'Submit',
+        ]);
+        $this->createdRoles[] = $roleId;
+        $this->assertSame(302, $created['status'], 'precondition: the role was created');
+
+        //A second visitor, signed in after the role existed, so the only thing that can
+        //make the next request fail is an ACL assembled before it.
+        $holder = $this->newCookieJar();
+        $email  = $this->signIn($holder, [$roleId]);
+
+        $page = $this->get('/en/', false, $holder);
+        $this->assertSame(
+            200,
+            $page['status'],
+            sprintf(
+                'the home page 500s for an account holding a role the cached ACL predates '
+                . '(account %s, role %s)',
+                $email,
+                $roleId
+            )
+        );
+        $this->assertStringNotContainsString('Sign in</a>', $page['body'], 'and the session is real');
+    }
+
     /** A signed-in visitor without `administrator` is refused; the guard is the whole protection. */
     public function testASignedInVisitorWithoutTheRoleIsRefused(): void
     {

@@ -1831,6 +1831,16 @@ Background and measurements: [caching.md](caching.md).
   excludes them (`App\Sitemap\SitemapGenerator`); filtering them in
   `PageBuilder` instead would fix both surfaces at once and change the laminas
   rendering, which is why it was not done as part of a port.
+- [ ] **`JUser\Model\UserTable` is built on every anonymous request**, costing
+  **1.9 ms** — measured in-request 2026-08-22, and now the largest single item
+  in the authorization layer's remaining 3.2 ms.
+  `JUser\Bridge\Laminas\AuthenticationServiceFactory` resolves the whole table
+  — DB adapter, entity spec, cache, logger, user directory — so `SessionUser`
+  can hold it in case the session contains an identity. On an anonymous request
+  it is never read: `getIdentityRoles()` answers with the default role in
+  0.01 ms. A lazy resolver (`callable(): UserTable`) fixes it, but it changes a
+  public constructor in a shared library on the authentication path, so it wants
+  its own PR and its own review rather than riding along with a caching change.
 - [ ] `SionCacheTrait::getUnlinkedAssignments()` declares dependencies
   `['assignment', 'association']` but the honest list is
   `['assignment', 'role']` — harmless over-invalidation, still wrong.
