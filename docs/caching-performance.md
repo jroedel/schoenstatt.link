@@ -10,6 +10,13 @@ stores no data at all.** Not "a low hit rate" — zero. Across 49 measured reque
 348 reads of data keys and **0 hits**, and **0 writes** of any data key. The only thing
 written to APCu was the cache's own bookkeeping.
 
+> **Finding 1 was fixed the same day** — `SionModel\Cache\CacheFlushQueue` plus
+> `App\Http\SionCacheFlushListener` on `kernel.terminate`. The measurements in this
+> document are kept as the **before** picture, because they are the evidence for the four
+> findings that are still open and because the shape of the bug is worth not forgetting.
+> Every "today" below means 2026-08-22 before the fix; the after-numbers are in
+> [Finding 1 — fixed](#finding-1--fixed) and they move Findings 2 and 3 as well.
+
 ---
 
 ## How the measurement works
@@ -77,6 +84,13 @@ This is a known shape in this codebase. JTranslate hit exactly the same wall and
 `src/Laminas/PhraseFlush.php` and `TranslatorConfigurator` both carry comments explaining it.
 SionModel never got the equivalent, and nothing failed when it didn't.
 
+There is a second cost hidden in the same line of code. `SionTableWiring` reached for the MVC
+`Application` to get that event manager, guarded by `has('Application')` — and under the
+Symfony front controller `has('Application')` answers **true**, because laminas-mvc's own
+module config defines the service whether or not anything ever bootstraps it. So every table
+built an MVC application, per table, per request, to attach a listener to an event that
+request would never fire.
+
 ### Why nobody noticed
 
 Wall-clock time went **down**, not up, when production moved to the Symfony front controller:
@@ -93,6 +107,56 @@ Wall-clock time went **down**, not up, when production moved to the Symfony fron
 Not booting laminas-mvc, its view layer and its listener stack saves more than the cache was
 returning. The move was a net win *and* it silently disabled the cache; the two cancelled out
 in the only number anyone was watching.
+
+### Finding 1 — fixed
+
+Fixed 2026-08-22. `SionModel\Cache\CacheFlushQueue` is a per-request registry that tables
+enrol themselves into from their factory; `App\Http\SionCacheFlushListener` drains it on
+`KernelEvents::TERMINATE`. When a queue is present the MVC `Application` is not resolved at
+all, which removes the second cost above. Same harness, same URL set, same capsule:
+
+| | statements / request | data-key reads | data-key hits | data-key writes |
+|---|---|---|---|---|
+| Symfony, before | 11.4 | 348 | **0** | **0** |
+| laminas (`SYMFONY_KERNEL=0`) | 6.7 | 415 | 345 (83%) | 35 |
+| **Symfony, after** | **6.3** | 242 | **207 (86%)** | **16** |
+
+Wall time, median per route and phase, before and after:
+
+| route | before cold | after cold | before warm | after warm |
+|---|---|---|---|---|
+| developers | 67.2 ms | **12.4 ms** | 66.9 ms | **12.2 ms** |
+| dictionary | 74.7 ms | **14.3 ms** | 66.9 ms | **12.1 ms** |
+| home | 70.8 ms | 65.5 ms | 67.9 ms | **12.4 ms** |
+| home-de | 71.8 ms | **17.8 ms** | 71.0 ms | **14.1 ms** |
+| music | 93.2 ms | **34.7 ms** | 93.3 ms | **32.7 ms** |
+| composition | 86.5 ms | **28.2 ms** | 85.1 ms | **29.4 ms** |
+| publication | 275.1 ms | 220.3 ms | 273.3 ms | 227.3 ms |
+| shrine | 536.4 ms | 513.1 ms | 566.7 ms | **334.7 ms** |
+| **total** | **2,566.8 ms** | | **1,581.2 ms** | |
+
+Two things about that table are worth reading carefully rather than celebrating.
+
+**The saving is not evenly distributed and the biggest pages moved least.** `developers` is a
+near-static page and it dropped 55 ms; `publication` is the second-slowest page and dropped
+~50 ms out of 275. The flat ~55 ms every route gained is the four full-table statements from
+Finding 2 becoming cache hits — a per-request constant, not a proportional speed-up. Finding 3
+already said the entity cache is worth little on the expensive pages, and the after-numbers
+agree with it.
+
+**`home` cold is the one route that barely moved (70.8 → 65.5 ms) while its warm time went
+67.9 → 12.4 ms.** That is what a working cache is supposed to look like and it had no
+cold-warm difference at all before.
+
+Guarded by three tests: `SionCacheWiringTest` pins that a table built for a Symfony request
+enrols in the queue and does *not* also attach the MVC listener (and that one built without a
+queue still does); `SionCacheDependencyMapTest::testFlushingTwiceWritesEachItemOnce` pins that
+the queue is drained by the pass that writes it; and
+`SionModelSmokeTest::testAPortedPageLeavesDataInThePersistentCache` is the end-to-end form —
+clear the cache, request a ported page, assert APCu holds a **data** key and not only a
+dependency map. That last assertion is deliberately about key names: entry *count* grew all
+along, because the dependency map was written faithfully throughout, so "the cache has
+entries" is exactly the check that would have passed for eleven days.
 
 ---
 
@@ -114,8 +178,14 @@ That is the authorization layer: BjyAuthorize building roles, the per-user role 
 the library/text ACL resources. Six statements, on an **anonymous** request, on a page with no
 user-specific content.
 
-This is the largest cacheable target on the site and none of it is cached under the live front
-controller. It is also the one finding the capsule's data skew touches: the first statement
+**Four of the six are cached as of the Finding 1 fix** — the `user` row-set, `lib_libraries`,
+`lib_collections` and the `texts` ACL resources all went through `SionTable` and were being
+queued and discarded. What survives on every one of 48 requests is the pair BjyAuthorize
+issues directly, `SELECT user_id FROM user` and `SELECT user_role.*`, which never touch
+SionCacheTrait; caching those is Finding 2's remaining work and the reason it stays open.
+
+This was the largest cacheable target on the site and none of it was cached under the live
+front controller. It is also the one finding the capsule's data skew touches: the first statement
 reads the whole `user` table, 6,303 rows here against ~292 in production, so its *cost* here is
 inflated — but it runs once per request either way, and in production `getUsers()` has been
 measured at 0.55 MiB of cached payload, so it is not free there either.
@@ -219,10 +289,10 @@ these pages can never be served entirely from cache without changing what "a vis
 
 In rough order of value per unit of risk:
 
-1. **Give the persistent cache a Symfony flush point.** The mechanism works, is already
-   tested, and is simply unreachable — `src/Http/PhraseFlushListener.php` is the pattern and
-   `kernel.terminate` is the hook. This is the smallest change with the largest correctness
-   improvement, and it is a prerequisite for measuring anything else honestly.
+1. ~~**Give the persistent cache a Symfony flush point.**~~ **Done 2026-08-22** — see
+   [Finding 1 — fixed](#finding-1--fixed). Statements per request 11.4 → 6.3, the measured
+   page set 2,567 ms → 1,581 ms. Everything below should be re-measured against the new
+   baseline before it is costed, which was the point of doing this one first.
 2. **Raise or remove `max_items_to_cache`.** It exists to bound memory on a 32 MB segment that
    is now 256 MB, and `max_cached_item_size` already bounds the thing that actually hurt.
    Verify production's value first.

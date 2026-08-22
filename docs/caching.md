@@ -1,11 +1,12 @@
 # Caching
 
-> **Before trusting any of this as a description of what happens at runtime, read
-> [caching-performance.md](caching-performance.md).** Measured 2026-08-22: under the
-> Symfony front controller — the one production runs — the persistent cache writes no
-> data items at all, because its only write path is an `MvcEvent::FINISH` listener that
-> a Symfony-served route never reaches. Everything below describes a mechanism that is
-> correct and currently unreachable on most of the site.
+> **[caching-performance.md](caching-performance.md) is the record of what this layer
+> actually does at runtime**, and it is where the numbers live. Measured 2026-08-22: under
+> the Symfony front controller — the one production runs — the persistent cache was writing
+> no data items at all, because its only write path was an `MvcEvent::FINISH` listener that
+> a Symfony-served route never reaches. **Fixed the same day** (see [The two flush
+> points](#the-two-flush-points)); four of its five other findings are still open, so read
+> that document before costing any work here.
 
 The app caches query results in APCu through `SionModel\Db\Model\SionCacheTrait`
 (mixed into `SionTable`, so every `*Table` model has it, plus JTranslate's
@@ -51,7 +52,7 @@ Four properties now hold, each asserted by name in
   keys at the same time would otherwise leave whichever wrote last as the only
   one on record — orphaning the other's item in milliseconds instead of a day.
 - **A snapshot older than the last change is never written.** Items are written
-  at `MvcEvent::FINISH`, long after they were read; a generation counter bumped
+  at the end of the request, long after they were read; a generation counter bumped
   on every invalidation (`<class>-cachegeneration`, advanced with the storage's
   atomic `incrementItem`) lets the writer recognise a snapshot a concurrent
   change has overtaken and drop it instead of putting it back on top of the
@@ -65,6 +66,41 @@ rather than letting it vouch for keys in a namespace this instance no longer
 touches. And the factory used to attach `onFinishWriteCache` a second time, which
 is why every JUser key appeared twice in the application log; `wireOnFinishTrigger()`
 is now idempotent. Both are pinned by `test/Integration/SionCacheWiringTest`.
+
+## The two flush points
+
+Nothing is written to APCu at the moment it is cached. `cacheEntityObjects()` puts the item
+in memory and on a queue, and `onFinishWriteCache()` writes the queue out at the end of the
+request — serializing a large result set mid-render would charge the visitor for it. So the
+whole persistent cache depends on something calling that method, and **which something
+depends on the front controller**:
+
+| front controller | what calls `onFinishWriteCache()` |
+|---|---|
+| laminas (`SYMFONY_KERNEL=0`, and any bridged request) | a listener on `MvcEvent::FINISH`, attached by `SionTableWiring::wireFlushPoint()` |
+| Symfony (production since 2026-08-11) | `App\Http\SionCacheFlushListener` on `KernelEvents::TERMINATE`, draining `SionModel\Cache\CacheFlushQueue` |
+
+The queue is a per-request registry that tables **enrol themselves into from their factory**.
+That is not indirection for its own sake: there is no way to ask a `ServiceManager` whether a
+service was instantiated, so a listener that resolved tables by name would build all ten of
+them, each with a database adapter, on a request that asked for `/_health`. Recording the
+enrolment at the moment of use is the only way "only if it was used" can be known.
+
+Three consequences worth knowing before changing any of it:
+
+- **A host that registers no queue keeps the `MvcEvent` path unchanged.** That is patres,
+  every un-strangled laminas host, and any console process. A process with neither gets no
+  flush point at all, which is correct: an APCu segment belongs to the SAPI that created it,
+  so anything a CLI run wrote would land where no web request can read it.
+- **When a queue is present the MVC `Application` is deliberately not resolved.**
+  `has('Application')` answers *true* under the Symfony front controller — laminas-mvc's
+  module config defines the service whether or not anything bootstraps it — so the old
+  unconditional code built an MVC application per table per request for an event manager
+  whose event that request would never fire.
+- **The queue is drained by the pass that writes it**, so calling the flush twice writes
+  nothing the second time. The per-request `max_items_to_cache` budget is therefore spent
+  once and not renewed: items a first pass refused on budget are dropped rather than held
+  over for a second pass that would defeat the budget.
 
 ## Why item size matters so much
 

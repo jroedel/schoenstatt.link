@@ -380,6 +380,33 @@ class SionCacheDependencyMapTest extends TestCase
         $this->assertTrue($success);
         $this->assertSame(['ann'], $served);
     }
+
+    /**
+     * The write queue is drained by the pass that writes it, so a second pass in
+     * the same request finds nothing.
+     *
+     * This became a live property on 2026-08-22, when a Symfony-served route got a
+     * flush point of its own ({@see \SionModel\Cache\CacheFlushQueue}) alongside the
+     * `MvcEvent::EVENT_FINISH` listener that had been the only one. A host that
+     * somehow wires both — or calls flush() twice — must not serialize and store
+     * every queued item a second time. It is the same failure the event side's
+     * `$onFinishWired` guard exists to stop, arriving by a different road.
+     */
+    public function testFlushingTwiceWritesEachItemOnce(): void
+    {
+        $store = new FakeCacheStore();
+        $host = $this->host($store);
+        $host->cacheObjects('users', ['ann'], ['user']);
+
+        $host->onFinishWriteCache();
+        $host->onFinishWriteCache();
+
+        $this->assertSame(
+            1,
+            $store->writeCount('maphost-users'),
+            'a second flush must find an empty queue, not rewrite what the first wrote'
+        );
+    }
 }
 
 /**
