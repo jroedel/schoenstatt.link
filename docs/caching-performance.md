@@ -468,7 +468,7 @@ Measured A/B under identical conditions, five samples each:
 The related rows stay in a **separate snapshot** even when they are a copy of `$objects`,
 which is load-bearing rather than wasteful: linking `$objects` to rows that are themselves
 being linked would make the graph cyclic where this keeps it two levels deep and finite.
-(Until [Finding 6](#finding-6--fixed) the links into that snapshot were PHP *references*.
+(Until [Finding 8](#finding-8--fixed) the links into that snapshot were PHP *references*.
 They are plain copies now, and the snapshot survives for the reason above.)
 
 This reaches every association page, `/movement`, the edit form, the v3 API's list and detail
@@ -479,7 +479,37 @@ Proved by `tools/port-baseline.php`: **1,272 of 1,272 responses identical** — 
 locale forms × 2 identities — plus `test/Integration/AssociationLinkingTest`, which pins the
 two properties the saving rests on rather than the timing.
 
-## Finding 6 — fixed
+### The same shape lives in PublicationsTable — and the same argument does not
+
+`PublicationsTable` issues the same kind of `orCombination` re-query, and the publication page
+is the other slow route. Left alone here deliberately, because its relations are a different
+shape and the "already in hand" argument has to be made again rather than assumed. It was, in
+[Finding 9](#finding-9--fixed), and it turned out **not** to hold: the query is necessary and
+something else was wrong.
+
+---
+
+## Finding 6 — the generation counter has never been read successfully
+
+`currentGeneration()` was called 772 times across both runs. **0 hits, 772 misses, 0 writes.**
+
+That is not a bug: `bumpGeneration()` only writes on invalidation, and a read-only measurement
+run performs none. But it means `generationMovedOn()` — the guard that discards a cache write
+overtaken by a concurrent change — was inert throughout, so these runs say nothing about
+whether it works. It also costs one APCu read per write attempt to learn nothing.
+
+---
+
+## Finding 7 — a write on every entity page view
+
+`INSERT INTO sch_visits (…)` ran 18 times across 49 requests — once per entity show page.
+Every anonymous view of a shrine, publication or composition performs a database write. That
+is by design (`registerVisit()`), but it is worth naming in a caching document: it is why
+these pages can never be served entirely from cache without changing what "a visit" means.
+
+---
+
+## Finding 8 — fixed
 
 **The links into that snapshot were PHP references, and the rows they pointed at were
 taken before the roles were attached.**
@@ -567,33 +597,84 @@ array assigned to itself, changing no value and only converting the element into
 for the rest of the request. It appears to be a mistyped attempt to fill
 `$processedRow['collections']`, which is declared there and which nothing has ever read.
 
-### The same shape lives in PublicationsTable
+## Finding 9 — fixed
 
-`PublicationsTable::linkPublications()` issues the same kind of `orCombination` re-query, and
-the publication page is the other slow route (208 ms wall, 129 ms query). It was left alone
-deliberately: its relations are a different shape (`mainPublication` / `translatedFrom` rather
-than parent / children), so it is a separate correctness argument. Note the right shape already
-exists beside it — `linkPublication()`, singular, resolves one record's relations directly.
+**`sch_publications` had exactly one index, and the publication page paid for it twice per
+request.**
 
----
+The obvious follow-up to Finding 5 was to look for the same redundant query here. It is
+there, and it is **not** redundant — measured before touching anything, on three real result
+sets:
 
-## Finding 6 — the generation counter has never been read successfully
+| caller | related query returned | already in hand | new |
+|---|---|---|---|
+| `/literature/de` index | 73 | 2 | **71** |
+| `/literature/en` index | 56 | 0 | **56** |
+| search "kentenich" | 196 | 58 | **138** |
 
-`currentGeneration()` was called 772 times across both runs. **0 hits, 772 misses, 0 writes.**
+A publication result set is filtered — `noSubEditions` is the default on the index, so a
+row's sub-editions are by definition outside it — and `getPublication()` starts from a single
+record. That is the same case the association side still queries for. Worth recording as a
+result rather than a non-event: the previous fix could easily have been generalised into a
+rule, and the rule would have been wrong.
 
-That is not a bug: `bumpGeneration()` only writes on invalidation, and a read-only measurement
-run performs none. But it means `generationMovedOn()` — the guard that discards a cache write
-overtaken by a concurrent change — was inert throughout, so these runs say nothing about
-whether it works. It also costs one APCu read per write attempt to learn nothing.
+### What was actually wrong
 
----
+`sch_publications` has 10,166 rows and, until `database/db8.7.sql`, exactly one index — the
+primary key. Every lookup by anything else was a full table scan, and the publication page did
+two:
 
-## Finding 7 — a write on every entity page view
+```
+WHERE PublicationId = ? OR MainPublicationId = ? OR TranslatedFromPublicationId = ?
+```
 
-`INSERT INTO sch_visits (…)` ran 18 times across 49 requests — once per entity show page.
-Every anonymous view of a shrine, publication or composition performs a database write. That
-is by design (`registerVisit()`), but it is worth naming in a caching document: it is why
-these pages can never be served entirely from cache without changing what "a visit" means.
+`MainPublicationId` is non-null on 198 rows and `TranslatedFromPublicationId` on 257, so both
+are as selective as an index gets. Measured warm, three samples each side:
+
+| | no index | indexed |
+|---|---|---|
+| `getPublication(1976)` wall | 54–71 ms | **7.4–10.4 ms** |
+| … of which SQL | 50–65 ms | **3.2–5.9 ms** |
+| `/literature/en` index | 56.4 ms | **35.7 ms** |
+
+### And a third query nobody read
+
+`linkPublication()` called `searchPublications()` without `noLink`, so that call linked *its*
+results, issuing a third query of the same shape. Nothing consumed it: `FormatPublication` is
+the only thing that renders an attached row, and it reads none of `mainPublication`,
+`translatedFromPublication`, `subEditions` or `translations`. With `noLink` the page is down to
+three statements and **5.0–5.7 ms**, from 54–71.
+
+Leaving the attached rows unlinked also keeps the structure two levels deep rather than
+open-ended, which is the same property Finding 8 preserved on the association side.
+
+### Also in this pass
+
+`PublicationsTable::getPublications()` is **deleted**. It had no callers anywhere in the
+application, and it was the worst of the linking code: it linked `$entities` to *itself* by
+reference (`$entities[$main]['subEditions'][$id] = &$entities[$id]`), which is the cyclic
+structure the association side takes care to avoid, and then handed the result — all ~10,000
+publications — to `cacheEntityObjects()`.
+
+The remaining references in `linkPublication()` and `linkPublications()` are plain copies now,
+for the reasons in Finding 8. Neither array is cached, so the `serialize()` argument that keeps
+the one in `getCheckouts()` does not apply.
+
+### Two things found and not fixed
+
+Both are in `docs/BACKLOG.md` with their numbers, and both want a decision rather than a quiet
+change:
+
+* **`searchPublications()` loses its `DataSource IS NULL` filter on every `orCombination`
+  query.** The predicates go into one flat `Where`, the OR-combined ones first and
+  `IsNull(DataSource)` last with AND, and laminas-db renders the set flat — so
+  `A OR B OR C AND DataSource IS NULL` binds as `A OR B OR (C AND …)`. 5,963 of 10,166
+  publications carry a DataSource and are meant to be hidden; 55 sub-editions and 64
+  translations across 44 parents currently leak into "Other editions".
+* **Nine of the nineteen tables over 200 rows have no index but their primary key.** The
+  application survives it by caching whole tables; it bites where a table is too big to cache
+  and is queried by a non-key column, which is exactly what made this page the slowest on the
+  site.
 
 ---
 
