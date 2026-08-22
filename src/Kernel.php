@@ -105,6 +105,7 @@ use App\Http\LocaleListener;
 use App\Http\LocalePrefixListener;
 use App\Http\MaintenanceKey;
 use App\Http\PhraseFlushListener;
+use App\Http\SionCacheFlushListener;
 use App\Http\ProtocolVersionListener;
 use App\Http\SessionListener;
 use App\Laminas\RouteUrl;
@@ -127,6 +128,7 @@ use App\View\PreferredUrls;
 use App\Twig\LaminasExtension;
 use Books\Service\SpreadsheetReader;
 use Closure;
+use SionModel\Cache\CacheFlushQueue;
 use SionModel\Error\FatalErrorHandler;
 use SionModel\Error\RequestContext as ErrorRequestContext;
 use SionModel\Service\ErrorHandling;
@@ -183,6 +185,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private ServiceBridge $laminas;
 
     private PhraseFlush $phrases;
+    private CacheFlushQueue $cacheWrites;
     private RequestStack $requests;
     private CspNonce $cspNonce;
     private Environment $twig;
@@ -273,8 +276,10 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
 
     public function terminate(Request $request, Response $response): void
     {
-        // Nothing listens to kernel.terminate yet. Calling it anyway means a
-        // listener added later actually runs, instead of being mysteriously dead.
+        // Two listeners hang off kernel.terminate, and both write things a
+        // Symfony-served route would otherwise discard silently: the phrases it
+        // discovered and the persistent-cache items it queued. See
+        // App\Http\PhraseFlushListener and App\Http\SionCacheFlushListener.
         $this->httpKernel()->terminate($request, $response);
     }
 
@@ -339,6 +344,10 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         //listener a Symfony-served route never reaches, and without it no phrase a
         //ported page discovers is ever written. See App\Laminas\PhraseFlush.
         $dispatcher->addListener(KernelEvents::TERMINATE, new PhraseFlushListener($this->phraseFlush()));
+        //And the same for the persistent cache, which defers its writes to the same
+        //laminas event and had therefore been writing nothing at all since the
+        //cutover. See App\Http\SionCacheFlushListener.
+        $dispatcher->addListener(KernelEvents::TERMINATE, new SionCacheFlushListener($this->cacheFlushQueue()));
 
         return $this->httpKernel = new HttpKernel(
             $dispatcher,
@@ -1219,7 +1228,11 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
      */
     private function laminas(): ServiceBridge
     {
-        return $this->laminas ??= new ServiceBridge($this->appConfig, $this->phraseFlush());
+        return $this->laminas ??= new ServiceBridge(
+            $this->appConfig,
+            $this->phraseFlush(),
+            $this->cacheFlushQueue()
+        );
     }
 
     /**
@@ -1230,6 +1243,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private function phraseFlush(): PhraseFlush
     {
         return $this->phrases ??= new PhraseFlush();
+    }
+
+    /**
+     * The end-of-request persistent-cache write, shared between the ServiceBridge whose
+     * table factories enrol into it and the listener that drains it. An empty registry
+     * costs one foreach, so like the phrase flush it is built without asking whether the
+     * request will need it.
+     */
+    private function cacheFlushQueue(): CacheFlushQueue
+    {
+        return $this->cacheWrites ??= new CacheFlushQueue();
     }
 
     private function routes(): RouteCollection

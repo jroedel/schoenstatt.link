@@ -7,6 +7,7 @@ namespace App\Laminas;
 use Laminas\Mvc\I18n\Translator as MvcI18nTranslator;
 use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
+use SionModel\Cache\CacheFlushQueue;
 
 /**
  * Read access to the laminas service manager from a Symfony-served route.
@@ -52,10 +53,18 @@ final class ServiceBridge
      *        TranslatorConfigurator can arm it when it builds the translator. Null
      *        outside a request — a test or a console process has no end-of-request
      *        hook to flush from, and TranslatorConfigurator skips the arming.
+     * @param CacheFlushQueue|null $cacheFlushQueue registered as a service so every
+     *        SionTable factory can enrol its table for the end-of-request cache
+     *        write. Null for the same reason and with the same effect: without it
+     *        the tables fall back to the `MvcEvent::EVENT_FINISH` listener, which
+     *        outside a laminas request simply never fires. A console process must
+     *        not be given one — an APCu segment belongs to the SAPI that created
+     *        it, so a CLI write lands where no web request can read it.
      */
     public function __construct(
         private readonly array $appConfig,
-        private readonly ?PhraseFlush $phraseFlush = null
+        private readonly ?PhraseFlush $phraseFlush = null,
+        private readonly ?CacheFlushQueue $cacheFlushQueue = null
     ) {
     }
 
@@ -121,6 +130,14 @@ final class ServiceBridge
         //is the Kernel's — its listener has to flush the same one the delegator armed.
         if (null !== $this->phraseFlush) {
             $services->setService(PhraseFlush::class, $this->phraseFlush);
+        }
+
+        //Same problem, same shape of fix, a different subsystem: SionTable also
+        //defers its writes to MvcEvent::EVENT_FINISH. Registered as an instance
+        //because SionTableWiring enrols tables into *this* object as it builds
+        //them, and App\Http\SionCacheFlushListener has to drain the same one.
+        if (null !== $this->cacheFlushQueue) {
+            $services->setService(CacheFlushQueue::class, $this->cacheFlushQueue);
         }
 
         return $this->services = $services;

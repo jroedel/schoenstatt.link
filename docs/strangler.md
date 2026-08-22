@@ -336,6 +336,20 @@ scale:
   write them on `KernelEvents::TERMINATE`. Measured: one smoke run records 170 phrases that
   were being discovered and discarded. See the FINISH-listener note below for why the
   overflow hazard that blocked this no longer applies.
+- ~~**The persistent cache stops storing anything on ported pages, for everyone.**~~
+  **Fixed 2026-08-22.** The same shape as the phrase bug above, in a different subsystem,
+  and it survived eleven days after the flip because it made the site look *faster*. A
+  `SionTable` queues a cached item and writes the queue on `MvcEvent::FINISH`; a ported
+  route never gets there, so every page read, cached into memory, queued, and dropped the
+  queue. Within the request that queued them the items come back out of `$memoryCache`, so
+  queued and written are indistinguishable to the code that queued them — only the *next*
+  request could tell, and it had no way to say so. Measured over 49 requests on nine pages:
+  348 reads of data keys, **0 hits, 0 writes**, against 83% hits on the same pages under
+  `SYMFONY_KERNEL=0`. Nobody noticed because not booting laminas-mvc saves more per request
+  than the cache was returning, so wall time went *down*. `SionModel\Cache\CacheFlushQueue`
+  plus `App\Http\SionCacheFlushListener` now drain it on `KernelEvents::TERMINATE`;
+  statements per request went 11.4 → 6.3 and the measured page set 2,567 ms → 1,581 ms. See
+  [caching-performance.md](caching-performance.md).
 - **The bridge is in front of every unported request.** Measured 2026-08-09 in the capsule
   on `/en/user/login`, sequential warm requests: median 175 ms bridged against 169 ms
   direct, with an A-B-A control drifting by the same 2–6 ms. So the kernel, the route
@@ -1403,6 +1417,30 @@ That is why the Symfony side could finally be wired up, and it is wired **on
 `KernelEvents::TERMINATE`, not `RESPONSE`**: terminate runs after the response has been
 sent, so a throw there cannot take the page with it. The laminas listener still has the
 original placement and the original exposure. Bounding the write is still the real fix.
+
+#### The other FINISH listener
+
+`SionCacheTrait::onFinishWriteCache()` is on the same event for the same reason — writing a
+serialized result set mid-render charges the visitor for it — and was invisible on ported
+routes in exactly the same way until 2026-08-22. It is now drained by
+`App\Http\SionCacheFlushListener`, also on `TERMINATE`, and the two listeners are
+independent: `TranslationsTable` is not a `SionTable`.
+
+The registry is worth understanding before adding a third of these.
+`SionModel\Cache\CacheFlushQueue` holds the tables to drain, and tables **enrol
+themselves from their factory** — the alternative, a listener that resolves tables by
+service name, would *build* all ten of them, each with a database adapter, on a request
+that asked for `/_health`. There is no way to ask a `ServiceManager` whether a service was
+instantiated, so "only if it was used" has to be recorded at the moment of use.
+
+One consequence in the wiring: when a queue is present, `SionTableWiring::wireFlushPoint()`
+deliberately does **not** also attach the MVC listener. `$container->has('Application')`
+answers true under the Symfony front controller — laminas-mvc's own module config defines
+the service whether or not anything ever bootstraps it — so the old unconditional code
+built an MVC application per table per request, to take an event manager whose event that
+request would never fire. A **bridged** request is unaffected: `LegacyBridge` builds its
+own laminas application with its own ServiceManager, which holds no queue, so those tables
+take the `MvcEvent::FINISH` path exactly as before.
 
 ## What the baseline diff catches that nothing else does
 
