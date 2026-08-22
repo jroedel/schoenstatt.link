@@ -606,63 +606,6 @@ ORDER BY `Publisher`";
         return $merged;
     }
 
-    public function getPublications()
-    {
-        if (null !== ($cache = $this->fetchCachedEntityObjects('publications'))) {
-            return $cache;
-        }
-
-        $entities = $this->getObjects('publication');
-//         $persons = $this->schoenstattTable->getUnlinkedPersons();
-//         $associations = $this->schoenstattTable->getUnlinkedAssociations();
-
-        foreach ($entities as $entityId => $entityObject) {
-            if (isset($entityObject['mainPublicationId']) &&
-                $entityObject['mainPublicationId'] != $entityId &&
-                isset($entities[$entityObject['mainPublicationId']])
-            ) {
-                $entities[$entityId]['mainPublication'] = $entities[$entityObject['mainPublicationId']];
-                $entities[$entityObject['mainPublicationId']]['subEditions'][$entityId] = &$entities[$entityId];
-            }
-            if (isset($entityObject['translatedFromPublicationId']) &&
-                $entityObject['translatedFromPublicationId'] != $entityId &&
-                isset($entities[$entityObject['translatedFromPublicationId']])
-            ) {
-                $entities[$entityId]['translatedFromPublication'] = $entities[$entityObject['translatedFromPublicationId']];
-            }
-
-//             foreach ($entityObject['authorPersonIds'] as $personId) {
-//                 if (isset($persons[$personId])) {
-//                     $entities[$entityId]['authorPersons'][$personId] = $persons[$personId];
-//                 }
-//             }
-//             foreach ($entityObject['authorAssociationIds'] as $associationId) {
-//                 if (isset($associations[$associationId])) {
-//                     $entities[$entityId]['authorAssociations'][$associationId] = $associations[$associationId];
-//                 }
-//             }
-//             foreach ($entityObject['editorPersonIds'] as $personId) {
-//                 if (isset($persons[$personId])) {
-//                     $entities[$entityId]['editorPersons'][$personId] = $persons[$personId];
-//                 }
-//             }
-//             if (isset($associations[$entityObject['editorAssociationId']])) {
-//                 $entities[$entityId]['editorAssociation'] = $associations[$entityObject['editorAssociationId']];
-//             }
-//             foreach ($entityObject['translatorPersonIds'] as $personId) {
-//                 if (isset($persons[$personId])) {
-//                     $entities[$entityId]['translatorPersons'][$personId] = $persons[$personId];
-//                 }
-//             }
-//             if (isset($associations[$entityObject['publisherAssociationId']])) {
-//                 $entities[$entityId]['publisherAssociation'] = $associations[$entityObject['publisherAssociationId']];
-//             }
-        }
-
-        $this->cacheEntityObjects('publications', $entities, ['publication']);
-        return $entities;
-    }
-
     /**
      * @return mixed[]
      */
@@ -892,11 +835,40 @@ ORDER BY `Publisher`";
     }
 
     /**
-     * Link up the mainPublication and the translatedFromPublication to a publication object
+     * Attach one publication's related editions: its main edition, the edition it was
+     * translated from, its sub-editions and its translations.
+     *
+     * ## Why this queries where `linkAssociations()` no longer does
+     *
+     * The association side dropped its equivalent query on 2026-08-22 because the caller
+     * already held every row it asked for. That argument does not transfer, and it was
+     * checked rather than assumed: here the caller holds **one** row, and the related
+     * query is the only way to reach the rest. On the wider `linkPublications()` path the
+     * re-query was measured too — 71 of 73 rows new on the German literature index, 56 of
+     * 56 on the English one, 138 of 196 on a search. It is not redundant.
+     *
+     * What was wrong is that `sch_publications` had exactly one index, the primary key,
+     * so both of those queries scanned all 10,166 rows. `database/db8.7.sql` indexes
+     * `MainPublicationId` and `TranslatedFromPublicationId` — 198 and 257 non-null rows
+     * respectively, so both are highly selective — and `getPublication()` went from
+     * 54–71 ms to 7.4–10.4 ms.
+     *
+     * ## `noLink`, and the query it removes
+     *
+     * The `searchPublications()` call below used to omit it, so that call linked *its*
+     * results, which issued a third query of the same shape. Nothing read the result:
+     * `FormatPublication` is the only thing that renders an attached row, and it reads
+     * none of `mainPublication`, `translatedFromPublication`, `subEditions` or
+     * `translations`. The rows attached here are therefore unlinked, which also keeps the
+     * structure two levels deep rather than open-ended.
+     *
+     * The links are plain copies. They were PHP references, which saved nothing — an array
+     * assignment is copy-on-write — and only aliased rows reachable by two paths. See
+     * `docs/caching-performance.md` § Finding 8.
+     *
      * @param array $object
-     * @param bool $noLookup don't do any searching, just use what's in the memoryCache
      */
-    protected function linkPublication(?array &$object, $noLookup = false)
+    protected function linkPublication(?array &$object)
     {
         $objectId = $object['publicationId'];
         $translatedFromPublicationId = $object['translatedFromPublicationId'];
@@ -920,8 +892,7 @@ ORDER BY `Publisher`";
             'mainPublicationId' => $objectId,
             'translatedFromPublicationId' => isset($translatedFromPublicationId) ? [$objectId, $translatedFromPublicationId] : $objectId, //this fetches books that were also translated from the same original
             'publicationId' => $interestingIds,
-        ], ['orCombination' => true]);
-
+        ], ['orCombination' => true, 'noLink' => true]);
 
         if (isset($object['mainPublicationId']) &&
             $object['mainPublicationId'] != $object['publicationId'] &&
@@ -942,10 +913,10 @@ ORDER BY `Publisher`";
                 continue;
             }
             if ($result['mainPublicationId'] == $objectId) {
-                $object['subEditions'][$resultId] = &$results[$resultId];
+                $object['subEditions'][$resultId] = $results[$resultId];
             } elseif ($result['translatedFromPublicationId'] == $objectId) {
                 //if this is a translation of the book in question
-                $object['translations'][$resultId] = &$results[$resultId];
+                $object['translations'][$resultId] = $results[$resultId];
             } elseif (isset($translatedFromPublicationId)
                 //a translation of this book:
                 && ($result['translatedFromPublicationId'] == $objectId
@@ -955,16 +926,29 @@ ORDER BY `Publisher`";
             ) {
                 //@todo add the following logic also to the linkPublications function?
                 //if this is a book translated from the same original as the book in question
-                $object['translations'][$resultId] = &$results[$resultId];
+                $object['translations'][$resultId] = $results[$resultId];
             } elseif (isset($translatedFromPublicationId)
                 && $result['mainPublicationId'] == $translatedFromPublicationId
             ) {
                 //if this is a subEdition of a book also translated from the same original
-                $object['translations'][$resultId] = &$results[$resultId];
+                $object['translations'][$resultId] = $results[$resultId];
             }
         }
     }
 
+    /**
+     * Attach the related editions of a whole result set.
+     *
+     * The related query here is **not** redundant, unlike its association counterpart —
+     * measured 2026-08-22 on three real result sets, it returned 71 of 73 rows new, 56 of
+     * 56, and 138 of 196. A result set is filtered (`noSubEditions` is the default on the
+     * literature index, so a row's sub-editions are by definition outside it), which is
+     * exactly the case the association side still queries for too.
+     *
+     * The links are plain copies into a separate unlinked result set: references saved
+     * nothing here — array assignment is copy-on-write — and only aliased rows reachable
+     * by two paths. See `docs/caching-performance.md` § Finding 8.
+     */
     protected function linkPublications(array &$objects)
     {
         $objectIds = array_keys($objects);
@@ -997,24 +981,24 @@ ORDER BY `Publisher`";
                 $object['mainPublicationId'] != $entityId &&
                 isset($results[$object['mainPublicationId']])
             ) {
-                $objects[$entityId]['mainPublication'] = &$results[$object['mainPublicationId']];
+                $objects[$entityId]['mainPublication'] = $results[$object['mainPublicationId']];
 //                 $objects[$object['mainPublicationId']]['subEditions'][$entityId] = &$entities[$entityId];
             }
             if (isset($object['translatedFromPublicationId']) &&
                 $object['translatedFromPublicationId'] != $entityId &&
                 isset($results[$object['translatedFromPublicationId']])
             ) {
-                $objects[$entityId]['translatedFromPublication'] = &$results[$object['translatedFromPublicationId']];
+                $objects[$entityId]['translatedFromPublication'] = $results[$object['translatedFromPublicationId']];
             }
         }
 
         //check for subEditions and translations
         foreach ($results as $resultId => $result) {
             if (in_array($result['mainPublicationId'], $objectIds)) {
-                $objects[$result['mainPublicationId']]['subEditions'][$resultId] = &$results[$resultId];
+                $objects[$result['mainPublicationId']]['subEditions'][$resultId] = $results[$resultId];
             }
             if (in_array($result['translatedFromPublicationId'], $objectIds)) {
-                $objects[$result['translatedFromPublicationId']]['translations'][$resultId] = &$results[$resultId];
+                $objects[$result['translatedFromPublicationId']]['translations'][$resultId] = $results[$resultId];
             }
         }
 

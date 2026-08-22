@@ -1831,20 +1831,53 @@ Background and measurements: [caching.md](caching.md).
   excludes them (`App\Sitemap\SitemapGenerator`); filtering them in
   `PageBuilder` instead would fix both surfaces at once and change the laminas
   rendering, which is why it was not done as part of a port.
-- [ ] **`PublicationsTable::linkPublications()` has the same redundant
-  `orCombination` re-query** that cost the shrine page ~300 ms until
-  2026-08-22 (see caching-performance.md § Finding 5). The publication page
-  is the other slow route — 208 ms wall, **129 ms of query** — and this is
-  the likely bulk of it. Not fixed alongside the association one because the
-  relations are a different shape (`mainPublication` / `translatedFrom`
-  rather than parent / children), so the "already in hand" argument has to
-  be made again from scratch. The right shape already exists next to it:
-  `linkPublication()`, singular, resolves one record's relations directly.
-  It also still links with **PHP references**, which the association side
-  dropped on 2026-08-22 (§ Finding 6) — and it never runs a
-  `connectEntityRolesAndAssignments()`-style pass, so the roles half of that
-  bug does not apply here. Whoever takes the query should take the references
-  in the same pass.
+- [x] ~~**`PublicationsTable::linkPublications()` has the same redundant
+  `orCombination` re-query**~~ **Investigated and closed 2026-08-22 — it is not
+  redundant.** Measured on three real result sets, the related query returned
+  71 of 73 rows new, 56 of 56, and 138 of 196: a publication result set is
+  filtered (`noSubEditions` is the default on the literature index, so a row's
+  sub-editions are by definition outside it) and `getPublication()` starts from
+  a single record. The association argument does not transfer, which is why it
+  had to be made again rather than assumed. What was actually wrong was that
+  `sch_publications` had **only its primary key**, so each of those queries
+  scanned all 10,166 rows: `database/db8.7.sql` indexes `MainPublicationId` and
+  `TranslatedFromPublicationId` (198 and 257 non-null rows), and
+  `getPublication()` went 54–71 ms → 5.0–5.7 ms. See caching-performance.md
+  § Finding 9. The references went in the same pass, along with a third query
+  nobody read.
+- [ ] **`searchPublications()` loses its `DataSource IS NULL` filter on every
+  `orCombination` query.** The query predicates are added to a flat `Where` with
+  OR, then `IsNull(DataSource)` is added to the *same* set with AND, and
+  laminas-db renders the set flat — so `A OR B OR C AND DataSource IS NULL`
+  binds as `A OR B OR (C AND …)` and the filter applies only to the last term.
+  5,963 of 10,166 publications have a DataSource and are meant to be hidden
+  unless `includeDataSources` is set. The leak is real but small: 55 sub-editions
+  and 64 translations are DataSource rows, across 44 parent publications, and
+  they show up in "Other editions". `noSubEditions` has the same shape and is
+  unaffected only because no `orCombination` caller passes it. Fixing it means
+  nesting the OR group in its own `Predicate` — a behaviour change on 44 pages,
+  so it wants a decision rather than a quiet fix. Found 2026-08-22.
+- [ ] **Almost no table has an index beyond its primary key.** Counted
+  2026-08-22 on the capsule: of the 19 tables with more than 200 rows, **nine
+  have exactly one index** — `sch_visits` (12,540 rows), `sch_publications`
+  (9,791, fixed by db8.7), `sch_dictionary_dictionary` (3,084), `texts` (1,925),
+  `sch_roles` (1,469), `events` (527), `sch_associations` (496), `sch_persons`
+  (325), `mus_compositions` (307), `sch_assignments` (266). The application
+  mostly survives this by caching whole tables, which is why it has never
+  looked like a database problem; it bites exactly where a table is too big to
+  cache and is queried by a non-key column, which is what made the publication
+  page the slowest route on the site. Worth a survey of the per-request
+  non-key predicates before adding anything: an index that is never used is a
+  write cost for nothing.
+- [ ] **The contact-persons table renders in a different order between
+  requests.** Two captures of the *same* code, five locales, put association 1's
+  three "Councilor" rows in different orders — caught as a false positive while
+  verifying an unrelated change with `tools/port-baseline.php`. PHP's sorts have
+  been stable since 8.0, so the instability is upstream: the assignments are
+  read by a `SELECT` with no deterministic `ORDER BY` and then cached, so the
+  order is fixed for a cache lifetime and changes when the cache is rebuilt.
+  Harmless in itself, but it costs real time whenever the baseline tool is used,
+  because it looks exactly like a regression. Found 2026-08-22.
 - [ ] **`PublicationsController::showAction()` merges sub-edition *rows* into a
   list of ids.** Line ~202: `array_merge($publicationIds,
   $entityObject['subEditions'])`, where `subEditions` is keyed by publication id

@@ -355,7 +355,24 @@ suites run from the superproject working tree.
   Guarded by `test/Integration/AssociationLinkingTest`, whose two-path comparison could not
   see the ordering bug (both paths were wrong the same way) and which now also compares an
   attached row against the same row under its own id. The same `orCombination` shape, and
-  the same references, are still live in `PublicationsTable::linkPublications()`.
+  the same references, were live in `PublicationsTable` until 2026-08-22.
+- **The publications side got the opposite answer, and that is the point.**
+  `PublicationsTable`'s related query looks identical to the association one and is **not**
+  redundant: measured before changing anything, it returned 71 of 73 rows new on the German
+  literature index, 56 of 56 on the English one and 138 of 196 on a search, because a
+  publication result set is filtered and `getPublication()` starts from one record. What was
+  wrong is that **`sch_publications` had only its primary key** across 10,166 rows, so both
+  of the page's related queries were full scans. `database/db8.7.sql` indexes
+  `MainPublicationId` and `TranslatedFromPublicationId` (198 and 257 non-null rows) and
+  `getPublication()` went **54–71 ms → 5.0–5.7 ms**, four statements to three — the third
+  was `linkPublication()` calling `searchPublications()` without `noLink`, so that call
+  linked its own results and nothing read them (`FormatPublication` reads none of the four
+  link keys). `PublicationsTable::getPublications()` was **deleted** in the same pass: no
+  callers, and it linked `$entities` to *itself* by reference and cached the result.
+  Guarded by `test/Integration/PublicationLinkingTest`. **Nine of the nineteen tables over
+  200 rows still have no index but their primary key** — the application survives it by
+  caching whole tables, so it only bites where a table is too big to cache and is queried by
+  a non-key column (docs/BACKLOG.md).
 - **Association/shrine validation lives in `App\Schoenstatt\Association`**, not in the form.
   `AssociationInputFilterSpec` holds the rules, `AssociationForm` delegates to it, and
   `AssociationValidator` gives the v3 API the form's *own* `InputFilter` (built headlessly —

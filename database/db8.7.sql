@@ -1,0 +1,39 @@
+-- db8.7 — index the two columns publication linking searches on
+--
+-- @phase: pre
+-- @kind: ddl
+-- @idempotent: yes
+-- @tables: sch_publications
+-- @verify: SELECT INDEX_NAME, COLUMN_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sch_publications' ORDER BY INDEX_NAME
+--
+-- `sch_publications` has exactly one index — the primary key — across 10,166 rows. Every
+-- lookup by anything else is a full table scan, and the publication page does two of them
+-- per request: `PublicationsTable::linkPublication()` asks for a record's sub-editions and
+-- translations with
+--
+--     WHERE PublicationId = ? OR MainPublicationId = ? OR TranslatedFromPublicationId = ?
+--
+-- and the `searchPublications()` call that answers it links its own results, which issues
+-- the same shape again with `IN` lists.
+--
+-- Measured in the capsule 2026-08-22, warm both sides, three samples each:
+--
+--     getPublication(1976)   54–71 ms wall / 50–65 ms SQL   ->   7.4–10.4 ms / 3.2–5.9 ms
+--     /literature/en index   56.4 ms                        ->   35.7 ms
+--
+-- Both columns are highly selective: 198 rows have a MainPublicationId and 257 have a
+-- TranslatedFromPublicationId, out of 10,166. That is why the index pays so well here and
+-- why no index on `DataSource` is added alongside — 5,963 of 10,166 rows have one, so it
+-- would not be used.
+--
+-- This is `@phase: pre` because nothing about it depends on the code: the release being
+-- deployed benefits, and so does the one already running if the swap is rolled back.
+--
+-- ## Applying this by hand
+--
+-- `CREATE INDEX IF NOT EXISTS` is MariaDB syntax (10.0.2+) and this server is 10.11. It
+-- makes the migration re-runnable, which `@kind: ddl` requires because a DDL statement
+-- cannot commit inside the ledger's transaction.
+
+CREATE INDEX IF NOT EXISTS idx_main_publication ON sch_publications (MainPublicationId);
+CREATE INDEX IF NOT EXISTS idx_translated_from ON sch_publications (TranslatedFromPublicationId);
