@@ -1869,6 +1869,28 @@ Background and measurements: [caching.md](caching.md).
   unaffected only because no `orCombination` caller passes it. Fixing it means
   nesting the OR group in its own `Predicate` — a behaviour change on 44 pages,
   so it wants a decision rather than a quiet fix. Found 2026-08-22.
+- [x] ~~**`sch_visits` has no index but its primary key**~~ — the first result of
+  that survey, and much the worst: every entity show page on production
+  answered in **~5 seconds**, measured against the live site 2026-08-23, while
+  every other route was under 600 ms. `getVisitCounts()` runs two
+  `COUNT(*) … WHERE Entity = ? AND EntityId IN (?)` queries for the "Total
+  views" line, over a table `db7.1` recorded at ~7.1M rows / 1.3 GiB that grows
+  by a row on every entity page view. Both were full scans. Reproduced at
+  6.78M rows in the capsule: **9.3 s → 0.19 s**, index 209 MB.
+  `database/db8.8.sql`.
+- [ ] **`getVisitCounts()` runs two nearly identical queries.** Total and
+  past-month differ only by a `VisitedAt` predicate, so one
+  `SUM(VisitedAt >= …)` alongside the `COUNT(*)` would answer both in a single
+  scan of the same index range. Worth ~half the remaining cost (0.19 s → ~0.07 s
+  at 6.78M rows). SionModel change, so it needs a submodule PR.
+- [ ] **`sch_visits` grows without bound and holds hashed IPs and user agents.**
+  AUTO_INCREMENT is past 24 million and nothing prunes it. `db8.8` makes the
+  size stop mattering for page speed, which removes the pressure but not the
+  question: this is a data-retention decision, and the project already has a
+  rollover practice (`sch_visits_rollover_2023-11-02`,
+  `sch_visits_rollover_2025-07-17`). Note what a rollover costs now that the
+  index exists — it is no longer a performance fix, and it still resets every
+  "Total views" figure on the site.
 - [ ] **Almost no table has an index beyond its primary key.** Counted
   2026-08-22 on the capsule: of the 19 tables with more than 200 rows, **nine
   have exactly one index** — `sch_visits` (12,540 rows), `sch_publications`

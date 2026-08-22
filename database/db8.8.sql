@@ -1,0 +1,73 @@
+-- db8.8 — index sch_visits, which every entity page counts twice with a full scan
+--
+-- @phase: pre
+-- @kind: ddl
+-- @idempotent: yes
+-- @tables: none
+-- @verify: SELECT 'sch_visits is missing idx_entity_visited' AS problem WHERE NOT EXISTS (SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sch_visits' AND INDEX_NAME='idx_entity_visited')
+--
+-- ## The symptom
+--
+-- Every entity show page on production answers in about **five seconds** — an association,
+-- a publication, a shrine, in any locale, signed in or not. Everything else is under 600 ms:
+-- the home page, `/en/shrines`, `/en/literature/en`, `/_health`. Measured against the live
+-- site 2026-08-23, one request at a time.
+--
+-- The cost is not the entity. `/en/SL100001A/…` answers a **302** in 5.0 s, so it is spent
+-- before anything renders, and it is the same five seconds whether the record has 850 visits
+-- or none. That is the signature of a full table scan rather than of per-record work.
+--
+-- ## The cause
+--
+-- `SionModel\Db\Model\SionTable::getVisitCounts()` runs two queries per entity page, for the
+-- "Total views" and "Views this month" line at the bottom:
+--
+--     SELECT EntityId, COUNT(*) FROM sch_visits WHERE Entity = ? AND EntityId IN (?) GROUP BY EntityId
+--     …the same, AND VisitedAt >= DATE_ADD(NOW(), INTERVAL -1 MONTH)
+--
+-- `sch_visits` has one index: the primary key on `VisitId`. Neither `Entity` nor `EntityId`
+-- nor `VisitedAt` is indexed, so both queries read the whole table. `database/db7.1.sql`
+-- recorded it at **roughly 7.1M rows / 1.3 GiB** with AUTO_INCREMENT past 24 million, and it
+-- grows by one row on every entity page view — `registerVisit()` INSERTs on a GET.
+--
+-- Reproduced in the capsule by building a 6.78M-row copy from the real rows (the local table
+-- holds only ~13k, which is why db7.1 said the capsule could not rehearse it):
+--
+--     no index    4.54 s + 4.80 s   = 9.3 s
+--     with index  0.061 s + 0.113 s = 0.19 s
+--
+-- ## Why an index and not a rollover
+--
+-- db7.1 documents the rollover practice — `sch_visits_rollover_2023-11-02` and
+-- `sch_visits_rollover_2025-07-17` are previous incarnations of this table, renamed out of
+-- the way. Rolling over again would be instant and would also fix the symptom, by making the
+-- table small. It costs the history: `getVisitCounts()` reads the per-entity total straight
+-- from this table, so every "Total views" figure on the site resets to zero.
+--
+-- The index keeps every figure and costs 209 MB, measured on the 6.78M-row copy against a
+-- 1,226 MB table. It does not stop the table growing, and a rollover may still be the right
+-- answer one day — but it is a data-retention decision (these rows hold hashed IPs and user
+-- agents) rather than a performance one, and it should be taken as such.
+--
+-- The remaining per-request cost is one range scan of that entity's own visits, twice. Merging
+-- the two queries into one with a conditional SUM would halve it again; that is a SionModel
+-- change and is on the backlog.
+--
+-- ## Operational notes
+--
+-- **`ALGORITHM=INPLACE LOCK=NONE`** — reads *and* writes continue while it builds, which
+-- matters because `registerVisit()` writes to this table on ordinary page loads. It took 35 s
+-- on 6.78M rows in the capsule's two-CPU container. If the server refuses either clause the
+-- statement errors rather than silently taking a lock, which is the behaviour to want.
+--
+-- **`@tables: none` is deliberate and is a deviation.** The convention is to name the tables
+-- a migration changes so they are dumped first, and this one does change `sch_visits`. But
+-- the snapshot is `mysqldump | gzip` pulled through the deploy's SSH tunnel, and on 1.3 GiB
+-- that is a long transfer of data that cannot help: adding a secondary index cannot alter,
+-- reorder or lose a row, and undoing it is `DROP INDEX idx_entity_visited ON sch_visits`.
+-- The backup would be the riskiest part of the operation, not the insurance against it.
+--
+-- **`@phase: pre`** — nothing here depends on the code. The release already running gets the
+-- five seconds back the moment this lands.
+
+CREATE INDEX IF NOT EXISTS idx_entity_visited ON sch_visits (Entity, EntityId, VisitedAt) ALGORITHM=INPLACE LOCK=NONE;
