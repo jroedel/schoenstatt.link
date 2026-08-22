@@ -43,7 +43,6 @@ return [
         'display_exceptions' => true,
     ],
     'sion_model' => [
-        'max_items_to_cache' => 1,
         'api_keys' => ['local-dev-api-key'],
     ],
     'books' => [

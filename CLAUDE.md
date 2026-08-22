@@ -303,7 +303,12 @@ suites run from the superproject working tree.
   it — which is the one that reaches a session already open, so revoking access takes
   effect on the next request rather than at some invisible session timeout. That fourth one
   needed no new machinery: only the user id is in the session, so the row is re-read every
-  request, and `isEmpty()` already clears the storage when a read comes back null. The
+  request, and `isEmpty()` already clears the storage when a read comes back null. Since
+  2026-08-22 that re-read is served from the `all-linked-users` cache when it is warm, which
+  changes nothing for a revocation made in the application — unticking Active invalidates the
+  key — but does mean a `state` written straight to the database (a migration, a DBA) is
+  invisible to an open session until something writes to a user through the app. See
+  [docs/caching.md](docs/caching.md). The
   create form ticks Active for the same reason it all hangs together —
   `EditUserForm` declares `'value' => 0`, so without
   `App\Controller\UserCreateController` setting it an administrator would create accounts
