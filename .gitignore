@@ -63,3 +63,7 @@ tools/*.phar
 # be deployed over the live one and freeze it at whatever the last committer's data said.
 /public/sitemap.xml
 /public/sitemap-*.xml
+
+# Cache/query performance harness output (tools/perf/run.sh)
+data/perf/
+data/perf-*.jsonl
