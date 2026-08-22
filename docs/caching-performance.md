@@ -678,6 +678,48 @@ change:
 
 ---
 
+## Finding 10 — the eight primary-key-only tables need no index
+
+Measured 2026-08-23, closing the survey the index item in
+[BACKLOG.md](BACKLOG.md#performance--caching) asked for before any migration was written.
+
+After `sch_publications` (db8.7) and `sch_visits` (db8.8), eight tables over 200 rows still
+carry nothing but a primary key: `sch_dictionary_dictionary` (3,084 rows), `texts` (2,757),
+`sch_roles` (1,471), `events` (527), `sch_associations` (498), `sch_persons` (325),
+`mus_compositions` (335), `sch_assignments` (265).
+
+**215 statements touched those eight across 1,296 cold requests, and 150 of them are
+primary-key lookups.** Almost all of the rest are whole-table loads feeding an APCu item —
+the shape an index cannot improve, because there is no predicate to satisfy. Four non-key
+predicates exist, and each was benchmarked at 200 iterations with and without the index it
+would want:
+
+| predicate | table | per 1,296 req | no index | with index | verdict |
+|---|---|---|---|---|---|
+| `DISTINCT RoleTitle` | `sch_roles` | 20x | 1.374 ms | 0.231 ms | cache instead |
+| `Parent IN (43 ids)` | `sch_associations` | 11x | 2.443 ms | 0.393 ms | cache instead |
+| `Kind = 'sch-wayside-shrine'` (43/498) | `sch_associations` | 10x | 2.588 ms | 1.035 ms | cache instead |
+| `Kind = 'sch-shrine'` (207/498) | `sch_associations` | cached | 4.571 ms | 4.445 ms | **index ignored** |
+| `DISTINCT AclResourceId` | `texts` | 1x | 2.803 ms | 0.099 ms | defensible, tiny |
+
+Three things are worth carrying out of this.
+
+**The `sch-shrine` row is the survey justifying itself.** At 42% selectivity MariaDB declines
+the index and the query costs what it always did, so an index added on the strength of "this
+column appears in a WHERE clause" would have been pure write cost. The identical column at 9%
+selectivity is used. Selectivity, not appearance, decides.
+
+**Both indexes that would help are standing in for a missing cache.** `DISTINCT RoleTitle`
+runs 20 times per 1,296 requests only because `getRoleTitleValueOptions()` does not cache —
+and its data already sits in the `unlinked-roles-<locale>` item, so the correct fix removes
+the query rather than accelerating it. `Parent IN` and `Kind` run only because `getWaysideShrines()`
+does not cache while its twin `getShrines()` does. Index those and you pay maintenance
+forever for queries that should not be issued at all.
+
+**Row counts from `information_schema` are estimates.** The original item sized `texts` at
+1,925 rows from `TABLE_ROWS`; `COUNT(*)` says 2,757, 43% higher. Use `COUNT(*)` when a
+decision rests on the number.
+
 ## What this says about the refactor
 
 In rough order of value per unit of risk:
@@ -721,3 +763,37 @@ docker compose exec -T app sh -c \
 
 `curl -s localhost:8080/_health` confirms which one answers; under laminas that route does not
 exist, which is itself the signal.
+
+### Surveying what the database is actually asked
+
+The perf harness above measures time. To answer *which statements run, how often, and with
+what predicates* — the question Finding 10 needed — read MariaDB's general log instead. It
+costs one flag and no instrumentation in the application:
+
+```
+docker compose exec -T db mysql -uroot -proot -e \
+  "SET GLOBAL log_output='TABLE'; TRUNCATE mysql.general_log; SET GLOBAL general_log=ON;"
+
+# any traffic; port-baseline is the broadest thing available at 1,296 requests
+docker compose exec -T app php bin/console cache:flush-persistent --url=http://localhost
+docker compose exec -T app php tools/port-baseline.php capture survey
+
+docker compose exec -T db mysql -uroot -proot -e "SET GLOBAL general_log=OFF;"
+docker compose exec -T db mysql -uroot -proot -N -B --raw \
+  -e "SELECT CONCAT(argument, CHAR(30)) FROM mysql.general_log WHERE command_type='Query';"
+```
+
+Then normalize each statement (quoted literals and integers to `?`, whitespace collapsed) and
+count the shapes. Two details that decide whether the answer means anything:
+
+- **Run it twice, warm and from a flushed persistent cache.** The warm run gives the
+  per-request cost; the cold run gives the union of everything, including the whole-table
+  loads that only ever run on a cache miss. A statement whose count is *identical* in both is
+  a statement nothing caches — which is how `getRoleTitleValueOptions()` and
+  `getWaysideShrines()` were found, neither of which reads as a caching bug in the source.
+- **Print the tail of each statement, not the head.** These projections name 80 columns
+  before reaching `FROM`, so a truncated dump shows nothing but column lists and every
+  statement looks alike.
+
+Turn the log off when finished and `TRUNCATE mysql.general_log`; it is a table, it grows with
+every statement, and it will otherwise sit in the capsule until the volume is rebuilt.
