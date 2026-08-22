@@ -1900,7 +1900,7 @@ class SchoenstattTable extends SionTable implements
 `UpdatedBy`, `CreatedOn`, `CreatedBy`, `SpousePersonId`, `PriestDate`, `PriestDatePrecision`,
 `BishopDate`, `BishopDatePrecision`, `PrimaryLocale`,
 `IsAuthor`, `IsBorrower` FROM `sch_persons` WHERE 1
-ORDER BY `LastName`, `FirstName`";
+ORDER BY `LastName`, `FirstName`, `PersonId`";
         $results = $this->fetchSome(null, $sqlPers, null);
         if (! isset($results) || 0 == count($results)) {
             return null;
@@ -2222,7 +2222,7 @@ ORDER BY `LastName`, `FirstName`";
         $sql = "SELECT `RoleId`, `RoleTitle`, `AssociationId`,
 `IsMainRole`, `IsMainContact`, `IsSinglePosition`, `ShouldAlwaysBeFilled`, `Sort`, `IsActive`, `UpdatedOn`,
 `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_roles` WHERE 1
-ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
+ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`, `RoleId`";
 
         $results = $this->fetchSome(null, $sql, null);
         $isTranslatorReady = $this->translator instanceof TranslatorInterface;
@@ -2429,6 +2429,29 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         return $entities;
     }
 
+    /**
+     * Every assignment, keyed by id, in the order pages render them.
+     *
+     * ## Why the ORDER BY ends with the primary key
+     *
+     * It sorts on four columns that tie: **76 rows sit in a tied group** — association 1
+     * alone has three "Councilor" assignments with the same `IsActive`, `IsMainRole` and
+     * `Sort`. Without a final tiebreaker the database is free to return those in any order,
+     * and it does. The result is then cached, so the order it happened to come back in is
+     * frozen until the cache is rebuilt, and changes the next time.
+     *
+     * Nothing was visibly wrong with that — the same three rows, in a different order — but
+     * it is not free. On 2026-08-22 it made `tools/port-baseline.php` report ten differing
+     * responses between two captures of *identical* code, which read exactly like a
+     * regression and cost real time to disprove. Any verification that compares rendered
+     * bytes is worthless against a page that renders differently on its own.
+     *
+     * PHP's sorts have been stable since 8.0, so this is the only place the instability
+     * could enter.
+     *
+     * `getUnlinkedRoles()` (58 tied rows) and `getUnlinkedPersons()` (1) had the same shape
+     * and got the same treatment.
+     */
     protected function getUnlinkedAssignments(array $ids = [], $locale = null)
     {
         if (! isset($locale)) {
@@ -2445,7 +2468,7 @@ r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`
 r.`ShouldAlwaysBeFilled`, r.`IsMainContact`
 FROM `sch_assignments` a
 INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1
-ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
+ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`, a.`AssignmentId`";
 
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];
