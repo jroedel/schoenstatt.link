@@ -11,6 +11,7 @@ use Laminas\Db\Adapter\Adapter;
 use Laminas\EventManager\EventManager;
 use Laminas\Mvc\MvcEvent;
 use PHPUnit\Framework\TestCase;
+use SionModel\Cache\CacheFlushQueue;
 use ReflectionProperty;
 use Throwable;
 
@@ -37,6 +38,8 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 final class SionCacheWiringTest extends TestCase
 {
     private static ?ServiceBridge $bridge = null;
+    private static ?ServiceBridge $queueBridge = null;
+    private static ?CacheFlushQueue $queue = null;
 
     /**
      * The laminas services, built the way bin/console builds them — no
@@ -75,6 +78,101 @@ final class SionCacheWiringTest extends TestCase
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * A second bridge, given the end-of-request queue a Symfony request supplies.
+     *
+     * Separate from bridge() rather than a parameter on it because the two answer
+     * different questions and each caches its ServiceManager: this one is "what a
+     * ported route builds", the other is "what a console process or a laminas
+     * request builds".
+     */
+    private function queueBridge(): ServiceBridge
+    {
+        if (null !== self::$queueBridge) {
+            return self::$queueBridge;
+        }
+
+        $appConfig = require __DIR__ . '/../../config/application.config.php';
+        $appConfig['module_listener_options']['config_cache_enabled']     = false;
+        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
+
+        self::$queue = new CacheFlushQueue();
+
+        return self::$queueBridge = new ServiceBridge($appConfig, null, self::$queue);
+    }
+
+    /**
+     * The bug the queue exists for: a Symfony-served route reaches no
+     * `MvcEvent::EVENT_FINISH`, so the listener that writes the persistent cache
+     * never ran and every ported page queued its items and threw them away —
+     * measured at 0 writes and 0 hits across 49 requests, with nothing logged and
+     * nothing failing. Registration happens in the factory, so this asserts the
+     * property at the only place it can be seen before a request ends.
+     */
+    public function testATableBuiltForASymfonyRequestEnrolsInTheFlushQueue(): void
+    {
+        $this->requireDatabase();
+        $bridge = $this->queueBridge();
+        if (! $bridge->has(UserTable::class)) {
+            $this->markTestSkipped('JUser is not enabled in this configuration');
+        }
+
+        $bridge->get(UserTable::class);
+
+        $this->assertNotNull(self::$queue);
+        $this->assertFalse(
+            self::$queue->isEmpty(),
+            'building a SionTable must enrol it for the end-of-request cache write'
+        );
+    }
+
+    /**
+     * And when it does, the MVC path must be left alone — not as tidiness but
+     * because reaching it is expensive and pointless. `has(\'Application\')` answers
+     * true under a Symfony front controller: laminas-mvc\'s module config defines
+     * the service whether or not anything bootstraps it. The old code therefore
+     * built an MVC application per table per request to take an event manager whose
+     * event that request would never fire.
+     */
+    public function testTheQueueReplacesTheMvcListenerRatherThanJoiningIt(): void
+    {
+        $this->requireDatabase();
+        $bridge = $this->queueBridge();
+        if (! $bridge->has(UserTable::class)) {
+            $this->markTestSkipped('JUser is not enabled in this configuration');
+        }
+
+        $table = $bridge->get(UserTable::class);
+
+        $wired = new ReflectionProperty($table, 'onFinishWired');
+        $this->assertFalse(
+            $wired->getValue($table),
+            'with a queue in the container no MvcEvent listener should have been attached'
+        );
+    }
+
+    /**
+     * The other half of the same property: a host that registers no queue keeps the
+     * behaviour it has always had. This is what patres and every un-strangled
+     * laminas host get, and what a console process gets.
+     */
+    public function testWithoutAQueueTheTableStillTakesTheMvcPath(): void
+    {
+        $this->requireDatabase();
+        $bridge = $this->bridge();
+        if (! $bridge->has(UserTable::class)) {
+            $this->markTestSkipped('JUser is not enabled in this configuration');
+        }
+
+        $table = $bridge->get(UserTable::class);
+
+        $wired = new ReflectionProperty($table, 'onFinishWired');
+        $this->assertTrue(
+            $wired->getValue($table),
+            'with no queue the MvcEvent::FINISH listener is the only flush point there is'
+        );
     }
 
     /**
