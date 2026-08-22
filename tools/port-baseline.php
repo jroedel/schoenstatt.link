@@ -322,6 +322,18 @@ const PATHS = [
     // fires only for a visitor without `publication_user`.
     '/SL202186L',
     '/SL200417L',
+    // Neither of the two above has a related edition, so nothing in this set touched
+    // `linkPublication()`'s output until 2026-08-23 — two bugs in it shipped past a clean
+    // 1,272-of-1,272. These two cover it in both directions, and it takes two because on
+    // any one publication the fixes can cancel:
+    //   1501 — all three of its sub-editions carry a `DataSource`, so parenthesising the
+    //     OR group empties "Other editions" entirely. Its one sub-edition with a library
+    //     copy is a data-source row too, so the availability panel does not move.
+    //   1928 — ten copies across sub-editions with no `DataSource`, so "Physical copy
+    //     availability" goes from 2 rows to 12 once the sub-edition *ids*, rather than the
+    //     rows themselves, reach `searchBooks()`.
+    '/SL201501L',
+    '/SL201928L',
     // The literature browse surface. /literature/de is the largest page on the site
     // (2,889 rows, ~1.0 MB of HTML) and the one that pays the 192 MiB
     // `getObjects('publication')` hydration; /literature/es is a tenth of it, and the
