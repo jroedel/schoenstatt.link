@@ -1963,10 +1963,13 @@ Background and measurements: [caching.md](caching.md).
   its search, and every single-record read — which is why the general log shows
   `WHERE TextKind = ? AND TextId = ?` for what is a primary-key lookup. Two
   consequences, neither of them visible from the surface:
-  - **4 of the 2,757 rows are unreachable** through any of it (3 `blog`, 1 `other`).
-    Either they are strays to clean up or the filter belongs somewhere narrower than
-    the prototype; the entity plainly means *the JK text corpus*, so the former is
-    likely, but nothing says so.
+  - **4 of the 2,757 rows are unreachable** through any of it, and they do not look
+    like strays: text 2801 `blog` *"What is Schoenstatt Link?"*, 2802 `blog` *"Update
+    on advances"*, 2803 `blog` *"Launch of new Schoenstatt Shrines app"*, and 2804
+    `other`, an English translation of a Zenit article. Somebody wrote all four and
+    no page can show any of them. Either the site once had a blog surface that the
+    prototype's filter outlived, or the filter belongs on the JK-text reads rather
+    than on the entity — a content question before a code one.
   - **`getTextTagsOptions($kind)`'s parameter is inert at best and wrong at worst.**
     It adds a *second* `TextKind` predicate on top of the prototype's, so the query
     is `TextKind = 'jk-text' AND TextKind = $kind`: harmless for the one caller,
