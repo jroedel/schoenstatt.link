@@ -121,9 +121,10 @@ class CacheStatusParityTest extends TestCase
         $request = new HttpRequest();
         $request->getHeaders()->addHeaderLine(MaintenanceKey::HEADER, $key);
 
-        $controller = (new ProbeSionModelController([
-            'SionModel\Config' => $this->sionModelConfig(),
-        ]))->withRequest($request);
+        $controller = (new ProbeSionModelController(
+            ['SionModel\Config' => $this->sionModelConfig()],
+            $this->sionModelConfig()
+        ))->withRequest($request);
 
         $model = $controller->cacheStatusAction();
         self::assertInstanceOf(JsonModel::class, $model);
@@ -133,7 +134,7 @@ class CacheStatusParityTest extends TestCase
 
     private function symfonyPayload(string $key): string
     {
-        $controller = new CacheStatusController(new MaintenanceKey($this->bridge()));
+        $controller = new CacheStatusController(new MaintenanceKey($this->bridge()), $this->bridge());
         $response   = $controller(Request::create('/en/sm/cache-status', 'GET', [], [], [], [
             'HTTP_' . str_replace('-', '_', strtoupper(MaintenanceKey::HEADER)) => $key,
         ]));
@@ -187,7 +188,7 @@ class CacheStatusParityTest extends TestCase
      */
     public function testTheTwoJsonEncodersAgreeOnTheSamePayload(): void
     {
-        $payload = CacheStatusPayload::build();
+        $payload = CacheStatusPayload::build($this->sionModelConfig());
         //values only an encoder difference would touch
         $payload['encoderProbe'] = '<tag> & "quote" \'apos\' /slash/ ünïcode';
 
@@ -206,7 +207,7 @@ class CacheStatusParityTest extends TestCase
     public function testTheSymfonyControllerRefusesAKeylessRequestWithJson(): void
     {
         $this->apiKey(); //skip where no key is configured: everything would be refused
-        $controller = new CacheStatusController(new MaintenanceKey($this->bridge()));
+        $controller = new CacheStatusController(new MaintenanceKey($this->bridge()), $this->bridge());
 
         $response = $controller(Request::create('/en/sm/cache-status'));
 
@@ -232,7 +233,7 @@ class CacheStatusParityTest extends TestCase
     public function testAKeyInTheQueryStringIsRefused(): void
     {
         $key        = $this->apiKey();
-        $controller = new CacheStatusController(new MaintenanceKey($this->bridge()));
+        $controller = new CacheStatusController(new MaintenanceKey($this->bridge()), $this->bridge());
 
         $response = $controller(Request::create('/en/sm/cache-status?key=' . urlencode($key)));
 
@@ -241,6 +242,35 @@ class CacheStatusParityTest extends TestCase
             $response->getStatusCode(),
             'A valid key presented in the query string must still be refused: the access log '
             . 'records it either way, so accepting it is the leak.'
+        );
+    }
+
+    /**
+     * This application's own merged config names no SionModel cache key that
+     * SionModel has stopped honouring.
+     *
+     * `max_items_to_cache` was retired on 2026-08-22 and removed from
+     * `local.php.dist`, `docker/local.docker.php` and SionModel's `module.config.php`
+     * in the same change. A key put back into any of those would be accepted in
+     * silence and do nothing, which is the failure this catches — and it is the
+     * *local* half of the check only: `config/autoload/local.php` is gitignored, so
+     * the production copy can only be read from the live endpoint, which is why the
+     * field exists in the payload and why tools/smoke-prod.sh warns on it.
+     */
+    public function testNoRetiredSionModelCacheKeyIsConfiguredHere(): void
+    {
+        $payload = CacheStatusPayload::build($this->sionModelConfig());
+
+        self::assertSame(
+            [],
+            $payload['sionModel']['retiredConfigKeys'],
+            'the merged sion_model config names a key SionModel no longer reads'
+        );
+        self::assertIsInt(
+            $payload['sionModel']['maxCachedItemSize'],
+            'max_cached_item_size is the only bound left on a cache write, and this '
+            . 'application configures it in SionModel\'s module.config.php — a null here '
+            . 'means that default has gone missing, not that the check is off (0 means that)'
         );
     }
 

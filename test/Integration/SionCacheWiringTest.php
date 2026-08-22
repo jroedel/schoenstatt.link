@@ -207,6 +207,57 @@ final class SionCacheWiringTest extends TestCase
     }
 
     /**
+     * The default flush priority puts the write *after* the response has been sent.
+     *
+     * `Laminas\Mvc\SendResponseListener` attaches to the same `MvcEvent::FINISH` at
+     * -10000, so anything above that serializes and stores the whole write queue while
+     * the visitor is still waiting for bytes. That was the arrangement until
+     * 2026-08-22 (priority 100), and it is the reason a bounded write queue ever
+     * looked like a good idea: measured here, the heaviest single request writes about
+     * 4.4 MiB across five items in ~17 ms.
+     *
+     * Asserted by *ordering against a stand-in for the sender* rather than by reading
+     * the priority back, because the number on its own proves nothing — it is only
+     * ever meaningful relative to -10000, and a future laminas-mvc that moved its own
+     * sender would break this silently. The Symfony host has no equivalent test
+     * because `kernel.terminate` runs after the response by definition.
+     */
+    public function testTheFlushRunsAfterTheResponseHasBeenSent(): void
+    {
+        $em    = new EventManager();
+        $order = [];
+
+        $host = new class {
+            use \SionModel\Db\Model\SionCacheTrait;
+
+            /** @var callable */
+            public $onFlush;
+
+            public function onFinishWriteCache()
+            {
+                ($this->onFlush)();
+            }
+        };
+        $host->onFlush = static function () use (&$order): void {
+            $order[] = 'flush';
+        };
+
+        $host->wireOnFinishTrigger($em);
+        //the priority laminas-mvc's own SendResponseListener uses
+        $em->attach(MvcEvent::EVENT_FINISH, static function () use (&$order): void {
+            $order[] = 'send';
+        }, -10000);
+
+        $em->trigger(MvcEvent::EVENT_FINISH);
+
+        $this->assertSame(
+            ['send', 'flush'],
+            $order,
+            'the cache flush must run after SendResponseListener, not in front of it'
+        );
+    }
+
+    /**
      * JUser stores in its own namespace with its own TTL, so the table has to end
      * up holding `JUser\Cache` and not the application-wide storage its parent
      * constructor injected first. Asserted through the namespace rather than

@@ -394,7 +394,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // a request that reaches neither loads them not at all, because
             // laminas() is only called when a factory actually runs.
             CacheStatusController::class => fn (): CacheStatusController => new CacheStatusController(
-                new MaintenanceKey($this->laminas())
+                new MaintenanceKey($this->laminas()),
+                $this->laminas()
             ),
             ClearPersistentCacheController::class
                 => fn (): ClearPersistentCacheController => new ClearPersistentCacheController(

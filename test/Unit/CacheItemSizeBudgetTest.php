@@ -14,8 +14,9 @@ require_once __DIR__ . '/../../module/SionModel/src/Db/Model/SionCacheTrait.php'
  * Pins the size budget SionModel\Db\Model\SionCacheTrait applies before it
  * hands anything to the persistent cache.
  *
- * The behaviour under test exists because production APCu is a fixed 32 MiB
- * segment with apc.ttl=0: an item too big to allocate makes APCu clear the
+ * The behaviour under test exists because production APCu is a fixed segment with
+ * apc.ttl=0 (256 MiB since 2026-08-11, 32 MiB when this was written — the size is
+ * not what makes it dangerous): an item too big to allocate makes APCu clear the
  * *whole* cache, and the Laminas APCu adapter then throws. Two properties
  * follow from that and both are regressions waiting to happen, so they are
  * pinned here:
@@ -31,11 +32,10 @@ require_once __DIR__ . '/../../module/SionModel/src/Db/Model/SionCacheTrait.php'
  */
 class CacheItemSizeBudgetTest extends TestCase
 {
-    private function host($budget = 1024, $maxItems = 10): CacheBudgetHost
+    private function host($budget = 1024): CacheBudgetHost
     {
         $host = new CacheBudgetHost(new RecordingCache(), new RecordingLogger());
         $host->setMaxItemSize($budget);
-        $host->setMaxItemsToCache($maxItems);
         return $host;
     }
 
@@ -111,28 +111,28 @@ class CacheItemSizeBudgetTest extends TestCase
         $this->assertIsArray($host->memoryCacheValue());
     }
 
-    public function testRefusedItemsDoNotConsumeAWriteSlot(): void
+    /**
+     * Size is the only bound left, so a queue of any length is written in full.
+     *
+     * `max_items_to_cache` used to cap this at N items per table per request and
+     * drop the rest — retired 2026-08-22, because it bounded count while the thing
+     * that exhausted memory was the size of a single item, which is what the rest
+     * of this class pins. It is worth a test rather than an absence: the cap failing
+     * open and the cap being removed look identical from outside, and the whole
+     * point of removing it was that a dropped item is re-queried forever.
+     */
+    public function testEveryQueuedItemIsWrittenHoweverManyThereAre(): void
     {
-        $host = $this->host(1024, 2);
-        $host->queue('huge', $this->payloadLargerThan(4096));
-        $host->queue('one', ['a' => 1]);
-        $host->queue('two', ['b' => 2]);
+        $host = $this->host(1024);
+        $expected = [];
+        foreach (range(1, 25) as $i) {
+            $host->queue('item' . $i, ['n' => $i]);
+            $expected[] = 'item' . $i;
+        }
 
         $host->onFinishWriteCache();
 
-        $this->assertSame(['one', 'two'], $host->cache()->writtenKeys());
-    }
-
-    public function testStopsAfterMaxItemsToCacheSuccessfulWrites(): void
-    {
-        $host = $this->host(1024, 2);
-        $host->queue('one', ['a' => 1]);
-        $host->queue('two', ['b' => 2]);
-        $host->queue('three', ['c' => 3]);
-
-        $host->onFinishWriteCache();
-
-        $this->assertSame(['one', 'two'], $host->cache()->writtenKeys());
+        $this->assertSame($expected, $host->cache()->writtenKeys());
     }
 
     public function testAZeroBudgetDisablesTheSizeCheck(): void

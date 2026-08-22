@@ -1811,6 +1811,13 @@ Background and measurements: [caching.md](caching.md).
 - [ ] `LibraryTable::getLibraryBooksStatuses()` hydrates every entity for a
   library (up to 12,394 books) then links checkouts — next projection
   candidate.
+- [ ] `booksmodellibrarytable-checkouts` serializes to **4,608,092 bytes**
+  against the 4,194,304 `max_cached_item_size` budget, so it is refused on
+  every request, permanently, and the query behind it runs every time. Found
+  2026-08-22 while retiring `max_items_to_cache`; it is the size budget doing
+  its job and pointing at a query that wants narrowing, the same shape as
+  `query-objects-publication` above. Note this one is *just* over — raising the
+  budget would buy a few months and hide it again, which is the wrong fix.
 - [ ] Navigation cache keys written by `Application\Navigation\PageBuilder`
   (extracted from `Application\Module::onBootstrap()` on 2026-08-13, and now
   read by the Symfony side too) are never invalidated on data change — only
