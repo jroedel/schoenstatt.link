@@ -340,10 +340,22 @@ suites run from the superproject working tree.
   non-database time: `getAssociation()` went **344–399 ms → 21–36 ms**, peak memory 40.6 →
   25.4 MB, on 2026-08-22. The subset callers (`searchAssociations()`, `getShrines()`,
   `getWaysideShrines()`) still query, because a filtered match's parent can lie outside the
-  set. The related rows stay in a **separate array** even when copied: the links are
-  references into it, and linking `$objects` to itself would make the graph cyclic.
-  Guarded by `test/Integration/AssociationLinkingTest`; the same `orCombination` shape is
-  still live in `PublicationsTable::linkPublications()` (docs/BACKLOG.md).
+  set. The related rows stay a **separate snapshot** even when copied, because linking
+  `$objects` to rows that are themselves being linked would make the graph cyclic.
+  **The order inside that method is load-bearing and was wrong until 2026-08-22:**
+  `connectEntityRolesAndAssignments()` now runs *first*, because what the linking attaches
+  are copies of that snapshot, and a copy taken before it carries `roles => []`,
+  `assignments => []` and `mainPerson => null`. The keys are declared in
+  `processAssociationRow()`, so nothing was missing and nothing errored — 791 of 792 linked
+  rows simply held empty values, and the leader column of "Associated organizations" was
+  blank for every child that has one. The links themselves are **plain copies, not PHP
+  references**; the reference saved no live memory (array assignment is copy-on-write) and
+  only aliased rows reachable by two paths. It does shrink `serialize()`, which is why the
+  one in `LibraryTable::getCheckouts()` stays — see docs/BACKLOG.md.
+  Guarded by `test/Integration/AssociationLinkingTest`, whose two-path comparison could not
+  see the ordering bug (both paths were wrong the same way) and which now also compares an
+  attached row against the same row under its own id. The same `orCombination` shape, and
+  the same references, are still live in `PublicationsTable::linkPublications()`.
 - **Association/shrine validation lives in `App\Schoenstatt\Association`**, not in the form.
   `AssociationInputFilterSpec` holds the rules, `AssociationForm` delegates to it, and
   `AssociationValidator` gives the v3 API the form's *own* `InputFilter` (built headlessly —

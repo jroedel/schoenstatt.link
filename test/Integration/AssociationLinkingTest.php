@@ -204,6 +204,71 @@ class AssociationLinkingTest extends TestCase
     }
 
     /**
+     * A row attached as a parent or a child is the same row the caller would find under its
+     * own id — roles, assignments and leader included.
+     *
+     * This is the property the two-path comparison above cannot see. Until 2026-08-22
+     * `connectEntityRolesAndAssignments()` ran **after** the linking and only on `$objects`,
+     * so every attached row was a pre-roles copy: 791 of the 792 links on the full set
+     * differed from their own row, 187 of them on `mainPerson`. Both paths did it, so both
+     * paths agreed, and the comparison passed.
+     *
+     * The visible symptom was a blank leader column in the "Associated organizations" table
+     * (`_associations-table.html.twig` reads `entity.mainPerson`, as does the `.phtml`), on
+     * a page whose other tables filled the same column in.
+     *
+     * The link's own link keys are excluded: `parent` and `childAssociations` are empty on
+     * an attached row **by design**, which is what keeps the structure two levels deep
+     * instead of cyclic.
+     */
+    public function testAnAttachedRowCarriesTheSameDataAsItsOwnRow(): void
+    {
+        $table   = $this->table();
+        $objects = $this->everyAssociation($table);
+
+        $link = new ReflectionMethod($table, 'linkAssociations');
+        $link->invokeArgs($table, [&$objects, true]);
+
+        $links = 0;
+        foreach ($objects as $id => $row) {
+            foreach (($row['childAssociations'] ?? []) as $childId => $child) {
+                $links++;
+                self::assertSame(
+                    $this->comparable($this->withoutLinks($objects[$childId])),
+                    $this->comparable($this->withoutLinks($child)),
+                    sprintf('association %s is attached to %s as a child in a different state '
+                        . 'than it has under its own id', (string) $childId, (string) $id)
+                );
+            }
+            if (! isset($row['parent'], $objects[$row['parentId']])) {
+                continue;
+            }
+            $links++;
+            self::assertSame(
+                $this->comparable($this->withoutLinks($objects[$row['parentId']])),
+                $this->comparable($this->withoutLinks($row['parent'])),
+                sprintf('association %s is attached to %s as its parent in a different state '
+                    . 'than it has under its own id', (string) $row['parentId'], (string) $id)
+            );
+        }
+
+        self::assertGreaterThan(0, $links, 'sanity: nothing was linked, so nothing was checked');
+    }
+
+    /**
+     * The row minus the two keys the linking itself writes.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function withoutLinks(array $row): array
+    {
+        unset($row['parent'], $row['childAssociations']);
+
+        return $row;
+    }
+
+    /**
      * A value comparable across the two paths.
      *
      * `var_export` rather than `==`: the linked rows hold references into a second array,

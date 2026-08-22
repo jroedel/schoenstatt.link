@@ -1451,7 +1451,12 @@ ORDER BY `publisher`";
 
         foreach ($collections as $collectionId => $collection) {
             if ($collection['libraryId'] == $id) {
-                $collections[$collectionId] = &$collections[$collectionId];
+                //There was a `$collections[$collectionId] = &$collections[$collectionId];` here.
+                //It assigned an element of this static array to itself, so it changed no value —
+                //all it did was convert the element into a PHP reference for the rest of the
+                //request. Almost certainly a mistyped attempt to fill `$processedRow['collections']`,
+                //which is declared above and which nothing has ever read: every consumer goes
+                //through `$library['options']->collections`, the LibraryOptions object set below.
                 $processedRow['options']->collections[$collectionId] = $collections[$collectionId]['options'];
                 //@todo fix
                 //set the libraryOptions of the collections
@@ -2028,7 +2033,18 @@ ORDER BY CreatedOn DESC";
             if (isset($books[$entity['bookId']]) &&
                 isset($libraries[$books[$entity['bookId']]['libraryId']])
             ) {
-                //get a reference to the library entry so we don't make a lot of array copies
+                //A PHP reference, deliberately kept where the others were removed on
+                //2026-08-22. The stated reason — "so we don't make a lot of array copies" —
+                //is not the reason it earns its place: a plain assignment is copy-on-write
+                //and costs the same live memory. What it saves is `serialize()`, which
+                //stores a reference once and back-references the rest. This array is the
+                //`checkouts` cache item, and it is measured with serialize() before every
+                //write: 4,605,258 bytes with the reference, 7,943,438 without, over 1,953
+                //rows. It is already refused by the 4 MiB budget at the smaller figure, so
+                //the copy would foreclose ever fitting rather than merely cost something.
+                //The real fix is not to embed a whole library row in every checkout at all
+                //(docs/BACKLOG.md). Until then: nothing may write through this alias — every
+                //checkout in a library shares one row.
                 $books[$entity['bookId']]['library'] = &$libraries[$books[$entity['bookId']]['libraryId']];
                 $entities[$entityId]['book'] = $books[$entity['bookId']];
             } else {

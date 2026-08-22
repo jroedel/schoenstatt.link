@@ -449,34 +449,72 @@ class SchoenstattTable extends SionTable implements
      * of this method, which is why the test asserts it directly: a field populated on one
      * read path and not the other would break it in silence.
      *
-     * `$related` stays a **separate array of unlinked rows** even when it is a copy of
-     * `$objects`, and that is load-bearing rather than wasteful. The links below are
-     * references into it, so linking `$objects` to itself would make the graph cyclic —
-     * a parent whose children have parents — where today it is two levels deep and
-     * finite. Templates, `var_export` and anything that walks the structure would all
-     * change behaviour.
+     * ## Why the links are copies of a snapshot
+     *
+     * `$related` is a **snapshot of the unlinked rows**, and every link below is a plain
+     * copy out of it. Both halves of that matter.
+     *
+     * *Snapshot*, because linking `$objects` to rows that are themselves being linked
+     * would make the graph cyclic — a parent whose children have parents — where this
+     * keeps it two levels deep and finite. Nothing that walks or exports the structure
+     * has to defend itself against depth.
+     *
+     * *Copy*, because these used to be PHP references (`= &$related[$id]`), written to
+     * save memory. They did not: a plain array assignment is copy-on-write, so the two
+     * cost the same until something writes. What the references bought instead was
+     * aliasing — a row reachable by two paths, where a write through one changed the
+     * other — in a structure that `getShrines()` hands to `cacheEntityObjects()`. They
+     * also outlived the reason they were added, since PHP 5.
+     *
+     * The one thing they did earn is a smaller `serialize()`: a reference is stored once
+     * and back-referenced, so the cached `shrines` document grows without them. Measured
+     * 2026-08-22, and it is the reason this method now runs
+     * `connectEntityRolesAndAssignments()` **first** rather than last — see below.
+     *
+     * ## Why the roles are connected first
+     *
+     * They used to be connected last, on `$objects` only, so every row attached as a
+     * `parent` or a `childAssociations` entry was a pre-roles copy: no `roles`, no
+     * `assignments`, no `mainPerson`. Measured on the full set 2026-08-22: **791 of 792
+     * linked rows** differed from their own row, 187 of them on `mainPerson`.
+     *
+     * That is not cosmetic. `_associations-table.html.twig` — and the `.phtml` it
+     * replaced — render `entity.mainPerson` for every child, so the leader column of
+     * "Associated organizations" was blank for every association that has one, while the
+     * same partial filled it in on the shrines page. Nothing errored; the column just
+     * looked empty, which reads as missing data rather than as a bug.
      */
     protected function linkAssociations(array &$objects, bool $objectsAreEveryAssociation = false)
     {
-        $results = $objectsAreEveryAssociation
-            ? $objects
-            : $this->relatedAssociations($objects);
+        //Before anything is linked, not after: what the two loops below attach are
+        //snapshots of these rows, so a row copied before this call is a row with no
+        //leader, no roles and no assignments. See the docblock.
+        $this->connectEntityRolesAndAssignments('association', $objects);
+
+        //A row may be linked to as a parent or a child before it has been linked itself, so
+        //the snapshot is taken here, from the unlinked rows, and every link is a copy of it.
+        //That is what keeps the structure two levels deep and acyclic.
+        $related = $objects;
+        if (! $objectsAreEveryAssociation) {
+            //`+`, not array_merge(): the rows already in $objects win, and they are the ones
+            //carrying roles and assignments. Only rows genuinely outside the set come from
+            //the database, and those arrive unconnected exactly as they always have.
+            $related += $this->relatedAssociations($objects);
+        }
 
         //link parents of our objects
         foreach ($objects as $objectId => $object) {
-            if (isset($object['parentId']) && isset($results[$object['parentId']])) {
-                $objects[$objectId]['parent'] = &$results[$object['parentId']];
+            if (isset($object['parentId']) && isset($related[$object['parentId']])) {
+                $objects[$objectId]['parent'] = $related[$object['parentId']];
             }
         }
 
         //link children of our objects
-        foreach ($results as $entityId => $entity) {
+        foreach ($related as $entityId => $entity) {
             if (isset($entity['parentId']) && isset($objects[$entity['parentId']])) {
-                $objects[$entity['parentId']]['childAssociations'][$entityId] = &$results[$entityId];
+                $objects[$entity['parentId']]['childAssociations'][$entityId] = $related[$entityId];
             }
         }
-
-        $this->connectEntityRolesAndAssignments('association', $objects);
 
         //no return, by ref
     }
