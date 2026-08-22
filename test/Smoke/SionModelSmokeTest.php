@@ -97,6 +97,54 @@ class SionModelSmokeTest extends SmokeTestCase
      * Deploy hooks poll this to see APCu occupancy from inside the web SAPI
      * (a full segment silently degrades the persistent cache to misses).
      */
+    /**
+     * A Symfony-served page must leave something in APCu it can serve to the next
+     * request. This is the end-to-end form of the bug the flush queue exists for.
+     *
+     * A SionTable defers its writes to the end of the request, and until 2026-08-22
+     * the only thing that ever performed them was a listener on
+     * `MvcEvent::EVENT_FINISH` — an event a ported route never reaches. So every
+     * page on the strangled surface read, cached into memory, queued, and dropped
+     * the queue. Nothing failed: within the request that queued them the items are
+     * served out of `$memoryCache`, so a queued item and a written one are
+     * indistinguishable to the code that queued it. Only the *next* request could
+     * tell, and it had no way to say so. Measured over 49 requests: 0 writes, 0
+     * hits (docs/caching-performance.md).
+     *
+     * Asserted on the **key names**, not on the entry count. Before the fix the
+     * count still grew — `*-cachedependencies` was written faithfully all along,
+     * because that write happens inline rather than at the end of the request. A
+     * cache holding nothing but a map of what it would invalidate looks busy and
+     * stores nothing, so "entries > 0" is exactly the assertion that would have
+     * passed throughout.
+     */
+    public function testAPortedPageLeavesDataInThePersistentCache(): void
+    {
+        $cleared = $this->request('GET', '/en/sm/clear-persistent-cache', ['X-Api-Key: ' . self::DEV_API_KEY]);
+        $this->assertSame(200, $cleared['status'], 'the cache clear is the precondition, not the subject');
+
+        $page = $this->get('/en/dictionary');
+        $this->assertSame(200, $page['status'], '/en/dictionary is the Symfony-served page under test');
+
+        $response = $this->request('GET', '/en/sm/cache-status', ['X-Api-Key: ' . self::DEV_API_KEY]);
+        $this->assertSame(200, $response['status']);
+        $status = json_decode($response['body'], true);
+        $this->assertIsArray($status);
+        $this->assertIsArray($status['largestEntries']);
+
+        $dataKeys = array_filter(
+            array_keys($status['largestEntries']),
+            static fn(string $key): bool => ! str_ends_with($key, '-cachedependencies')
+                && ! str_ends_with($key, '-cachegeneration')
+        );
+
+        $this->assertNotEmpty(
+            $dataKeys,
+            'a ported request must write at least one cached query, not only its dependency map; '
+                . 'found only: ' . implode(', ', array_keys($status['largestEntries']))
+        );
+    }
+
     public function testCacheStatusReportsApcuOccupancy(): void
     {
         //header, not ?key= — the query-string channel was dropped 2026-08-17
