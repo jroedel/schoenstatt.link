@@ -98,9 +98,13 @@ Three consequences worth knowing before changing any of it:
   unconditional code built an MVC application per table per request for an event manager
   whose event that request would never fire.
 - **The queue is drained by the pass that writes it**, so calling the flush twice writes
-  nothing the second time. The per-request `max_items_to_cache` budget is therefore spent
-  once and not renewed: items a first pass refused on budget are dropped rather than held
-  over for a second pass that would defeat the budget.
+  nothing the second time.
+- **Both flush points run after the response has been sent.** `kernel.terminate` does by
+  definition; the laminas listener does because it attaches at priority **-11000**, below
+  `Laminas\Mvc\SendResponseListener`'s -10000. It sat at 100 until 2026-08-22, i.e. ahead
+  of the send, which is the only reason the size of the flush was ever a visitor-facing
+  question. Anything that passes an explicit priority to `wireOnFinishTrigger()` must stay
+  below -10000.
 
 ## Why item size matters so much
 
@@ -153,11 +157,20 @@ projections.
 ## The size budget
 
 `sion_model.max_cached_item_size` (bytes, default **4 MiB**, `0` disables)
-bounds a single persistent cache item. `onFinishWriteCache()` measures with
+bounds a single persistent cache item, and since 2026-08-22 it is the **only**
+bound on a cache write. `onFinishWriteCache()` measures with
 `strlen(serialize($value))` and skips anything over budget, logging a warning
-with the key, the size and the budget. A refused item does not consume one of
-the `max_items_to_cache` write slots, and neither a refusal nor a failed write
+with the key, the size and the budget. Neither a refusal nor a failed write
 abandons the rest of the queue.
+
+The count budget that used to sit beside it, `sion_model.max_items_to_cache`, is
+**retired** — see [caching-performance.md](caching-performance.md) § Finding 4.
+It is ignored rather than renamed, and `/sm/cache-status` reports both halves of
+that under `sionModel`: `maxCachedItemSize` is the bound in force, and
+`retiredConfigKeys` lists any retired key a server's config still names. That
+field exists because `config/autoload/local.php` is gitignored, so a setting
+that stopped doing anything can otherwise sit on a server indefinitely with
+nothing to say so; `tools/smoke-prod.sh` warns when the list is non-empty.
 
 The default is not a guess. Warming the main routes against production-scale
 data produces a long tail of legitimate items topping out around 2.5 MiB and
@@ -308,17 +321,30 @@ silence a production warning rather than fail anything.
 - The navigation cache keys written in `onBootstrap()` are never invalidated
   when the underlying data changes; `removeDependentCacheItems()` only clears
   keys registered through `SionCacheTrait`. They go stale until the TTL.
-- `max_items_to_cache` is **1**, not 2 — 2 is the class default in
-  `SionCacheTrait` and `config/autoload/local.php` overrides it. (This line said
-  2 until 2026-08-22, when it was measured.) So a request touching four cached
-  queries persists **one** and re-queries the rest on every request forever.
-  That is logged rather than silent ("Cache writes skipped: max_items_to_cache
-  reached") — and the current capsule log holds **24,945** such lines, so the
-  cap is not a theoretical bound, it is the normal case. Whether 1 is still the
-  right number, on a 256 MB segment rather than the 32 MB it was chosen for, is
-  an open question with a strong answer. Production's value is **unverified**:
-  `local.php` is gitignored, and the only evidence is the `.dist` and the
-  capsule, both of which say 1. See [caching-performance.md](caching-performance.md).
+- ~~`max_items_to_cache` is **1**~~ — **retired 2026-08-22**, and worth keeping as a
+  worked example of a bound aimed at the wrong variable. It capped how many items a
+  table wrote per request, on the theory that the rest would trickle in over later
+  page loads; the theory held, and cost four extra passes of cold requests to reach
+  a state one pass reaches without it. Its stated purpose was bounding memory, which
+  it never did — `max_cached_item_size` does that, per item, which is the shape the
+  hazard actually had. On a frequently-written table it never converged: one key
+  accounted for 23,107 of the capsule log's 25,394 skips, re-queried forever while
+  logging that it meant to do better. Production's value was never verified, and no
+  longer needs to be — if the server still sets it, `/sm/cache-status` says so under
+  `sionModel.retiredConfigKeys`.
+- **Signed-in identity now resolves through the cache.** `SessionUser::read()` keeps
+  only the user id in the session and re-reads the row every request, but it reads it
+  with `UserTable::findById()`, which serves out of `all-linked-users` when that key is
+  warm. Retiring `max_items_to_cache` made it reliably warm — it used to lose its write
+  slot to a larger key on most passes. Nothing changes for a revocation performed in the
+  application: unticking Active goes through `updateEntity()`, which invalidates
+  `['user', 'user-role', 'user-role-link']`, and the very next request re-reads from the
+  database. What *does* change is the out-of-band case — a `state` written by hand or by
+  a migration (`database/db8.6.sql` was one) leaves an open session valid until something
+  writes to a user through the application, or the 1-day TTL expires. That is an
+  operational fact rather than a bug, and it is pinned by
+  `AuthSmokeTest::testDeactivationEndsASessionThatIsAlreadyOpen`, which unticks the real
+  box for exactly this reason.
 - `JUser\Cache` (1 day) and `SionModel\PersistentCache` (5 days) have different
   TTLs for no recorded reason. Nothing depends on the difference now that the
   map is refreshed with the data, but two numbers where one would do is one

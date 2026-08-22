@@ -100,6 +100,23 @@ oc_num() {
     grep -q '"opcache":' "$2" || return 0
     sed 's/.*"opcache":/{/' "$2" | grep -o "\"$1\":[0-9.]*" | head -1 | cut -d: -f2
 }
+
+# The `sionModel.retiredConfigKeys` list, as a bare space-separated string. $1 body
+# file. Empty output means the expected reading: nothing configured that this
+# package has stopped honouring.
+#
+# Whole-document, deliberately, unlike oc_num: the key exists once and a scoped
+# read would need a second slice expression to maintain. It is safe here for the
+# reason oc_num is not — no other section of the payload uses this name — and that
+# is a fact about today's document, so the test below pins it against a fixture
+# carrying every other section.
+#
+# An absent field reads empty too, which is the right answer for an older server
+# answering a newer script: "nothing to report" and "cannot tell" both mean do not
+# warn, and a deploy's last step is the wrong place to fail on a missing diagnostic.
+retired_keys() {
+    sed -n 's/.*"retiredConfigKeys":\[\([^]]*\)\].*/\1/p' "$1" | head -1 | tr -d '"' | tr ',' ' '
+}
 # <<< cache-status parsing
 
 pass() { echo "  ok  $*"; }
@@ -425,6 +442,19 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
         fi
         if [ "${EXPUNGES:-0}" -gt 0 ]; then
             echo "WARN  APCu expunged ${EXPUNGES} time(s) — the segment is too small" >&2
+        fi
+
+        # SionModel's own cache settings, from the same response. The retired-key
+        # list is the point: config/autoload/local.php is gitignored, so a setting
+        # this package stopped honouring can sit on a server indefinitely with
+        # nothing anywhere to say so. Empty is the expected reading. Advisory —
+        # an ignored key breaks nothing, it just isn't doing what someone thinks.
+        RETIRED=$(retired_keys "$BODY")
+        if [ -n "$RETIRED" ]; then
+            echo "WARN  sion_model config still names retired key(s): $RETIRED — remove from local.php" >&2
+        else
+            ITEM_SIZE=$(grep -o '"maxCachedItemSize":[0-9]*' "$BODY" | cut -d: -f2)
+            pass "sion_model cache item bound ${ITEM_SIZE:-?} bytes, no retired config keys"
         fi
     else
         echo "note  cache-status unavailable (status $STATUS) — skipping the APCu check"
