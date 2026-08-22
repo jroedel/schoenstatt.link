@@ -10,6 +10,7 @@ use voku\Html2Text\Html2Text;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
 use SionModel\Service\ActingUserProviderInterface;
+use SionModel\Service\EntitiesService;
 use voku\helper\UTF8;
 
 class EventTextTable extends SionTable implements ResourceProviderInterface
@@ -27,14 +28,19 @@ class EventTextTable extends SionTable implements ResourceProviderInterface
      */
     protected $usernames;
 
+    /**
+     * @param array<string, mixed> $sionModelConfig
+     * @param array<string, mixed> $config
+     */
     public function __construct(
         AdapterInterface $dbAdapter,
-        $serviceLocator,
+        EntitiesService $entities,
+        array $sionModelConfig,
         ?ActingUserProviderInterface $actingUserProvider,
         array $config,
         $usernames
     ) {
-        parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
+        parent::__construct($dbAdapter, $entities, $sionModelConfig, $actingUserProvider);
         $this->config = $config;
         $this->usernames = $usernames;
     }

@@ -1,36 +1,42 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
-use Laminas\Db\Adapter\Adapter;
 use Books\Model\DictionaryTable;
+use Laminas\Db\Adapter\Adapter;
+use Laminas\Router\RouteStackInterface;
+use Psr\Container\ContainerInterface;
 use SionModel\Service\ActingUserProviderInterface;
+use SionModel\Service\EntitiesService;
+use SionModel\Service\SionTableWiring;
 
 /**
- * Factory responsible of priming the LibraryTable service
+ * Builds {@see DictionaryTable}.
  *
- * @author Jeff Ro <webmaster@schoenstatt.link>
+ * The old comment here explained that this passed three arguments rather than four because
+ * "the table reaches config through the container it is already given". It is not given one
+ * any more: SionTable takes its four required collaborators explicitly, and the router this
+ * table used to fetch for itself is now argument five.
  */
-class DictionaryTableFactory implements FactoryInterface
+class DictionaryTableFactory
 {
     /**
-     * Create an object
-     *
-     * @inheritdoc
+     * @param string $requestedName
+     * @param array<string, mixed>|null $options
      */
-    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null): DictionaryTable
     {
-        $dbAdapter = $container->get(Adapter::class);
+        $table = new DictionaryTable(
+            $container->get(Adapter::class),
+            $container->get(EntitiesService::class),
+            $container->get('SionModel\Config'),
+            $container->get(ActingUserProviderInterface::class),
+            $container->get(RouteStackInterface::class)
+        );
+        SionTableWiring::apply($container, $table);
 
-        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
-
-        //Three arguments, not four. This passed $config as a fourth for years;
-        //DictionaryTable::__construct takes three, and PHP discards surplus
-        //arguments to userland functions silently, so the call read as though
-        //it configured something and did not. The table reaches config through
-        //the container it is already given.
-        $table = new DictionaryTable($dbAdapter, $container, $actingUserProvider);
         return $table;
     }
 }

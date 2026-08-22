@@ -1,35 +1,39 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
 use Books\Model\PublicationsTable;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use SionModel\Service\ActingUserProviderInterface;
+use SionModel\Service\EntitiesService;
+use SionModel\Service\SionTableWiring;
 
 /**
- * Factory responsible of priming the SchoenstattTable service
- *
- * @author Jeff Ro <webmaster@schoenstatt.link>
+ * Builds {@see PublicationsTable}.
  */
-class PublicationsTableFactory implements FactoryInterface
+class PublicationsTableFactory
 {
     /**
-     * Create an object
-     *
-     * @inheritdoc
+     * @param string $requestedName
+     * @param array<string, mixed>|null $options
      */
-    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null): PublicationsTable
     {
         $config = $container->get('Config');
-        $dbAdapter = $container->get($config['books']['books_db_adapter']);
 
-        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
+        $table = new PublicationsTable(
+            $container->get($config['books']['books_db_adapter']),
+            $container->get(EntitiesService::class),
+            $container->get('SionModel\Config'),
+            $container->get(ActingUserProviderInterface::class)
+        );
+        SionTableWiring::apply($container, $table);
 
-        $table = new PublicationsTable($dbAdapter, $container, $actingUserProvider);
+        $table->setSchoenstattTable($container->get(SchoenstattTable::class));
 
-        $schTable = $container->get(SchoenstattTable::class);
-        $table->setSchoenstattTable($schTable);
         return $table;
     }
 }
