@@ -12,6 +12,7 @@ use Laminas\Router\RouteStackInterface;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Expression;
 use SionModel\Service\ActingUserProviderInterface;
+use SionModel\Service\EntitiesService;
 
 class DictionaryTable extends SionTable
 {
@@ -23,13 +24,23 @@ class DictionaryTable extends SionTable
      */
     protected $router;
 
+    /**
+     * The router arrives as an argument. It used to be pulled out of the container this
+     * constructor was handed, which is the pattern SionTable stopped supporting when it
+     * stopped taking one: a data class asking a container for a router is a factory's job
+     * done in the wrong place.
+     *
+     * @param array<string, mixed> $config
+     */
     public function __construct(
         AdapterInterface $dbAdapter,
-        $serviceLocator,
-        ?ActingUserProviderInterface $actingUserProvider
+        EntitiesService $entities,
+        array $config,
+        ?ActingUserProviderInterface $actingUserProvider,
+        RouteStackInterface $router
     ) {
-        $this->router = $serviceLocator->get(RouteStackInterface::class);
-        return parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
+        $this->router = $router;
+        parent::__construct($dbAdapter, $entities, $config, $actingUserProvider);
     }
 
     protected function preprocessDictionaryEntry($data, $entityData, $action)
