@@ -1831,6 +1831,15 @@ Background and measurements: [caching.md](caching.md).
   excludes them (`App\Sitemap\SitemapGenerator`); filtering them in
   `PageBuilder` instead would fix both surfaces at once and change the laminas
   rendering, which is why it was not done as part of a port.
+- [ ] **`PublicationsTable::linkPublications()` has the same redundant
+  `orCombination` re-query** that cost the shrine page ~300 ms until
+  2026-08-22 (see caching-performance.md § Finding 5). The publication page
+  is the other slow route — 208 ms wall, **129 ms of query** — and this is
+  the likely bulk of it. Not fixed alongside the association one because the
+  relations are a different shape (`mainPublication` / `translatedFrom`
+  rather than parent / children), so the "already in hand" argument has to
+  be made again from scratch. The right shape already exists next to it:
+  `linkPublication()`, singular, resolves one record's relations directly.
 - [ ] **`JUser\Model\UserTable` is built on every anonymous request**, costing
   **1.9 ms** — measured in-request 2026-08-22, and now the largest single item
   in the authorization layer's remaining 3.2 ms.

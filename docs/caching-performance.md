@@ -18,6 +18,9 @@ written to APCu was the cache's own bookkeeping.
 > still open and because the shape of each bug is worth not forgetting. Every "today" below
 > means 2026-08-22 before the fixes; the after-numbers are in each fixed finding's section.
 >
+> Finding 5 followed the same day: the shrine page's 259 ms of non-database time turned out
+> to be a single redundant query inside `linkAssociations()`, not rendering.
+>
 > Finding 2 is worth reading even if the rest is not, because the finding as first written was
 > **wrong about where the cost was** — it named six database statements that turned out to
 > total 0.9 ms, while the layer cost 6 ms. A harness that counts statements cannot see a cost
@@ -400,7 +403,12 @@ narrowing — the same shape as the `query-objects-publication` blob in
 
 ---
 
-## Finding 5 — the slowest page is not database-bound
+## Finding 5 — fixed
+
+*Was: the slowest page is not database-bound.* Kept as written, then what the
+non-database time turned out to be.
+
+### What was found
 
 `/en/SL100320A/…`, a shrine page, is the slowest route measured: 536 ms median wall under
 Symfony, of which **117 ms is query time**. The other ~420 ms is PHP — row processing,
@@ -410,6 +418,72 @@ database.
 A cache refactor scoped to database results cannot touch the shrine page. Whatever is spending
 420 ms there needs its own measurement pass; the harness records `peakMemoryMb` and wall time
 per request and would support it with a profiler attached.
+
+### The measurement pass, 2026-08-22
+
+By the time it was taken, Findings 1, 2 and 4 had landed and the page was 324.5 ms wall with
+65 ms of query — **259 ms of PHP**, and 52 MB of peak memory to render one record. Only
+27.8 ms of that was inside the cache, so the whole-table cache items were not the story.
+
+Instrumenting `SchoenstattTable` in-request found all of it in one place:
+
+| stage | ms |
+|---|---|
+| `getObjects('association')` — 498 rows, from APCu | 9–12 |
+| **the related-associations query** | **276–333** |
+| link parents (loop over 498) | 1.2 |
+| link children (loop over 431) | 0.25 |
+| `connectEntityRolesAndAssignments()` | 12–30 |
+| **`getAssociation()` total** | **261–371** |
+
+`getAssociation($id)` — one record — goes through `getAssociations()`, which loads the whole
+table and calls `linkAssociations()`. That method then asked the database for the parents and
+children of everything it had just been handed: one `orCombination` query over
+`parentId IN (…) OR associationId IN (…)`, returning **431 rows, every one of which was
+already in the array**. Verified rather than assumed — 0 rows absent from the loaded set, 0
+rows differing from it.
+
+It was a batching optimisation, and a sound one when `$objects` came from the database
+anyway. It became the most expensive thing on the site when the whole table started arriving
+from cache in 10 ms.
+
+Note where the cost actually sits: the page's **total** SQL is 61–65 ms, so ~230 ms of that
+query is PHP — building a ~900-term OR predicate and re-hydrating 431 rows through the entity
+processor.
+
+### The fix
+
+`linkAssociations()` takes a second argument saying that `$objects` is the complete table, and
+`getAssociations()` — the only caller that can honestly say so — passes it. The subset callers
+(`searchAssociations()`, `getShrines()`, `getWaysideShrines()`) still query, because a filtered
+match's parent genuinely can lie outside the set.
+
+Measured A/B under identical conditions, five samples each:
+
+| | before | after |
+|---|---|---|
+| `getAssociation()` | 344–399 ms | **21–36 ms** |
+| peak memory | 40.6 MB | **25.4 MB** |
+
+The related rows stay in a **separate array** even when they are a copy, which is
+load-bearing rather than wasteful: the links are references into it, so linking `$objects` to
+itself would make the graph cyclic where today it is two levels deep and finite.
+
+This reaches every association page, `/movement`, the edit form, the v3 API's list and detail
+endpoints, both laminas controllers, and `getNationalAssociations()` /
+`getAssociationProblems()` internally.
+
+Proved by `tools/port-baseline.php`: **1,272 of 1,272 responses identical** — 106 paths × 6
+locale forms × 2 identities — plus `test/Integration/AssociationLinkingTest`, which pins the
+two properties the saving rests on rather than the timing.
+
+### The same shape lives in PublicationsTable
+
+`PublicationsTable::linkPublications()` issues the same kind of `orCombination` re-query, and
+the publication page is the other slow route (208 ms wall, 129 ms query). It was left alone
+deliberately: its relations are a different shape (`mainPublication` / `translatedFrom` rather
+than parent / children), so it is a separate correctness argument. Note the right shape already
+exists beside it — `linkPublication()`, singular, resolves one record's relations directly.
 
 ---
 
@@ -452,8 +526,10 @@ In rough order of value per unit of risk:
    call sites.** Finding 3 says the entity cache is worth 14% of query time; that number will
    change once 1–3 land, and the decision about whether to replace the trait with a decorator
    should be taken against the new number, not this one.
-5. **Profile the shrine page separately.** 420 ms of non-database time on the slowest route is
-   not a caching problem and should not be folded into one.
+5. ~~**Profile the shrine page separately.**~~ **Done 2026-08-22** — see
+   [Finding 5 — fixed](#finding-5--fixed). It was not a caching problem and it was not
+   rendering either: `getAssociation()` re-queried 431 association rows it already held.
+   344–399 ms → 21–36 ms.
 
 ## Reproducing
 
