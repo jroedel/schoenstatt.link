@@ -1,6 +1,6 @@
 {
     "bjyauthorize": {
-        "cache_enabled": false,
+        "cache_enabled": true,
         "default_role": "guest",
         "identity_provider": "JUser\\Bridge\\Laminas\\ZfcUserZendDbPlusSelfAsRole",
         "resource_providers": [
@@ -9,7 +9,6 @@
             "Books\\Model\\EventTextTable"
         ],
         "role_providers": [
-            "JUser\\Bridge\\Laminas\\UserIdRoles",
             "BjyAuthorize\\Provider\\Role\\LaminasDb"
         ],
         "rule_providers": [

@@ -106,6 +106,49 @@ Three consequences worth knowing before changing any of it:
   question. Anything that passes an explicit priority to `wireOnFinishTrigger()` must stay
   below -10000.
 
+## The other APCu tenant: the assembled ACL
+
+`bjyauthorize:acl` is the second thing this application keeps in APCu, and it is not a
+SionModel cache — it is BjyAuthorize's own, switched on here 2026-08-22 in
+`config/autoload/acl.global.php`.
+
+Assembling the ACL costs **~6.0 ms on every request**, anonymous ones included, and reading
+it back costs **0.37 ms**. One document serves every visitor: `Authorize::load()` stores it
+*before* calling `addRole($identity, $parentRoles)`, so no identity is ever part of what is
+written.
+
+Three things about it are easy to get wrong, and each fails quietly:
+
+- **`cache_enabled` was `false`, not absent.** BjyAuthorize defaults it to *true* with a
+  `memory` adapter, which caches nothing beyond the request. Turning the flag on without
+  naming a real adapter looks like a change and does nothing.
+- **The adapter options go at `cache_options.options`**, not `cache_options.adapter.options`
+  — `BjyAuthorize\Service\CacheFactory` reads the former and ignores the latter. Every other
+  cache block in this application, including the one above, is shaped the other way. Getting
+  it wrong leaves the ACL cached with no namespace and no TTL.
+- **A missed invalidation is a 500, not a stale page.**
+  `Laminas\Permissions\Acl\Acl::addRole()` throws on a parent role it has never heard of, and
+  the identity's roles are added as exactly that — so an ACL cached before a role was created
+  breaks every request by whoever was granted it, until the 300-second TTL runs out.
+
+Which is why invalidation is not a `clear()` call in each write path. `App\Acl\AclCacheInvalidator`
+implements SionModel's `EntityChangeListenerInterface` and is driven from
+`SionCacheTrait::removeDependentCacheItems()` — the one point every create, update and delete
+in every module passes through. It expires on three entities and no others:
+
+| entity | what it contributes to the ACL |
+|---|---|
+| `user-role` | the 45 roles and their hierarchy |
+| `library` | one resource and three rules per library |
+| `text` | one resource per distinct `texts.AclResourceId` |
+
+`user-role-link` is deliberately **not** in that list: which roles an account holds is read
+per request by the identity provider and never enters the stored document, so expiring on it
+would throw the cache away every time anyone's roles changed, for nothing.
+
+Deploys need no entry: config guards and rules only change with a release, and the deploy
+flushes APCu as its last step.
+
 ## Why item size matters so much
 
 Production APCu is a single fixed shared segment. `apc.shm_size` was **32M**

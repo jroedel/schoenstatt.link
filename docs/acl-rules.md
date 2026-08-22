@@ -29,8 +29,8 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | `default_role` | guest |
 | `identity_provider` | `JUser\Bridge\Laminas\ZfcUserZendDbPlusSelfAsRole` |
 | `unauthorized_strategy` | `JUser\Bridge\Laminas\RedirectionStrategy` |
-| `cache_enabled` | false |
-| `role_providers` | `BjyAuthorize\Provider\Role\LaminasDb`, `JUser\Bridge\Laminas\UserIdRoles` |
+| `cache_enabled` | true |
+| `role_providers` | `BjyAuthorize\Provider\Role\LaminasDb` |
 | `resource_providers` | `BjyAuthorize\Provider\Resource\Config`, `Books\Model\EventTextTable`, `Books\Model\LibraryTable` |
 | `rule_providers` | `BjyAuthorize\Provider\Rule\Config`, `Books\Model\LibraryTable` |
 | `guards` | `BjyAuthorize\Guard\Route` |
