@@ -1,31 +1,35 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
 use Books\Model\MusicTable;
+use Psr\Container\ContainerInterface;
 use SionModel\Service\ActingUserProviderInterface;
+use SionModel\Service\EntitiesService;
+use SionModel\Service\SionTableWiring;
 
 /**
- * Factory responsible of priming the SchoenstattTable service
- *
- * @author Jeff Ro <webmaster@schoenstatt.link>
+ * Builds {@see MusicTable}.
  */
-class MusicTableFactory implements FactoryInterface
+class MusicTableFactory
 {
     /**
-     * Create an object
-     *
-     * @inheritdoc
+     * @param string $requestedName
+     * @param array<string, mixed>|null $options
      */
-    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null): MusicTable
     {
         $config = $container->get('Config');
-        $dbAdapter = $container->get($config['books']['books_db_adapter']);
 
-        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
-
-        $table = new MusicTable($dbAdapter, $container, $actingUserProvider);
+        $table = new MusicTable(
+            $container->get($config['books']['books_db_adapter']),
+            $container->get(EntitiesService::class),
+            $container->get('SionModel\Config'),
+            $container->get(ActingUserProviderInterface::class)
+        );
+        SionTableWiring::apply($container, $table);
 
         return $table;
     }

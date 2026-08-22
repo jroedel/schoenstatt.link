@@ -3,6 +3,7 @@ namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
 use SionModel\Service\ActingUserProviderInterface;
+use SionModel\Service\EntitiesService;
 use JUser\Model\UserTable;
 use Laminas\Db\Adapter\AdapterInterface;
 use Carbon\Carbon;
@@ -120,15 +121,31 @@ class LibraryTable extends SionTable implements
      */
     protected $collectionNames;
 
+    /**
+     * `$entityProblemPrototype` is injected because SionTable stopped declaring it. Only
+     * this class and Schoenstatt\Model\SchoenstattTable ever cloned it, yet the parent
+     * populated it for every table in the application and carried a cycle guard to do so.
+     *
+     * @param array<string, mixed> $sionModelConfig
+     */
     public function __construct(
         AdapterInterface $dbAdapter,
-        $serviceLocator,
+        EntitiesService $entities,
+        array $sionModelConfig,
         ?ActingUserProviderInterface $actingUserProvider,
+        ?EntityProblem $entityProblemPrototype,
         $config
     ) {
-        parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
+        parent::__construct($dbAdapter, $entities, $sionModelConfig, $actingUserProvider);
+        $this->entityProblemPrototype = $entityProblemPrototype;
         $this->config = $config;
     }
+
+    /**
+     * A prototype of an EntityProblem to clone. See the constructor.
+     * @var EntityProblem|null $entityProblemPrototype
+     */
+    protected $entityProblemPrototype;
 
     /**
      *
