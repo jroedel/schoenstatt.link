@@ -314,7 +314,14 @@ final class PublicationController
         $publicationIds = [$entity['publicationId'] ?? null];
         $subEditions    = $entity['subEditions'] ?? null;
         if (is_array($subEditions) && [] !== $subEditions) {
-            $publicationIds = array_merge($publicationIds, $subEditions);
+            //`array_keys`, not the array itself. `subEditions` is keyed by publication id
+            //with whole rows as values, so merging it appended row *arrays* to a list of
+            //ids. `searchBooks()` filters its `publicationId` list with `is_numeric()`, so
+            //they were dropped without a word and this line has never once added a
+            //sub-edition to the library search it exists to widen. 147 library copies
+            //across 62 publications, measured 2026-08-22. Twenty lines up, the same method
+            //does it correctly.
+            $publicationIds = array_merge($publicationIds, array_keys($subEditions));
         }
 
         $books = $table->searchBooks([

@@ -199,7 +199,10 @@ class PublicationsController extends SionController
         //gather the publicationIds to search for
         $publicationIds = [$entityObject['publicationId']];
         if (isset($entityObject['subEditions']) && is_array($entityObject['subEditions']) && ! empty($entityObject['subEditions'])) {
-            $publicationIds = array_merge($publicationIds, $entityObject['subEditions']);
+            //`array_keys`: this is keyed by publication id with rows as values, and
+            //searchBooks() silently drops the non-numeric values. See the Symfony twin,
+            //App\Controller\PublicationController, which is the copy that dispatches.
+            $publicationIds = array_merge($publicationIds, array_keys($entityObject['subEditions']));
         }
         //search the viewable libraries for pubId's related to this item (including subeditions)
         $libraryBooks = $libraryTable->searchBooks(['libraryId' => array_keys($libraries), 'publicationId' => $publicationIds]);
