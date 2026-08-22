@@ -4,7 +4,7 @@
 -- @kind: ddl
 -- @idempotent: yes
 -- @tables: sch_publications
--- @verify: SELECT INDEX_NAME, COLUMN_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sch_publications' ORDER BY INDEX_NAME
+-- @verify: SELECT c.COLUMN_NAME AS column_without_index FROM information_schema.COLUMNS c LEFT JOIN information_schema.STATISTICS s ON s.TABLE_SCHEMA=c.TABLE_SCHEMA AND s.TABLE_NAME=c.TABLE_NAME AND s.COLUMN_NAME=c.COLUMN_NAME AND s.SEQ_IN_INDEX=1 WHERE c.TABLE_SCHEMA=DATABASE() AND c.TABLE_NAME='sch_publications' AND c.COLUMN_NAME IN ('MainPublicationId','TranslatedFromPublicationId') AND s.INDEX_NAME IS NULL
 --
 -- `sch_publications` has exactly one index — the primary key — across 10,166 rows. Every
 -- lookup by anything else is a full table scan, and the publication page does two of them
@@ -28,6 +28,23 @@
 --
 -- This is `@phase: pre` because nothing about it depends on the code: the release being
 -- deployed benefits, and so does the one already running if the swap is rolled back.
+--
+-- ## The @verify line, and the one this file shipped with
+--
+-- `@verify` selects **what is still wrong** and must return nothing. The first version of
+-- this line listed the table's indexes instead, so it returned three rows on success and
+-- aborted the 2026-08-22 deploy after the migration had run correctly. Nothing was broken by
+-- that — the indexes were created and recorded, `@phase: pre` means the release still
+-- running benefits from them, and no swap had happened — but the deploy stopped, and the
+-- error read like a failure rather than like a mistyped assertion.
+--
+-- The corrected line asks the opposite question: of the two columns this file indexes, which
+-- still has no index whose first column it is? Zero rows once both exist. Verified against
+-- the capsule by adding a third column that has no index, which the query then names.
+--
+-- The way to not repeat it is to rehearse through `tools/migrate.sh apply --env=capsule`
+-- rather than piping the file into `mysql`, which is what happened here: the statements were
+-- rehearsed and the header was not.
 --
 -- ## Applying this by hand
 --
