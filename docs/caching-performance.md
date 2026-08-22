@@ -10,12 +10,14 @@ stores no data at all.** Not "a low hit rate" — zero. Across 49 measured reque
 348 reads of data keys and **0 hits**, and **0 writes** of any data key. The only thing
 written to APCu was the cache's own bookkeeping.
 
-> **Finding 1 was fixed the same day** — `SionModel\Cache\CacheFlushQueue` plus
-> `App\Http\SionCacheFlushListener` on `kernel.terminate`. The measurements in this
-> document are kept as the **before** picture, because they are the evidence for the four
-> findings that are still open and because the shape of the bug is worth not forgetting.
-> Every "today" below means 2026-08-22 before the fix; the after-numbers are in
-> [Finding 1 — fixed](#finding-1--fixed) and they move Findings 2 and 3 as well.
+> **Findings 1 and 4 were fixed the same day.** Finding 1 —
+> `SionModel\Cache\CacheFlushQueue` plus `App\Http\SionCacheFlushListener` on
+> `kernel.terminate`. Finding 4 — `max_items_to_cache` retired outright. The measurements in
+> this document are kept as the **before** picture, because they are the evidence for the
+> three findings that are still open and because the shape of both bugs is worth not
+> forgetting. Every "today" below means 2026-08-22 before the fixes; the after-numbers are
+> in [Finding 1 — fixed](#finding-1--fixed) and [Finding 4 — fixed](#finding-4--fixed),
+> and Finding 1's move Findings 2 and 3 as well.
 
 ---
 
@@ -219,7 +221,12 @@ the publication page asks the database for is worth four times that on one route
 
 ---
 
-## Finding 4 — the write budget is set to 1, and it is throttling constantly
+## Finding 4 — fixed
+
+*Was: the write budget is set to 1, and it is throttling constantly.* Kept as written, then
+the measurement that retired it.
+
+### What was found
 
 `sion_model.max_items_to_cache` is **1** in `config/autoload/local.php` and in
 `local.php.dist`. `onFinishWriteCache()` writes that many items **per table instance per
@@ -242,13 +249,76 @@ Two corrections fall out of this:
 
 * [caching.md](caching.md) says the value is **2**. Two is the class default in
   `SionCacheTrait`; the application config overrides it to 1. That line is wrong and should be
-  fixed when the refactor lands.
+  fixed when the refactor lands. *(Fixed — the line now records the retirement.)*
 * **Production's value is unverified.** `config/autoload/local.php` is gitignored, so the only
   evidence is the `.dist` and the capsule, both of which say 1. Read the server's copy before
   assuming.
 
 The number was chosen for a 32 MB APCu segment. The segment has been 256 MB since
 2026-08-11.
+
+### What it was actually bounding
+
+It was introduced to stop the end-of-request flush exhausting `memory_limit`, with the
+explicit intent that the items it dropped would trickle into the cache over subsequent page
+loads. Both halves are worth separating, because the first is wrong and the second is right.
+
+**It bounded count; the hazard was size.** Serializing many items is not what exhausted
+memory — one huge item was, and the historical offenders serialized to 29.2 and 45.7 MiB.
+`max_cached_item_size` bounds exactly that, per item, and has since 2026-08. Measured over
+the whole working set of this URL set: the heaviest single write spikes **1.29 MiB** of PHP
+memory against a 512 MB limit, and the 16 items together come to 8.22 MiB of segment.
+
+**The trickle did work, and that is why the cap had to go.** Warming eight pages from a
+cleared cache, counting per pass:
+
+| budget | pass 1 | 2 | 3 | 4 | 5 | 6+ |
+|---|---|---|---|---|---|---|
+| 1 | 12 written, 6 skipped | 1 | 1 | 1 | 1 | 0 |
+| unbounded | **16 written, 0 skipped** | 0 | 0 | 0 | 0 | 0 |
+
+Same 16 items, same 24 APCu entries, same 8.22 MiB at the end. The cap changed nothing about
+the destination and four passes about the journey — and the entire unbounded flush costs
+**36 ms across the pass**, 17 ms in its heaviest single request, spent after the response has
+been sent. What those four extra passes cost, cold:
+
+| route | budget 1 | unbounded |
+|---|---|---|
+| home | 67.8 ms wall / 49.6 ms query | **16.4 / 0.5** |
+| shrine | 480.2 / 81.0, 14 queries | **308.0 / 82.0, 10 queries** |
+
+Cold is not a rare state. Any entity edit bumps the generation and invalidates, and every
+deploy resets the segment.
+
+**And on a frequently-written table it never converged at all.** Of the 25,394 skip records
+in the capsule log, 23,107 are one key — `jusermodelusertable-usernames`. Invalidation
+outran a one-item-per-request refill, so that item was re-queried forever while logging that
+it meant to do better.
+
+### The fix
+
+`max_items_to_cache` is **retired**, not renamed: `SionCacheTrait` no longer reads it,
+`SionTable` no longer honours it, and it is gone from SionModel's `module.config.php`, this
+application's `local.php.dist` and `docker/local.docker.php`. A host whose config still names
+it is not broken, only ignored — and because `local.php` is gitignored, `/sm/cache-status`
+now reports `sionModel.retiredConfigKeys` so that leftover is findable over HTTPS instead of
+over SSH. `tools/smoke-prod.sh` warns when the list is non-empty; the same block reports
+`sionModel.maxCachedItemSize`, the one bound left.
+
+The laminas flush point moved with it. `wireOnFinishTrigger()` attaches at priority
+**-11000** rather than 100 — below `SendResponseListener`'s -10000 — so a pure laminas host
+also writes after the response has gone out. Under Symfony `kernel.terminate` already did.
+That is what makes an unbounded queue cost a visitor nothing on either front controller, and
+it matters beyond this repository: patres is a laminas host and would otherwise have picked
+up the 17 ms in front of the send.
+
+### Left behind, and separate
+
+`booksmodellibrarytable-checkouts` serializes to **4,608,092 bytes** against the 4,194,304
+budget, so it is refused on every request, permanently, on a hot path. That is
+`max_cached_item_size` working exactly as designed and pointing at a query that needs
+narrowing — the same shape as the `query-objects-publication` blob in
+[caching.md](caching.md). Filed in [BACKLOG.md](BACKLOG.md).
 
 ---
 
@@ -293,9 +363,9 @@ In rough order of value per unit of risk:
    [Finding 1 — fixed](#finding-1--fixed). Statements per request 11.4 → 6.3, the measured
    page set 2,567 ms → 1,581 ms. Everything below should be re-measured against the new
    baseline before it is costed, which was the point of doing this one first.
-2. **Raise or remove `max_items_to_cache`.** It exists to bound memory on a 32 MB segment that
-   is now 256 MB, and `max_cached_item_size` already bounds the thing that actually hurt.
-   Verify production's value first.
+2. ~~**Raise or remove `max_items_to_cache`.**~~ **Done 2026-08-22** — removed, see
+   [Finding 4 — fixed](#finding-4--fixed). Production's value never was verified and no
+   longer needs to be; `/sm/cache-status` reports whether a server still sets it.
 3. **Cache the authorization layer.** Six full-table statements per request, identical for
    every anonymous visitor, is the biggest single win available and does not depend on
    SionCacheTrait at all.

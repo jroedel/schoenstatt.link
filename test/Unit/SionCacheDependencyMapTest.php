@@ -341,25 +341,28 @@ class SionCacheDependencyMapTest extends TestCase
     // ------------------------------------------------------------ no silent caps
 
     /**
-     * max_items_to_cache is 2 in production, so a request touching four cached
-     * queries silently persisted none of the last two. Silence there reads
-     * afterwards as "everything is cached", which is how an item that is
-     * re-queried on every request goes unnoticed.
+     * There used to be a count cap here — `max_items_to_cache`, which wrote N items
+     * per table per request and logged the rest as skipped. It is retired
+     * (2026-08-22, see SionCacheTrait::onFinishWriteCache()), so the property to pin
+     * is the opposite one: a request that caches four things persists four things,
+     * with nothing dropped and therefore nothing to log about.
+     *
+     * The size refusal is the one remaining way an item can fail to reach the store,
+     * and it is logged; CacheItemSizeBudgetTest pins that half.
      */
-    public function testWritesSkippedForTheItemLimitAreLogged(): void
+    public function testEveryCachedItemReachesTheStoreWithNothingLogged(): void
     {
         $store = new FakeCacheStore();
         $logger = new CollectingLogger();
         $host = $this->host($store, $logger);
-        $host->setMaxItemsToCache(1);
 
         $host->cacheObjects('users', ['ann'], ['user']);
         $host->cacheObjects('roles', ['admin'], ['user-role']);
         $host->onFinishWriteCache();
 
-        $skipped = $logger->messages('info');
-        $this->assertCount(1, $skipped);
-        $this->assertSame(['maphost-roles'], $skipped[0]['context']['skipped']);
+        $this->assertSame(['ann'], $store->read('maphost-users'));
+        $this->assertSame(['admin'], $store->read('maphost-roles'));
+        $this->assertSame([], $logger->messages('info'));
     }
 
     // ------------------------------------------------------------ contract

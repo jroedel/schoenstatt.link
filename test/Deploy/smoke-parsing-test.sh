@@ -30,18 +30,20 @@ trap 'rm -rf "$WORK"' EXIT
 
 awk '/^# >>> cache-status parsing/{f=1} f{print} /^# <<< cache-status parsing/{exit}' \
     "$SMOKE_SH" > "$WORK/parsing.sh"
-if ! grep -q '^oc_num() {' "$WORK/parsing.sh"; then
-    echo "FAIL: could not extract the cache-status parsing from $SMOKE_SH" >&2
-    echo "      (the >>> / <<< markers moved, or oc_num left the block)" >&2
-    exit 1
-fi
+for fn in oc_num retired_keys; do
+    if ! grep -q "^$fn() {" "$WORK/parsing.sh"; then
+        echo "FAIL: could not extract $fn from $SMOKE_SH" >&2
+        echo "      (the >>> / <<< markers moved, or the function left the block)" >&2
+        exit 1
+    fi
+done
 # shellcheck source=/dev/null
 source "$WORK/parsing.sh"
 
 # APCu first, then the nested opcache object — the real order. uptimeSeconds, hits
 # and misses appear in both, with different values.
 cat > "$WORK/body.json" <<'JSON'
-{"apcuEnabled":true,"totalBytes":268435336,"usedBytes":8590360,"percentUsed":3.3,"entries":26,"hits":1108,"misses":929,"expunges":0,"uptimeSeconds":77,"opcache":{"enabled":true,"memoryPercentUsed":24.3,"keysPercentUsed":12.9,"cachedScripts":1069,"maxCachedKeys":16229,"hits":69889,"misses":1215,"hitRatePercent":96.8,"oomRestarts":0,"hashRestarts":0,"internedPercentUsed":88.4,"internedBufferConfiguredMb":8,"uptimeSeconds":838,"ini":{"opcache.validate_timestamps":"1","opcache.revalidate_freq":"2"}}}
+{"apcuEnabled":true,"totalBytes":268435336,"usedBytes":8590360,"percentUsed":3.3,"entries":26,"hits":1108,"misses":929,"expunges":0,"uptimeSeconds":77,"sionModel":{"maxCachedItemSize":4194304,"retiredConfigKeys":[]},"opcache":{"enabled":true,"memoryPercentUsed":24.3,"keysPercentUsed":12.9,"cachedScripts":1069,"maxCachedKeys":16229,"hits":69889,"misses":1215,"hitRatePercent":96.8,"oomRestarts":0,"hashRestarts":0,"internedPercentUsed":88.4,"internedBufferConfiguredMb":8,"uptimeSeconds":838,"ini":{"opcache.validate_timestamps":"1","opcache.revalidate_freq":"2"}}}
 JSON
 
 FAILURES=0
@@ -96,6 +98,27 @@ is "an absent key reads empty" "$(oc_num noSuchKey "$WORK/body.json")" ""
 #    parser must not invent a number from the APCu half if the guard is ever moved.
 printf '%s\n' '{"apcuEnabled":true,"uptimeSeconds":77,"expunges":0}' > "$WORK/apcu-only.json"
 is "no opcache object yields nothing, not the APCu value" "$(oc_num uptimeSeconds "$WORK/apcu-only.json")" ""
+
+# 9. The sionModel block. maxCachedItemSize must not be confused with OPcache's
+#    maxCachedKeys, which is a different key with a common prefix — a grep for
+#    "maxCached" would match both, and the two live in different objects.
+is "maxCachedItemSize is not confused with maxCachedKeys" \
+    "$(grep -o '"maxCachedItemSize":[0-9]*' "$WORK/body.json" | cut -d: -f2)" 4194304
+
+# 10. The expected reading: an empty list is empty output, so the caller's
+#     `[ -n "$RETIRED" ]` does not warn about nothing.
+is "an empty retired-key list reads empty" "$(retired_keys "$WORK/body.json")" ""
+
+# 11. A populated list. Bare names, space separated — the JSON quoting and commas
+#     must not reach the warning text a deploy prints.
+printf '%s\n' '{"apcuEnabled":true,"sionModel":{"maxCachedItemSize":4194304,"retiredConfigKeys":["max_items_to_cache","some_other_key"]},"opcache":{"enabled":true}}' > "$WORK/retired.json"
+is "a populated retired-key list is unquoted and space separated" \
+    "$(retired_keys "$WORK/retired.json")" "max_items_to_cache some_other_key"
+
+# 12. A server older than this script has no such field. That must read as "nothing
+#     to report", never as a warning, and never as a parse that swallows the whole
+#     document — which is what an unguarded sed substitution would do.
+is "an absent sionModel block reads empty" "$(retired_keys "$WORK/apcu-only.json")" ""
 
 echo
 if [ "$FAILURES" = 0 ]; then

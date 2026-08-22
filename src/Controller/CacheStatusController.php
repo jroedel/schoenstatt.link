@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Http\MaintenanceKey;
+use App\Laminas\ServiceBridge;
 use SionModel\Cache\CacheStatusPayload;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,9 +23,10 @@ use Symfony\Component\HttpFoundation\Request;
  * point of starting here.
  *
  * SionModelController::cacheStatusAction() still answers the same URL under the
- * laminas front controller, which is what production runs today
- * (SYMFONY_KERNEL unset — see docs/strangler.md). Both therefore have to emit the
- * same document, and neither builds it: SionModel\Cache\CacheStatusPayload does.
+ * laminas front controller, which nothing serves today but which is one
+ * `SYMFONY_KERNEL=0` away from serving everything (see docs/strangler.md). Both
+ * therefore have to emit the same document, and neither builds it:
+ * SionModel\Cache\CacheStatusPayload does.
  *
  * The locale prefix is accepted and ignored. It exists because every caller uses
  * the /en/… form, which under laminas is SlmLocale\Strategy\UriPathStrategy
@@ -34,8 +36,13 @@ use Symfony\Component\HttpFoundation\Request;
  */
 final class CacheStatusController
 {
-    public function __construct(private readonly MaintenanceKey $key)
-    {
+    /** The laminas service holding the merged `sion_model` config block. */
+    private const CONFIG_SERVICE = 'SionModel\\Config';
+
+    public function __construct(
+        private readonly MaintenanceKey $key,
+        private readonly ServiceBridge $laminas,
+    ) {
     }
 
     public function __invoke(Request $request): JsonResponse
@@ -45,7 +52,13 @@ final class CacheStatusController
             return $refusal;
         }
 
-        return new JsonResponse(CacheStatusPayload::build(), 200, [
+        //Free by this point: refuse() reads the maintenance keys out of the same
+        //config service, so the laminas ServiceManager is already built. A request
+        //that gets refused never reaches this line and never pays for it either.
+        /** @var array<string, mixed> $sionModelConfig */
+        $sionModelConfig = $this->laminas->get(self::CONFIG_SERVICE);
+
+        return new JsonResponse(CacheStatusPayload::build($sionModelConfig), 200, [
             //the laminas JsonStrategy sends a charset on this response, so this
             //one does too: the two front controllers should be indistinguishable
             //to a caller, headers included

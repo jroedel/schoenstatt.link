@@ -432,6 +432,22 @@ class AuthSmokeTest extends SmokeTestCase
      *
      * Asserted through a guarded page rather than the navbar, so the claim is about
      * authorization and not about which links are rendered.
+     *
+     * **The box is unticked on the real form, not with an UPDATE**, and that is the
+     * whole difference between this test passing and this test meaning something.
+     * `SessionUser::read()` re-reads the row through `UserTable::findById()`, which
+     * serves out of the `all-linked-users` cache when it is warm — so a `state`
+     * change written straight to the database is invisible until the cache expires,
+     * and an assertion built on one is really asserting that the cache happens to be
+     * cold. It was, until `max_items_to_cache` was retired on 2026-08-22 and that
+     * item started being written on every cold pass instead of losing its slot to a
+     * larger key. Going through the form exercises the invalidation too, which is the
+     * half an administrator's revocation actually depends on.
+     *
+     * The out-of-band case is still real, and is a fact about operations rather than
+     * a bug: an UPDATE run by hand, or by a migration, leaves an open session valid
+     * until something writes to a user through the application. `database/db8.6.sql`
+     * was exactly that kind of change.
      */
     public function testDeactivationEndsASessionThatIsAlreadyOpen(): void
     {
@@ -439,20 +455,48 @@ class AuthSmokeTest extends SmokeTestCase
         //tearDown purges on, so this test needs no address of its own.
         $jar = $this->newCookieJar();
 
-        $this->signIn($jar, ['administrator'], '/en/user/login');
+        $email = $this->signIn($jar, ['administrator'], '/en/user/login');
         $this->assertSame(200, $this->get('/en/users', false, $jar)['status'], 'the session should be admin');
 
-        //signIn() invents its own address; find the account it just made
-        $row = $this->pdo()->prepare(
-            'SELECT user_id FROM user WHERE email LIKE :prefix ORDER BY user_id DESC LIMIT 1'
+        $account = $this->pdo()->prepare(
+            'SELECT user_id, username, display_name FROM user WHERE email = :email'
         );
-        $row->execute(['prefix' => $this->emailPrefix() . '%']);
-        $userId = $row->fetchColumn();
-        $this->assertNotFalse($userId, 'signIn() should have created an account');
+        $account->execute(['email' => $email]);
+        $row = $account->fetch(PDO::FETCH_ASSOC);
+        $this->assertIsArray($row, 'signIn() should have created an account');
+        $userId = (int) $row['user_id'];
 
-        $this->pdo()
-            ->prepare('UPDATE user SET state = 0 WHERE user_id = :id')
-            ->execute(['id' => $userId]);
+        $roles = $this->pdo()->prepare('SELECT role_id FROM user_role_linker WHERE user_id = :id');
+        $roles->execute(['id' => $userId]);
+
+        $path = sprintf('/en/users/%d/edit', $userId);
+        $form = $this->get($path, false, $jar);
+        $this->assertSame(200, $form['status'], 'an administrator should reach their own edit form');
+
+        $saved = $this->request('POST', $path, [], false, $jar, [
+            'userId'            => (string) $userId,
+            'username'          => (string) $row['username'],
+            'email'             => $email,
+            'displayName'       => (string) $row['display_name'],
+            //every role the account already has, posted back: the form replaces the
+            //set rather than merging into it
+            'rolesList'         => array_map('strval', $roles->fetchAll(PDO::FETCH_COLUMN)),
+            'personId'          => '',
+            'isMultiPersonUser' => '0',
+            'emailVerified'     => '1',
+            //the one field under test — an unticked Active box
+            'active'            => '0',
+            'security'          => $this->extractCsrfToken($form['body']),
+            'submit'            => 'Submit',
+        ]);
+        $this->assertSame(302, $saved['status'], 'the save should succeed for the request that made it');
+        $this->assertSame(
+            '0',
+            (string) $this->pdo()
+                ->query('SELECT state FROM user WHERE user_id = ' . $userId)
+                ->fetchColumn(),
+            'precondition: the form wrote state = 0'
+        );
 
         $refused = $this->get('/en/users', false, $jar);
         $this->assertSame(302, $refused['status'], 'the open session must stop being an identity');

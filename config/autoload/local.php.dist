@@ -80,7 +80,6 @@ return [
         'display_exceptions'       => false,
     ],
     'sion_model' => [
-        'max_items_to_cache' => 1,
         'api_keys' => ['xxxxxxxxxxxxxxxxxxxxxx'],
     ],
     'books' => [
