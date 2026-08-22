@@ -1,5 +1,12 @@
 # Caching
 
+> **Before trusting any of this as a description of what happens at runtime, read
+> [caching-performance.md](caching-performance.md).** Measured 2026-08-22: under the
+> Symfony front controller — the one production runs — the persistent cache writes no
+> data items at all, because its only write path is an `MvcEvent::FINISH` listener that
+> a Symfony-served route never reaches. Everything below describes a mechanism that is
+> correct and currently unreachable on most of the site.
+
 The app caches query results in APCu through `SionModel\Db\Model\SionCacheTrait`
 (mixed into `SionTable`, so every `*Table` model has it, plus JTranslate's
 `TranslationsTable`). This document covers the two things about that layer that
@@ -265,11 +272,17 @@ silence a production warning rather than fail anything.
 - The navigation cache keys written in `onBootstrap()` are never invalidated
   when the underlying data changes; `removeDependentCacheItems()` only clears
   keys registered through `SionCacheTrait`. They go stale until the TTL.
-- `max_items_to_cache` is **2**, so a request touching four cached queries
-  persists the first two and re-queries the rest on every request forever. That
-  is now logged rather than silent ("Cache writes skipped: max_items_to_cache
-  reached"), which makes it measurable; whether 2 is still the right number, on
-  a 256 MB segment rather than the 32 MB it was chosen for, is an open question.
+- `max_items_to_cache` is **1**, not 2 — 2 is the class default in
+  `SionCacheTrait` and `config/autoload/local.php` overrides it. (This line said
+  2 until 2026-08-22, when it was measured.) So a request touching four cached
+  queries persists **one** and re-queries the rest on every request forever.
+  That is logged rather than silent ("Cache writes skipped: max_items_to_cache
+  reached") — and the current capsule log holds **24,945** such lines, so the
+  cap is not a theoretical bound, it is the normal case. Whether 1 is still the
+  right number, on a 256 MB segment rather than the 32 MB it was chosen for, is
+  an open question with a strong answer. Production's value is **unverified**:
+  `local.php` is gitignored, and the only evidence is the `.dist` and the
+  capsule, both of which say 1. See [caching-performance.md](caching-performance.md).
 - `JUser\Cache` (1 day) and `SionModel\PersistentCache` (5 days) have different
   TTLs for no recorded reason. Nothing depends on the difference now that the
   map is refreshed with the data, but two numbers where one would do is one
