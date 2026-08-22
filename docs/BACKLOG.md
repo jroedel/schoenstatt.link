@@ -1845,6 +1845,18 @@ Background and measurements: [caching.md](caching.md).
   `getPublication()` went 54–71 ms → 5.0–5.7 ms. See caching-performance.md
   § Finding 9. The references went in the same pass, along with a third query
   nobody read.
+- [ ] **A migration's `@verify` is only ever executed for real by a deploy.**
+  `db8.7` shipped with one written backwards — it listed the table's indexes
+  instead of the indexes still missing, so it returned three rows on success and
+  aborted the 2026-08-22 deploy *after* the migration had run correctly. The
+  statements had been rehearsed against the capsule; the header had not, because
+  the rehearsal piped the file into `mysql` rather than going through
+  `tools/migrate.sh`. Nothing static can tell a good `@verify` from a bad one,
+  but `plan`/`--dry-run` could execute it and print its current row count, which
+  would have shown `1` before an operation whose whole point is to reach `0` —
+  visible on any machine, before production. Worth considering alongside a
+  `ci-local` check that every migration recorded in the capsule ledger still
+  verifies clean.
 - [ ] **`searchPublications()` loses its `DataSource IS NULL` filter on every
   `orCombination` query.** The query predicates are added to a flat `Where` with
   OR, then `IsNull(DataSource)` is added to the *same* set with AND, and
