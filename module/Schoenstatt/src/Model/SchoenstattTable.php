@@ -390,7 +390,10 @@ class SchoenstattTable extends SionTable implements
     {
         //don't cache, too heavy
         $objects = $this->getObjects('association');
-        $this->linkAssociations($objects);
+        //`true`: this *is* every association, so linkAssociations() needs no database
+        //round trip to find parents and children. See its docblock — that round trip was
+        //the whole cost of the slowest page on the site.
+        $this->linkAssociations($objects, true);
         return $objects;
     }
 
@@ -412,29 +415,52 @@ class SchoenstattTable extends SionTable implements
         return $entities;
     }
 
-    protected function linkAssociations(array &$objects)
+    /**
+     * Attach each object's parent and its children.
+     *
+     * @param array $objects by reference; the linked rows are written back into it
+     * @param bool $objectsAreEveryAssociation whether `$objects` is the complete table,
+     *        in which case the related rows are already in hand and the database is not
+     *        asked for them again. Only `getAssociations()` may pass true.
+     *
+     * ## Why the flag exists
+     *
+     * A parent or a child can lie outside `$objects` — `searchAssociations()` filters, and
+     * a match's parent need not match — so the related rows were fetched with one
+     * `orCombination` query over `parentId IN (…) OR associationId IN (…)`: children and
+     * parents in a single round trip rather than two per record. A batching optimisation,
+     * and a good one while `$objects` came from the database anyway.
+     *
+     * It stopped being one when the whole table started coming out of APCu.
+     * `getAssociation()` — **one** record — goes through `getAssociations()`, which reads
+     * all 498 rows from cache in 10 ms and then re-fetched 431 of them. Measured
+     * in-request 2026-08-22: the query took **276–333 ms**, against 1.2 ms and 0.25 ms for
+     * the two loops below that consume it, and it was the whole of the shrine page's
+     * 259 ms of non-database time. Note it is mostly *not* database time — the page's
+     * total SQL is 61 ms. The rest is building a ~900-term OR predicate and re-hydrating
+     * 431 rows through the entity processor.
+     *
+     * With the flag: `getAssociation()` goes 306 ms → 22 ms, peak memory 41 MB → 25 MB.
+     *
+     * The saving is legal because every row that query returns is already in `$objects`
+     * and identical to the copy there — measured, and pinned by
+     * `test/Integration/AssociationLinkingTest`, which also compares the two paths'
+     * linked output record by record. That is a property of the entity spec rather than
+     * of this method, which is why the test asserts it directly: a field populated on one
+     * read path and not the other would break it in silence.
+     *
+     * `$related` stays a **separate array of unlinked rows** even when it is a copy of
+     * `$objects`, and that is load-bearing rather than wasteful. The links below are
+     * references into it, so linking `$objects` to itself would make the graph cyclic —
+     * a parent whose children have parents — where today it is two levels deep and
+     * finite. Templates, `var_export` and anything that walks the structure would all
+     * change behaviour.
+     */
+    protected function linkAssociations(array &$objects, bool $objectsAreEveryAssociation = false)
     {
-        $query = ['parentId' => array_keys($objects)];
-
-        //collect list of "interesting" associationIds
-        $interestingIds = []; //starting point
-        foreach ($objects as $entityId => $object) {
-            if (isset($object['parentId']) &&
-                $object['parentId'] != $entityId
-            ) {
-                $interestingIds[] = $object['parentId'];
-            }
-        }
-        if (! empty($interestingIds)) {
-            $query['associationId'] = array_unique($interestingIds);
-        }
-
-        //search for all these publicationIds
-        $results = $this->queryObjects(
-            'association',
-            $query,
-            ['orCombination' => true, 'noLink' => true]
-        );
+        $results = $objectsAreEveryAssociation
+            ? $objects
+            : $this->relatedAssociations($objects);
 
         //link parents of our objects
         foreach ($objects as $objectId => $object) {
@@ -453,6 +479,41 @@ class SchoenstattTable extends SionTable implements
         $this->connectEntityRolesAndAssignments('association', $objects);
 
         //no return, by ref
+    }
+
+    /**
+     * The parents and children of `$objects` that `$objects` may not contain, from the
+     * database.
+     *
+     * Extracted from {@see linkAssociations()} unchanged — same predicate, same options —
+     * so that the path which no longer needs it reads as skipping a query rather than as
+     * doing something different.
+     *
+     * @param array $objects
+     * @return array
+     */
+    protected function relatedAssociations(array $objects)
+    {
+        $query = ['parentId' => array_keys($objects)];
+
+        //collect list of "interesting" associationIds
+        $interestingIds = []; //starting point
+        foreach ($objects as $entityId => $object) {
+            if (isset($object['parentId']) &&
+                $object['parentId'] != $entityId
+            ) {
+                $interestingIds[] = $object['parentId'];
+            }
+        }
+        if (! empty($interestingIds)) {
+            $query['associationId'] = array_unique($interestingIds);
+        }
+
+        return $this->queryObjects(
+            'association',
+            $query,
+            ['orCombination' => true, 'noLink' => true]
+        );
     }
 
     protected function sortAssociationRowData(&$results)
