@@ -128,9 +128,6 @@ final class Access implements AccessInterface
             }
         }
 
-        //the per-user role JUser\Provider\Role\UserIdRoles contributes
-        $roles[] = 'user_' . (int) $user->getId();
-
         return $roles;
     }
 

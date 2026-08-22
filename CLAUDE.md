@@ -283,6 +283,15 @@ suites run from the superproject working tree.
 - Each module follows the ZF convention: `config/module.config.php`, `src/` (`Controller/`, `Form/`, `Model/`, `Service/`, `Validator/`, `Filter/`, `View/`), and `view/` for `.phtml` templates.
 - Enabled modules are listed in `config/modules.config.php`; environment-specific config lives in `config/autoload/` (`*.global.php` is committed, `*.local.php` is machine-specific and created from the `.dist` files by `config.sh`).
 - Authorization is BjyAuthorize + zend-permissions-acl (`config/autoload/acl.global.php`).
+  **The assembled ACL is cached in APCu since 2026-08-22** (`bjyauthorize:acl`, 300s TTL),
+  which took the layer from 6.0 to 3.2 ms per request. Two things follow. A missed
+  invalidation is a **500**, not a stale page — `Acl::addRole()` throws on a parent role it
+  does not know and the identity's roles are added as exactly that — so invalidation hangs
+  off `SionCacheTrait::removeDependentCacheItems()` via `App\Acl\AclCacheInvalidator`, on
+  `user-role`, `library` and `text` only. And the 294 `user_<id>` roles are **gone**: nothing
+  ever wrote a rule naming one, and they made the ACL depend on the `user` table, which an
+  account joins on every first-time sign-in. Read [docs/caching.md](docs/caching.md) §
+  The other APCu tenant before touching any of it.
   **Authentication is JUser alone, and it is passwordless** — ZfcUser is not installed and
   has not been for some time; the surviving `zfcuser/*` route names and `ZfcUser*` class
   names are names, kept because renaming a route breaks every `url()` call and guard entry

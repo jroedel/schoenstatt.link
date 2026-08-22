@@ -10,14 +10,18 @@ stores no data at all.** Not "a low hit rate" — zero. Across 49 measured reque
 348 reads of data keys and **0 hits**, and **0 writes** of any data key. The only thing
 written to APCu was the cache's own bookkeeping.
 
-> **Findings 1 and 4 were fixed the same day.** Finding 1 —
+> **Findings 1, 2 and 4 were all fixed the same day.** Finding 1 —
 > `SionModel\Cache\CacheFlushQueue` plus `App\Http\SionCacheFlushListener` on
-> `kernel.terminate`. Finding 4 — `max_items_to_cache` retired outright. The measurements in
-> this document are kept as the **before** picture, because they are the evidence for the
-> three findings that are still open and because the shape of both bugs is worth not
-> forgetting. Every "today" below means 2026-08-22 before the fixes; the after-numbers are
-> in [Finding 1 — fixed](#finding-1--fixed) and [Finding 4 — fixed](#finding-4--fixed),
-> and Finding 1's move Findings 2 and 3 as well.
+> `kernel.terminate`. Finding 4 — `max_items_to_cache` retired outright. Finding 2 — the 294
+> unused per-user ACL roles deleted and the assembled ACL cached in APCu. The measurements in
+> this document are kept as the **before** picture, because they are the evidence for what is
+> still open and because the shape of each bug is worth not forgetting. Every "today" below
+> means 2026-08-22 before the fixes; the after-numbers are in each fixed finding's section.
+>
+> Finding 2 is worth reading even if the rest is not, because the finding as first written was
+> **wrong about where the cost was** — it named six database statements that turned out to
+> total 0.9 ms, while the layer cost 6 ms. A harness that counts statements cannot see a cost
+> that is not a statement.
 
 ---
 
@@ -162,7 +166,12 @@ entries" is exactly the check that would have passed for eleven days.
 
 ---
 
-## Finding 2 — six full-table statements run on every page, whatever the page is
+## Finding 2 — fixed
+
+*Was: six full-table statements run on every page, whatever the page is.* Kept as written,
+then what the statements turned out to be worth.
+
+### What was found
 
 Every single measured request, including the near-static `/en/developers`, executed these
 exactly once:
@@ -182,9 +191,78 @@ user-specific content.
 
 **Four of the six are cached as of the Finding 1 fix** — the `user` row-set, `lib_libraries`,
 `lib_collections` and the `texts` ACL resources all went through `SionTable` and were being
-queued and discarded. What survives on every one of 48 requests is the pair BjyAuthorize
-issues directly, `SELECT user_id FROM user` and `SELECT user_role.*`, which never touch
-SionCacheTrait; caching those is Finding 2's remaining work and the reason it stays open.
+queued and discarded. What survived was the pair BjyAuthorize issues directly,
+`SELECT user_id FROM user` and `SELECT user_role.*`, which never touch SionCacheTrait.
+
+### The statements were never the cost
+
+This finding called the authorization layer "the largest cacheable target on the site" and
+pointed at its queries. The queries are **0.9 ms combined**, measured. Naming them as the
+target was the mistake: the harness counts statements, so a per-request cost that is not a
+statement is invisible to it, and six of them looked like the whole story.
+
+The layer costs **~6.0 ms on every request**, anonymous ones included — measured in the web
+SAPI, in-request, with a delegator around `Authorize`, on 2026-08-22. On `/en/developers`,
+whose entire render is 12 ms, that is half the page.
+
+Do not measure this from the CLI. A CLI run has its own APCu segment, so the ACL's dynamic
+providers miss on everything they read: the same measurement reports 58 ms and blames
+`LibraryTable::getResources()`, which in a real request costs 0.13 ms because the row-set it
+reads is cached. The first version of this investigation did exactly that.
+
+| stage | ms |
+|---|---|
+| `getRoles UserIdRoles` (294 per-user roles) | 1.5 |
+| constructing the resource providers | 2.2 |
+| `getRoles LaminasDb` (45 real roles) | 0.35 |
+| `getResources` LibraryTable + EventTextTable | 0.14 |
+| the rest of `loadAcl()`, plus the identity | 2.2 |
+
+### The fix
+
+Two changes, and the first is a prerequisite rather than an optimisation.
+
+**The 294 `user_<id>` roles are gone.** `JUser\Bridge\Laminas\UserIdRoles` registered one ACL
+role per account so that a rule could name an individual, and in the life of this database not
+one ever did: no rule in any config named one, `user_role` held no such row, and the two
+columns that store a role name by hand (`lib_libraries.ViewRole` / `.CheckoutBooksRole`) never
+held one either. Their real cost was not the 1.5 ms — it was that the ACL then depended on the
+`user` table, and an account is created on **every first-time sign-in**, which makes the
+assembled ACL uncacheable. `ZfcUserZendDbPlusSelfAsRole` stopped returning `user_<id>` in the
+same commit, because what it returns is handed to `Acl::addRole()` as parent roles and that
+throws on a parent the ACL does not know.
+
+**The assembled ACL is cached in APCu**, which BjyAuthorize has always supported —
+`cache_enabled` was explicitly `false` here because the package's default adapter is `memory`,
+which caches nothing across requests. One document serves every visitor: `Authorize::load()`
+stores it *before* adding the identity's roles.
+
+| | before | after |
+|---|---|---|
+| authorization layer, per request | **6.0 ms** | **3.2 ms** |
+| serialized ACL | 127,565 B | 80,560 B |
+| `unserialize` on a hit | — | 0.37 ms |
+
+Invalidation is `App\Acl\AclCacheInvalidator`, driven from
+`SionCacheTrait::removeDependentCacheItems()` through SionModel's new
+`EntityChangeListeners` — the one point every write in every module passes through, rather
+than the four write paths that exist today across two repositories. That is correctness, not
+tidiness: a missed role invalidation is a **500 on every request** by whoever was granted the
+role, because of the `addRole()` throw above. The 300-second TTL is a backstop, not the plan.
+Guarded end-to-end by
+`JUserAdminSmokeTest::testAnAccountGrantedABrandNewRoleStillGetsAPage`, which was confirmed to
+fail — with a real 500 — when `user-role` is taken out of the invalidator's list.
+
+### What is left, and it is bigger than what was just saved
+
+Of the remaining 3.2 ms, **1.9 ms is `$container->get(JUser\Model\UserTable::class)`**. The
+cache hit itself is 0.4 ms and the identity provider 0.2 ms; the rest is
+`AuthenticationServiceFactory` eagerly building a full SionTable — DB adapter, entity spec,
+cache, logger, user directory — so that `SessionUser` can hold it in case the session turns
+out to contain an identity. On an anonymous request it never reads it: `getIdentityRoles()`
+returns the default role in **0.01 ms** without touching the table. Making that dependency
+lazy is a JUser constructor change on the authentication path and wants its own review; it is
+in [BACKLOG.md](BACKLOG.md).
 
 This was the largest cacheable target on the site and none of it was cached under the live
 front controller. It is also the one finding the capsule's data skew touches: the first statement
@@ -366,9 +444,10 @@ In rough order of value per unit of risk:
 2. ~~**Raise or remove `max_items_to_cache`.**~~ **Done 2026-08-22** — removed, see
    [Finding 4 — fixed](#finding-4--fixed). Production's value never was verified and no
    longer needs to be; `/sm/cache-status` reports whether a server still sets it.
-3. **Cache the authorization layer.** Six full-table statements per request, identical for
-   every anonymous visitor, is the biggest single win available and does not depend on
-   SionCacheTrait at all.
+3. ~~**Cache the authorization layer.**~~ **Done 2026-08-22** — see
+   [Finding 2 — fixed](#finding-2--fixed). 6.0 → 3.2 ms per request. Note the premise of this
+   line was wrong: the six statements cost 0.9 ms, and the saving was in assembly, not in the
+   database. What remains is 1.9 ms of eagerly-built `UserTable` on anonymous requests.
 4. **Then re-measure before touching SionCacheTrait's ~120 inline `fetchCachedEntityObjects()`
    call sites.** Finding 3 says the entity cache is worth 14% of query time; that number will
    change once 1–3 land, and the decision about whether to replace the trait with a decorator
