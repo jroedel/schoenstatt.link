@@ -322,20 +322,45 @@ class SchoenstattTable extends SionTable implements
     }
 
     /**
-     * Gets a simple key => value array of the role titles
-     * Must return even inactive role titles in case someone tries to edit an inactive one
-     * @param TranslatorInterface $translator
+     * A simple key => value array of the distinct role titles, in the database's order.
+     *
+     * Must return even inactive role titles in case someone tries to edit an inactive one,
+     * which is why it reads the table rather than the active-role list.
+     *
+     * **Cached since 2026-08-23.** It was the most frequent non-primary-key query against
+     * any of the eight tables that still have only a primary key — 20 executions per
+     * 1,296 requests in a general-log sweep, each one a full scan of 1,471 rows to return
+     * 39 strings — because it alone among its neighbours here never cached. Two form
+     * factories build it (`RoleFormFactory`, `AdvancedSearchFormFactory`), so it runs on
+     * every render of the role form and the advanced search.
+     *
+     * Deriving it from the already-cached `getUnlinkedRoles()` instead, which holds every
+     * role, was the first plan and is wrong: that list is ordered by association, so
+     * deriving means re-sorting in PHP, and PHP cannot reproduce the ordering this returns
+     * today. `utf8mb4_unicode_520_ci` is case- and accent-insensitive — it puts "Diocesan
+     * coordinator" before "Diocesan Priests' Institute", and "Secretaría Nacional" between
+     * "Schoenstatt Fathers" and "Sisters of Mary" — and a byte-wise `ksort()` agrees with
+     * neither. The select options would silently reorder. One cached item is the whole
+     * saving anyway.
+     *
+     * No locale in the key: these are the raw stored titles. Translation happens in the
+     * form, on the way out.
+     *
      * @return mixed[]
      */
     public function getRoleTitleValueOptions()
     {
+        $cacheKey = 'role-title-value-options';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
         $sql = "SELECT DISTINCT `RoleTitle` FROM `sch_roles` ORDER BY `RoleTitle`";
         $results = $this->fetchSome(null, $sql, null);
         $valueOptions = [];
         foreach ($results as $row) {
             $valueOptions[$row['RoleTitle']] = $row['RoleTitle'];
         }
-//         asort($valueOptions);
+        $this->cacheEntityObjects($cacheKey, $valueOptions, ['role']);
         return $valueOptions;
     }
 
@@ -2870,60 +2895,74 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`, a.`Assignm
     }
 
     /**
-     * Get the list of main roles of shrines.
-     * A list of assignments are returned, but keyed by the associationId.
-     * This provides compatibility with the assignments-table-partial, while giving the
-     * ability to print the list of all active national movements.
-     * @return mixed[]
+     * Every shrine, ordered for display: by region, then country, then name in the
+     * requested language.
+     * @return mixed[] a list (the association ids are lost to array_multisort's
+     *      re-indexing of numeric keys, which is long-standing behaviour here)
      */
     public function getShrines()
     {
-        $cacheKey = 'shrines';
-        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
-            return $cache;
-        }
-        $objects = $this->queryObjects('association', ['kind' => 'sch-shrine']);
-        $this->linkAssociations($objects);
-
-        $locale = $this->getLocale();
-        $sort = [];
-        foreach ($objects as $k => $v) {
-            $sort['countryRegion'][$k] = $v['countryRegion'];
-            $sort['country'][$k] = $v['country'];
-            $sort['nameByLocale'][$k] = $v['nameByLocale'][$locale];
-        }
-        array_multisort(
-            $sort['countryRegion'],
-            SORT_ASC,
-            $sort['country'],
-            SORT_ASC,
-            $sort['nameByLocale'],
-            SORT_ASC,
-            $objects
-        );
-
-        $this->cacheEntityObjects($cacheKey, $objects, ['assignment', 'association']);
-        return $objects;
+        return $this->shrinesOfKind('sch-shrine');
     }
 
     /**
-     * Get the list of main roles of shrines.
-     * A list of assignments are returned, but keyed by the associationId.
-     * This provides compatibility with the assignments-table-partial, while giving the
-     * ability to print the list of all active national movements.
+     * Every wayside shrine, ordered the same way as getShrines().
      * @return mixed[]
      */
     public function getWaysideShrines()
     {
-        $objects = $this->queryObjects('association', ['kind' => 'sch-wayside-shrine']);
-        $this->linkAssociations($objects);
+        return $this->shrinesOfKind('sch-wayside-shrine');
+    }
+
+    /**
+     * The shared body of getShrines() and getWaysideShrines(), which were a verbatim
+     * copy of each other apart from the kind — and apart from the cache, which is the
+     * whole reason this exists as one method now.
+     *
+     * **`getWaysideShrines()` had no cache at all.** Its twin opened with
+     * `fetchCachedEntityObjects()` and closed with `cacheEntityObjects()`; this one had
+     * neither, so `/wayside-shrines` re-ran the `kind` query, the `Parent IN (...)`
+     * query inside `linkAssociations()` and the whole row build on every single
+     * request — measured at **30 ms** on the capsule. It never looked slow because the
+     * page is 43 rows against the shrine page's 207, so it renders faster than the
+     * cached page next to it while doing all the work the cached page skips. Those two
+     * queries were also the entire population of non-key predicates against
+     * `sch_associations` in a 1,296-request warm sweep: 10 of 10 came from here.
+     *
+     * **The cache key deliberately carries no locale, and the sort deliberately runs
+     * outside it.** The rows are locale-neutral — `processAssociationRow()` builds a
+     * per-locale *map* for every translated value rather than resolving one — so a
+     * single cached item is correct for all five languages. Only the order is
+     * per-locale, because the third sort key is the name in the requested language.
+     * Caching the *sorted* array under a locale-less key, which is what `getShrines()`
+     * used to do, meant every language got whichever order the language that warmed
+     * the cache produced. The alternative fix — five locale-suffixed keys — was
+     * rejected on size: the shrine item serializes to 2.3 MB, so it would have put
+     * 11.5 MB into a 256 MB segment to avoid a sort of 207 rows that costs
+     * microseconds.
+     *
+     * @return mixed[]
+     */
+    private function shrinesOfKind(string $kind): array
+    {
+        $cacheKey = 'shrines-of-kind-' . $kind;
+        $objects  = $this->fetchCachedEntityObjects($cacheKey);
+        if (null === $objects) {
+            $objects = $this->queryObjects('association', ['kind' => $kind]);
+            $this->linkAssociations($objects);
+            $this->cacheEntityObjects($cacheKey, $objects, ['assignment', 'association']);
+        }
 
         $locale = $this->getLocale();
         $sort = [];
         foreach ($objects as $k => $v) {
             $sort['countryRegion'][$k] = $v['countryRegion'];
             $sort['country'][$k] = $v['country'];
-            $sort['nameByLocale'][$k] = $v['nameByLocale'][$locale];
+            //A console process has no request locale and answers `en_US_POSIX`, which is
+            //not one of the five. Nothing on the site reaches here that way today; the
+            //coalesce is so that if something does, it sorts oddly instead of warning on
+            //every row.
+            $sort['nameByLocale'][$k] = $v['nameByLocale'][$locale] ?? null;
         }
         array_multisort(
             $sort['countryRegion'],
