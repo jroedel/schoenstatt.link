@@ -13,6 +13,7 @@ use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
 use SionModel\Service\ActingUserProviderInterface;
+use SionModel\Service\EntitiesService;
 use SionModel\Db\GeoPoint;
 use Laminas\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
@@ -110,8 +111,13 @@ class SchoenstattTable extends SionTable implements
      */
     protected $languageLocaleMap;
     /**
-     * Prototype to be cloned when specifying new problems
-     * @var EntityProblem $entityProblemPrototype
+     * Prototype to be cloned when specifying new problems.
+     *
+     * Injected since 2026-08-22. It used to be declared *and* populated by SionTable for
+     * every table in the application, though only this class and Books\Model\LibraryTable
+     * ever cloned it — so the parent reached ProblemService, and carried a
+     * `! $this instanceof ProblemTable` guard to avoid a cycle, on behalf of two subclasses.
+     * @var EntityProblem|null $entityProblemPrototype
      */
     protected $entityProblemPrototype;
 
@@ -161,28 +167,40 @@ class SchoenstattTable extends SionTable implements
      */
     protected $swValidators = [];
 
+    /**
+     * `AssociationKindsService` and the problem prototype arrive as arguments because this
+     * constructor no longer has a container to ask. `$entityProblemPrototype` is the one
+     * this class clones in reportProblems(); SionTable used to declare and populate it for
+     * every table, though only this class and Books\Model\LibraryTable ever read it.
+     *
+     * **The country-name translations are no longer loaded here**, and that is not a
+     * tidy-up. They were read from the persistent cache during construction, and the cache
+     * is attached by the factory *after* construction now — so the read would always miss
+     * and the write would go nowhere, silently, turning every build of this table into a
+     * full ICU pass over five locales. {@see self::getCountryNameTranslations()} loads them
+     * on first use instead, by which point the cache is attached. Constructing this table
+     * now does no I/O at all.
+     */
     public function __construct(
         AdapterInterface $dbAdapter,
-        $serviceLocator,
+        EntitiesService $entities,
+        array $sionModelConfig,
         ?ActingUserProviderInterface $actingUserProvider,
+        AssociationKindsService $kindsService,
+        ?EntityProblem $entityProblemPrototype,
         $config,
         $countriesInfo,
         $translator,
         TranslationsTable $translationsTable
     ) {
-        parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
+        parent::__construct($dbAdapter, $entities, $sionModelConfig, $actingUserProvider);
         $this->config = $config;
 
         $this->languageLocaleMap = $config['slm_locale']['aliases'];
 
-        /** @var AssociationKindsService $kindsService */
-        $kindsService = $serviceLocator->get(AssociationKindsService::class);
         $this->associationKinds = $kindsService->getAssociationKinds();
+        $this->entityProblemPrototype = $entityProblemPrototype;
 
-        if (! $this->countryNameTranslations = $this->fetchCachedEntityObjects('country-name-translations')) {
-            $this->countryNameTranslations = $countriesInfo->getCountryNameTranslations();
-            $this->cacheEntityObjects('country-name-translations', $this->countryNameTranslations);
-        }
         $this->countriesInfo = $countriesInfo;
         $this->addressFieldMap = [
             'street'    => 'streetAddress',
@@ -450,6 +468,29 @@ class SchoenstattTable extends SionTable implements
         return ($a['sort'] < $b['sort']) ? -1 : 1;
     }
 
+    /**
+     * Country names in every supported locale, cached, loaded on first use.
+     *
+     * This used to happen in the constructor, where the cache was guaranteed to be attached
+     * because SionTable resolved it from the container. It no longer is — the factory
+     * attaches it after construction — so a constructor-time read would miss every time and
+     * the accompanying write would be discarded, with nothing to show for it but a full ICU
+     * pass on every build of this table.
+     *
+     * @return array<string, array<string, string>>
+     */
+    protected function getCountryNameTranslations(): array
+    {
+        if (isset($this->countryNameTranslations)) {
+            return $this->countryNameTranslations;
+        }
+        if (! $this->countryNameTranslations = $this->fetchCachedEntityObjects('country-name-translations')) {
+            $this->countryNameTranslations = $this->countriesInfo->getCountryNameTranslations();
+            $this->cacheEntityObjects('country-name-translations', $this->countryNameTranslations);
+        }
+        return $this->countryNameTranslations;
+    }
+
     protected function processAssociationRow($row)
     {
         static $swFilter;
@@ -468,7 +509,10 @@ class SchoenstattTable extends SionTable implements
         if (! $this->translator instanceof TranslatorInterface) {
             throw new \Exception('No translator instance!');
         }
-        $areCountryTranslationsReady = isset($this->countryNameTranslations);
+        //Resolved once per row-processing call rather than per token: the getter is cheap
+        //after the first hit, but the flag below is read in a loop.
+        $countryNameTranslations     = $this->getCountryNameTranslations();
+        $areCountryTranslationsReady = [] !== $countryNameTranslations;
         $country = $row['Country'];
 
         //@todo region should be stored in the table for easier sorting
@@ -644,7 +688,7 @@ class SchoenstattTable extends SionTable implements
             && $associationKindSpec->shouldTranslateNameParameter
             ) || $isNameTranslateable;
 
-        if ($needsTranslation && ! isset($this->countryNameTranslations[$name])) {
+        if ($needsTranslation && ! isset($countryNameTranslations[$name])) {
             $needTranslationCount += count($this->languageLocaleMap);
             if (isset($phrasesToIdMap[$name])
                 && isset($translationPhraseTranslationCounts[$phrasesToIdMap[$name]])
@@ -661,10 +705,10 @@ class SchoenstattTable extends SionTable implements
                 $tempToken = $token;
                 if ($associationKindSpec->shouldTranslateNameParameter || $isNameTranslateable) {
                     if ($areCountryTranslationsReady &&
-                        isset($this->countryNameTranslations[$token]) &&
-                        isset($this->countryNameTranslations[$token][$localeMapped])
+                        isset($countryNameTranslations[$token]) &&
+                        isset($countryNameTranslations[$token][$localeMapped])
                     ) {
-                        $tempToken = $this->countryNameTranslations[$token][$localeMapped];
+                        $tempToken = $countryNameTranslations[$token][$localeMapped];
                     } else {
                         if (isset($phrasesToIdMap[$token]) && ! isset($associationTranslationPhrases[$token])) {
                             $associationTranslationPhrases[$phrasesToIdMap[$token]] = $token;
