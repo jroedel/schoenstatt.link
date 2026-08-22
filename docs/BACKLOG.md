@@ -1857,40 +1857,21 @@ Background and measurements: [caching.md](caching.md).
   visible on any machine, before production. Worth considering alongside a
   `ci-local` check that every migration recorded in the capsule ledger still
   verifies clean.
-- [ ] **`searchPublications()` loses its `DataSource IS NULL` filter on every
-  `orCombination` query.** The query predicates are added to a flat `Where` with
-  OR, then `IsNull(DataSource)` is added to the *same* set with AND, and
-  laminas-db renders the set flat — so `A OR B OR C AND DataSource IS NULL`
-  binds as `A OR B OR (C AND …)` and the filter applies only to the last term.
-  5,963 of 10,166 publications have a DataSource and are meant to be hidden
-  unless `includeDataSources` is set. The leak is real but small: 55 sub-editions
-  and 64 translations are DataSource rows, across 44 parent publications, and
-  they show up in "Other editions". `noSubEditions` has the same shape and is
-  unaffected only because no `orCombination` caller passes it. Fixing it means
-  nesting the OR group in its own `Predicate` — a behaviour change on 44 pages,
-  so it wants a decision rather than a quiet fix. Found 2026-08-22.
-- [x] ~~**`sch_visits` has no index but its primary key**~~ — the first result of
-  that survey, and much the worst: every entity show page on production
-  answered in **~5 seconds**, measured against the live site 2026-08-23, while
-  every other route was under 600 ms. `getVisitCounts()` runs two
-  `COUNT(*) … WHERE Entity = ? AND EntityId IN (?)` queries for the "Total
-  views" line, over a table `db7.1` recorded at ~7.1M rows / 1.3 GiB that grows
-  by a row on every entity page view. Both were full scans. Reproduced at
-  6.78M rows in the capsule: **9.3 s → 0.19 s**, index 209 MB.
-  `database/db8.8.sql`.
-- [ ] **`getVisitCounts()` runs two nearly identical queries.** Total and
-  past-month differ only by a `VisitedAt` predicate, so one
-  `SUM(VisitedAt >= …)` alongside the `COUNT(*)` would answer both in a single
-  scan of the same index range. Worth ~half the remaining cost (0.19 s → ~0.07 s
-  at 6.78M rows). SionModel change, so it needs a submodule PR.
-- [ ] **`sch_visits` grows without bound and holds hashed IPs and user agents.**
-  AUTO_INCREMENT is past 24 million and nothing prunes it. `db8.8` makes the
-  size stop mattering for page speed, which removes the pressure but not the
-  question: this is a data-retention decision, and the project already has a
-  rollover practice (`sch_visits_rollover_2023-11-02`,
-  `sch_visits_rollover_2025-07-17`). Note what a rollover costs now that the
-  index exists — it is no longer a performance fix, and it still resets every
-  "Total views" figure on the site.
+- [x] ~~**`searchPublications()` loses its `DataSource IS NULL` filter on every
+  `orCombination` query**~~ — fixed 2026-08-23 by building the `$query` terms into
+  their own nested `Predicate` and ANDing the whole group with the filters. Note
+  the footprint was **larger than first reported**: the original count of 44 pages
+  covered only the child direction (55 sub-editions and 64 translations leaving
+  "Other editions"). The parent direction was missed — **46 pages lose the
+  "Current publication" line and 164 lose "Translated from"**, because those
+  targets are data-source rows too.
+- [ ] **A data-source publication renders fine at its own URL but is now
+  unlinkable from anywhere.** The fix above is consistent with
+  `getEditionValueOptions()` and with search, which have always excluded the 5,963
+  data-source rows — but those pages do return 200, so what changed is navigation,
+  not visibility. If the "Translated from" links turn out to be wanted, the
+  smaller change is to keep the nesting and pass `includeDataSources => true` from
+  the two internal linking callers: the SQL stops lying, the links come back.
 - [ ] **Almost no table has an index beyond its primary key.** Counted
   2026-08-22 on the capsule: of the 19 tables with more than 200 rows, **nine
   have exactly one index** — `sch_visits` (12,540 rows), `sch_publications`
@@ -1903,27 +1884,20 @@ Background and measurements: [caching.md](caching.md).
   page the slowest route on the site. Worth a survey of the per-request
   non-key predicates before adding anything: an index that is never used is a
   write cost for nothing.
-- [ ] **The contact-persons table renders in a different order between
-  requests.** Two captures of the *same* code, five locales, put association 1's
-  three "Councilor" rows in different orders — caught as a false positive while
-  verifying an unrelated change with `tools/port-baseline.php`. PHP's sorts have
-  been stable since 8.0, so the instability is upstream: the assignments are
-  read by a `SELECT` with no deterministic `ORDER BY` and then cached, so the
-  order is fixed for a cache lifetime and changes when the cache is rebuilt.
-  Harmless in itself, but it costs real time whenever the baseline tool is used,
-  because it looks exactly like a regression. Found 2026-08-22.
-- [ ] **`PublicationsController::showAction()` merges sub-edition *rows* into a
-  list of ids.** Line ~202: `array_merge($publicationIds,
-  $entityObject['subEditions'])`, where `subEditions` is keyed by publication id
-  with whole rows as values — so the row arrays are appended as values and
-  handed to `searchBooks(['publicationId' => …])`. Twenty lines earlier the same
-  method does it correctly (`array_keys($entityObject['subEditions'])`), which is
-  what makes this look like a slip rather than an intent. Not fatal: publication
-  1976 (7 sub-editions) answers 200, so the malformed values are absorbed
-  somewhere rather than thrown. What has not been established is whether the
-  "available in these libraries" list is silently missing the sub-editions'
-  copies, which is what the line was written to add. Found 2026-08-22 while
-  auditing the reference assignments in the same block; unrelated to them.
+- [x] ~~**The contact-persons table renders in a different order between
+  requests**~~ — fixed 2026-08-23. `getUnlinkedAssignments()` sorted on four
+  columns that tie (76 rows in tied groups), `getUnlinkedRoles()` on the same four
+  (58), `getUnlinkedPersons()` on last+first name (1); all three now end their
+  `ORDER BY` with the primary key. Two `tools/port-baseline.php` captures of
+  identical code across a restart now agree, where they used to differ on ten
+  files.
+- [x] ~~**`PublicationsController::showAction()` merges sub-edition *rows* into a
+  list of ids**~~ — fixed 2026-08-23 in both the Symfony controller (the one that
+  dispatches) and its laminas twin. `searchBooks()` filters with `is_numeric()`,
+  so the row arrays were dropped in silence and the line had never once widened
+  the search it exists to widen. **142 library copies across 58 publications** now
+  appear in "Physical copy availability" — 142 rather than the 147 first counted,
+  because five belong to sub-editions the DataSource fix above now hides.
 - [ ] **A checkout embeds its book's whole library row.**
   `LibraryTable::getCheckouts()` attaches `$books[…]['library']` by PHP
   reference, and it is the one such reference left in the codebase after

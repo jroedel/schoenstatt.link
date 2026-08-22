@@ -308,6 +308,24 @@ ORDER BY `Publisher`";
 
         $combination = (isset($options['orCombination']) && $options['orCombination']) ? PredicateSet::OP_OR : PredicateSet::OP_AND;
 
+        /*
+         * The terms that come from $query go in here, joined by $combination; the filters
+         * below — inLanguage, noSubEditions, dataSource — stay on $where and are ANDed with
+         * the whole group.
+         *
+         * They all used to go into one flat set, and laminas-db renders a flat set flat. On
+         * an `orCombination` query that produced
+         *
+         *     A OR B OR C AND DataSource IS NULL
+         *
+         * which SQL binds as `A OR B OR (C AND …)`: the filter applied to the last term
+         * only. 5,963 of 10,166 publications carry a DataSource and are meant to be hidden
+         * unless `includeDataSources` is set, and 55 sub-editions and 64 translations across
+         * 44 parent publications were reaching "Other editions" through the gap. Nesting the
+         * group is what parenthesises it.
+         */
+        $queryWhere = new Predicate();
+
         //Prepare the search predicate
         if (isset($query['search'])) {
             $search = $query['search'];
@@ -320,7 +338,7 @@ ORDER BY `Publisher`";
                 new Like($fieldMap['publisher'], $searchLike),
                 new Like($fieldMap['description'], $searchLike),
             ], PredicateSet::OP_OR);
-            $where->addPredicate($searchClause);
+            $queryWhere->addPredicate($searchClause);
         }
 
         // Prepare collectionId predicate
@@ -343,7 +361,7 @@ ORDER BY `Publisher`";
                 $categoryIdClause = new Operator($fieldMap['categoryId'], Operator::OPERATOR_EQUAL_TO, $query['categoryId']);
             }
             if (isset($categoryIdClause)) {
-                $where->addPredicate($categoryIdClause, $combination);
+                $queryWhere->addPredicate($categoryIdClause, $combination);
             }
         }
 
@@ -367,7 +385,7 @@ ORDER BY `Publisher`";
                 $publicationIdClause = new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
             }
             if (isset($publicationIdClause)) {
-                $where->addPredicate($publicationIdClause, $combination);
+                $queryWhere->addPredicate($publicationIdClause, $combination);
             }
         }
 
@@ -391,7 +409,7 @@ ORDER BY `Publisher`";
                 $mainPublicationIdClause = new Operator($fieldMap['mainPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['mainPublicationId']);
             }
             if (isset($mainPublicationIdClause)) {
-                $where->addPredicate($mainPublicationIdClause, $combination);
+                $queryWhere->addPredicate($mainPublicationIdClause, $combination);
             }
         }
 
@@ -415,7 +433,7 @@ ORDER BY `Publisher`";
                 $translatedFromPublicationIdClause = new Operator($fieldMap['translatedFromPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['translatedFromPublicationId']);
             }
             if (isset($translatedFromPublicationIdClause)) {
-                $where->addPredicate($translatedFromPublicationIdClause, $combination);
+                $queryWhere->addPredicate($translatedFromPublicationIdClause, $combination);
             }
         }
 
@@ -424,7 +442,7 @@ ORDER BY `Publisher`";
             $search = $query['title'];
             $searchLike = sprintf("%%%s%%", $search);
             $titleClause = new Like($fieldMap['title'], $searchLike);
-            $where->addPredicate($titleClause, $combination);
+            $queryWhere->addPredicate($titleClause, $combination);
         }
 
         //Prepare author predicate
@@ -432,7 +450,7 @@ ORDER BY `Publisher`";
             $search = $query['authorsText'];
             $searchLike = sprintf("%%%s%%", $search);
             $authorClause = new Like($fieldMap['authorsText'], $searchLike);
-            $where->addPredicate($authorClause, $combination);
+            $queryWhere->addPredicate($authorClause, $combination);
         }
 
         //Prepare inLanguage predicate
@@ -458,6 +476,13 @@ ORDER BY `Publisher`";
         if (! isset($options['includeDataSources']) || ! $options['includeDataSources']) {
             $isFromDataSourceClause = new IsNull($fieldMap['dataSource']);
             $where->addPredicate($isFromDataSourceClause, PredicateSet::OP_AND);
+        }
+
+        //The query group is added last but binds first: one nested predicate, parenthesised,
+        //ANDed with the filters above. Skipped when empty so an unfiltered search does not
+        //emit a bare `()`.
+        if ($queryWhere->count() > 0) {
+            $where->addPredicate($queryWhere, PredicateSet::OP_AND);
         }
 
         //Set the where clause
