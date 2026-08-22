@@ -1935,7 +1935,15 @@ Background and measurements: [caching.md](caching.md).
   Full numbers and the general-log method, which is reusable and was not obvious, are in
   [caching-performance.md](caching-performance.md) § Finding 10 and § Surveying what the
   database is actually asked.
-- [ ] **`getRoleTitleValueOptions()` has no cache, and its data is already cached.**
+- [x] ~~**`getRoleTitleValueOptions()` has no cache, and its data is already cached.**~~
+  **Fixed 2026-08-23 (#172) — by caching the query, not by deriving it.** The derivation
+  this item proposed is wrong: `getUnlinkedRoles()` is ordered by association, so deriving
+  means re-sorting in PHP, and no PHP sort reproduces `utf8mb4_unicode_520_ci`. It is
+  case- and accent-insensitive — "Diocesan coordinator" before "Diocesan Priests'
+  Institute", "Secretaría Nacional" between "Schoenstatt Fathers" and "Sisters of Mary" —
+  and `ksort()` agrees with neither, so the select options would have silently reordered
+  for no gain. One cached item is the whole saving either way: 20 executions per 1,296
+  requests down to 1. The original finding follows.
   Found by the index survey above: it is the most frequent non-primary-key query on
   any of the eight tables — 20 executions per 1,296 requests — and it is a full scan
   of `sch_roles` (1,471 rows) that returns **39 distinct strings**. Its immediate
@@ -1945,7 +1953,19 @@ Background and measurements: [caching.md](caching.md).
   no query at all, the same way `getJavascriptRoleTitleValueOptions()` does five
   lines below.
 
-- [ ] **`/wayside-shrines` re-queries on every request; `/shrines` does not.**
+- [x] ~~**`/wayside-shrines` re-queries on every request; `/shrines` does not.**~~
+  **Fixed 2026-08-23 (#172), and it turned out to be two defects, not one.** The two
+  methods were verbatim copies apart from the kind, so they are now one shared private
+  method that caches the linked rows *unsorted* and sorts on the way out. `/wayside-shrines`
+  went from 0.15 s and ~7 statements per warm request to 0.034 s and none — but the more
+  interesting half is what caching the *sorted* array under a locale-less key had been
+  doing to `/shrines` all along: the third sort key is the shrine's name in the requested
+  language, so every language got whichever order the language that warmed the cache
+  produced. Two full port-baseline captures put it at **58 of 207 positions corrected for
+  German, 55 Spanish, 64 Italian, 43 Portuguese, 0 English** — English being what warmed
+  it. The clearest case: the **Urheiligtum** was sorted on the German page under its
+  English name "Original Shrine", at position 127 instead of 182. The original finding
+  follows.
   `getShrines()` opens with `fetchCachedEntityObjects()` and closes with
   `cacheEntityObjects()`. `getWaysideShrines()`, which is otherwise the same method
   with a different `kind`, has neither — so every request runs

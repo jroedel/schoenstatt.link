@@ -709,12 +709,17 @@ the index and the query costs what it always did, so an index added on the stren
 column appears in a WHERE clause" would have been pure write cost. The identical column at 9%
 selectivity is used. Selectivity, not appearance, decides.
 
-**Both indexes that would help are standing in for a missing cache.** `DISTINCT RoleTitle`
+**Both indexes that would help are standing in for a missing cache** — and both caches were
+added on 2026-08-23, which removed the queries rather than accelerating them.
+`DISTINCT RoleTitle`
 runs 20 times per 1,296 requests only because `getRoleTitleValueOptions()` does not cache —
 and its data already sits in the `unlinked-roles-<locale>` item, so the correct fix removes
 the query rather than accelerating it. `Parent IN` and `Kind` run only because `getWaysideShrines()`
 does not cache while its twin `getShrines()` does. Index those and you pay maintenance
-forever for queries that should not be issued at all.
+forever for queries that should not be issued at all. Fixing the caches took the three
+rows above to 1, 2 and 2 executions per 1,296 requests, and exposed a second defect on
+the way: `getShrines()` had been caching a *locale-sorted* array under a locale-less key,
+so four of the five languages had been reading the shrine index in English's order.
 
 **Row counts from `information_schema` are estimates.** The original item sized `texts` at
 1,925 rows from `TABLE_ROWS`; `COUNT(*)` says 2,757, 43% higher. Use `COUNT(*)` when a
