@@ -1840,6 +1840,36 @@ Background and measurements: [caching.md](caching.md).
   rather than parent / children), so the "already in hand" argument has to
   be made again from scratch. The right shape already exists next to it:
   `linkPublication()`, singular, resolves one record's relations directly.
+  It also still links with **PHP references**, which the association side
+  dropped on 2026-08-22 (§ Finding 6) — and it never runs a
+  `connectEntityRolesAndAssignments()`-style pass, so the roles half of that
+  bug does not apply here. Whoever takes the query should take the references
+  in the same pass.
+- [ ] **`PublicationsController::showAction()` merges sub-edition *rows* into a
+  list of ids.** Line ~202: `array_merge($publicationIds,
+  $entityObject['subEditions'])`, where `subEditions` is keyed by publication id
+  with whole rows as values — so the row arrays are appended as values and
+  handed to `searchBooks(['publicationId' => …])`. Twenty lines earlier the same
+  method does it correctly (`array_keys($entityObject['subEditions'])`), which is
+  what makes this look like a slip rather than an intent. Not fatal: publication
+  1976 (7 sub-editions) answers 200, so the malformed values are absorbed
+  somewhere rather than thrown. What has not been established is whether the
+  "available in these libraries" list is silently missing the sub-editions'
+  copies, which is what the line was written to add. Found 2026-08-22 while
+  auditing the reference assignments in the same block; unrelated to them.
+- [ ] **A checkout embeds its book's whole library row.**
+  `LibraryTable::getCheckouts()` attaches `$books[…]['library']` by PHP
+  reference, and it is the one such reference left in the codebase after
+  2026-08-22 because removing it makes things worse, not better: the array is
+  the `checkouts` cache item, `exceedsItemSizeBudget()` measures it with
+  `serialize()`, and a reference is stored once and back-referenced. Over
+  1,953 rows that is **4,605,258 bytes with it and 7,943,438 without**. The
+  item is already refused at the smaller figure, so a plain copy would
+  foreclose ever fitting. The fix is to stop embedding the row — a checkout
+  needs its book's `libraryId`, and the caller already has every library in
+  hand — after which the reference can go and the item may fit. Until then
+  nothing may write through the alias: every checkout in a library shares one
+  row.
 - [ ] **`JUser\Model\UserTable` is built on every anonymous request**, costing
   **1.9 ms** — measured in-request 2026-08-22, and now the largest single item
   in the authorization layer's remaining 3.2 ms.
