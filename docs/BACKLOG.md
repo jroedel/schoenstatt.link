@@ -1872,18 +1872,113 @@ Background and measurements: [caching.md](caching.md).
   not visibility. If the "Translated from" links turn out to be wanted, the
   smaller change is to keep the nesting and pass `includeDataSources => true` from
   the two internal linking callers: the SQL stops lying, the links come back.
-- [ ] **Almost no table has an index beyond its primary key.** Counted
-  2026-08-22 on the capsule: of the 19 tables with more than 200 rows, **nine
-  have exactly one index** — `sch_visits` (12,540 rows), `sch_publications`
-  (9,791, fixed by db8.7), `sch_dictionary_dictionary` (3,084), `texts` (1,925),
-  `sch_roles` (1,469), `events` (527), `sch_associations` (496), `sch_persons`
-  (325), `mus_compositions` (307), `sch_assignments` (266). The application
-  mostly survives this by caching whole tables, which is why it has never
-  looked like a database problem; it bites exactly where a table is too big to
-  cache and is queried by a non-key column, which is what made the publication
-  page the slowest route on the site. Worth a survey of the per-request
-  non-key predicates before adding anything: an index that is never used is a
-  write cost for nothing.
+- [x] ~~**Almost no table has an index beyond its primary key.**~~ **Surveyed
+  2026-08-23, and the recommendation is to add none of them.** Eight tables over
+  200 rows still have only a primary key: `sch_dictionary_dictionary` (3,084 rows),
+  `texts` (2,757), `sch_roles` (1,471), `events` (527), `sch_associations` (498),
+  `sch_persons` (325), `mus_compositions` (335) and `sch_assignments` (265). The two
+  that were on this list and mattered are gone — `sch_publications` (db8.7) and
+  `sch_visits` (db8.8).
+
+  Correction worth carrying: the counts in the original item came from
+  `information_schema.TABLE_ROWS`, which is an InnoDB **estimate**. `texts` is 2,757
+  rows, not 1,925 — 43% out. Take row counts with `COUNT(*)` when a decision rests
+  on them.
+
+  **Method**, because "worth a survey" is the part of this item that had to be
+  cashed. MariaDB's general log was turned on and `tools/port-baseline.php capture`
+  run over it twice — once warm, once from a flushed persistent cache — 1,296
+  requests each (108 paths x 6 locale forms x 2 identities, signed in and out).
+  Every statement naming one of the eight was normalized and counted, then each
+  distinct shape benchmarked at 200 iterations with and without a candidate index.
+  Reading the code could not have answered this: what decides the value of an index
+  here is *frequency*, and frequency is decided by which reads are cached.
+
+  **What the traffic does.** 215 statements touched the eight tables across the
+  1,296 cold requests. **150 of them are primary-key lookups.** The rest are
+  whole-table loads — which is precisely what an index cannot help — and four
+  non-key predicates:
+
+  | non-key predicate | table | per 1,296 req | no index | with index |
+  |---|---|---|---|---|
+  | `DISTINCT RoleTitle` | `sch_roles` | **20x** | 1.374 ms | 0.231 ms |
+  | `Parent IN (43 ids)` | `sch_associations` | 11x | 2.443 ms | 0.393 ms |
+  | `Kind = 'sch-wayside-shrine'` (43 of 498) | `sch_associations` | 10x | 2.588 ms | 1.035 ms |
+  | `Kind = 'sch-shrine'` (207 of 498) | `sch_associations` | cached | 4.571 ms | **4.445 ms** |
+  | `DISTINCT AclResourceId` | `texts` | 1x | 2.803 ms | 0.099 ms |
+
+  The `sch-shrine` row is why the survey was worth running rather than skipping to
+  the migration: at 42% selectivity the optimizer ignores the index and the query
+  costs what it always did. That is this item's own warning — an index that is never
+  used is a write cost for nothing — measured instead of asserted.
+
+  **Both indexes that would help are standing in for a missing cache**, which is why
+  none is proposed. `DISTINCT RoleTitle` runs 20 times per 1,296 requests only
+  because `getRoleTitleValueOptions()` does not cache and its data is already in a
+  cache; `Parent IN` and `Kind` run at all only because `getWaysideShrines()` does
+  not cache. Both are filed below. Fix those and the queries stop happening, at which
+  point an index would be a write cost for nothing in the most literal sense.
+
+  `texts (AclResourceId)` is the one defensible standalone index — 2,757 rows and
+  218 MB of body text scanned to return **two** distinct values, 28x faster indexed.
+  It is also the rarest of the five: the ACL caches it, so it runs on a cache miss
+  and not per request. Cheap, correct, and worth almost nothing; take it only if
+  something else is touching that table.
+
+  Two other things the sweep settled. **`sch_dictionary_dictionary` produced zero
+  statements** — no query, and no reference anywhere in `module/` or `src/` — which
+  confirms it belongs to the drop list under "Server maintenance pass" rather than to
+  any index discussion. And write volume rules nothing out on its own: the busiest of
+  these eight entities logs 797 changes a year (`text`), the quietest 4
+  (`assignment`), so index maintenance cost was never the deciding factor.
+
+  Full numbers and the general-log method, which is reusable and was not obvious, are in
+  [caching-performance.md](caching-performance.md) § Finding 10 and § Surveying what the
+  database is actually asked.
+- [ ] **`getRoleTitleValueOptions()` has no cache, and its data is already cached.**
+  Found by the index survey above: it is the most frequent non-primary-key query on
+  any of the eight tables — 20 executions per 1,296 requests — and it is a full scan
+  of `sch_roles` (1,471 rows) that returns **39 distinct strings**. Its immediate
+  neighbour in `SchoenstattTable` caches with `cacheEntityObjects()`; this one just
+  does not. The right fix is not to add a cache key either: `getUnlinkedRoles()`
+  already holds every role in APCu, so the value options can be derived from it with
+  no query at all, the same way `getJavascriptRoleTitleValueOptions()` does five
+  lines below.
+
+- [ ] **`/wayside-shrines` re-queries on every request; `/shrines` does not.**
+  `getShrines()` opens with `fetchCachedEntityObjects()` and closes with
+  `cacheEntityObjects()`. `getWaysideShrines()`, which is otherwise the same method
+  with a different `kind`, has neither — so every request runs
+  `queryObjects('association', ['kind' => 'sch-wayside-shrine'])` plus the
+  `Parent IN (43 ids)` query inside `linkAssociations()`, both of them full scans of
+  `sch_associations`. That is the entire population of `Kind` predicates observed in
+  a warm 1,296-request sweep: 10 out of 10 were wayside. The page is small (43 rows
+  against the shrine page's 207) so it does not read as slow — measured on production
+  it is 0.32-0.34 s against `/shrines` at 0.26-0.50 s — which is exactly why nobody
+  noticed the cache was absent.
+
+- [ ] **Every read of `texts` is hardwired to one `TextKind`, and the parameter that
+  looks like it lifts that cannot.** `EventTextTable::getSelectPrototype()` applies
+  `WHERE TextKind = 'jk-text'` to the `text` entity, so it is on the `/texts` index,
+  its search, and every single-record read — which is why the general log shows
+  `WHERE TextKind = ? AND TextId = ?` for what is a primary-key lookup. Two
+  consequences, neither of them visible from the surface:
+  - **4 of the 2,757 rows are unreachable** through any of it (3 `blog`, 1 `other`).
+    Either they are strays to clean up or the filter belongs somewhere narrower than
+    the prototype; the entity plainly means *the JK text corpus*, so the former is
+    likely, but nothing says so.
+  - **`getTextTagsOptions($kind)`'s parameter is inert at best and wrong at worst.**
+    It adds a *second* `TextKind` predicate on top of the prototype's, so the query
+    is `TextKind = 'jk-text' AND TextKind = $kind`: harmless for the one caller,
+    which passes `jk-text`, and silently empty for any other value. A parameter
+    whose only working argument is the value already hardcoded upstream.
+- [ ] **Every `mus_compositions` primary-key lookup sorts its one row** — 25 of them
+  in a single 1,296-request sweep, each carrying
+  `ORDER BY InLanguage, CompositionName`, because `MusicTable::getSelectPrototype()`
+  attaches the collection's default order and single-record reads share the
+  prototype. Harmless and free at 335 rows; worth knowing as a shape, since the same
+  prototype mechanism is what puts the `TextKind` filter on PK lookups above.
+
 - [x] ~~**The contact-persons table renders in a different order between
   requests**~~ — fixed 2026-08-23. `getUnlinkedAssignments()` sorted on four
   columns that tie (76 rows in tied groups), `getUnlinkedRoles()` on the same four
