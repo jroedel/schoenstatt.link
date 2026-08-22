@@ -82,7 +82,9 @@ class SchoenstattController extends AbstractActionController
                     'score' => 0,
                 ];
             }
-            $regions[$object['countryRegion']][$associationId] = &$shrines[$associationId];
+            //A copy, not `= &$shrines[...]`: an array assignment is copy-on-write, so the
+            //reference cost the same and bought only an alias between two view variables.
+            $regions[$object['countryRegion']][$associationId] = $shrines[$associationId];
             $regionStats[$object['countryRegion']]['maxScore'] += 10;
             $regionStats[$object['countryRegion']]['score'] += $object['dataScore'];
         }
@@ -129,7 +131,9 @@ class SchoenstattController extends AbstractActionController
                     'score' => 0,
                 ];
             }
-            $regions[$object['countryRegion']][$associationId] = &$shrines[$associationId];
+            //A copy, not `= &$shrines[...]`: an array assignment is copy-on-write, so the
+            //reference cost the same and bought only an alias between two view variables.
+            $regions[$object['countryRegion']][$associationId] = $shrines[$associationId];
             $regionStats[$object['countryRegion']]['maxScore'] += 10;
             $regionStats[$object['countryRegion']]['score'] += $object['dataScore'];
         }

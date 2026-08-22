@@ -205,7 +205,9 @@ class PublicationsController extends SionController
         $libraryBooks = $libraryTable->searchBooks(['libraryId' => array_keys($libraries), 'publicationId' => $publicationIds]);
         foreach ($libraryBooks as $bookId => $book) {
             if (isset($libraries[$book['libraryId']])) {
-                $libraryBooks[$bookId]['library'] = &$libraries[$book['libraryId']];
+                //A copy, not a reference: array assignment is copy-on-write, so this costs
+                //the same and leaves no alias between the two view variables.
+                $libraryBooks[$bookId]['library'] = $libraries[$book['libraryId']];
             }
         }
         $view->setVariable('libraryBooks', $libraryBooks);

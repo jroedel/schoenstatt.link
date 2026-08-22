@@ -465,9 +465,11 @@ Measured A/B under identical conditions, five samples each:
 | `getAssociation()` | 344–399 ms | **21–36 ms** |
 | peak memory | 40.6 MB | **25.4 MB** |
 
-The related rows stay in a **separate array** even when they are a copy, which is
-load-bearing rather than wasteful: the links are references into it, so linking `$objects` to
-itself would make the graph cyclic where today it is two levels deep and finite.
+The related rows stay in a **separate snapshot** even when they are a copy of `$objects`,
+which is load-bearing rather than wasteful: linking `$objects` to rows that are themselves
+being linked would make the graph cyclic where this keeps it two levels deep and finite.
+(Until [Finding 6](#finding-6--fixed) the links into that snapshot were PHP *references*.
+They are plain copies now, and the snapshot survives for the reason above.)
 
 This reaches every association page, `/movement`, the edit form, the v3 API's list and detail
 endpoints, both laminas controllers, and `getNationalAssociations()` /
@@ -476,6 +478,94 @@ endpoints, both laminas controllers, and `getNationalAssociations()` /
 Proved by `tools/port-baseline.php`: **1,272 of 1,272 responses identical** — 106 paths × 6
 locale forms × 2 identities — plus `test/Integration/AssociationLinkingTest`, which pins the
 two properties the saving rests on rather than the timing.
+
+## Finding 6 — fixed
+
+**The links into that snapshot were PHP references, and the rows they pointed at were
+taken before the roles were attached.**
+
+Two defects in the same six lines, found on 2026-08-22 by re-reading the reference
+assignments rather than by measuring anything.
+
+### The references bought nothing
+
+`$objects[$id]['parent'] = &$related[$parentId]` was written to avoid copying rows. It does
+not avoid anything: a plain array assignment in PHP is copy-on-write, so the two forms cost
+the same live memory until something writes, and nothing writes. Measured like-for-like on
+`getAssociation()`, peak memory moved 56 MB → 58 MB — and that 2 MB is the roles fix below,
+not the de-referencing.
+
+What the references did buy is aliasing: one row reachable by two paths, where a write
+through either changes both, in a structure `getShrines()` hands straight to
+`cacheEntityObjects()`.
+
+They also buy a smaller `serialize()`, which is not the same claim and is the only reason
+one of them survives elsewhere — see below.
+
+### The attached rows had no roles, no assignments and no leader
+
+`connectEntityRolesAndAssignments()` ran **last**, and only on `$objects`. Everything
+attached as a `parent` or a `childAssociations` entry was a copy taken before it, so it
+carried `roles => []`, `assignments => []`, `mainPerson => null` — the keys are declared in
+`processAssociationRow()`, so nothing was missing and nothing errored; the values were just
+empty.
+
+Measured over the full set: **791 of 792 linked rows** differed from the same row read
+under its own id.
+
+| key | linked rows where it differs |
+|---|---|
+| `roles` | 396 parents, 395 children |
+| `assignments` | 389 parents, 61 children |
+| `mainRole` | 250 parents, 215 children |
+| `mainAssignment` / `mainPerson` | 187 parents, 6 children |
+| `mainContactAssignment` / `mainContactPerson` | 60 parents, 2 children |
+
+The visible half is `mainPerson`. `_associations-table.html.twig` — and the `.phtml` it
+replaced — renders `entity.mainPerson` for every row, so the leader column of "Associated
+organizations" was blank for every child that has one, on a page whose other tables fill the
+same column in. Six links in the current database are affected, all under associations that
+answer 404 to an anonymous visitor, which is why the byte comparison below is clean.
+
+The fix is ordering: connect first, snapshot second, link third. For the filtered callers
+(`searchAssociations()`, `getShrines()`, `getWaysideShrines()`) the snapshot is
+`$objects + $related`, union with `$objects` winning, so rows already in the set keep their
+roles and only rows genuinely outside it arrive unconnected — as they always have.
+
+### Verification
+
+`tools/port-baseline.php`: **1,272 of 1,272 responses identical**. That is the expected
+result, not a disappointment — no sampled path renders a linked row's leader — and it is
+the assurance that reordering the connect call broke nothing else.
+
+The regression guard is `AssociationLinkingTest::testAnAttachedRowCarriesTheSameDataAsItsOwnRow`.
+Note why the existing test could not catch this: it compares the two linking paths against
+*each other*, and both were wrong in the same way. The new one compares an attached row
+against the same row under its own id. It fails on the previous code (association 466,
+attached to 1) and passes on this one.
+
+### What was not changed, and why
+
+`LibraryTable::getCheckouts()` keeps its reference. There the memory argument is wrong for
+the same reason but the serialization argument is real: that array is the `checkouts` cache
+item, `exceedsItemSizeBudget()` measures it with `serialize()`, and a reference is stored
+once and back-referenced. Over 1,953 rows it is **4,605,258 bytes with the reference and
+7,943,438 without**. The item is already refused at the smaller figure by the 4 MiB budget,
+so a copy would foreclose ever fitting rather than merely cost something. The real fix is
+not to embed a whole library row in every checkout (BACKLOG).
+
+`PublicationsTable::linkPublications()` and `linkPublication()` have the same shape and are
+untouched, with the redundant query below.
+
+Two references that cost nothing to remove went with this: the shrine and wayside-shrine
+`$regions` grouping in `SchoenstattController`, and `$libraryBooks[…]['library']` in
+`PublicationsController`. Both aliased two view variables to each other for no gain.
+
+A third was dead outright: `processLibraryRow()` contained
+`$collections[$collectionId] = &$collections[$collectionId];` — an element of a `static`
+array assigned to itself, changing no value and only converting the element into a reference
+for the rest of the request. It appears to be a mistyped attempt to fill
+`$processedRow['collections']`, which is declared there and which nothing has ever read.
 
 ### The same shape lives in PublicationsTable
 
