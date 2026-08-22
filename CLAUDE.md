@@ -333,6 +333,17 @@ suites run from the superproject working tree.
   and break open registration entirely. Guarded by `test/Smoke/AuthSmokeTest` (six of its
   twelve tests) and `ApiV3SmokeTest::testADeactivatedBotAccountIsRefused`.
 - **Borrowers reach their own books without an account.** An overdue notice carries a scoped link to `/library/my-books?t=…`; the token (`Books\Model\BorrowerTokenTable`, table `lib_borrower_tokens`) authorises exactly one person at one library, is stored as a sha256 digest, expires, and is deliberately **not** single-use. It exists instead of giving borrowers accounts because this database has **no user-to-person link at all** and every account inherits `lib_user`, which is `is_default = 1`. The page is Symfony-side precisely so its authorization is ordinary code rather than a role: no `person_id` may ever appear in that URL. Renewal is `LibraryTable::renewBook()` — it persists, counts, and enforces `lib_libraries.MaximumBookRenewals` (default 3); overdue books renew from *today*. Notices go out via `bin/console books:send-notices --library=N [--dry-run]`, which needs no API key.
+- **`SchoenstattTable::linkAssociations()` takes `$objectsAreEveryAssociation`**, and only
+  `getAssociations()` may pass `true`. It skips the related-associations query, which asked
+  the database for the parents and children of rows the caller already held — 431 of 498,
+  none of them absent or different. That query was the whole of the shrine page's
+  non-database time: `getAssociation()` went **344–399 ms → 21–36 ms**, peak memory 40.6 →
+  25.4 MB, on 2026-08-22. The subset callers (`searchAssociations()`, `getShrines()`,
+  `getWaysideShrines()`) still query, because a filtered match's parent can lie outside the
+  set. The related rows stay in a **separate array** even when copied: the links are
+  references into it, and linking `$objects` to itself would make the graph cyclic.
+  Guarded by `test/Integration/AssociationLinkingTest`; the same `orCombination` shape is
+  still live in `PublicationsTable::linkPublications()` (docs/BACKLOG.md).
 - **Association/shrine validation lives in `App\Schoenstatt\Association`**, not in the form.
   `AssociationInputFilterSpec` holds the rules, `AssociationForm` delegates to it, and
   `AssociationValidator` gives the v3 API the form's *own* `InputFilter` (built headlessly —
