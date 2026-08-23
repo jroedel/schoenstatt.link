@@ -6,6 +6,11 @@ namespace App\Controller\Api;
 
 use App\Api\BotIdentity;
 use App\Laminas\ServiceBridge;
+use App\Provenance\ApiEnvelope;
+use App\Provenance\FieldGroups;
+use App\Provenance\ProvenanceStore;
+use App\Provenance\Recorder;
+use App\Provenance\WriteGate;
 use App\Schoenstatt\Association\AssociationResource;
 use App\Schoenstatt\Association\AssociationValidator;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier as IdentifierFilter;
@@ -155,6 +160,18 @@ final class AssociationsV3Controller extends AbstractApiController
             return self::problem(Response::HTTP_BAD_REQUEST, 'The request body must be a JSON object of fields.');
         }
 
+        //The provenance envelope comes out before the field check, exactly as
+        //PhrasesV3Controller lifts `_note` out: all four keys were a 422 until now, so no
+        //caller can be sending them meaning something else.
+        $now      = ProvenanceStore::now();
+        $envelope = ApiEnvelope::parse($patch, $now);
+        if (! $envelope instanceof ApiEnvelope) {
+            return self::problem(Response::HTTP_UNPROCESSABLE_ENTITY, $envelope);
+        }
+        foreach (ApiEnvelope::keys() as $reserved) {
+            unset($patch[$reserved]);
+        }
+
         $validator = $this->validator();
         $fields    = $validator->writableFields();
 
@@ -191,32 +208,114 @@ final class AssociationsV3Controller extends AbstractApiController
             );
         }
 
-        $changed = AssociationResource::changedFields($entity, $patch);
+        $associationId = (int) $entity['associationId'];
+        $groups        = $this->fieldGroups();
+        $recorder      = $this->recorder();
+        $changed       = AssociationResource::changedFields($entity, $patch);
+
         if ([] === $changed) {
-            //Nothing to write. Answered 200 with the current document rather than 204:
-            //an agent polling for drift wants to see what it would have written.
+            //Nothing to write — but something to *record*. This is a confirmation: the
+            //caller checked these fields and every one already held the right value, which
+            //until now left no trace anywhere and was the central gap in the whole API. The
+            //response still carries `changed: []`, so an existing agent polling for drift
+            //sees exactly what it saw before.
+            $assessment = $recorder->assessConfirmation(array_keys($patch), $groups);
+            $recorder->commit(
+                $assessment,
+                'association',
+                $associationId,
+                $envelope->source,
+                $envelope->assertedOn,
+                $now,
+                $envelope->sourceUrl,
+                $envelope->sourceNote,
+                $actingUser,
+            );
+
             return self::tagged(
-                new JsonResponse(['changed' => [], 'association' => $current]),
+                new JsonResponse([
+                    'changed'   => [],
+                    'confirmed' => array_keys($assessment->outcomes),
+                    'association' => $current,
+                ]),
                 $current['meta']['etag']
             );
         }
 
-        $table = $this->table();
-        //Attribution. Without it every agent edit lands in sch_changes as UpdatedBy
-        //NULL and the log stops being able to answer "who did this".
-        $table->setActingUserId($actingUser);
+        //What may this source actually change? A group a better-sourced, fresher claim is
+        //protecting is withheld rather than refused: the finding is kept on file and the
+        //rest of the write proceeds. See App\Provenance\WriteGate.
+        $assessment = $recorder->assess(
+            'association',
+            $associationId,
+            $changed,
+            $groups,
+            $envelope->source,
+            $now
+        );
 
         /** @var array<string, mixed> $values */
-        $values  = $filter->getValues();
-        $updated = $table->updateEntity('association', (int) $entity['associationId'], $values);
+        $values = $filter->getValues();
 
-        $fresh    = is_array($updated) && [] !== $updated ? $updated : $entity;
-        $document = AssociationResource::represent($fresh, $fields);
+        if ($assessment->withheldAnything()) {
+            //Narrow the write to the fields that survived. The withheld ones keep their
+            //stored value, so the merged-and-validated record stays valid by construction:
+            //what we drop is a change, never a requirement.
+            foreach ($assessment->withheldFields as $withheld) {
+                unset($values[$withheld]);
+            }
+        }
 
-        return self::tagged(
-            new JsonResponse(['changed' => $changed, 'association' => $document]),
-            $document['meta']['etag']
+        $applied = $assessment->writableFields;
+
+        if ([] !== $applied) {
+            $table = $this->table();
+            //Attribution. Without it every agent edit lands in sch_changes as UpdatedBy
+            //NULL and the log stops being able to answer "who did this".
+            $table->setActingUserId($actingUser);
+            $updated = $table->updateEntity('association', $associationId, $values);
+            $entity  = is_array($updated) && [] !== $updated ? $updated : $entity;
+        }
+
+        $recorder->commit(
+            $assessment,
+            'association',
+            $associationId,
+            $envelope->source,
+            $envelope->assertedOn,
+            $now,
+            $envelope->sourceUrl,
+            $envelope->sourceNote,
+            $actingUser,
         );
+
+        $document = AssociationResource::represent($entity, $fields);
+
+        $body = ['changed' => $applied, 'association' => $document];
+        if ($assessment->withheldAnything()) {
+            //Named, not silent. An agent that is not told its change was withheld will send
+            //it again forever and believe the shrine it maintains is drifting.
+            $body['withheld'] = [
+                'fields' => $assessment->withheldFields,
+                'groups' => $assessment->competingGroups(),
+                'reason' => 'A better-sourced and more recent claim covers these. Your finding '
+                    . 'was recorded as a competing assertion; the stored value did not change.',
+            ];
+        }
+
+        return self::tagged(new JsonResponse($body), $document['meta']['etag']);
+    }
+
+    /** The provenance write path, assembled here because nothing else in this class needs it. */
+    private function recorder(): Recorder
+    {
+        return new Recorder(new ProvenanceStore($this->laminas), new WriteGate());
+    }
+
+    /** Field groups derived from the association's own entity configuration. */
+    private function fieldGroups(): FieldGroups
+    {
+        return FieldGroups::forEntity($this->laminas->config(), 'association');
     }
 
     // --------------------------------------------------------------- plumbing

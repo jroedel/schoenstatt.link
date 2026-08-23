@@ -284,7 +284,8 @@ curl -X PATCH https://schoenstatt.link/api/v3/associations/SL100319A \
 
 `changed` lists the fields that actually moved. Sending a value that is already stored
 is a `200` with `"changed": []` and no write — so a polling agent does not fill
-`sch_changes` with noise.
+`sch_changes` with noise. **Since 2026-08-23 that case also records a confirmation**; see
+Provenance below.
 
 | status | meaning |
 |---|---|
@@ -292,9 +293,90 @@ is a `200` with `"changed": []` and no write — so a polling agent does not fil
 | `401` | no usable token — missing, expired, **revoked**, or the account lacks `sch_api_bot` |
 | `404` | no association has that identifier |
 | `412` | `If-Match` no longer matches — re-read and re-apply |
-| `422` | the change would leave the association invalid, or names an unknown field |
+| `422` | the change would leave the association invalid, names an unknown field, or carries a bad `_source`/`_assertedOn` |
 | `405` | wrong verb; the `Allow` header lists the right ones |
 
+
+### Provenance: say where your claim came from
+
+Four reserved keys travel with a patch. All four are optional, all four were a `422` before
+2026-08-23, and none can collide with a field name because no association field begins with
+an underscore.
+
+```bash
+curl -X PATCH https://schoenstatt.link/api/v3/associations/SL100319A \
+  -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
+  -d '{"openingHoursHuman": "Mon-Sat 9-17",
+       "_source":     "website",
+       "_sourceUrl":  "https://example.org/hours",
+       "_sourceNote": "parish bulletin, page 2",
+       "_assertedOn": "2026-08-01"}'
+```
+
+| key | |
+|---|---|
+| `_source` | `shrine`, `office`, `website`, `directory` or `inference`. **Defaults to `inference`**, the lowest rank |
+| `_sourceUrl` | the evidence, if it has a URL. ≤1000 characters |
+| `_sourceNote` | the evidence in words. ≤255 characters |
+| `_assertedOn` | when the claim was **true**, not when you sent it. Defaults to now; may not be in the future |
+
+**`_assertedOn` is the one to get right.** The freshness window below is measured from it, so
+filing a March bulletin in August correctly describes a March observation. A date in the
+future is a `422` rather than being clamped — otherwise a caller could hold a value
+indefinitely.
+
+#### Confirmations
+
+A patch whose values all match what is stored is a **confirmation**: `changed` is still `[]`
+and nothing is written to the association, but the check is now recorded against each field
+group you named.
+
+```jsonc
+{ "changed": [], "confirmed": ["contactInfo", "openingHoursHuman"], "association": { ... } }
+```
+
+This is why the endpoint is worth polling. "I checked this shrine today and it is still
+correct" used to leave no trace anywhere, which meant nothing could distinguish a verified
+record from an abandoned one — and 216 of 250 shrines had not been touched since 2019.
+
+#### When a better source is already on file
+
+A claim is **recorded but not applied** when a standing claim on the same field group comes
+from a strictly higher-ranked source, vouched for the stored value, and is younger than **180
+days**. The rest of the write still proceeds.
+
+```jsonc
+{
+  "changed": ["openingHoursHuman"],
+  "withheld": {
+    "fields": ["phone1"],
+    "groups": ["contactInfo"],
+    "reason": "A better-sourced and more recent claim covers these. Your finding was
+               recorded as a competing assertion; the stored value did not change."
+  },
+  "association": { ... }
+}
+```
+
+**This is a behaviour change and it is deliberate.** Before, the last write won. Now a
+nightly scrape cannot silently undo a correction the rector gave us last month — but the
+finding is not thrown away either, which is why this is a `200` with `withheld` rather than a
+`409`. An agent that noticed a discrepancy has done useful work whether or not it wins, and
+a refusal would lose it.
+
+Three properties worth relying on:
+
+- **Only a strictly higher rank blocks you.** Two claims from the same kind of source are a
+  fresher reading rather than a dispute, so `website` can always correct `website`.
+- **Ranks and groups are not the same axis.** A withheld `contactInfo` does not withhold your
+  Mass times; each group is decided on its own.
+- **Identity fields are never withheld.** `name`, `kind`, `country`, `parentId` and
+  `geoPoint` belong to no group — nobody verifies them on a schedule, and a freshness window
+  would be protecting the wrong thing.
+
+Nothing about this changes for an agent that declares no source *today*, because the record
+starts empty and only a higher-ranked claim can withhold anything. It starts to matter as
+humans and offices begin asserting — which is the point.
 
 ### Validation is the moderator form's, exactly
 
