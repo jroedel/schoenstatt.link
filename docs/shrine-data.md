@@ -356,11 +356,37 @@ whose every other address column is `varchar`.
 Dependencies are the point of this ordering. Phases 1–3 are server-side and can run in
 parallel with the Bootstrap migration; phase 4 cannot start until it lands.
 
-**Phase 1 — provenance and confirmation.** The store, the source ranking, and a way to say
-"still correct" without changing anything. Granularity is the field group
-(settled — see decision 1), so the first task is naming the groups. Surfaced on the shrine
-page, since
-"verified this month" is worth more to a pilgrim than any single field.
+**Phase 1 — provenance and confirmation. Built 2026-08-23**, except for the shrine-page
+display. `sch_provenance` (`database/db9.0.sql`) plus `App\Provenance\*`:
+
+| piece | what it is |
+| --- | --- |
+| `SourceClass` | the five sources and their ranks — the policy, deliberately not in the schema |
+| `Outcome` | `confirmed` / `corrected` / `competing`; the third is why the table is append-only |
+| `FieldGroups` | **derived** from the entity config, never hand-listed — see below |
+| `WriteGate` | the ranking rule and the 180-day window |
+| `Assertion`, `ProvenanceStore` | the row, and append-only reads (`latestFor`, `currentFor`, `historyFor`) |
+| `Recorder`, `Assessment` | plan a write, then record what it did — two calls on purpose |
+| `ApiEnvelope` | the four reserved keys a caller declares provenance with |
+
+Wired into `PATCH /api/v3/associations/{id}`: a patch that changes nothing now records a
+**confirmation** instead of silently doing nothing, and a group a fresher better-sourced claim
+protects is **withheld** rather than overwritten, with the finding kept. Documented in
+[api-v3.md](api-v3.md) § Provenance, because it changes what an existing caller sees.
+
+**The groups are derived, and that is the load-bearing decision.** A field's group is its
+`many_to_one_update_columns` entry, else the field itself when a `<field>UpdatedOn` column
+exists. Against the real config that yields seven groups — `contactInfo` (17 fields) and one
+each for `openingHoursHuman`, `openingHoursSpecificationJson`, `eventsHuman`, `eventsJson`,
+`publicNotes`, `adminNotes` — and leaves `name`, `kind`, `country`, `parentId` and `geoPoint`
+ungrouped, which is correct: they are identity, nobody verifies them on a schedule, and they
+are never withheld. A hand-maintained copy of that mapping is the exact mistake db8.9 cleaned
+up, so there is one place it can be wrong.
+
+*Still to do in this phase:* surface it on the shrine page ("contact details verified in
+March"), and record provenance on the **moderator form** save — until that lands, human edits
+through the web form file no assertion, so the ranking has little high-ranked material to
+work with. That is the next piece, not a nice-to-have.
 *Blocks everything else that matters.*
 
 **Phase 2 — the times and hours model.** A `Schedule`-shaped store for Mass, adoration and
@@ -404,9 +430,12 @@ not hours.
   `sch_associations` it would be contact details, opening hours, events, public notes. The
   open part is whether emails and phones are their own groups or one contact-details group is
   enough — the question the legacy scheme was reaching for when it broke.
-- **Does a confirmation belong in `sch_changes`?** It is a change record, and a confirmation
-  is not a change. Putting them in one table makes `/sm/view-changes` noisier; splitting them
-  means two places to look for "what happened to this shrine".
+- ~~**Does a confirmation belong in `sch_changes`?**~~ **Settled 2026-08-23: no.** The
+  deciding argument was not tidiness. SionModel already has a confirm-without-changing
+  primitive — `updateEntity()`'s `$fieldsToTouch`, which nothing in this codebase passes — and
+  it would bump the entity's own `UpdatedOn`. That column is the only thing that can still say
+  "216 of 250 shrines were last edited in 2019", the measurement this project rests on, so
+  recording confirmations through it would erase the staleness signal within a year.
 - **What is the unit of a verification email?** One shrine to one recipient is the obvious
   answer, but a national office holding twenty shrines is the case that gets twenty
   corrections from one message.
@@ -438,6 +467,28 @@ Corrections and measurements, newest first. Recorded here so they are not redisc
   are `en_US/es_ES/de_DE/pt_BR/it_IT`. French was planned and Italian arrived instead, so
   these 15 columns could never have served the current site. `SlugFr` is dead for the same
   reason. This is what settled "drop, don't revive" rather than the row count alone.
+- **2026-08-23 — the capsule cannot be rebuilt from `database/dumps/` alone, and finding that
+  out cost a working capsule.** Re-importing (`docker compose down -v`) produced a database
+  that failed 113 integration tests, because the initdb `zz-*.sql` set carried only 5 of the
+  27 migrations that postdate the dump. Three things make this worse than "add the missing
+  files", and all three were learned the hard way:
+  1. **Some `database/*.sql` migrations depend on a submodule's console migrations.** Several
+     `db7.x` files select `trans_phrases.phrase_hash`, which is added by
+     `bin/console jtranslate:migrate` — not by any SQL file. initdb runs SQL only, so the
+     correct order *interleaves* SQL and console steps and the `zz-` mechanism cannot express
+     it. The working order is: `db6.6`–`db6.9`, then `jtranslate:migrate`, then `db7.0`–`db7.8`,
+     then `db8.0`–`db8.6`, then `db8.9`–`db9.0`, then `jtranslate:export-catalogs`.
+  2. **Replaying out of order breaks migrations that reference dropped columns.** `db7.0` (the
+     charset conversion) names `VisitorsInformationEn`, which `db8.9` drops — so `db8.9` must
+     come after it, and applying the newest migration first makes the older one unrunnable.
+  3. **`mariadb` accepts connections while initdb is still importing.** A readiness check on
+     one table passing does not mean the dump has finished; migrations applied in that window
+     hit "table doesn't exist" for tables not yet loaded, and land on rows the import then
+     replaces. Wait for a *stable* table count, not for one table.
+  What cannot be recovered by any replay is **data created after the dump**. The capsule's
+  translations now predate the 2026-08-10 Italian campaign, so
+  `test/Smoke/BreadcrumbDataLabelsSmokeTest` fails on one shrine name — verified to fail
+  identically on `master`. Only a fresh production export fixes that.
 - **2026-08-23 — the field-group `*UpdatedOn` columns are stamped on saves that changed
   nothing.** 3 shrines carry an `OpeningHoursHumanUpdatedOn` with a `NULL` hours value, 1 an
   `EventsHumanUpdatedOn` with no events, 2 a `ContactInfoUpdatedOn` with no email, URL or
