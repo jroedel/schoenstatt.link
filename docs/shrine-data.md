@@ -4,7 +4,24 @@ The shrine pages are the most visited entity on this site and the data behind th
 stopped moving in 2019. This document is the plan for fixing that, and the record of
 what has been measured, decided and built.
 
-Opened 2026-08-23. Nothing below is built yet.
+**The goal is a shrine and association dataset good enough to distribute** — to
+schoenstatt.com, to schoenstatt-fathers.org, and to anyone else who would otherwise
+maintain a worse copy. Three workstreams get there, and they are the structure of this
+document:
+
+1. **A column set for shrines** that is neither over-simplified nor over-complicated —
+   which facts a shrine record holds.
+2. **A structure for correctness and completeness** — provenance and suggestions. In
+   effect a Google-Maps-style editing platform, with an authority structure supplied by
+   the Schoenstatt hierarchy rather than by anonymous reputation alone.
+3. **A framework for autonomous agents** to collect information and contact the people who
+   can confirm or complete it.
+
+Then distribution, which is what the first three are for.
+
+Opened 2026-08-23. Workstream 2's provenance half is built and deployed; everything else is
+plan. The review/comment feature is a **separate** system and is deliberately out of scope —
+see [reviews.md](reviews.md).
 
 ## Why this project exists
 
@@ -351,75 +368,222 @@ Low counts that are genuinely used: `ContactNotes` (1), `Email2` (1), `Post2Coun
 `Email2` is worth one note independent of this project: it is declared `int(200)` on a table
 whose every other address column is `varchar`.
 
-## Phases
+## Workstream 1 — the column set
 
-Dependencies are the point of this ordering. Phases 1–3 are server-side and can run in
-parallel with the Bootstrap migration; phase 4 cannot start until it lands.
+`sch_associations` is 78 columns after `db8.9`, serving 23 association kinds. One table with
+a `kind` discriminator stays — the friction was never the table, it was the form, and that is
+decided (§ Decision 3). What is open is **which facts a shrine record should hold**, and the
+evidence below is what the answer has to be argued against. Measured over the 250 shrines.
 
-**Phase 1 — provenance and confirmation. Built 2026-08-23**, except for the shrine-page
-display. `sch_provenance` (`database/db9.0.sql`) plus `App\Provenance\*`:
+### Columns a shrine record clearly earns
+
+Well-populated and pilgrim-relevant: `AssociationName` and the five `Slug*`, `Kind`,
+`Country`, `TimeZone`, `Location`, `Post1*`, `Email`, `Phone1`–`Phone2` with labels,
+`Url1`–`Url3` with labels, `FacebookUrl`, `InstagramUser`, `GooglePlaceId`, `PublicNotes`,
+`FoundationDate`, `IsActive`, `AdminTags` (241 of 250 — heavily used), and the four
+hours/events columns.
+
+### Columns that are duplicated, misdeclared or kind-irrelevant
+
+| column(s) | shrines using it | the problem |
+| --- | --- | --- |
+| `Latitude` + `Longitude` `varchar(15)` | 247 | the **same fact** as `Location geometry`, also 247. Two stores, no constraint keeping them equal |
+| `Email2` `int(200)` | 1 | an integer column holding an address, on a table whose every other address column is `varchar` |
+| `Post2*` (5 columns) | ≤9 | a second postal address, essentially unused |
+| `ContactNotes` | 1 | free text nothing reads |
+| `Phone3` + `Phone3Label` | 3 | a third phone |
+| `TwitterUser` | 5 | and the platform it names no longer exists under that name |
+| `Post1Country` | 6 | while `Post1CityState` is at 210 — `Country` carries this instead |
+| `IsLifeCommunity` | 1 | a fact about communities, not shrines |
+| `IsAuthor` | 0 | "appears in author lists" — a publication concern |
+| `OverrideNameFormat` | 6 | name-rendering machinery |
+| `FoundationDatePrecision` | 0 non-`day` | never anything but `day` for a shrine |
+| `InternalName` / `IsInternalNameTranslateable` | 146 / 114 | genuinely used, but is an internal-facing name a *shrine* fact or an organisation fact? |
+
+None of this is a call to drop columns immediately. `db8.9` dropped 24 columns that held
+**zero** values, which needed no judgement; every row above holds something, so each is a
+decision about whether the fact is worth a column. The `Latitude`/`Longitude` duplication is
+the one clear defect — two representations of one truth with nothing enforcing agreement.
+
+### Facts a shrine record cannot currently hold
+
+- **Structured Mass, adoration and confession times.** § Decision 2. The single largest gap,
+  and the only route to showing a schedule in five languages.
+- **A closure date that can be written.** `SuppressionDate` renders on both front controllers
+  and is `NULL` on all 498 rows, because its form element is commented out. A live display
+  field with no write path — the same category as `eventsJson`. The verification loop will
+  turn up closed shrines, and `IsActive` alone cannot say *when*.
+- **Anything a pilgrim asks that is not hours**: accessibility, parking, whether the shrine is
+  open when the house is closed, which languages Mass is celebrated in. Whether these become
+  columns, a structured blob, or stay in `PublicNotes` is exactly the
+  not-over-simplified/not-over-complicated judgement this workstream exists to make.
+
+### The principle worth holding
+
+A column earns its place when a **contributor can be asked a clear question** whose answer
+fits it, and a consumer of the distributed dataset can do something with the answer. That
+test kills `Post2Street2` and `IsAuthor` for shrines, and it is what "not over-complicated"
+means concretely. It also argues for structure over prose wherever the answer is enumerable,
+because prose cannot be translated (§ Decision 2) and cannot be redistributed usefully.
+
+## Workstream 2 — correctness and completeness
+
+A Google-Maps-style editing platform: anyone may propose, the record shows how well
+attested it is, and authority comes from the hierarchy rather than from volume of edits.
+
+### Provenance — built and deployed 2026-08-23
+
+`sch_provenance` (`database/db9.0.sql`) plus `App\Provenance\*`:
 
 | piece | what it is |
 | --- | --- |
 | `SourceClass` | the five sources and their ranks — the policy, deliberately not in the schema |
 | `Outcome` | `confirmed` / `corrected` / `competing`; the third is why the table is append-only |
-| `FieldGroups` | **derived** from the entity config, never hand-listed — see below |
+| `FieldGroups` | **derived** from the entity config, never hand-listed |
 | `WriteGate` | the ranking rule and the 180-day window |
 | `Assertion`, `ProvenanceStore` | the row, and append-only reads (`latestFor`, `currentFor`, `historyFor`) |
 | `Recorder`, `Assessment` | plan a write, then record what it did — two calls on purpose |
 | `ApiEnvelope` | the four reserved keys a caller declares provenance with |
 
-Wired into `PATCH /api/v3/associations/{id}`: a patch that changes nothing now records a
-**confirmation** instead of silently doing nothing, and a group a fresher better-sourced claim
-protects is **withheld** rather than overwritten, with the finding kept. Documented in
-[api-v3.md](api-v3.md) § Provenance, because it changes what an existing caller sees.
+Wired into `PATCH /api/v3/associations/{id}`: a patch that changes nothing records a
+**confirmation** instead of doing nothing silently, and a group a fresher better-sourced claim
+protects is **withheld** rather than overwritten, with the finding kept. See
+[api-v3.md](api-v3.md) § Provenance.
 
-**The groups are derived, and that is the load-bearing decision.** A field's group is its
-`many_to_one_update_columns` entry, else the field itself when a `<field>UpdatedOn` column
-exists. Against the real config that yields seven groups — `contactInfo` (17 fields) and one
-each for `openingHoursHuman`, `openingHoursSpecificationJson`, `eventsHuman`, `eventsJson`,
-`publicNotes`, `adminNotes` — and leaves `name`, `kind`, `country`, `parentId` and `geoPoint`
-ungrouped, which is correct: they are identity, nobody verifies them on a schedule, and they
-are never withheld. A hand-maintained copy of that mapping is the exact mistake db8.9 cleaned
-up, so there is one place it can be wrong.
+Groups are derived — a field's group is its `many_to_one_update_columns` entry, else the field
+itself when a `<field>UpdatedOn` column exists. Seven groups, `contactInfo` holding 17 fields,
+with `name`/`kind`/`country`/`parentId`/`geoPoint` ungrouped and therefore never withheld. A
+hand-maintained copy of that mapping is the exact defect `db8.9` cleaned up.
 
-*Still to do in this phase:* surface it on the shrine page ("contact details verified in
-March"), and record provenance on the **moderator form** save — until that lands, human edits
-through the web form file no assertion, so the ranking has little high-ranked material to
-work with. That is the next piece, not a nice-to-have.
-*Blocks everything else that matters.*
+*Not yet done:* the shrine-page display, and recording provenance on the **moderator form**
+save. Until the second lands, human edits file no assertion, so the ranking has little
+high-ranked material to weigh. That is the next piece, not a nice-to-have.
 
-**Phase 2 — the times and hours model.** A `Schedule`-shaped store for Mass, adoration and
-confession; render it in all five languages; render the structured opening hours that 42
-shrines already have and nobody can see; give `eventsJson` a door again. Ends with the
-JSON-LD emitting both, and an iCalendar export if it is cheap once the model exists.
-*Depends on nothing; independent of phase 1.*
+### Suggestions — the buffer, not yet built
 
-**Phase 3 — API additions for agents.** Confirmation-without-change, provenance on write,
-the structured-times fields, and a decision on `POST` (creation is currently refused because
-kind, parent and roles are human decisions — that reasoning still holds, and a wayside
-shrine found online is the case that will test it). Also worth exposing: a "stalest records"
-query, so an agent can be pointed at the work rather than crawling the collection.
-*Depends on phases 1 and 2 for the vocabulary it exposes.*
+A proposal that is recorded and *not* applied. `sch_provenance` already carries the right
+shape — entity, field group, source, who, when, outcome — so a suggestion is an assertion with
+a pending outcome plus **the proposed values**, which is the one thing the table cannot hold
+today. That is a far smaller extension than a parallel suggestions table, and it means one
+review surface serves agent claims and human proposals alike.
 
-**Phase 4 — the human loop.** Contact-address acquisition first, because 74% unreachable is
-the binding constraint. Then the emailed verification request carrying the current data, and
-a token-scoped correction page on the `lib_borrower_tokens` pattern. The "authoritative
-tip-off from a higher office" case — a national or diocesan office correcting one of its
-shrines — is a variant of the same mechanism with a wider scope, and the provenance source
-ranking from phase 1 is what makes their word outrank a scrape.
-*Gated on the Bootstrap 5 migration for its UI. The address acquisition is not.*
+`Outcome::Competing` is already suggestion-shaped: recorded, visible in `historyFor()`,
+nothing applied, nobody blocked. What it cannot yet do is hold an *unprivileged* proposal,
+because a claim only competes when a higher-ranked fresher one exists — an anonymous edit to a
+field with no standing claim simply applies. The missing primitive is a source class that
+**never wins**: public input always records, never overwrites.
 
-Work happening in a separate directory on finding shrine information online feeds phases 3
-and 4 and is not tracked here. The most valuable thing it can produce is **email addresses**,
-not hours.
+**Do not reach for the `comments` table for this.** It is a reviews feature — somebody's
+impression of a record, not a proposed change to it — and the two were conflated once already.
+[reviews.md](reviews.md) has the distinction and the evidence.
+
+### The authority structure is the real problem, and it is data, not code
+
+"Authority supplied by the Schoenstatt hierarchy" needs a chain from a signed-in account to a
+shrine it may speak for. Every link exists in the schema. Almost none of it is populated:
+
+| link | state |
+| --- | --- |
+| account → person (`user.PersID`) | **31 of 292** real accounts, and `multi_person_user` on 3 |
+| person → role (`sch_assignments`) | 265 assignments over 212 persons, site-wide |
+| role → association (`sch_roles`) | every shrine has roles defined |
+| **account → … → shrine, end to end** | **1 of 250 shrines** has any assignment at all |
+
+So the hierarchy is modelled and essentially empty for shrines. Two consequences worth being
+blunt about. `SourceClass::Shrine` and `::Office` cannot be *inferred* from an account today —
+they have to be asserted by whoever records the claim, which is exactly what the
+`_source` envelope key does and why its default is the lowest rank. And populating that chain
+is a **data-gathering project**, on the same footing as collecting email addresses; it is not
+something a migration can do.
+
+Note also `user.PersID` corrects a belief recorded elsewhere in this repo's notes that there
+is no user-to-person link at all. There is one, it is mapped in JUser's config
+(`personId => PersID`) and read by `UserTable`, and it is 10.6% populated.
+
+### Reputation, and AI screening
+
+Both are policies over machinery that now exists rather than new subsystems. `sch_provenance`
+is append-only and carries `RecordedBy`, so "this contributor's last twenty assertions were all
+accepted" is a query, and "auto-admit after a day for a clean record" — the Google Maps
+behaviour — is a rule over that query. AI screening for typos and malicious content is a
+status transition between proposed and accepted. Neither should be designed before the pending
+outcome exists.
+
+## Workstream 3 — autonomous agents
+
+Two jobs, and the second is the one nobody has tooling for.
+
+**Collect.** The v3 API already supports it: read the collection, compare against a source,
+`PATCH` with `_source`/`_sourceUrl`/`_assertedOn`, and a confirmation now leaves a trace. What
+would help most is a **staleness query** — "give me the shrines whose contact group has not
+been confirmed in a year" — so an agent is pointed at the work instead of crawling everything.
+That belongs in this workstream, not in the API for its own sake.
+
+**Contact authorities for confirmation or complementation.** This is blocked on reach, not on
+code: **64 of 250 shrines have any email address** (63 association addresses plus one via a
+person assignment). Address acquisition is therefore the highest-value thing agent research can
+produce, ahead of hours and ahead of Mass times.
+
+When the addresses exist, the mechanism is settled by precedent rather than open: a scoped,
+hashed, expiring, deliberately non-single-use token on the `lib_borrower_tokens` pattern, on a
+Symfony-served page so authorization is ordinary code and no person id appears in a URL. See
+[libraries.md](libraries.md) for why that shape. A national or diocesan office correcting one
+of its shrines is the same mechanism with a wider scope, and the provenance ranking is what
+makes their word outrank a scrape.
+
+`bin/console` is where agent-facing work belongs — `books:send-notices` is the working
+precedent for a mailing that needs no request and no API key.
+
+## Distribution — what the first three workstreams are for
+
+The point of a well-attested dataset is that other people can serve it: schoenstatt.com and
+schoenstatt-fathers.org today, others later. Nothing here is built, and three things about it
+are already decided by what exists.
+
+- **It is a read feed, and it is not `/api/v3`.** v3 is a read/write surface for authenticated
+  agents, gated per resource on its own role. A distribution consumer wants bulk, anonymous,
+  cacheable reads of published data. Those are different products, and v1 was retired for
+  being the wrong shape rather than for being unwanted — its schema.org `CatholicChurch`
+  projection could not round-trip, which is precisely what made it useless for anything but
+  drawing a map.
+- **The licence is already declared.** `App\Schoenstatt\ShrineDatasets` publishes the shrine
+  index as a schema.org `Dataset` under CC BY-SA 3.0, in English and Spanish. A feed should not
+  invent a second answer to that question.
+- **Provenance is the feature, not an implementation detail.** A consumer deciding whether to
+  show a Mass time needs to know it was confirmed by the shrine in March rather than scraped
+  from a directory in 2019. Exposing `currentFor()` per record — source class, outcome,
+  asserted date — is what makes the dataset worth taking over a competitor's, and it is the
+  reason workstream 2 comes before this.
+
+Open, and worth settling before anything is built: whether consumers pull (a documented feed
+they poll) or we push (webhooks on change); whether they get all five languages or negotiate
+one; and whether a consumer may surface a shrine our own access rules exclude — three separate
+rules decide what is published today and only one of them is a route guard, per
+[sitemap.md](sitemap.md).
+
+## Sequencing across the workstreams
+
+Not a strict order, but the dependencies are real:
+
+- Workstream 1's structured-times decision is a **prerequisite** for anything that
+  redistributes a schedule, and for translating one.
+- Workstream 2's moderator-form provenance should land **before** suggestions, or the ranking
+  has nothing authoritative to protect.
+- Workstream 3's address gathering can start **immediately** and gates nothing else; it is the
+  long pole for the human loop.
+- Distribution should wait for provenance to be surfaced, because the metadata is the product.
+- **The contributor UI across all three is gated on the Bootstrap 5 migration** (§ Decision 4),
+  which is still not tracked anywhere. Everything server-side proceeds regardless.
 
 ## Deliberately not being built
 
-- **A moderation queue.** See decision 1. Revisit only if the volume of agent writes turns
-  out to need it, and revisit with the `sch_changes` evidence in hand.
+- **A blocking moderation queue for field edits.** See decision 1 — suggestions record and
+  surface without holding anything up. Note the argument there is about *field edits at
+  scale*; it does not apply to reviews, where the volume is 1.3 items a year
+  ([reviews.md](reviews.md)).
 - **Association creation by agents.** Unchanged from [api-v3.md](api-v3.md): `POST` stays
-  unimplemented until phase 3 decides otherwise.
+  unimplemented until workstream 3 decides otherwise.
+- **The review/comment feature.** A separate system, tabled — [reviews.md](reviews.md).
 - **Migrating the free-text hours and events away.** Decision 2.
 - **A JavaScript framework.** Decision 4.
 - **Anything depending on a masstimes.org integration.** No API exists.
@@ -439,12 +603,44 @@ not hours.
 - **What is the unit of a verification email?** One shrine to one recipient is the obvious
   answer, but a national office holding twenty shrines is the case that gets twenty
   corrections from one message.
+- **Which of the twelve duplicated/kind-irrelevant columns actually go?** Workstream 1 lists
+  them with row counts. `Latitude`/`Longitude` against `Location` is the one clear defect;
+  the rest are judgement, and each holds at least one real value.
+- **Do accessibility, parking and Mass languages become columns, a structured blob, or stay
+  in `PublicNotes`?** This is the not-over-simplified/not-over-complicated call, and it is
+  the one that decides how big the shrine form gets.
+- **How does the account → person → role → shrine chain get populated?** 1 of 250 shrines has
+  an assignment today. Until it is populated, `SourceClass::Shrine` and `::Office` are
+  asserted by the caller rather than inferred from the account — which is workable but is not
+  what "authority from the hierarchy" will eventually mean.
+- **Do consumers pull or do we push, and may a consumer surface a shrine our own access rules
+  exclude?** Distribution, above.
 - **Does `SuppressionDate` get its write path in the shrine form, or does the concept need
   more thought?** It renders today and can never be set.
 
 ## Findings log
 
 Corrections and measurements, newest first. Recorded here so they are not rediscovered.
+
+- **2026-08-23 — the hierarchy that is supposed to supply authority is modelled and empty.**
+  `user.PersID` links an account to a person and is populated on **31 of 292** real accounts;
+  `sch_assignments` holds 265 rows over 212 persons; and end to end, **1 of 250 shrines** has
+  any role assignment. So `SourceClass::Shrine`/`::Office` cannot be inferred from an account
+  and must be asserted by the caller for the foreseeable future. Populating that chain is a
+  data-gathering project, not a migration.
+- **2026-08-23 — `user.PersID` exists, contradicting a note elsewhere in this repo** that this
+  database has no user-to-person link at all. It is mapped in JUser's config
+  (`personId => PersID`), read by `UserTable`, and 10.6% populated. The narrower true statement
+  is the one [libraries.md](libraries.md) needs: *borrowers* are not accounts.
+- **2026-08-23 — `Latitude`/`Longitude` and `Location` store the same fact twice**, both at 247
+  of 250 shrines, with nothing enforcing that they agree. The clearest defect in the current
+  column set.
+- **2026-08-23 — reviews are not suggestions, and conflating them nearly cost a working
+  feature.** The `comments` table's `Status`/`ReviewedBy`/`ReviewedOn` were read here as a
+  moderation buffer for proposed *edits*, and removing the whole suggest-moderate surface was
+  proposed on that basis. `comments` is a reviews feature — somebody's impression of a record.
+  The codebase carried two separate status vocabularies the whole time. See
+  [reviews.md](reviews.md).
 
 - **2026-08-23 — two declared field groups have never been written, from a duplicate key in
   a PHP array literal.** `module/Schoenstatt/config/module.config.php` maps `email`, `phone1`,
