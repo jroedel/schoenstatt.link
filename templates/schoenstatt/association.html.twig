@@ -14,9 +14,9 @@
      association.
   2. **The kind line is hidden for shrines only.** `if ('sch-shrine' !== kind)`, so a
      wayside shrine does show "(Wayside shrine)" and a shrine shows nothing.
-  3. **The "Up-to-date" tooltip says 'jeff'.** That is a hardcoded name in the original —
-     `sprintf($this->translate('Updated by %s %s'), 'jeff', …)` — not a column. Carried
-     over unchanged; fixing it is a content decision, not a porting one.
+  3. **The "Up-to-date" tooltip is gone, and never rendered.** It was guarded on
+     `phonesUpdatedOn`, a column nothing ever wrote; removed with the column in
+     `database/db8.9.sql`. The hardcoded 'jeff' it carried went with it.
   4. **The national/child/neither branch is a three-way `if`/`elseif`/`elseif`**, and the
      third arm renders only an "Add" button with an unclosed `<p>`. The stray tag is the
      original's.
@@ -73,9 +73,12 @@
                 <p><strong>{{ translate(phone_row.label) }}:</strong>
                 <span>{{ telephone_link(phone_row.number, phone_row.whatsApp|default(false), is_allowed('route/persons/person/edit-contact-info')) }}</span></p>
             {% endfor %}
-            {% if entity.phonesUpdatedOn is not null %}
-                <p class="text-right">{{ tooltip('✓ Up-to-date', phones_updated_tooltip) }}</p>
-            {% endif %}
+            {#- The "✓ Up-to-date" tooltip was here, guarded on entity.phonesUpdatedOn.
+                That column was never written — a duplicate key in the entity config sent
+                every phone field to the contactInfo group instead — so this block never
+                rendered on either front controller in the years it existed. Column dropped
+                in database/db8.9.sql; see docs/shrine-data.md. It also took the hardcoded
+                'jeff' with it, which docs/BACKLOG.md had recorded as a content fix. -#}
             {% if entity.urls is not empty %}
             <p><strong>{{ translate('Links') }}:</strong>
             <div class="row">
