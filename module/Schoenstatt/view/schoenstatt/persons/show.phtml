@@ -1,6 +1,5 @@
 <?php
 use JTranslate\View\Helper\CountryName;
-use Carbon\Carbon;
 
 $object = $this->person;
 $pageTitle = '';
@@ -100,12 +99,13 @@ $this->headTitle($pageTitle);
                     isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
                     $this->isAllowed('route/persons/person/edit-contact-info')
                       );?></span></p>
-            <?php endforeach;
-            if (! is_null($object['phonesUpdatedOn'])) :  //@todo add a question mark here with text
-                //@todo use diffForHumans view helper
-                $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
-                <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
-            <?php endif;?>
+            <?php endforeach;?>
+            <?php // The "✓ Up-to-date" tooltip was here, guarded on $object['phonesUpdatedOn'].
+            // That column was never written — a duplicate key in the entity config sent every
+            // phone field to the contactInfo group instead — so this block never rendered in
+            // the years it existed. Column dropped in database/db8.9.sql; see
+            // docs/shrine-data.md. The hardcoded 'jeff' went with it.
+            ?>
             <!--
             Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
             Please help in confirming and/or updating out-dated information.

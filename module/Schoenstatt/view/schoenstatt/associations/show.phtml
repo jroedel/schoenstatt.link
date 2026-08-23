@@ -1,5 +1,4 @@
 <?php
-use Carbon\Carbon;
 use Spatie\SchemaOrg\BaseType;
 
 $object = $this->entity;
@@ -94,12 +93,13 @@ if (! empty($object['photos'])) :
                     isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
                     $this->isAllowed('route/persons/person/edit-contact-info')
                       );?></span></p>
-            <?php endforeach;
-            if (isset($object['phonesUpdatedOn'])) :  //@todo add a question mark here with text
-                //@todo use diffForHumans view helper
-                $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
-                <p class="text-right"><?= $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
-            <?php endif;?>
+            <?php endforeach;?>
+            <?php // The "✓ Up-to-date" tooltip was here, guarded on $object['phonesUpdatedOn'].
+            // That column was never written — a duplicate key in the entity config sent every
+            // phone field to the contactInfo group instead — so this block never rendered in
+            // the years it existed. Column dropped in database/db8.9.sql; see
+            // docs/shrine-data.md. The hardcoded 'jeff' went with it.
+            ?>
             <?php if (! empty($object['urls'])) :?>
             <p><strong><?= $this->translate("Links"); ?>:</strong>
             <div class="row">
