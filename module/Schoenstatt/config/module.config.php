@@ -1294,18 +1294,12 @@ return [
                 'name_field_is_translateable'           => false,
                 'country_field'                         => 'country',
                 'text_columns'                          => [],
+                //The 'emails' and 'phones' groups used to be declared here, above the
+                //'contactInfo' block, naming the same seven keys. A PHP array cannot hold a
+                //key twice, so 'contactInfo' silently won every one of them and
+                //Emails/PhonesUpdatedOn were never written — 0 of 325 persons. Both column
+                //pairs were dropped in database/db8.9.sql; see docs/shrine-data.md.
                 'many_to_one_update_columns' => [
-                    'email'                     => 'emails',
-                    'email2'                    => 'emails',
-                    'cellPhone'                 => 'phones',
-                    'cellPhoneHasWhatsApp'      => 'phones',
-                    'phone1'                    => 'phones',
-                    'phone1Label'               => 'phones',
-                    'phone2'                    => 'phones',
-                    'phone2Label'               => 'phones',
-                    'phone3'                    => 'phones',
-                    'phone3Label'               => 'phones',
-
                     'email'                     => 'contactInfo',
                     'email2'                    => 'contactInfo',
                     'skypeUser'                 => 'contactInfo',
@@ -1408,8 +1402,6 @@ return [
 
                     'email'                     => 'Email',
                     'email2'                    => 'Email2',
-                    'emailsUpdatedOn'           => 'EmailsUpdatedOn',
-                    'emailsUpdatedBy'           => 'EmailsUpdatedBy',
                     'cellPhone'                 => 'CellPhone',
                     'cellPhoneHasWhatsApp'      => 'CellPhoneHasWhatsApp',
                     'phone1'                    => 'Phone1',
@@ -1418,8 +1410,6 @@ return [
                     'phone2Label'               => 'Phone2Label',
                     'phone3'                    => 'Phone3',
                     'phone3Label'               => 'Phone3Label',
-                    'phonesUpdatedOn'           => 'PhonesUpdatedOn',
-                    'phonesUpdatedBy'           => 'PhonesUpdatedBy',
                     'url1'                      => 'Url1',
                     'url1Label'                 => 'Url1Label',
                     'url2'                      => 'Url2',
@@ -1501,17 +1491,13 @@ return [
 //                 'moderate_route'                         => 'events/event/moderate',
 //                 'moderate_route_entity_key'             => 'event_id',
 //                 'suggest_form'                           => 'Project\Form\SuggestEventForm',
+                //The 'emails' and 'phones' groups used to be declared here, above the
+                //'contactInfo' block, naming the same seven keys. A PHP array cannot hold a
+                //key twice, so 'contactInfo' silently won every one of them and
+                //Emails/PhonesUpdatedOn were never written — 0 of 498 associations, which is
+                //also why the "✓ Up-to-date" tooltip never rendered. Both column pairs were
+                //dropped in database/db8.9.sql; see docs/shrine-data.md.
                 'many_to_one_update_columns'            => [
-                    'email'                     => 'emails',
-//                     'email2'                    => 'emails',
-
-                    'phone1'                    => 'phones',
-                    'phone1Label'               => 'phones',
-                    'phone2'                    => 'phones',
-                    'phone2Label'               => 'phones',
-                    'phone3'                    => 'phones',
-                    'phone3Label'               => 'phones',
-
                     'email'                     => 'contactInfo',
 //                     'email2'                    => 'contactInfo',
                     'phone1'                    => 'contactInfo',
@@ -1564,21 +1550,6 @@ return [
                     'geoPoint'                  => 'Location',
 //                     'latitude'                  => 'Latitude', //@deprecated
 //                     'longitude'                 => 'Longitude', //@deprecated
-//                     'idealEn'                   => 'IdealEn', //@deprecated
-//                     'idealEs'                   => 'IdealEs', //@deprecated
-//                     'idealDe'                   => 'IdealDe', //@deprecated
-//                     'idealPt'                   => 'IdealPt', //@deprecated
-//                     'idealFr'                   => 'IdealFr', //@deprecated
-//                     'visitorsInformationEn'     => 'VisitorsInformationEn', //@deprecated
-//                     'visitorsInformationEs'     => 'VisitorsInformationEs', //@deprecated
-//                     'visitorsInformationDe'     => 'VisitorsInformationDe', //@deprecated
-//                     'visitorsInformationPt'     => 'VisitorsInformationPt', //@deprecated
-//                     'visitorsInformationFr'     => 'VisitorsInformationFr', //@deprecated
-//                     'historyEn'                 => 'HistoryEn', //@deprecated
-//                     'historyEs'                 => 'HistoryEs', //@deprecated
-//                     'historyDe'                 => 'HistoryDe', //@deprecated
-//                     'historyPt'                 => 'HistoryPt', //@deprecated
-//                     'historyFr'                 => 'HistoryFr', //@deprecated
 
                     'publicNotes'               => 'PublicNotes',
                     'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',
@@ -1589,16 +1560,12 @@ return [
                     'adminNotesUpdatedBy'       => 'AdminNotesUpdatedBy',
                     'email'                     => 'Email',
 //                     'email2'                    => 'Email2', //@deprecated
-                    'emailsUpdatedOn'           => 'EmailsUpdatedOn',
-                    'emailsUpdatedBy'           => 'EmailsUpdatedBy',
                     'phone1'                    => 'Phone1',
                     'phone1Label'               => 'Phone1Label',
                     'phone2'                    => 'Phone2',
                     'phone2Label'               => 'Phone2Label',
                     'phone3'                    => 'Phone3',
                     'phone3Label'               => 'Phone3Label',
-                    'phonesUpdatedOn'           => 'PhonesUpdatedOn',
-                    'phonesUpdatedBy'           => 'PhonesUpdatedBy',
                     'url1'                      => 'Url1',
                     'url1Label'                 => 'Url1Label',
                     'url2'                      => 'Url2',

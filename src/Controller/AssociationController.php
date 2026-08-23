@@ -9,8 +9,6 @@ use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
 use App\Sion\SiteWideIdentifier;
 use App\View\PreferredUrls;
-use Carbon\Carbon;
-use DateTimeInterface;
 use Laminas\Authentication\AuthenticationService;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Locale;
@@ -158,7 +156,6 @@ final class AssociationController
                 ?? ($entity['publicNotes'] ?? null),
             'map_url'              => $this->mapUrl($entity),
             'map_tile_url'         => $this->mapTileUrl($entity),
-            'phones_updated_tooltip' => $this->phonesUpdatedTooltip($entity),
             'edit_url'             => $this->urls->path('association-edit', ['sw_id' => $swId]),
             'add_assignment_url'   => $this->addAssignmentUrl($entity),
             'add_national_url'     => $this->urls->path('associations/create', [], [
@@ -329,29 +326,6 @@ final class AssociationController
         $yTile  = floor($n * (1.0 - (log(tan($latRad) + 1.0 / cos($latRad)) / M_PI)) / 2.0);
 
         return sprintf('https://a.tile.openstreetmap.org/%d/%d/%d.png', self::MAP_ZOOM, $xTile, $yTile);
-    }
-
-    /**
-     * The "✓ Up-to-date" tooltip text.
-     *
-     * `'jeff'` is hardcoded in the original — it interpolates a literal where a user
-     * name belongs — and is carried over rather than fixed, because inventing the right
-     * name is a content decision. Recorded in docs/BACKLOG.md.
-     *
-     * @param array<string, mixed> $entity
-     */
-    private function phonesUpdatedTooltip(array $entity): string
-    {
-        $updated = $entity['phonesUpdatedOn'] ?? null;
-        if (! $updated instanceof DateTimeInterface) {
-            return '';
-        }
-
-        return sprintf(
-            $this->translate('Updated by %s %s'),
-            'jeff',
-            Carbon::instance($updated)->diffForHumans()
-        );
     }
 
     /**
