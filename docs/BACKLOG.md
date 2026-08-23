@@ -755,9 +755,18 @@ rediscovered.
   catches the failure and reads it as "no", which is defensive rather than correct. Belongs
   with the other misnamed guards below.
 
-- [ ] **The association page's "Up-to-date" tooltip says `jeff`.** A hardcoded literal
-  where a user name belongs — `sprintf($this->translate('Updated by %s %s'), 'jeff', …)` —
-  carried over verbatim by the 2026-08-12 port. A content decision, not a porting one.
+- [x] ~~**The association page's "Up-to-date" tooltip says `jeff`.**~~ **Moot as of
+  2026-08-23 — the tooltip had never rendered.** It was guarded on `entity.phonesUpdatedOn`,
+  and that column was never written: `module/Schoenstatt/config/module.config.php` mapped the
+  seven email/phone field names to `'emails'`/`'phones'` and then, inside the same array
+  literal, to `'contactInfo'`, and PHP keeps the last value for a duplicate key silently. So
+  `Emails/PhonesUpdatedOn` were 0 of 498 associations and 0 of 325 persons, and the block was
+  unreachable on both front controllers and in all four renderings (two Twig, two `.phtml`).
+  The columns were dropped in `database/db8.9.sql` and the blocks deleted with them, so the
+  hardcoded literal went too — no content decision was needed after all. The general lesson
+  is worth more than the fix: **a duplicate key in a config array is invisible to every tool
+  this repo runs** — no lint, no PHPStan level, no test — and its only symptom is a column
+  that stays empty. See [shrine-data.md](shrine-data.md).
 
 - [ ] **More form routes, now that the form layer exists.** `src/Form/BootstrapFormRenderer`
   landed with `association-edit` (2026-08-09) and reproduces TwbBundle's markup

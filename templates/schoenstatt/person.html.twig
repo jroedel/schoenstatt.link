@@ -95,16 +95,12 @@
                     is_allowed('route/persons/person/edit-contact-info')
                 ) }}</span></p>
             {% endfor %}
-            {#- the .phtml builds this one with Carbon directly instead of the
-                diffForHumans helper, and hardcodes the updater's name as 'jeff'. Both
-                reproduced: it is a visible string on a moderator's page, and changing it
-                is a fix rather than a port. -#}
-            {% if person.phonesUpdatedOn is not null %}
-                <p class="text-right">{{ tooltip(
-                    '✓ Up-to-date',
-                    translate('Updated by %s %s')|format('jeff', diff_for_humans(person.phonesUpdatedOn))
-                ) }}</p>
-            {% endif %}
+            {#- The "✓ Up-to-date" tooltip was here, guarded on person.phonesUpdatedOn.
+                That column was never written — a duplicate key in the entity config sent
+                every phone field to the contactInfo group instead — so this block never
+                rendered on either front controller in the years it existed. Column dropped
+                in database/db8.9.sql; see docs/shrine-data.md. It also took the hardcoded
+                'jeff' with it, which docs/BACKLOG.md had recorded as a content fix. -#}
             <!--
             Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
             Please help in confirming and/or updating out-dated information.
