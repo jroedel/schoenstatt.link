@@ -144,6 +144,24 @@ jobs:
         run: php composer.phar install --no-dev --no-interaction --no-progress
       - name: Fetch the pinned phpunit phar
         run: bash tools/get-phars.sh phpunit
+      # `config/autoload/local.php` is gitignored and machine-specific, and a bare
+      # runner has none — so `$config['db']` is simply absent and
+      # Application\Service\DbAdapterServiceFactory emits seven "Undefined array
+      # key" warnings on its way to building a broken adapter. `failOnWarning` is
+      # on, so that alone fails this job with every assertion passing.
+      #
+      # Copying the .dist is what config.sh does on a developer's machine, so it is
+      # the sanctioned bootstrap rather than a CI-only fiction. Its credentials point
+      # at a `localhost` MySQL that does not exist here, which is exactly what the
+      # suite is built for: every test needing a database catches the connection
+      # failure and skips.
+      #
+      # This became load-bearing during the Actions quota outage (2026-08-14 to
+      # 2026-09-01): the tests that resolve the adapter — ProvenanceStoreTest, the
+      # two linking tests, ShrineCachingTest — all landed while no job could run, so
+      # nothing reported the warnings. Integration last passed here on 2026-08-11.
+      - name: Provide the machine config the suite expects
+        run: cp config/autoload/local.php.dist config/autoload/local.php
       - name: Run the integration suite
         # memory_limit=1G for the same reason the fuzz job needs it, and since
         # batch 10 for the same code: three of these tests build every form in
