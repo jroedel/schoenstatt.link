@@ -29,6 +29,14 @@ use JUser\Controller\UserDeleteController;
 use JUser\Controller\UserEditController;
 use JUser\Controller\UsersController;
 use JUser\Controller\VerifyController;
+use App\JTranslate\Host\Flash as JTranslateFlash;
+use App\JTranslate\Host\UrlBuilder as JTranslateUrlBuilder;
+use JTranslate\Controller\PhraseDeleteController;
+use JTranslate\Controller\PhraseEditController;
+use JTranslate\Controller\PhraseIndexController;
+use JTranslate\Form\EditPhraseForm;
+use JTranslate\Model\TranslationsTable;
+use JTranslate\Page\PhraseAdmin;
 use App\JUser\Host\FormLocator;
 use App\JUser\Host\Access;
 use App\JUser\Host\Flash;
@@ -108,6 +116,8 @@ use App\Http\PhraseFlushListener;
 use App\Http\SionCacheFlushListener;
 use App\Http\ProtocolVersionListener;
 use App\Http\SessionListener;
+use App\Laminas\HostMessages;
+use App\Laminas\HostUrls;
 use App\Laminas\RouteUrl;
 use App\Laminas\PhraseFlush;
 use App\Laminas\ServiceBridge;
@@ -195,12 +205,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private SignIn $signIn;
     private RedirectTarget $redirectTarget;
     private CookieExplainer $cookieExplainer;
+    private HostMessages $hostMessages;
+    private HostUrls $hostUrls;
     private JUserUrlBuilder $juserUrls;
     private Flash $juserFlash;
     private JUserSession $juserSession;
     private Identity $juserIdentity;
     private Access $juserAccess;
     private RouteResolver $juserRoutes;
+    private PhraseAdmin $phraseAdmin;
+    private JTranslateUrlBuilder $jtranslateUrls;
+    private JTranslateFlash $jtranslateFlash;
     private RouteUrl $routeUrl;
     private PreferredUrls $preferredUrls;
     private RouteGuard $routeGuard;
@@ -795,6 +810,26 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->juserIdentity(),
                 $this->juserSession()
             ),
+            // The translation GUI, served by JTranslate's own controllers since
+            // 2026-09-08. Same shape as the JUser block above: no ServiceBridge in any of
+            // them, so the module drops into an application that has none. `EditPhraseForm`
+            // goes straight to the one controller that renders it rather than through
+            // PhraseAdmin — see that class on why.
+            PhraseIndexController::class => fn (): PhraseIndexController => new PhraseIndexController(
+                $this->phraseAdmin(),
+                $this->twig()
+            ),
+            PhraseEditController::class => fn (): PhraseEditController => new PhraseEditController(
+                $this->phraseAdmin(),
+                $this->laminas()->get(EditPhraseForm::class),
+                $this->twig(),
+                $this->jtranslateUrls()
+            ),
+            PhraseDeleteController::class => fn (): PhraseDeleteController => new PhraseDeleteController(
+                $this->phraseAdmin(),
+                $this->twig(),
+                $this->jtranslateUrls()
+            ),
         ]);
     }
 
@@ -1018,18 +1053,34 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     }
 
     /**
-     * The six adapters that make up JUser's host contract. All shared per request, and one of
-     * them **must** be: `App\JUser\Host\Flash` memoizes its FlashMessenger, because a second
-     * instance moves the first's message out of the session and drops it. See that class.
+     * The two shared implementations behind every module's host contract.
+     *
+     * `hostMessages()` **must** be one object for the request and not one per module: a
+     * second `FlashMessenger` moves the first's message out of the session and drops it, so
+     * with one per module a page that speaks through both loses one of two messages. Both
+     * JUser's and JTranslate's `Flash` adapters take this one. See `App\Laminas\HostMessages`.
+     */
+    private function hostMessages(): HostMessages
+    {
+        return $this->hostMessages ??= new HostMessages($this->laminas());
+    }
+
+    private function hostUrls(): HostUrls
+    {
+        return $this->hostUrls ??= new HostUrls($this->routeUrl(), $this->requests());
+    }
+
+    /**
+     * The six adapters that make up JUser's host contract, all shared per request.
      */
     private function juserUrls(): JUserUrlBuilder
     {
-        return $this->juserUrls ??= new JUserUrlBuilder($this->routeUrl(), $this->requests());
+        return $this->juserUrls ??= new JUserUrlBuilder($this->hostUrls());
     }
 
     private function juserFlash(): Flash
     {
-        return $this->juserFlash ??= new Flash($this->laminas());
+        return $this->juserFlash ??= new Flash($this->hostMessages());
     }
 
     private function juserSession(): JUserSession
@@ -1099,6 +1150,41 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         $adapter = $this->laminas()->get($service);
 
         return $adapter;
+    }
+
+    /**
+     * The translation surface's shared plumbing, and its two host adapters.
+     *
+     * Three routes, one `PhraseAdmin`, and deliberately less than JUser needs: this surface
+     * has no identity question of its own (all three routes are guarded by roles nobody
+     * holds by default) and no session slot, so the contract is the two messengers and a URL
+     * builder.
+     *
+     * The logger is the *application* logger rather than a `JTranslate\Logger` alias,
+     * because there is no such alias to inherit: the laminas GUI wrote its one failure to
+     * `error_log()`. Routing it through the application logger is what makes a failed
+     * catalog write visible where every other failure here is — see
+     * `JTranslate\Page\PhraseAdmin::exportCatalogs()`, which is the only caller.
+     */
+    private function phraseAdmin(): PhraseAdmin
+    {
+        return $this->phraseAdmin ??= new PhraseAdmin(
+            $this->laminas()->get(TranslationsTable::class),
+            $this->jtranslateFlash(),
+            $this->laminas()->has(LoggerInterface::class)
+                ? $this->laminas()->get(LoggerInterface::class)
+                : null
+        );
+    }
+
+    private function jtranslateUrls(): JTranslateUrlBuilder
+    {
+        return $this->jtranslateUrls ??= new JTranslateUrlBuilder($this->hostUrls());
+    }
+
+    private function jtranslateFlash(): JTranslateFlash
+    {
+        return $this->jtranslateFlash ??= new JTranslateFlash($this->hostMessages());
     }
 
     /**

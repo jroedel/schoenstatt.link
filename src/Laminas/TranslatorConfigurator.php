@@ -9,13 +9,11 @@ use JTranslate\Model\TranslationsTable;
 use Laminas\I18n\Translator\Translator;
 use Laminas\I18n\Translator\TranslatorInterface;
 use Laminas\Mvc\I18n\Translator as MvcI18nTranslator;
-use Laminas\ModuleManager\ModuleManager;
 use Laminas\ServiceManager\Factory\DelegatorFactoryInterface;
 use Laminas\Validator\AbstractValidator;
 use Locale;
 use Psr\Container\ContainerInterface;
 
-use function array_key_exists;
 use function file_exists;
 use function getcwd;
 use function glob;
@@ -171,7 +169,13 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //Laminas\Validator\Translator\TranslatorInterface.
         AbstractValidator::setDefaultTranslator($translator, 'default');
 
-        $modules = $this->moduleLanguageDirectories($container);
+        //Shared with the writer side rather than computed here, and since 2026-09-08 the
+        //table is configured with the same map by a delegator in App\Laminas\ServiceBridge —
+        //because a caller that *exports* catalogs must not depend on whether this delegator
+        //happened to run first. It did not, on the one path where it matters: a successful
+        //save redirects, so nothing renders and nothing builds a translator. See
+        //App\Laminas\ModuleLanguageDirectories.
+        $modules = ModuleLanguageDirectories::forContainer($container);
         $table->setUserModules($modules);
         foreach ($modules as $module => $directory) {
             if (file_exists($directory)) {
@@ -194,32 +198,6 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
                 $domain
             );
         }
-    }
-
-    /**
-     * `module/<M>/language` for every *loaded* module, keyed by module name.
-     *
-     * The loaded-modules filter is the original's and matters: `module/` also holds
-     * directories for modules `config/modules.config.php` does not enable, and
-     * registering a pattern for one would let a disabled module's stale export
-     * translate a live page.
-     *
-     * @return array<string, string>
-     */
-    private function moduleLanguageDirectories(ContainerInterface $container): array
-    {
-        /** @var ModuleManager $manager */
-        $manager = $container->get(ModuleManager::class);
-        $loaded  = $manager->getLoadedModules();
-
-        $modules = [];
-        foreach ($this->subdirectories('module/*') as $module) {
-            if (array_key_exists($module, $loaded)) {
-                $modules[$module] = getcwd() . '/module/' . $module . '/language';
-            }
-        }
-
-        return $modules;
     }
 
     /**

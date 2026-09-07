@@ -92,9 +92,28 @@ wrong answer; ask the merged config.
 **4. The catalogs are build output.** `.lang.php` files are gitignored in all four
 repos, written by `TranslationsTable::writePhpTranslationArrays()`. A fresh
 checkout renders English until `php bin/console jtranslate:export-catalogs` runs,
-and a deploy rebuilds them through a phploy hook. They are plain
+and a deploy rebuilds them as its last warming step. They are plain
 `<?php return [...]` arrays — the format is fast, staying, and is what
 `symfony/translation` independently landed on for its own compiled cache.
+
+**Which of the two directories a domain goes to is decided by
+`setUserModules()`, and getting it wrong is invisible.** A text domain naming a
+loaded module is written into that module; everything else goes to
+`language/<Domain>/`. Both are registered as *read* paths and `language/*` is
+registered **last**, so a catalog in the wrong place is still loaded and the page
+looks right. What breaks is the pair of copies: the console export rewrites one, a
+GUI or API write the other, and a translation edited or deleted through one goes on
+being served from the copy nothing rewrote.
+
+That was live from the day the v3 API shipped until 2026-09-08. The map was set only
+by `App\Laminas\TranslatorConfigurator`, which runs when something asks for a
+*translator* — and every write that succeeds **redirects**, so nothing rendered,
+nothing translated, and the map was empty. `App\Laminas\TranslationsTableConfigurator`
+now sets it as a delegator on the table itself, so no caller has to know.
+
+**A stray `language/<Module>/` directory is therefore a fossil, and should be
+deleted.** One of them was translating `/it/` shrine names out of a snapshot the
+database no longer contains — see docs/BACKLOG.md.
 
 ## What makes two phrases the same phrase
 
@@ -354,6 +373,15 @@ Reads are the other half of that rule. `TableGateway::select()` takes a
 the whole table. That is how JTranslate's phrase index read every project's rows
 for years without a single error.
 
+The editing GUI is where that rule is most easily broken, because its whole job is to
+put phrases on a page: `getTranslations()` filters on `project` in PHP, and
+`getPhraseById()` filters in SQL — so another project's phrase is *absent* from the
+worklist and *not found* by id, rather than forbidden. Absent is the right answer:
+refusing it would confirm the row exists.
+`test/Smoke/TranslationSmokeTest::testTheWorklistShowsOnlyThisProjectsPhrases`
+asserts it against a real foreign row, picked by `phrase_hash` so that a UI string
+both projects happen to share cannot make it pass or fail by accident.
+
 ## Caching
 
 Two layers, both APCu, both explained in [caching.md](caching.md):
@@ -425,6 +453,9 @@ should not be asking for, or asking for it twice."
 | data-carrying messages | `module/JTranslate/src/I18n/TranslatableMessage.php` |
 | laminas per-request domains | `module/JTranslate/src/Module.php` |
 | Symfony translator wiring | `src/Laminas/TranslatorConfigurator.php` |
+| catalog write location | `src/Laminas/TranslationsTableConfigurator.php`, `src/Laminas/ModuleLanguageDirectories.php` |
+| the editing GUI | `module/JTranslate/src/{Controller,Page,Host,Routing,Twig}/`, templates in `module/JTranslate/templates/` |
+| its routes | `module/JTranslate/config/symfony-routes.php`, called from `config/symfony/routes.php` |
 | Twig `translate()` and friends | `src/Twig/LaminasExtension.php` |
 | bridged view helpers | `src/Laminas/ViewHelpers.php` |
 | route text domains | `config/symfony/routes.php` |
