@@ -17,6 +17,9 @@ use RuntimeException;
 use SionModel\Cache\EntityChangeListeners;
 use Throwable;
 
+use function apcu_enabled;
+use function extension_loaded;
+
 /**
  * The assembled BjyAuthorize ACL is cached, and something expires it.
  *
@@ -56,6 +59,36 @@ class AclCacheTest extends TestCase
         $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
         return self::$bridge = new ServiceBridge($appConfig);
+    }
+
+    /**
+     * Skip when this process cannot use APCu at all.
+     *
+     * `BjyAuthorize\Cache` is an APCu storage adapter, and laminas-cache refuses to build
+     * one when `apc.enabled`/`apc.enable_cli` says the extension is off — a
+     * `ServiceNotCreatedException` from the *container*, not a cache miss. So every service
+     * below it is unreachable, which is four of the tests here: they resolve `Authorize`,
+     * the storage itself, `EntityChangeListeners` or a table wired to it.
+     *
+     * That is the state on a bare CI runner, and it is why this call exists rather than the
+     * "nothing was stored" skip further down: the exception happens while the container is
+     * still building, so a skip inside the test body is never reached. The two pure-config
+     * tests above need none of this and keep running there, which is the point of guarding
+     * per test rather than in `setUp()`.
+     *
+     * Discovered 2026-09-08, on the first CI run since the Actions quota reset — the ACL
+     * cache landed on 2026-08-22, eight days into an outage that made every job fail in two
+     * seconds with no runner, so these four had never once executed on a runner.
+     */
+    private function requireApcu(): void
+    {
+        if (! extension_loaded('apcu') || ! apcu_enabled()) {
+            self::markTestSkipped(
+                'APCu is unusable in this process (apc.enabled / apc.enable_cli), so the '
+                . 'container cannot build BjyAuthorize\Cache. The capsule has it; a bare CI '
+                . 'runner does not.'
+            );
+        }
     }
 
     /** @return array<string, mixed> */
@@ -106,6 +139,8 @@ class AclCacheTest extends TestCase
      */
     public function testTheStoredAclCarriesNoIdentity(): void
     {
+        $this->requireApcu();
+
         $storage = $this->aclStorage();
         $key     = (string) ($this->bjyConfig()['cache_key'] ?? 'acl');
 
@@ -139,6 +174,8 @@ class AclCacheTest extends TestCase
      */
     public function testTheAclHoldsNoPerUserRoles(): void
     {
+        $this->requireApcu();
+
         $acl   = $this->authorize()->getAcl();
         $roles = array_map('strval', $acl->getRoles());
 
@@ -158,6 +195,11 @@ class AclCacheTest extends TestCase
      */
     public function testEveryRoleAnAccountCanHoldExistsInTheAcl(): void
     {
+        //Before the try below, and not inside it: that catch only wraps the query, and it
+        //would report an unbuildable cache as "no reachable database" — which is how this
+        //one hid behind the DB skip on a runner that has neither.
+        $this->requireApcu();
+
         try {
             /** @var Adapter $adapter */
             $adapter = $this->bridge()->get(Adapter::class);
@@ -189,6 +231,8 @@ class AclCacheTest extends TestCase
 
     public function testTheListenerRegistryIsRegisteredAndCarriesTheAclInvalidator(): void
     {
+        $this->requireApcu();
+
         self::assertTrue(
             $this->bridge()->has(EntityChangeListeners::class),
             'without this in the container SionTableWiring wires nothing and no write ever expires the ACL'
@@ -209,6 +253,8 @@ class AclCacheTest extends TestCase
      */
     public function testATableIsWiredToTheRegistry(): void
     {
+        $this->requireApcu();
+
         /** @var UserTable $users */
         $users = $this->bridge()->get(UserTable::class);
         $wired = (new ReflectionProperty($users, 'entityChangeListeners'))->getValue($users);

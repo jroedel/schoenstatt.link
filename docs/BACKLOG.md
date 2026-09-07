@@ -914,6 +914,32 @@ rediscovered.
   `it_IT` gaps at the same time — the language was added last and is the thinnest). Worth
   knowing that the *duplicate* rows make it two edits, or one after a merge.
 
+- [ ] **`TranslationsTable` cannot be built at all without APCu, and `PhraseCacheFactory`
+  promises otherwise.** That factory's docblock says "every failure path here degrades to a
+  cache-less PhraseCache rather than throwing" — and it does guard its own code, but the
+  *service* it asks for throws first: `Laminas\Cache\Storage\Adapter\Apcu` refuses to be
+  created when `apc.enabled`/`apc.enable_cli` says the extension is off, so the container
+  fails above the guard.
+  Consequence, measured 2026-09-08 with `php -d apc.enable_cli=0`: any integration test that
+  reaches the table dies — `AdminIndexParityTest` fatals with "LazyControllerFactory couldn't
+  create an instance of JTranslate\Model\TranslationsTable", not an assertion failure. It is
+  invisible on CI only because a bare runner has no database either, so those tests skip for
+  the *other* reason first. A runner with a database and no APCu would be a wall of fatals.
+  Three lines in `PhraseCacheFactory::psrCache()` (catch the adapter build, not just the
+  config translation) make the promise true. Submodule change, so its own PR.
+
+- [ ] **CI's integration job skips 191 of 1,334 tests**, because a bare runner has neither a
+  database nor APCu — measured on the 2026-09-07 run, the first real one since the Actions
+  quota reset. That is by design and documented, but the number is worth watching: it is the
+  share of integration coverage that only ever runs locally, and `tools/ci-local.sh` is the
+  only place it runs at all. Two things would shrink it: a MariaDB service container for the
+  job, and `apc.enable_cli=1` on the runner's PHP.
+  Related, and the reason this is a backlog item rather than a note: **the quota outage hid
+  a real breakage for three weeks.** Four `AclCacheTest` tests errored on the first run back
+  because the ACL cache landed on 2026-08-22, eight days into an outage where every job
+  failed in two seconds with no runner assigned. Nothing was wrong with the code; the tests
+  had simply never executed on a runner. Expect one more batch of that kind of finding.
+
 - [ ] **`error_log()` writes nothing in the capsule**, because `log_errors` is `Off` in the
   container's ini. Every `error_log()` call in the tree is silently discarded — there are
   several, mostly in JTranslate and the v3 API, each one the report of a failure that
