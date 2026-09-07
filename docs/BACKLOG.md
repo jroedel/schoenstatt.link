@@ -787,6 +787,10 @@ rediscovered.
     one template. Five of the twelve `delete` routes are *not* portable and it is worth
     knowing why before counting them: three are reachable by nobody and two have their own
     controllers. See [strangler.md](strangler.md).
+  - **Done:** the translation GUI, batch 14 (2026-09-08) — `jtranslate`,
+    `jtranslate/phrase/edit` and `jtranslate/phrase/delete`, declared by the module and
+    served by `JTranslate\Controller\Phrase{Index,Edit,Delete}Controller`. `EditPhraseForm`
+    and `DeletePhraseForm` were the last two of the four forms below to move.
   - **No longer blocked, and this was the last blocker:** the user and translation forms
     (`CreateRoleForm`, `EditUserForm`, `DeleteUserForm`, `EditPhraseForm`). All four read
     JUser's unreproduced `GlobalAdapterFeature` static registry through a
@@ -894,6 +898,60 @@ rediscovered.
   never in the repo.
 
 ## Bugs (characterized, fix pending)
+
+- [ ] **Italian shrine names render in English, and a fossil catalog was hiding it.**
+  `SchoenstattTable` builds a shrine's name by translating its *kind* in the `Schoenstatt`
+  text domain, and the phrase `Schoenstatt Shrine` carries `de_DE`, `en_US`, `es_ES` and
+  `pt_BR` in both of its duplicate rows (6526 and 7458) and **no `it_IT`**. So
+  `/it/SL100458A/…` reads "Schoenstatt Shrine Mont Sion Gikungu", on production as much as
+  in the capsule.
+  `test/Smoke/BreadcrumbDataLabelsSmokeTest` expected the Italian name and passed until
+  2026-09-08, because a stray `language/Schoenstatt/it_IT.lang.php` — written by an export
+  that did not know which domains are modules, see [translation.md](translation.md) — still
+  carried a translation the database no longer has. The fossil is gone and the test now
+  expects what the page renders, with the reason in a comment.
+  The fix is data, not code: translate the kind labels into Italian (and check the other
+  `it_IT` gaps at the same time — the language was added last and is the thinnest). Worth
+  knowing that the *duplicate* rows make it two edits, or one after a merge.
+
+- [ ] **`error_log()` writes nothing in the capsule**, because `log_errors` is `Off` in the
+  container's ini. Every `error_log()` call in the tree is silently discarded — there are
+  several, mostly in JTranslate and the v3 API, each one the report of a failure that
+  already committed. It cost half an hour on 2026-09-08: a catalog export was throwing, the
+  controller reported it correctly, and the reason was nowhere.
+  Two ways to close it and they are not exclusive: turn `log_errors` on in
+  `docker/php-limits.ini` so the capsule matches production's behaviour (production has no
+  `error_log` path either, so those lines go to Apache's log there — unverified), and move
+  the remaining `error_log()` calls to `Psr\Log\LoggerInterface`, which lands in
+  `data/logs/` where everything else already is. The JTranslate GUI's two are done.
+
+- [ ] **`sion-model/auto-fix-data-problems` is guarded `lib_administrator`** while its
+  read-only sibling `sion-model/data-problems` is `sch_general_moderator`
+  (`config/autoload/acl.global.php:90`). A *library* administrator being the one account
+  that may auto-fix site-wide data problems looks like a copy-paste rather than a decision,
+  and the route is the last easy port left — so decide the guard before porting it, not
+  after, or the port reproduces it faithfully and makes it a fact.
+
+- [ ] **Phrase 7469 is a blank phrase with a blank `en_US` translation**, written 2019-08-16.
+  It is the single row that makes "an empty translation counts as translated" more than
+  hypothetical (`trans_translations` id 12876), it renders as nothing wherever it appears,
+  and it sits on the worklist's *done* side because `isset()` says it has a translation.
+  One `DELETE`, through `jtranslate:retire` or the API rather than by hand.
+
+- [ ] **`EditPhraseForm`'s two length constants say `varchar(2000)` and both columns are
+  `mediumtext`.** `PHRASE_MAX_LENGTH` and `TRANSLATION_MAX_LENGTH` are 2,000 with docblocks
+  claiming they match the column exactly — they did, until the truncation fix migrated
+  `trans_phrases.phrase` and `trans_translations.translation` to `mediumtext`. So the form
+  now refuses to save a phrase or translation the database would accept, which matters for
+  exactly the long paragraphs that motivated the migration. Decide the real bound (a limit
+  is still wanted — the worklist renders every phrase) and fix the docblocks either way.
+
+- [ ] **Two PHPStan level-8 errors in `src/Controller/Api/ApiSchemaController.php`** (lines
+  203–204), pre-existing as of 2026-09-08 and not from any port: a call to
+  `getValidatorChain()` on `InputFilterInterface|InputInterface`, and an `??` whose left side
+  always exists. `src` is supposed to hold level 8 clean, so this is either two fixes or two
+  baseline entries — but not silence, since the next person to run the audit will read them
+  as their own.
 
 - [ ] **The cookie explainer's one paragraph is not translated.** `templates/content/sign-in-no-cookies.html.twig`
   prints it as a raw English literal, faithfully reproducing the .phtml, so a German visitor

@@ -216,6 +216,45 @@ suites run from the superproject working tree.
   `module/JUser/src/{Host,Page,Controller,Routing,Twig}` alongside `src`, and analysing
   `module/JUser/src/Controller` as a *directory* sweeps in the legacy `LoginController`,
   whose 17 findings are level-0 legacy and not new.
+  **The translation GUI is served by JTranslate's own controllers since 2026-09-08** —
+  `/admin/translations`, the phrase form and the delete confirmation, the last three
+  reachable `jtranslate/*` routes (`jtranslate/phrase` is a `may_terminate => false` parent
+  and not a page). Same shape as the JUser surface one size down:
+  `JTranslate\Controller\Phrase{Index,Edit,Delete}Controller` over
+  `JTranslate\Page\PhraseAdmin`, a three-interface host contract in
+  `module/JTranslate/src/Host/`, templates in `module/JTranslate/templates/` addressed as
+  `@jtranslate/…`, and three routes declared by `module/JTranslate/config/symfony-routes.php`.
+  The laminas controller and its three `.phtml` were **deleted with the switch**, so rolling
+  it back is a deploy. Its adapters are `src/JTranslate/Host/{Flash,UrlBuilder}.php`, and
+  both are two lines because the implementations are shared: `App\Laminas\HostMessages` and
+  `App\Laminas\HostUrls`, extracted from the JUser adapters in the same pass. **The
+  FlashMessenger memo had to move there**, because one instance per *module* is one too many —
+  a second `FlashMessenger` moves the first's messages out of the session and drops them, so
+  the requirement is one per **request**. `JTranslate\Host\Severity` is a deliberate second
+  copy of JUser's (JUser depends on JTranslate, so JTranslate must not depend back);
+  `test/Integration/JTranslateHostContractTest` pins both against the laminas flash namespaces
+  and against each other. Unlike JUser 3.0.0 this takes no package out of the module's
+  `require`: `JTranslate\Module::onBootstrap()` stays, because it is the translation layer
+  itself — the listener, the validator translator, the view helpers, `nowMessenger` — and not
+  GUI wiring. A level-8 audit must name `module/JTranslate/src/{Host,Page,Routing,Twig}` and
+  the three `Phrase*Controller.php` files by name, since that directory also holds the legacy
+  `LazyControllerFactory`.
+  **The port found a bug older than itself, and it was not in the GUI.**
+  `TranslationsTable::setUserModules()` decides whether a text domain's exported catalog goes
+  to `module/<M>/language/` or to `language/<M>/`, and on the Symfony front controller the
+  only thing calling it was `App\Laminas\TranslatorConfigurator` — which runs when something
+  asks for a *translator*. Every write that succeeds **redirects**, so nothing renders and the
+  map was empty: since the v3 API shipped, every module domain's catalog had been written to
+  the wrong directory. It looks harmless because both are registered as read paths and
+  `language/*` wins, so the damage is the *pair* — the console export rewrites one copy, a GUI
+  or API write the other, and a translation deleted through one goes on being served from the
+  other. `App\Laminas\TranslationsTableConfigurator` fixes it as a delegator on the table, so
+  no caller has to know; `PhrasesApiV3SmokeTest::catalogFor()` had asserted the wrong location
+  faithfully. Two capsule facts came out of the same hunt: **`log_errors` is `Off`**, so every
+  `error_log()` in the tree is discarded (the ported code logs through `LoggerInterface`
+  instead), and **`docker compose exec` runs as root**, so a console export leaves root-owned
+  catalog directories that make every web-served export fail with `Permission denied` — use
+  `-u www-data`. See [docs/translation.md](docs/translation.md).
   **Two guard facts about this surface.** The seven `juser/*` routes all name `administrator`,
   which is *not* `is_default = 1`, so unusually for this site the route guard really is the
   whole protection and `UserAdmin` deliberately has no `refuse()`. And **`/users/roles/create`
@@ -472,7 +511,7 @@ suites run from the superproject working tree.
 - **Authorization changes must be diffed, not just tested.** `docker compose exec -T app php tools/acl-table.php` emits a reviewable table of every role, guard and rule; `--format=json` emits the sorted, diffable form. `docs/acl-rules.md` and `docs/acl-baseline.json` are the committed snapshots. Regenerate and diff them after any change to a route, a guard entry or a role — a rule that quietly stops matching makes a page work for *more* people and nothing fails.
 - Beyond smoke, verification is lint + coding standard:
   - Syntax check any file you touch: `php -l path/to/File.php`.
-  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard), the two files that left `src` for SionModel on 2026-08-21, and `module/JUser/src/{Host,Page,Controller,Routing,Twig}` — each covered by its own submodule's `phpcs.xml`. `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
+  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Books,Schoenstatt}`, and `public/index.php`). **It exits non-zero and always will at this scope** — measured 2026-08-06: **425 errors / 450 warnings across 254 files**, not the four cosmetic findings this line used to claim. Almost all of it is `.phtml` under `module/{Application,Books,Schoenstatt}`, which the config sweeps in wholesale. What *is* clean, and must stay clean: **`src` and `config/symfony`** (zero findings — the Symfony-side code holds the standard), the two files that left `src` for SionModel on 2026-08-21, `module/JUser/src/{Host,Page,Controller,Routing,Twig}` and all of `module/JTranslate/{src,config,templates}` — each covered by its own submodule's `phpcs.xml`. `public/index.php` has 2, `config` 12 including the untracked `*.local.php`. So the exit status carries no signal at all: **run phpcs with your own paths as arguments** and judge those, e.g. `… vendor/bin/phpcs src config/symfony`. Narrowing `phpcs.xml` to exclude `.phtml`, or fixing the 421 auto-fixable violations, is a decision nobody has taken; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
   - Auto-fix: `php composer.phar cs-fix` — ask the user before running it broadly.
 - Local dev server: `php composer.phar run serve` (PHP built-in server on 127.0.0.1:8080 serving `public/`).
 - `bin/console` is the headless entry point (symfony/console): it builds the

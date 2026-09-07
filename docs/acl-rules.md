@@ -47,13 +47,13 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 45 |
 | route guard entries | 119 |
 | routes declared twice | 1 |
-| routes shadowed by symfony | 105 |
+| routes shadowed by symfony | 108 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 204 |
+| symfony routes acl checked | 210 |
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 231 |
+| symfony served routes | 237 |
 | total routes | 136 |
 | unguarded routes | 18 |
 | unguarded routes matchable | 6 |
@@ -172,6 +172,12 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `events` | `/timeline` | `route/events` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\TimelineController` |
 | `events.locale` | `/{_locale}/timeline` | `route/events` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\TimelineController` |
 | `health` | `/_health` | _open_ | everyone — reason below | n/a | `App\Controller\HealthController` |
+| `jtranslate` | `/admin/translations` | `route/jtranslate` | sch_administrator, sch_general_moderator, translator | html | `JTranslate\Controller\PhraseIndexController` |
+| `jtranslate.locale` | `/{_locale}/admin/translations` | `route/jtranslate` | sch_administrator, sch_general_moderator, translator | html | `JTranslate\Controller\PhraseIndexController` |
+| `jtranslate/phrase/delete` | `/admin/translations/{phrase_id}/delete` | `route/jtranslate/phrase/delete` | sch_administrator, sch_general_moderator, translator | html | `JTranslate\Controller\PhraseDeleteController` |
+| `jtranslate/phrase/delete.locale` | `/{_locale}/admin/translations/{phrase_id}/delete` | `route/jtranslate/phrase/delete` | sch_administrator, sch_general_moderator, translator | html | `JTranslate\Controller\PhraseDeleteController` |
+| `jtranslate/phrase/edit` | `/admin/translations/{phrase_id}/edit` | `route/jtranslate/phrase/edit` | sch_administrator, sch_general_moderator, translator | html | `JTranslate\Controller\PhraseEditController` |
+| `jtranslate/phrase/edit.locale` | `/{_locale}/admin/translations/{phrase_id}/edit` | `route/jtranslate/phrase/edit` | sch_administrator, sch_general_moderator, translator | html | `JTranslate\Controller\PhraseEditController` |
 | `juser` | `/users` | `route/juser` | administrator | html | `JUser\Controller\UsersController` |
 | `juser.locale` | `/{_locale}/users` | `route/juser` | administrator | html | `JUser\Controller\UsersController` |
 | `juser/create` | `/users/create` | `route/juser/create` | administrator | html | `JUser\Controller\UserCreateController` |
@@ -406,6 +412,9 @@ warning at the top of this file.
 | `dictionary/entry/edit` | `/dictionary/:entry_id/edit` | `/dictionary/0/edit` | `dictionary/entry/edit` | restricted to dict_administrator | `route/dictionary/entry/edit` — **the same resource** |
 | `dictionary/inLanguage` | `/dictionary/:inLanguage` | `/dictionary/aa` | `dictionary/inLanguage` | **public** (names the default role `guest`) | `route/dictionary/inLanguage` — **the same resource** |
 | `events` | `/timeline` | `—` | `events` | **public** (names the default role `guest`) | `route/events` — **the same resource** |
+| `jtranslate` | `/admin/translations` | `—` | `jtranslate` | restricted to sch_administrator, sch_general_moderator, translator | `route/jtranslate` — **the same resource** |
+| `jtranslate/phrase/delete` | `/admin/translations/:phrase_id/delete` | `/admin/translations/0/delete` | `jtranslate/phrase/delete` | restricted to sch_administrator, sch_general_moderator, translator | `route/jtranslate/phrase/delete` — **the same resource** |
+| `jtranslate/phrase/edit` | `/admin/translations/:phrase_id/edit` | `/admin/translations/0/edit` | `jtranslate/phrase/edit` | restricted to sch_administrator, sch_general_moderator, translator | `route/jtranslate/phrase/edit` — **the same resource** |
 | `juser` | `/users` | `—` | `juser` | restricted to administrator | `route/juser` — **the same resource** |
 | `juser/create` | `/users/create` | `—` | `juser/create` | restricted to administrator | `route/juser/create` — **the same resource** |
 | `juser/create-role` | `/users/roles/create` | `—` | `juser/create-role` | restricted to administrator | `route/juser/create-role` — **the same resource** |

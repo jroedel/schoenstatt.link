@@ -27,13 +27,13 @@
         "roles": 45,
         "route_guard_entries": 119,
         "routes_declared_twice": 1,
-        "routes_shadowed_by_symfony": 105,
+        "routes_shadowed_by_symfony": 108,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 204,
+        "symfony_routes_acl_checked": 210,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 231,
+        "symfony_served_routes": 237,
         "total_routes": 136,
         "unguarded_routes": 18,
         "unguarded_routes_matchable": 6
@@ -4562,6 +4562,36 @@
             "probe": "/timeline"
         },
         {
+            "laminas_route": "jtranslate",
+            "path": "/admin/translations",
+            "symfony_route": "jtranslate",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/jtranslate",
+            "access_kind": "acl",
+            "probe": "/admin/translations"
+        },
+        {
+            "laminas_route": "jtranslate/phrase/delete",
+            "path": "/admin/translations/:phrase_id/delete",
+            "symfony_route": "jtranslate/phrase/delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/jtranslate/phrase/delete",
+            "access_kind": "acl",
+            "probe": "/admin/translations/0/delete"
+        },
+        {
+            "laminas_route": "jtranslate/phrase/edit",
+            "path": "/admin/translations/:phrase_id/edit",
+            "symfony_route": "jtranslate/phrase/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/jtranslate/phrase/edit",
+            "access_kind": "acl",
+            "probe": "/admin/translations/0/edit"
+        },
+        {
             "laminas_route": "juser",
             "path": "/users",
             "symfony_route": "juser",
@@ -7574,6 +7604,66 @@
                 "resource": null,
                 "reason": "shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all",
                 "denial_style": "n/a"
+            }
+        },
+        "jtranslate": {
+            "path": "/admin/translations",
+            "controller": "JTranslate\\Controller\\PhraseIndexController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/jtranslate",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "jtranslate.locale": {
+            "path": "/{_locale}/admin/translations",
+            "controller": "JTranslate\\Controller\\PhraseIndexController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/jtranslate",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "jtranslate/phrase/delete": {
+            "path": "/admin/translations/{phrase_id}/delete",
+            "controller": "JTranslate\\Controller\\PhraseDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/jtranslate/phrase/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "jtranslate/phrase/delete.locale": {
+            "path": "/{_locale}/admin/translations/{phrase_id}/delete",
+            "controller": "JTranslate\\Controller\\PhraseDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/jtranslate/phrase/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "jtranslate/phrase/edit": {
+            "path": "/admin/translations/{phrase_id}/edit",
+            "controller": "JTranslate\\Controller\\PhraseEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/jtranslate/phrase/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "jtranslate/phrase/edit.locale": {
+            "path": "/{_locale}/admin/translations/{phrase_id}/edit",
+            "controller": "JTranslate\\Controller\\PhraseEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/jtranslate/phrase/edit",
+                "reason": null,
+                "denial_style": "html"
             }
         },
         "juser": {
