@@ -27,13 +27,13 @@
         "roles": 45,
         "route_guard_entries": 119,
         "routes_declared_twice": 1,
-        "routes_shadowed_by_symfony": 114,
+        "routes_shadowed_by_symfony": 115,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 222,
+        "symfony_routes_acl_checked": 224,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 249,
+        "symfony_served_routes": 251,
         "total_routes": 130,
         "unguarded_routes": 12,
         "unguarded_routes_matchable": 0
@@ -5122,6 +5122,16 @@
             "probe": "/literature/search"
         },
         {
+            "laminas_route": "redirect-pre-april-2020-sl-id",
+            "path": "/:sw_id[/:slug]",
+            "symfony_route": "redirect-pre-april-2020-sl-id",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/redirect-pre-april-2020-sl-id",
+            "access_kind": "acl",
+            "probe": "/SL00000A/a"
+        },
+        {
             "laminas_route": "roles",
             "path": "/roles",
             "symfony_route": "roles",
@@ -8792,6 +8802,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/publications/search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "redirect-pre-april-2020-sl-id": {
+            "path": "/{sw_id}/{slug}",
+            "controller": "App\\Controller\\PreApril2020RedirectController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/redirect-pre-april-2020-sl-id",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "redirect-pre-april-2020-sl-id.locale": {
+            "path": "/{_locale}/{sw_id}/{slug}",
+            "controller": "App\\Controller\\PreApril2020RedirectController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/redirect-pre-april-2020-sl-id",
                 "reason": null,
                 "denial_style": "html"
             }

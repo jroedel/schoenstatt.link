@@ -47,13 +47,13 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 45 |
 | route guard entries | 119 |
 | routes declared twice | 1 |
-| routes shadowed by symfony | 114 |
+| routes shadowed by symfony | 115 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 222 |
+| symfony routes acl checked | 224 |
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 249 |
+| symfony served routes | 251 |
 | total routes | 130 |
 | unguarded routes | 12 |
 | unguarded routes matchable | 0 |
@@ -285,6 +285,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `publications/publication-old.locale` | `/{_locale}/literature/{publication_id}` | `route/publications/publication-old` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\SendToNewUrlController::publicationById` |
 | `publications/search` | `/literature/search` | `route/publications/search` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\LiteratureController::search` |
 | `publications/search.locale` | `/{_locale}/literature/search` | `route/publications/search` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\LiteratureController::search` |
+| `redirect-pre-april-2020-sl-id` | `/{sw_id}/{slug}` | `route/redirect-pre-april-2020-sl-id` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\PreApril2020RedirectController` |
+| `redirect-pre-april-2020-sl-id.locale` | `/{_locale}/{sw_id}/{slug}` | `route/redirect-pre-april-2020-sl-id` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\PreApril2020RedirectController` |
 | `roles` | `/roles` | `route/roles` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\RolesController` |
 | `roles.locale` | `/{_locale}/roles` | `route/roles` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\RolesController` |
 | `roles/create` | `/roles/create` | `route/roles/create` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityCreateController` |
@@ -480,6 +482,7 @@ warning at the top of this file.
 | `publications/prime-authors` | `/literature/prime-authors` | `—` | `publications/prime-authors` | restricted to pub_administrator | `route/publications/prime-authors` — **the same resource** |
 | `publications/publication-old` | `/literature/:publication_id` | `/literature/0` | `publications/publication-old` | **public** (names the default role `guest`) | `route/publications/publication-old` — **the same resource** |
 | `publications/search` | `/literature/search` | `—` | `publications/search` | **public** (names the default role `guest`) | `route/publications/search` — **the same resource** |
+| `redirect-pre-april-2020-sl-id` | `/:sw_id[/:slug]` | `/SL00000A/a` | `redirect-pre-april-2020-sl-id` | **public** (names the default role `guest`) | `route/redirect-pre-april-2020-sl-id` — **the same resource** |
 | `roles` | `/roles` | `—` | `roles` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/roles` — **the same resource** |
 | `roles/create` | `/roles/create` | `—` | `roles/create` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/roles/create` — **the same resource** |
 | `roles/role/delete` | `/roles/:role_id/delete` | `/roles/0/delete` | `roles/role/delete` | restricted to sch_administrator, sch_general_moderator | `route/roles/role/delete` — **the same resource** |
