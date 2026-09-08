@@ -284,11 +284,17 @@ const PATHS = [
     // nothing. The destructive half is tested in test/Smoke, against fixtures, never here.
     //
     // Twelve routes contain `delete` and only these seven are in the batch. The other five
-    // are unreachable rather than skipped: `event-delete`, `libraries/library/delete` and
-    // `sion-model/delete-entity` have no guard entry at all, and the Route guard is
-    // default-deny, so all three answer **403 to an account holding every role** — measured
-    // 2026-08-14, not inferred. `juser/user/delete` and `jtranslate/phrase/delete` have
-    // their own controllers and forms.
+    // were unreachable rather than skipped: `event-delete`, `libraries/library/delete` and
+    // `sion-model/delete-entity` had no guard entry at all, and the Route guard is
+    // default-deny, so all three answered **403 to an account holding every role** —
+    // measured 2026-08-14, not inferred. `juser/user/delete` and `jtranslate/phrase/delete`
+    // have their own controllers and forms.
+    //
+    // Two of those three moved on 2026-09-08 and **neither becomes a subject here**.
+    // `event-delete` was deleted outright. `libraries/library/delete` was built as a
+    // Symfony page — and it has no laminas rendering to compare against, having never had
+    // one, so there is nothing for this harness to diff. It is covered by
+    // test/Smoke/LibraryDeleteSmokeTest instead, against fixtures it creates itself.
     //
     // Ids are deliberately the same records batch 7 edits, so one row covers a show page,
     // an edit form and a delete confirmation.

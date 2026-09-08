@@ -13,7 +13,9 @@ use Throwable;
 use function array_column;
 use function array_key_exists;
 use function count;
+use function explode;
 use function in_array;
+use function is_array;
 use function is_readable;
 use function sprintf;
 
@@ -49,13 +51,18 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 class EventFeatureStateTest extends TestCase
 {
     /**
-     * The four event routes that carry no guard entry, and therefore are reachable by
-     * nobody: `BjyAuthorize\Guard\Route` default-denies.
+     * The four event routes that were **deleted** on 2026-09-08, having existed since 2020
+     * and been reachable by nobody the whole time.
+     *
+     * They used to be pinned as *unguarded* — `BjyAuthorize\Guard\Route` default-denies a
+     * route with no guard entry — which was a weaker property than it looked: the routes
+     * were one config line away from being opened onto a surface with no form, no template
+     * and no ACL resource. Now they are pinned as absent, which is what they are.
      *
      * `events` — the /timeline index — is deliberately absent from this list. It is
      * guarded `['user', 'guest']` and is the one part of the feature that works.
      */
-    private const DENIED_ROUTES = [
+    private const REMOVED_ROUTES = [
         'event',
         'event-edit',
         'event-delete',
@@ -108,36 +115,58 @@ class EventFeatureStateTest extends TestCase
     }
 
     /**
-     * The events write surface is denied, and that is on purpose.
+     * The events write surface does not exist, and that is on purpose.
      *
-     * Three things are missing before any of the four could be opened, and a guard entry
-     * is none of them: there is no form (EventForm was deleted in batch 12 because it
-     * matched a schema draft that never shipped), no show/edit/create template, and no
-     * registered ACL resource — all 527 rows carry `evt_public`, which the config provider
-     * does not declare and `EventTextTable::getResources()` does not emit, because that
-     * method reads `SELECT DISTINCT AclResourceId FROM texts` and nothing from `events`.
+     * Three things are missing before any of the four could be built, and a route
+     * definition is none of them: there is no form (EventForm was deleted in batch 12
+     * because it matched a schema draft that never shipped), no show/edit/create template,
+     * and no registered ACL resource — all 527 rows carry `evt_public`, which the config
+     * provider does not declare and `EventTextTable::getResources()` does not emit, because
+     * that method reads `SELECT DISTINCT AclResourceId FROM texts` and nothing from
+     * `events`.
      *
-     * Adding a guard entry alone converts a clean default-deny into a 500. If you are here
-     * because this test failed, read docs/timeline-and-corpus.md before deleting the line.
+     * **Both halves are asserted, and the second is not redundant.** A route that exists
+     * without a guard entry is default-denied but one line from being opened; a guard entry
+     * naming a route that does not exist is dead configuration that reads as protection.
+     * Neither fails on its own, which is the whole reason this class exists.
+     *
+     * If you are here because this test failed: read docs/timeline-and-corpus.md first.
+     * Part 2 declares its routes on the **Symfony** side (config/symfony/routes.php), so a
+     * new laminas route here is very likely the wrong move even when the feature is being
+     * finished.
      */
-    public function testTheEventWriteSurfaceHasNoGuardEntry(): void
+    public function testTheEventWriteSurfaceDoesNotExist(): void
     {
         $guarded = $this->guardedRouteNames();
+        $routes  = $this->config()['router']['routes'] ?? [];
 
         self::assertContains(
             'events',
             $guarded,
             'the /timeline index should stay guarded `user, guest` — it is the reachable half'
         );
+        self::assertTrue(
+            $this->routeExists('events', $routes),
+            'sanity: the /timeline index route itself should still exist'
+        );
 
-        foreach (self::DENIED_ROUTES as $route) {
+        foreach (self::REMOVED_ROUTES as $route) {
+            self::assertFalse(
+                $this->routeExists($route, $routes),
+                sprintf(
+                    'route `%s` is back. It was deleted on 2026-09-08 because there is nothing '
+                    . 'behind it: no form, no template, no create handler, and no registered ACL '
+                    . 'resource (`evt_public` is declared nowhere). See docs/timeline-and-corpus.md '
+                    . '— and note that Part 2 declares its routes Symfony-side, not here.',
+                    $route
+                )
+            );
             self::assertNotContains(
                 $route,
                 $guarded,
                 sprintf(
-                    'route `%s` gained a guard entry. That opens a route with no form, no template '
-                    . 'and no registered ACL resource (`evt_public` is declared nowhere), which is a '
-                    . '500 rather than a page. See docs/timeline-and-corpus.md.',
+                    'route `%s` has a guard entry but no route definition. That is dead '
+                    . 'configuration which reads as protection; BjyAuthorize will never match it.',
                     $route
                 )
             );

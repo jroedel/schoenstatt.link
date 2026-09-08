@@ -1800,13 +1800,22 @@ rediscovered.
     its RouteMatch by hand.
   - ~~**`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
     `lib_user` its siblings carry: it is the destructive one in that tree and
-    `lib_administrator` already exists for exactly this.~~ **Also dead config,
+    `lib_administrator` already exists for exactly this.~~ ~~**Also dead config,
     measured 2026-08-17.** It resolves to `SionController::deleteAction()`, which
     is gated on the entity spec's `enable_delete_action` — commented out for the
     `library` entity, along with `delete_action_acl_resource`,
     `delete_action_acl_permission` and `delete_action_redirect_route`. The role
     choice is still the right one *if* the feature is ever finished; it is the
-    "needs only a guard entry" part that was false.
+    "needs only a guard entry" part that was false.~~ **Done 2026-09-08 — the
+    feature was finished, and the role choice recorded here is the one it shipped
+    with.** `enable_delete_action` stays commented out deliberately, which is the
+    part this entry got backwards: it is not a switch waiting to be flipped.
+    `SionTable::deleteEntity()` is a single-row `DELETE`, and `lib_books`,
+    `lib_collections` and `lib_borrower_tokens` have no foreign key, so flipping it
+    would have orphaned PUC's 16,383 books rather than deleted them — and would do
+    so on the `SYMFONY_KERNEL=0` rollback path. The cascade lives in
+    `App\Books\LibraryDelete`; see [libraries.md](libraries.md) § Deleting a
+    library.
   - ~~**`sign-in-no-cookies` is the one that really does need only a guard entry**~~ —
     **moot 2026-08-21: the route was deleted.** The action and its .phtml do still
     exist and still render, but only through the route-match swap, and only for the
@@ -1819,16 +1828,22 @@ rediscovered.
     2026-08-14: the route was deleted with the rest of `/api/v1`.** It was one of
     the two unguarded routes among the 26, which is why the ACL baseline's
     `unguarded_routes` fell 22 → 20 and not 22 → 21.
-  - **The events write routes genuinely need a decision**: `event-edit`,
+  - ~~**The events write routes genuinely need a decision**: `event-edit`,
     `event-delete`, `events/create` (and `event`, the show route). `events`, the
     list, is `guest, user`. There is no events moderator role in `user_role` —
     the nearest analogues are `pub_moderator` for publications and
     `texts_moderator` for texts — so picking one is a product call about who
     curates the timeline, not something to infer. `event` (show) can safely
     match `events` — but only once a show template exists, or the guard turns a
-    default-deny into a 500. The whole feature is planned in
-    [timeline-and-corpus.md](timeline-and-corpus.md); this decision is its item
-    1.6, and it also gates Part 2's form work.
+    default-deny into a 500.~~ **Decided 2026-09-08: the four routes were
+    deleted.** The decision this entry was waiting for turned out not to be
+    needed, because the choice was never really between roles — it was between
+    guarding four routes that had no form, no template and no create handler
+    behind them, and removing them. Removing them costs nothing: Part 2 of
+    [timeline-and-corpus.md](timeline-and-corpus.md) declares its routes on the
+    Symfony side anyway (its steps 2.6 and 2.7). **The curator-role question is
+    still open** and still gates Part 2's form work; it is just no longer a
+    question about a laminas guard entry.
   - **Not** related to the disabled `SchoenstattTable` provider below, despite
     an earlier note here saying so: that provider only ever emitted
     `person_*`/`association_*` resources, never `route/*` ones, so it could not
