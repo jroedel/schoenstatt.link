@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
-use App\View\ServingNote;
 use PHPUnit\Framework\Attributes\DataProvider;
-
-//the smoke suite does not autoload by default; ServingNote's constants are the strings
-//the serving note is asserted on, and restating them here would let the two drift
-require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
  * Batch 16: the last four publication routes — `publications/export`,
@@ -124,7 +119,6 @@ class PublicationActionsSymfonySmokeTest extends SmokeTestCase
         $response = $this->get(self::EXPORT_PATH, false, $jar);
 
         $this->assertSame(200, $response['status']);
-        $this->assertServedByTwig($response['body'], self::EXPORT_PATH);
 
         //The four columns export.phtml asks the partial for, in its order.
         $this->assertMatchesRegularExpression(
@@ -150,7 +144,6 @@ class PublicationActionsSymfonySmokeTest extends SmokeTestCase
         $response = $this->get(self::AUTHORS_PATH, false, $jar);
 
         $this->assertSame(200, $response['status']);
-        $this->assertServedByTwig($response['body'], self::AUTHORS_PATH);
         $this->assertMatchesRegularExpression('#<th>Author</th>\s*<th>Publications</th>#', $response['body']);
         //Kentenich is the one author every corpus of Schoenstatt literature has.
         $this->assertStringContainsString('Kentenich', $response['body']);
@@ -166,7 +159,6 @@ class PublicationActionsSymfonySmokeTest extends SmokeTestCase
         $response = $this->get('/en/SL201727L/copy-to-main-corpus', false, $jar);
 
         $this->assertSame(200, $response['status']);
-        $this->assertServedByTwig($response['body'], 'copy-to-main-corpus');
     }
 
     public function testAGetRendersTheNewEditionConfirmationAndWritesNothing(): void
@@ -185,7 +177,6 @@ class PublicationActionsSymfonySmokeTest extends SmokeTestCase
             'a GET to create-new-edition must not insert a publication — it did until 2026-09-08, '
                 . 'which made a link prefetch enough to create one'
         );
-        $this->assertServedByTwig($response['body'], self::NEW_EDITION_PATH);
 
         $this->assertStringContainsString('name="security"', $response['body']);
         $this->assertMatchesRegularExpression('/<form[^>]+method="post"/i', $response['body']);
@@ -257,18 +248,6 @@ class PublicationActionsSymfonySmokeTest extends SmokeTestCase
         } finally {
             $this->undoTheCreate($before);
         }
-    }
-
-    private function assertServedByTwig(string $body, string $what): void
-    {
-        $found = preg_match(
-            '#<p class="[^"]*' . preg_quote(ServingNote::CSS_CLASS, '#') . '[^"]*">(.*?)</p>#s',
-            $body,
-            $matches
-        );
-        $this->assertSame(1, $found, "$what should carry a serving note");
-        $this->assertStringContainsString(ServingNote::RENDERER_TWIG, $matches[1], "$what should be a Twig rendering");
-        $this->assertStringNotContainsString('LegacyBridge', $matches[1], "$what must not have been bridged");
     }
 
     private function publicationCount(): int

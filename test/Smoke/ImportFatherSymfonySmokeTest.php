@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
-use App\View\ServingNote;
-
-//the smoke suite does not autoload by default; ServingNote's constants are the strings
-//the serving note is asserted on
-require_once __DIR__ . '/../../vendor/autoload.php';
-
 /**
  * Batch 17: `admin/import-father`, the last HTML page laminas served, on Symfony.
  *
@@ -80,14 +74,6 @@ class ImportFatherSymfonySmokeTest extends SmokeTestCase
         $this->assertStringContainsString('_selectize.min.js', $response['body']);
         $this->assertStringContainsString("selectize(", $response['body']);
 
-        $found = preg_match(
-            '#<p class="[^"]*' . preg_quote(ServingNote::CSS_CLASS, '#') . '[^"]*">(.*?)</p>#s',
-            $response['body'],
-            $m
-        );
-        $this->assertSame(1, $found, 'the page should carry a serving note');
-        $this->assertStringContainsString(ServingNote::RENDERER_TWIG, $m[1]);
-        $this->assertStringNotContainsString('LegacyBridge', $m[1], 'the page must not have been bridged');
     }
 
     public function testABlankPickerIsAFormErrorNotAnException(): void

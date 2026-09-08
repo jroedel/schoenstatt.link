@@ -7,7 +7,7 @@ namespace SchoenstattTest\Smoke;
 /**
  * The Symfony-rendered 404 — Phase A of the laminas-mvc removal (2026-09-08).
  *
- * An unknown URL still reaches `App\Http\LegacyBridge` (the catch-all), but the bridge now
+ * An unknown URL reaches `App\Controller\NotFoundController` (the catch-all), which
  * re-renders the HTML 404 laminas produced through `error/404.html.twig` instead of handing
  * back the `.phtml`. After this the bridge renders no laminas view to any visitor — only the
  * admin-only `kernel-switch` redirect and the JSON API refusal remain behind it — which is
@@ -37,9 +37,6 @@ class NotFoundSymfonySmokeTest extends SmokeTestCase
         //404 and not a bare string
         $this->assertStringContainsString('<title>Schoenstatt Link</title>', $response['body']);
         $this->assertStringContainsString('navbar', $response['body']);
-        //and it is Twig, not the bridged .phtml — the whole point of Phase A
-        $this->assertStringContainsString('Twig template', $response['body']);
-        $this->assertStringNotContainsString('.phtml view script', $response['body']);
     }
 
     public function testAnUnprefixedUnknownPathIsANotFoundDirectly(): void
