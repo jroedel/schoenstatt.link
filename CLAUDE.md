@@ -149,6 +149,15 @@ suites run from the superproject working tree.
   Symfony controller are untouched, the 527 rows are untouched, and Part 2 of
   [docs/timeline-and-corpus.md](docs/timeline-and-corpus.md) always meant to declare its
   routes Symfony-side. Do not re-add them as a stepping stone.
+  **`admin/import-father` is Symfony-served since 2026-09-08 (batch 17), and it was the last
+  HTML page laminas served** — every page a person can open on this site is Symfony-served
+  now. `App\Controller\ImportFatherController` keeps the laminas form (its select is a Patres
+  API call the form factory makes) via the bridge and reproduces the three import outcomes;
+  the empty-picker case that was a 500 on laminas (`importRemotePerson(null)`) is a form
+  error here. The laminas action and `.phtml` stay as the canary rollback path, as batch 16
+  left the publication actions. `test/Smoke/ServingNoteSmokeTest` had used this page to
+  observe the bridge; with no unported page left it now points at the bridged **404 page**,
+  the last `.phtml` LegacyBridge renders.
   **The last four publication actions are Symfony-served since 2026-09-08 (batch 16)** —
   `publications/export`, `publications/prime-authors`, `publication-copy-to-main-corpus` and
   `publication-create-new-edition`, behind `App\Controller\PublicationReportsController` and
