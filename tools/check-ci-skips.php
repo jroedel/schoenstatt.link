@@ -89,14 +89,21 @@ if (! is_readable($baselinePath)) {
     exit(2);
 }
 
-$skipped = skippedClasses($xmlPath);
-$known   = baseline($baselinePath);
+[$skipped, $present] = classes($xmlPath);
+$known               = baseline($baselinePath);
 
 $unlisted = array_values(array_diff($skipped, $known));
-$stale    = array_values(array_diff($known, $skipped));
+//Three verdicts, not two. A baselined name that is absent from the log entirely is a
+//DIFFERENT finding from one that ran, and conflating them cost real time on the first
+//run of this check: `SchoenstattTest\Integration\PublicationLinkingTest` was reported
+//as "baselined, but ran here" when no such class exists — the file's namespace is
+//`BooksTest\Integration`, so the name had simply never matched anything.
+$stale   = array_values(array_intersect(array_diff($known, $skipped), $present));
+$unknown = array_values(array_diff($known, $present));
 
 sort($unlisted);
 sort($stale);
+sort($unknown);
 
 printf(
     "check-ci-skips: %d classes skipped tests, %d of them baselined.\n",
@@ -107,12 +114,29 @@ printf(
 foreach ($stale as $class) {
     //Not a failure. A class that stopped skipping is the direction everyone wants, and
     //its line should be deleted from the baseline — but a build should not go red for it.
-    printf("  stale   %s — baselined, but ran here. Delete its baseline line.\n", $class);
+    printf("  stale   %s — baselined, and ran here. Delete its baseline line.\n", $class);
+}
+
+//This one IS a failure, because a baseline entry naming nothing protects nothing. A
+//typo'd namespace looks identical to a correct entry and silently exempts the class it
+//was meant to cover.
+foreach ($unknown as $class) {
+    fwrite(
+        STDERR,
+        "  unknown $class — baselined, but no test of that class ran or skipped.\n"
+        . "          Either the name is wrong (check the file's `namespace`; not every test\n"
+        . "          in this suite is SchoenstattTest\\Integration) or the class is gone.\n"
+    );
+}
+
+if ([] === $unlisted && [] === $unknown) {
+    echo "check-ci-skips: ok, no class skipped tests without saying why.\n";
+    exit(0);
 }
 
 if ([] === $unlisted) {
-    echo "check-ci-skips: ok, no class skipped tests without saying why.\n";
-    exit(0);
+    fwrite(STDERR, "\ncheck-ci-skips: FAIL — the baseline names classes that do not exist (above).\n");
+    exit(1);
 }
 
 fwrite(STDERR, "\ncheck-ci-skips: FAIL — these classes skipped tests and are not in the baseline:\n\n");
@@ -130,11 +154,14 @@ fwrite(
 exit(1);
 
 /**
- * Every class with at least one skipped test in a PHPUnit JUnit log.
+ * Two sets from one PHPUnit JUnit log: classes with a skipped test, and every class the
+ * log mentions at all.
  *
- * @return list<string>
+ * The second is what makes a typo'd baseline entry detectable — see the call site.
+ *
+ * @return array{0: list<string>, 1: list<string>}
  */
-function skippedClasses(string $path): array
+function classes(string $path): array
 {
     $previous = libxml_use_internal_errors(true);
     $xml      = simplexml_load_file($path);
@@ -145,22 +172,28 @@ function skippedClasses(string $path): array
         exit(2);
     }
 
-    $classes = [];
-    //`//testcase[skipped]` rather than a walk of the suite tree: PHPUnit nests testsuite
-    //elements by directory, file and data provider, and the depth is not stable across
-    //versions. The attribute is, and it has been since the format was introduced.
-    $cases = $xml->xpath('//testcase[skipped]');
-    foreach ($cases ?? [] as $case) {
+    //`//testcase` rather than a walk of the suite tree: PHPUnit nests testsuite elements
+    //by directory, file and data provider, and the depth is not stable across versions.
+    //The attribute is, and it has been since the format was introduced.
+    $skipped = [];
+    $present = [];
+    foreach ($xml->xpath('//testcase') ?? [] as $case) {
         $class = (string) ($case['class'] ?? '');
-        if ('' !== $class) {
-            $classes[$class] = true;
+        if ('' === $class) {
+            continue;
+        }
+        $present[$class] = true;
+        if (isset($case->skipped)) {
+            $skipped[$class] = true;
         }
     }
 
-    $names = array_keys($classes);
-    sort($names);
+    $skippedNames = array_keys($skipped);
+    $presentNames = array_keys($present);
+    sort($skippedNames);
+    sort($presentNames);
 
-    return $names;
+    return [$skippedNames, $presentNames];
 }
 
 /**
