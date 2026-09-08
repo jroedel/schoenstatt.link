@@ -52,6 +52,7 @@ use App\Controller\DictionaryController;
 use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
+use App\Controller\ImportFatherController;
 use App\Controller\LibrariesController;
 use App\Controller\LibraryCollectionsController;
 use App\Controller\LibraryCheckoutController;
@@ -330,6 +331,17 @@ $ported(
     '/admin',
     AdminController::class,
     RouteAccess::guardedBy('route/admin'),
+    $textDomain('Schoenstatt')
+);
+
+// Batch 17, 2026-09-08: the last HTML page laminas served. `sch_administrator` only — the
+// one admin-index link that even `sch_moderator` never sees. The form's option list is a
+// remote call to Patres made by the laminas form factory; see App\Controller\ImportFatherController.
+$ported(
+    'admin/import-father',
+    '/admin/import-father',
+    ImportFatherController::class,
+    RouteAccess::guardedBy('route/admin/import-father'),
     $textDomain('Schoenstatt')
 );
 

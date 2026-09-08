@@ -47,13 +47,13 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 45 |
 | route guard entries | 119 |
 | routes declared twice | 1 |
-| routes shadowed by symfony | 113 |
+| routes shadowed by symfony | 114 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 220 |
+| symfony routes acl checked | 222 |
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 247 |
+| symfony served routes | 249 |
 | total routes | 130 |
 | unguarded routes | 12 |
 | unguarded routes matchable | 0 |
@@ -88,6 +88,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `acknowledgements.locale` | `/{_locale}/acknowledgements` | `route/acknowledgements` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `admin` | `/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
 | `admin.locale` | `/{_locale}/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
+| `admin/import-father` | `/admin/import-father` | `route/admin/import-father` | sch_administrator | html | `App\Controller\ImportFatherController` |
+| `admin/import-father.locale` | `/{_locale}/admin/import-father` | `route/admin/import-father` | sch_administrator | html | `App\Controller\ImportFatherController` |
 | `api-v3/association` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\AssociationsV3Controller::show` |
 | `api-v3/association-method` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/association-patch` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\AssociationsV3Controller::patch` |
@@ -390,6 +392,7 @@ warning at the top of this file.
 | --- | --- | --- | --- | --- | --- |
 | `acknowledgements` | `/acknowledgements` | `—` | `acknowledgements` | **public** (names the default role `guest`) | `route/acknowledgements` — **the same resource** |
 | `admin` | `/admin` | `—` | `admin` | restricted to sch_administrator, sch_general_moderator, sch_moderator, translator | `route/admin` — **the same resource** |
+| `admin/import-father` | `/admin/import-father` | `—` | `admin/import-father` | restricted to sch_administrator | `route/admin/import-father` — **the same resource** |
 | `api-route-not-found` | `/api/v3/schema` | `—` | `api-v3/schema` | **public** (names the default role `guest`) | _open, deliberately_ |
 | `assignments/advanced-search` | `/assignments/advanced-search` | `—` | `assignments/advanced-search` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/assignments/advanced-search` — **the same resource** |
 | `assignments/assignment/delete` | `/assignments/:assignment_id/delete` | `/assignments/0/delete` | `assignments/assignment/delete` | restricted to sch_administrator, sch_general_moderator | `route/assignments/assignment/delete` — **the same resource** |
