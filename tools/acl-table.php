@@ -333,7 +333,7 @@ function probeUrls(?string $pattern, array $constraints): array
  * that declares nothing has to be reported loudly rather than quietly listed. That
  * is the silent-bypass shape: the page keeps working and simply admits everyone.
  *
- * The catch-all (App\Http\LegacyBridge) is excluded from the matcher: it claims
+ * The catch-all (App\Controller\NotFoundController, formerly App\Http\LegacyBridge) is excluded from the matcher: it claims
  * every path by design, so leaving it in would report the entire site as ported. It
  * also, correctly, declares no RouteAccess — laminas-mvc runs its own guard behind
  * it — so excluding it here also keeps it out of the undeclared warning.
@@ -377,7 +377,7 @@ function symfonyRoutes(): array
         $controller    = is_array($rawController)
             ? implode('::', array_map('strval', $rawController))
             : (string) $rawController;
-        if (str_starts_with($controller, 'App\Http\LegacyBridge')) {
+        if (str_starts_with($controller, 'App\Controller\NotFoundController')) {
             continue;
         }
         $routes[(string) $name] = [
@@ -1678,7 +1678,7 @@ $o('  is reached, and it is warned about at the top of this file. This is the si
 $o('  tool exists to catch: a route that lost its guard keeps working and simply admits everyone.');
 $o();
 $o('Live only where `SYMFONY_KERNEL=1`: the capsule today, production not yet (docs/strangler.md).');
-$o('`App\Http\LegacyBridge`, the catch-all that hands everything else to laminas-mvc, is excluded —');
+$o('`App\Controller\NotFoundController`, the catch-all 404 (formerly App\Http\LegacyBridge), is excluded —');
 $o('it matches every path by design, and laminas-mvc runs its own guard behind it.');
 $o();
 if ($symfony['routes'] === []) {

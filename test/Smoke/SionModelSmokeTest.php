@@ -88,9 +88,11 @@ class SionModelSmokeTest extends SmokeTestCase
             $this->assertStringContainsString('json', $response['contentType']);
         }
 
-        //not a configured locale: still laminas', so SlmLocale redirects it
+        //not a configured locale, so no ported route matches — and since LegacyBridge was
+        //deleted (Phase B step 2) it no longer bridges to laminas (which SlmLocale-redirected
+        //it); the catch-all 404s.
         $response = $this->request('GET', '/xx/sm/cache-status', ['X-Api-Key: ' . self::DEV_API_KEY]);
-        $this->assertSame(302, $response['status'], '/xx/ is not a locale and must not match the ported route');
+        $this->assertSame(404, $response['status'], '/xx/ is not a locale and must not match the ported route');
     }
 
     /**

@@ -79,7 +79,7 @@ Three states, and the third is a bug:
   tool exists to catch: a route that lost its guard keeps working and simply admits everyone.
 
 Live only where `SYMFONY_KERNEL=1`: the capsule today, production not yet (docs/strangler.md).
-`App\Http\LegacyBridge`, the catch-all that hands everything else to laminas-mvc, is excluded —
+`App\Controller\NotFoundController`, the catch-all 404 (formerly App\Http\LegacyBridge), is excluded —
 it matches every path by design, and laminas-mvc runs its own guard behind it.
 
 | symfony route | path | checked against | who that allows | denial | controller |

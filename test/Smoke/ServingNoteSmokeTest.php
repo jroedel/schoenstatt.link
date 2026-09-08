@@ -46,36 +46,30 @@ class ServingNoteSmokeTest extends SmokeTestCase
     }
 
     /**
-     * There is no bridged `.phtml` left to observe, and the 404 proves it a different way.
+     * The catch-all 404 is a plain Symfony render now — no bridge left to observe.
      *
      * This test walked the migration to its end. It observed a bridged laminas view script
-     * at `/en/user/login` until batch 13 (2026-08-21), then `/admin/translations` until
-     * batch 14, then `admin/import-father` until batch 17 — the last HTML page laminas
-     * served — and then the laminas **404 page** for a moment, until Phase A of the
-     * laminas-mvc removal (2026-09-08) replaced *that* too: `App\Http\LegacyBridge` now
-     * re-renders an HTML 404 through `error/404.html.twig`, so even the page for an unknown
-     * URL is Twig.
-     *
-     * So the note for a 404 now reports the **Twig** renderer, and this asserts exactly
-     * that: `RENDERER_TWIG`, not `RENDERER_PHTML`, on a request still handled by
-     * `LegacyBridge` (route `legacy`). It is the positive statement that the bridge no
-     * longer renders a laminas view to any visitor — the last thing it does for one is this
-     * Twig 404 — which is what makes deleting it in Phase B a change nobody sees. When the
-     * canary is retired the whole serving note goes; until then this is its last bridge
-     * subject. See docs/strangler.md.
+     * at `/en/user/login` (batch 13), then `/admin/translations` (batch 14), then
+     * `admin/import-father` (batch 17 — the last HTML page laminas served), then the
+     * bridged laminas 404 (Phase A re-rendered it as Twig). Phase B step 2 (2026-09-08)
+     * deleted `App\Http\LegacyBridge` entirely: the catch-all is `App\Controller\NotFoundController`
+     * now, an ordinary Symfony controller, so the 404 note names route `not-found` and that
+     * controller, with **no `via LegacyBridge`**. Nothing renders a laminas view any more,
+     * which is what this asserts. The serving note itself is now vestigial — it always
+     * reports Twig — and is a separate cleanup.
      *
      * A 404, so it passes `noteOn()`'s `$expectStatus`.
      */
-    public function testTheBridged404IsRenderedByTwigNotThePhtml(): void
+    public function testTheCatchAll404IsAPlainSymfonyRender(): void
     {
         $note = $this->noteOn('/en/no-such-page-on-either-router', null, 404);
 
         self::assertStringContainsString(ServingNote::RENDERER_TWIG, $note);
         self::assertStringNotContainsString(ServingNote::RENDERER_PHTML, $note);
+        self::assertStringNotContainsString('LegacyBridge', $note);
         self::assertStringContainsString('Symfony kernel', $note);
-        //still the bridge that handled it — it just renders Twig now, not the .phtml
-        self::assertStringContainsString('route legacy', $note);
-        self::assertStringContainsString('App\Http\LegacyBridge', $note);
+        self::assertStringContainsString('route not-found', $note);
+        self::assertStringContainsString('App\Controller\NotFoundController', $note);
     }
 
     /** The note as rendered, with the surrounding markup stripped. */

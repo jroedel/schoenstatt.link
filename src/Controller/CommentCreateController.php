@@ -40,13 +40,12 @@ use function ucwords;
  * signed-in session: `GET /en/comments/create/composition/1` → 500, 11,953 bytes of
  * exception page.
  *
- * So the Symfony route claims POST only — and what a GET then gets is **not** a 405, which
- * is worth being precise about because 405 is what this docblock first claimed. The
- * catch-all `legacy` route matches every path, so `UrlMatcher` always finds *a* route and
- * never raises MethodNotAllowed; a GET therefore falls through to App\Http\LegacyBridge
- * and gets exactly what it got before the port. That is the better outcome: the broken
- * page stays exactly as broken as it was, on the front controller that owns it, rather
- * than being replaced by a different answer this port invented.
+ * So the Symfony route claims POST only — and what a GET then gets is **not** a 405. The
+ * catch-all matches every path, so `UrlMatcher` always finds *a* route and never raises
+ * MethodNotAllowed; a GET falls through to it. Until Phase B step 2 (2026-09-08) that
+ * catch-all was `App\Http\LegacyBridge`, which bridged the GET to laminas and rendered the
+ * broken comment page (a 500). The bridge is gone now, so the catch-all is
+ * `App\Controller\NotFoundController` and a GET is a plain **404**.
  * `test/Smoke/ReadingSurfaceSmokeTest` pins it, because "fixing" it into a 405 is an easy
  * and plausible-looking change.
  *

@@ -86,7 +86,7 @@ use App\Controller\TextsController;
 use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
-use App\Http\LegacyBridge;
+use App\Controller\NotFoundController;
 use App\Http\LocalePrefix;
 use App\Sion\ReservedVerbs;
 use App\Sion\SiteWideIdentifier;
@@ -2325,16 +2325,17 @@ foreach ($apiRefusalPaths as $apiRefusalName => $apiRefusalPath) {
 }
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
-// matches too, with an empty `path`.
+// matches too, with an empty `path`. Any path no route above matched is a 404, rendered
+// by App\Controller\NotFoundController — the direct replacement for App\Http\LegacyBridge,
+// which held this slot until Phase B step 2 (2026-09-08). There are no unported routes
+// left for a bridge to reach, so the laminas round-trip is gone.
 //
-// It declares no RouteAccess and must not: this is not a ported route but the door
-// back into laminas-mvc, which runs BjyAuthorize\Guard\Route itself for whatever it
-// matches. App\Authorization\RouteGuard skips it on exactly that ground
-// (App\Http\SymfonyRoute::isPorted), and tools/acl-table.php excludes it from the
-// ported-route table for the same reason.
-$routes->add('legacy', new Route(
+// It declares no RouteAccess and must not: a 404 is open to everyone, and
+// App\Authorization\RouteGuard skips it (App\Http\SymfonyRoute::isPorted returns false
+// for the catch-all), as does tools/acl-table.php's ported-route table.
+$routes->add('not-found', new Route(
     '/{path}',
-    ['_controller' => LegacyBridge::class, 'path' => ''],
+    ['_controller' => NotFoundController::class, 'path' => ''],
     ['path' => '.*']
 ));
 

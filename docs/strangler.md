@@ -241,12 +241,13 @@ ported `redirect-pre-april-2020-sl-id` and Symfony-rendered the 404, leaving the
 dormant for every normal visitor while the canary was still there, so the decision could be
 taken against a bridge that provably rendered nothing anyone saw. What is left, in order:
 
-- **Phase B — done (2026-09-08): the canary is retired.** `public/index.php` runs
-  `App\Kernel` unconditionally; `kernel-switch`, the `.htaccess`/vhost flip, both cookie
-  overrides and `App\Http\KernelCanary` are deleted. `LegacyBridge` and the `legacy`
-  catch-all **stay** for now — they still bridge the unported structural laminas routes to a
-  404 — and are the next thing to delete. The laminas front controller can no longer serve a
-  request; rollback is a redeploy.
+- **Phase B — done (2026-09-08), both steps.** Step 1 retired the canary: `public/index.php`
+  runs `App\Kernel` unconditionally; `kernel-switch`, the `.htaccess`/vhost flip, both cookie
+  overrides and `App\Http\KernelCanary` are gone. Step 2 deleted `App\Http\LegacyBridge` and
+  its `LaminasResponseConverter`: the catch-all is `App\Controller\NotFoundController` now, so
+  an unmatched path is a plain Symfony 404 (rendered from `error/404.html.twig`) instead of a
+  laminas round-trip. **Nothing dispatches through laminas-mvc's MVC layer any more.** The
+  laminas front controller cannot serve a request; rollback is a redeploy.
 - **Phase C**: drop `laminas/laminas-mvc` and its dependents (`bjy-authorize`,
   `laminas-twb-bundle`, the `mvc-plugin-*` packages, `laminas-developer-tools`) from
   `composer.json`, replacing their remaining runtime uses. This is what the strangler was
