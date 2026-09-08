@@ -10,10 +10,11 @@ use Laminas\View\Helper\AbstractHelper;
  * The footer's "how was this page served" line, laminas side.
  *
  * The Twig layout gets the same string from App\Twig\ChromeExtension::servingNote();
- * both delegate to App\View\ServingNote so the two renderings cannot describe the
- * same three states differently. Reaching into `App\` from a laminas helper inverts
- * the usual direction for the reason App\Http\KernelCanary's docblock gives: one
- * definition reachable from both beats two that can disagree.
+ * both delegate to App\View\ServingNote so the two renderings cannot describe a page
+ * differently. Since the SYMFONY_KERNEL canary was retired (2026-09-08) the note reports
+ * only the renderer — a ported Twig template versus a `.phtml` bridged through
+ * App\Http\LegacyBridge — plus the route and handler; this helper is the note for a
+ * bridged `.phtml` page, and stays until LegacyBridge itself is deleted.
  *
  * The MvcEvent is where the route match lives, and it is read at *render* time
  * rather than stored from it — on an error page there may be no match at all, and a
