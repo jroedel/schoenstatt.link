@@ -211,12 +211,15 @@ class ReadingSurfaceSmokeTest extends SmokeTestCase
      * 405 by moving the route below the catch-all or adding a method-not-allowed twin, and
      * either would change behaviour a caller may depend on.
      */
-    public function testAGetOnTheCommentRouteStillReachesLaminas(): void
+    public function testAGetOnThePostOnlyCommentRouteIsANotFound(): void
     {
+        //The comment route is POST-only. A GET does not match it, and since LegacyBridge
+        //was deleted (Phase B step 2, 2026-09-08) it no longer falls through to laminas —
+        //the catch-all answers a 404. Before, the GET reached the bridged laminas route
+        //and got the guard's 302 to sign-in; there is no bridge to reach now.
         $response = $this->get('/en/comments/create/composition/1');
 
-        self::assertSame(302, $response['status'], 'an anonymous GET is the guard redirect, as on laminas');
-        self::assertStringContainsString('/user/login', $response['redirect']);
+        self::assertSame(404, $response['status'], 'a GET on the POST-only comment route is now a 404');
     }
 
     /**

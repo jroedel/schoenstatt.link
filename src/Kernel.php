@@ -96,6 +96,7 @@ use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PersonController;
 use App\Controller\PersonsController;
+use App\Controller\NotFoundController;
 use App\Controller\PhpInfoController;
 use App\Controller\PreApril2020RedirectController;
 use App\Controller\PublicationController;
@@ -115,8 +116,6 @@ use App\Http\CspListener;
 use App\Http\CspNonce;
 use App\Http\GdprCookieListener;
 use App\Http\InventedCacheControlListener;
-use App\Http\LaminasResponseConverter;
-use App\Http\LegacyBridge;
 use App\Http\LocaleListener;
 use App\Http\LocalePrefixListener;
 use App\Http\MaintenanceKey;
@@ -387,13 +386,9 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // The converter is stateless, so it is built here rather than given
             // an id of its own: nothing else asks for it, and a service id only
             // an adjacent factory uses is indirection without a reader.
-            LegacyBridge::class => fn (): LegacyBridge => new LegacyBridge(
-                $this->appConfig,
-                new LaminasResponseConverter(),
-                //Twig, so an HTML 404 out of laminas is re-rendered in the shared layout
-                //rather than served as the .phtml. Phase A of the laminas-mvc removal.
-                $this->twig()
-            ),
+            // The catch-all 404, App\Http\LegacyBridge's replacement (Phase B step 2). Twig
+            // only: nothing bridges to laminas any more.
+            NotFoundController::class => fn (): NotFoundController => new NotFoundController($this->twig()),
             HealthController::class => fn (): HealthController => new HealthController(
                 new MaintenanceKey($this->laminas()),
                 dirname(__DIR__)

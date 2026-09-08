@@ -628,22 +628,25 @@ EXTRA_HEADERS=()
     fi
     EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"})
 
-    # Duplicated *identical* Set-Cookie lines, which is what a hand-rolled loop over
-    # Laminas\Http\Headers produces where PhpEnvironment\Response replaces all but the
-    # MultipleHeaderInterface ones. Counting cookies by name would not do: /en/user/login
-    # legitimately sends `slm_locale=deleted; expires=1970` (the GDPR strategy) and then
-    # `slm_locale=en_US`, i.e. two lines for one cookie by design.
+    # Header hygiene on a page that sets cookies. /en/user/login legitimately sends
+    # `slm_locale=deleted; expires=1970` (the GDPR strategy) then `slm_locale=en_US` — two
+    # lines for one cookie by design — so an *identical* duplicate is the fault to catch,
+    # not two lines for one name. And ResponseHeaderBag invents a `no-cache, private`
+    # Cache-Control when a response carries none, which must not reach visitors. Both were
+    # LaminasResponseConverter's job on a bridged response; that converter and the bridge
+    # are gone (Phase B step 2), and /en/user/login is a ported Symfony route now, so this
+    # checks the ported response directly.
     fetch "$BASE/en/user/login"
     if [ -z "$(grep -i '^set-cookie:' "$HDRS" | sort | uniq -d)" ]; then
-        pass "bridged: no duplicated Set-Cookie (Headers::toArray semantics preserved)"
+        pass "no duplicated Set-Cookie on /en/user/login"
     else
-        fail "bridged: an identical Set-Cookie is sent twice — the converter is duplicating headers"
+        fail "an identical Set-Cookie is sent twice on /en/user/login"
     fi
 
     if [[ "$(header cache-control)" == *"no-cache, private"* ]]; then
-        fail "bridged: ResponseHeaderBag's invented 'no-cache, private' Cache-Control is reaching visitors"
+        fail "ResponseHeaderBag's invented 'no-cache, private' Cache-Control is reaching visitors"
     else
-        pass "bridged: no invented Cache-Control on a bridged page"
+        pass "no invented Cache-Control on /en/user/login"
     fi
 
 EXTRA_HEADERS=()
