@@ -27,13 +27,13 @@
         "roles": 45,
         "route_guard_entries": 120,
         "routes_declared_twice": 1,
-        "routes_shadowed_by_symfony": 109,
+        "routes_shadowed_by_symfony": 113,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 212,
+        "symfony_routes_acl_checked": 220,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 239,
+        "symfony_served_routes": 247,
         "total_routes": 132,
         "unguarded_routes": 13,
         "unguarded_routes_matchable": 1
@@ -5015,6 +5015,26 @@
             "probe": "/SL200000L/a"
         },
         {
+            "laminas_route": "publication-copy-to-main-corpus",
+            "path": "/:sw_id/copy-to-main-corpus",
+            "symfony_route": "publication-copy-to-main-corpus",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publication-copy-to-main-corpus",
+            "access_kind": "acl",
+            "probe": "/SL200000L/copy-to-main-corpus"
+        },
+        {
+            "laminas_route": "publication-create-new-edition",
+            "path": "/:sw_id/create-new-edition",
+            "symfony_route": "publication-create-new-edition",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publication-create-new-edition",
+            "access_kind": "acl",
+            "probe": "/SL200000L/create-new-edition"
+        },
+        {
             "laminas_route": "publication-delete",
             "path": "/:sw_id/delete",
             "symfony_route": "publication-delete",
@@ -5055,6 +5075,16 @@
             "probe": "/literature/create"
         },
         {
+            "laminas_route": "publications/export",
+            "path": "/literature/export",
+            "symfony_route": "publications/export",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications/export",
+            "access_kind": "acl",
+            "probe": "/literature/export"
+        },
+        {
             "laminas_route": "publications/index",
             "path": "/literature/:inLanguage",
             "symfony_route": "publications/index",
@@ -5073,6 +5103,16 @@
             "now_checks": "route/publications/one-fifty-preguntas",
             "access_kind": "acl",
             "probe": "/literature/150-preguntas-sobre-schoenstatt"
+        },
+        {
+            "laminas_route": "publications/prime-authors",
+            "path": "/literature/prime-authors",
+            "symfony_route": "publications/prime-authors",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications/prime-authors",
+            "access_kind": "acl",
+            "probe": "/literature/prime-authors"
         },
         {
             "laminas_route": "publications/publication-old",
@@ -8499,6 +8539,46 @@
                 "denial_style": "html"
             }
         },
+        "publication-copy-to-main-corpus": {
+            "path": "/{sw_id}/copy-to-main-corpus",
+            "controller": "App\\Controller\\PublicationDuplicateController::copyToMainCorpus",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-copy-to-main-corpus",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication-copy-to-main-corpus.locale": {
+            "path": "/{_locale}/{sw_id}/copy-to-main-corpus",
+            "controller": "App\\Controller\\PublicationDuplicateController::copyToMainCorpus",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-copy-to-main-corpus",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication-create-new-edition": {
+            "path": "/{sw_id}/create-new-edition",
+            "controller": "App\\Controller\\PublicationDuplicateController::createNewEdition",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-create-new-edition",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication-create-new-edition.locale": {
+            "path": "/{_locale}/{sw_id}/create-new-edition",
+            "controller": "App\\Controller\\PublicationDuplicateController::createNewEdition",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-create-new-edition",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "publication-delete": {
             "path": "/{sw_id}/delete",
             "controller": "App\\Controller\\EntityDeleteController",
@@ -8589,6 +8669,26 @@
                 "denial_style": "html"
             }
         },
+        "publications/export": {
+            "path": "/literature/export",
+            "controller": "App\\Controller\\PublicationReportsController::export",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/export",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/export.locale": {
+            "path": "/{_locale}/literature/export",
+            "controller": "App\\Controller\\PublicationReportsController::export",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/export",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "publications/index": {
             "path": "/literature/{inLanguage}",
             "controller": "App\\Controller\\LiteratureController::index",
@@ -8625,6 +8725,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/publications/one-fifty-preguntas",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/prime-authors": {
+            "path": "/literature/prime-authors",
+            "controller": "App\\Controller\\PublicationReportsController::primeAuthors",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/prime-authors",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/prime-authors.locale": {
+            "path": "/{_locale}/literature/prime-authors",
+            "controller": "App\\Controller\\PublicationReportsController::primeAuthors",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/prime-authors",
                 "reason": null,
                 "denial_style": "html"
             }
