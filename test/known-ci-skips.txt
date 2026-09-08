@@ -1,0 +1,80 @@
+# Test classes that skip at least one test on a bare CI runner, and why.
+#
+# Checked by tools/check-ci-skips.php against the JUnit log of the integration
+# job. A class that skips and is NOT listed here fails the build by name; a
+# class listed here that skips nothing prints as stale and should have its line
+# deleted. Same contract as test/Fuzz/known-form-gaps.php: a subset comparison,
+# so the file records accepted gaps and nothing else.
+#
+# The runner has no database, no production data, and no base schema to build
+# one from — `database/` holds ninety incremental migrations and no full dump,
+# and the capsule's data comes from a gitignored production export. So the
+# overwhelming majority of these lines say "needs a database", and that is a
+# permanent property of this repository rather than a task somebody forgot.
+#
+# What the file buys is the difference between 195 skipped tests and 195
+# skipped tests *for reasons a human wrote down*. When a class stops running
+# here — an extension goes missing, a container stops building, a skip guard
+# gets added — its name appears in the failure instead of the count moving.
+#
+# Every entry below was confirmed against CI run 34202664497, and the first draft
+# was wrong in two ways worth knowing about, because both are easy to repeat:
+#
+#   - four entries were guessed from filenames rather than measured. Three of them
+#     (PreprocessorCreateSafetyTest, TemplatesCompileTest, TranslationCatalogWriteTest)
+#     turned out to RUN on a bare runner, and the fourth had the wrong namespace.
+#   - not every test class here is `SchoenstattTest\Integration`. PublicationLinkingTest
+#     is `BooksTest\Integration`, and a baseline line naming a class that does not exist
+#     exempts nothing while looking exactly like one that works. The checker now reports
+#     that as `unknown` and fails on it, which is how the mistake was found.
+#
+# Keep the reasons specific: "needs a database" is fine, "environment" is not.
+
+# --- Needs a reachable database, via the config/autoload/local.php guard -----
+# These 28 check `is_readable(config/autoload/local.php)` first and then try to
+# connect, and CI has neither the file nor a server. The double check is not
+# redundant: without local.php the service manager cannot even be built, since
+# App\Application\Service\DbAdapterServiceFactory has nothing to read.
+SchoenstattTest\Integration\AdminIndexParityTest              # renders the admin index against real rows
+SchoenstattTest\Integration\AssignmentsTableTest              # reads sch_roles / assignments
+SchoenstattTest\Integration\BorrowerSelfServiceTest           # lib_borrower_tokens round trip
+SchoenstattTest\Integration\CacheStatusParityTest             # compares the two cache-status renderings
+SchoenstattTest\Integration\EntityFormatterTest               # formats real entity rows
+SchoenstattTest\Integration\EventFeatureStateTest             # asserts texts.LegacyEventId is still empty
+SchoenstattTest\Integration\EventTimelineParityTest           # 527 events under 7 period headings
+SchoenstattTest\Integration\JUserSignInLinkTest               # writes and redeems a verification token
+SchoenstattTest\Integration\JUserUserAdminTest                # reads the user table
+SchoenstattTest\Integration\JwtRoundTripTest                  # needs the configured cypherKey
+SchoenstattTest\Integration\LibraryAclRuleDriftTest           # per-library rules come from lib_libraries rows
+SchoenstattTest\Integration\LibraryImportPlanTest             # plans an import against real books
+SchoenstattTest\Integration\MessengerDataIsNotTranslatedTest  # needs the merged service config
+SchoenstattTest\Integration\NavigationRouteParametersTest      # assembles navigation from real records
+SchoenstattTest\Integration\PhraseDiscoveryTest               # writes to trans_phrases
+SchoenstattTest\Integration\PhraseIdentityConstraintTest      # asserts the phrase_hash constraint
+SchoenstattTest\Integration\PhraseValidationParityTest        # form and API share an InputFilter
+SchoenstattTest\Integration\PortedRouteErrorReportingTest     # builds the container to dispatch
+SchoenstattTest\Integration\PortedRouteTranslationTest        # resolves text domains against catalogs
+SchoenstattTest\Integration\ShrineIndexParityTest             # compares /shrines renderings
+SchoenstattTest\Integration\ShrineTemplateTest                # renders a shrine from its row
+SchoenstattTest\Integration\SionCacheWiringTest               # asserts the cache flush queue wiring
+SchoenstattTest\Integration\SionTableWiringCompletenessTest   # every SionTable resolves
+SchoenstattTest\Integration\SortTextCoverageTest              # counts books lacking sort text
+SchoenstattTest\Integration\TranslationUpdateScopeTest        # scopes a write to one project
+SchoenstattTest\Integration\TranslationWriteSemanticsTest     # retraction vs retirement, on real rows
+SchoenstattTest\Integration\UserDirectorySeamTest             # reads the user directory
+SchoenstattTest\Integration\UserFormUniquenessTest            # asserts the email uniqueness validator
+
+# --- Needs a reachable database, via a connection attempt --------------------
+# No local.php guard; these catch the connection failure instead and skip on it.
+SchoenstattTest\Integration\AclCacheTest                      # partly: apcu is installed here now, so the wiring tests run, but testEveryRoleAnAccountCanHoldExistsInTheAcl reads user_role
+SchoenstattTest\Integration\AssociationLinkingTest            # compares an association reached two ways
+SchoenstattTest\Integration\ConstrainedChoiceFieldsFitTheirDataTest  # every choice field's haystack vs stored values
+SchoenstattTest\Integration\EmptyStringToTypedColumnTest      # reads the information_schema column types
+SchoenstattTest\Integration\PortedTemplatesRenderEveryNotNullFieldTest  # reads the schema for NOT NULL columns
+SchoenstattTest\Integration\ProvenanceStoreTest               # reads and writes the provenance rows
+BooksTest\Integration\PublicationLinkingTest                  # sub-edition linking, on real publications. NOTE the namespace: this file is BooksTest, not SchoenstattTest
+SchoenstattTest\Integration\ShrineCachingTest                 # asserts what the shrine cache holds
+
+# --- Not about the database --------------------------------------------------
+SchoenstattTest\Integration\HealthRevisionTest                # needs sion_model.api_keys, which only local.php carries
+SchoenstattTest\Integration\PatternValidatorContractTest      # by design: only failing values carry messages, so the passing data-provider cases skip. Skips in the capsule too

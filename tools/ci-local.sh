@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 # Run everything .github/workflows/ci.yml runs, locally, in the capsule.
 #
-# WHY THIS EXISTS: the account's 2,000 GitHub Actions minutes/month allowance was
-# exhausted on 2026-08-14. Until it resets on the 1st, every job fails in ~2 seconds
-# with no runner assigned and no steps executed — which looks alarming and is not about
-# your code. Do not spend time re-running those; run this instead and paste the result.
+# WHY THIS EXISTS: it is the stricter check, and it stayed useful for a reason nobody
+# planned. The account's 2,000 GitHub Actions minutes/month allowance was exhausted on
+# 2026-08-14 and every job then failed in ~2 seconds with no runner assigned and no steps
+# executed — which looks alarming and is not about your code. That lasted until the
+# 2026-09-01 reset, and the first real run afterwards immediately found two breakages
+# that had accumulated in the gap. So this script is not a stand-in for CI being down;
+# it is what should be run before pushing, whether or not CI is healthy.
 #
-# It mirrors ci.yml's five jobs in the same order, plus the three things CI CANNOT run
+# It mirrors ci.yml's seven jobs in the same order, plus the three things CI CANNOT run
 # because they need a live application: the smoke suite, the fuzz harness, and
 # tools/smoke-prod.sh itself. That makes a green run here a STRICTER check than a green
 # run on GitHub, not a weaker one — worth saying out loud, because the reflex is to
 # treat a local pass as second best.
+#
+# Quantified 2026-09-08: CI's integration job runs 3,085 assertions with 195 skipped;
+# the same suite here runs 7,214 with 14 skipped. CI has no database and cannot get one
+# (see .github/workflows/ci.yml's header), so roughly 57% of the assertions only ever
+# execute here.
 #
 # The last of those was added on 2026-08-19 and is a different kind of coverage from the
 # other two. smoke-prod.sh is the bash script the DEPLOY runs against production as its
@@ -19,8 +27,8 @@
 # error` after an otherwise successful deploy. Pointing it at the capsule exercises the
 # script, not just the site.
 #
-#   ./tools/ci-local.sh          # the five CI jobs, then smoke, fuzz + smoke-prod.sh
-#   ./tools/ci-local.sh --ci     # only the five CI jobs (faster; skips the ~4min smoke)
+#   ./tools/ci-local.sh          # the seven CI jobs, then smoke, fuzz + smoke-prod.sh
+#   ./tools/ci-local.sh --ci     # only the seven CI jobs (faster; skips the ~4min smoke)
 #
 # Everything runs through `docker compose exec app` except the syntax lint, which needs
 # no extensions and so is fine on the host. The smoke suite MUST NOT be parallelised —
@@ -151,6 +159,22 @@ else
     bad "PHPStan — run it directly to see the errors"
 fi
 
+# --- ci.yml job 6: PSR-12 on the paths that must stay clean ----------------
+# NOT `composer cs-check`, whose scope reports 425 errors and always will —
+# see tools/phpcs-clean-paths.txt for why "clean" has to be an explicit list,
+# and note that this step and the ci.yml job read that same file so the two
+# cannot drift.
+step "PSR-12 on the clean paths  (ci.yml: coding-standard)"
+mapfile -t CS_PATHS < <(sed 's/#.*//' tools/phpcs-clean-paths.txt | grep -v '^[[:space:]]*$')
+OUT=$(in_capsule php vendor/bin/phpcs -q --report=summary "${CS_PATHS[@]}" 2>&1)
+CS_STATUS=$?
+if [ "$CS_STATUS" -eq 0 ]; then
+    ok "${#CS_PATHS[@]} paths clean"
+else
+    quiet <<< "$OUT" | tail -20
+    bad "phpcs on the clean paths (exit $CS_STATUS)"
+fi
+
 # suite <testsuite> <lines-of-tail> — run it ONCE, show the summary, judge the exit code.
 #
 # The first version of this ran each suite twice: once piped to `tail` for the summary,
@@ -169,13 +193,18 @@ suite() {
     [ "$status" -eq 0 ] && rm -f "$log"
 }
 
-# --- Beyond CI: the deploy's own machinery ---------------------------------
-# Not in ci.yml and not PHP suites: plain bash, no server, ~10s each. They live here
-# because tools/deploy.sh is the least-tested code that can do the most damage. The
-# glob is deliberate — a new test/Deploy/*-test.sh is picked up without editing this
-# file, which is the difference between a check that gets written and one that gets
-# written and then forgotten outside the runner.
-step "Deploy machinery  (NOT in ci.yml — plain bash)"
+# --- ci.yml job 7: the deploy's own machinery ------------------------------
+# Plain bash, no server, ~10s each. They live here because tools/deploy.sh is the
+# least-tested code that can do the most damage. The glob is deliberate — a new
+# test/Deploy/*-test.sh is picked up without editing this file, which is the
+# difference between a check that gets written and one that gets written and then
+# forgotten outside the runner.
+#
+# In ci.yml since 2026-09-08, so this is no longer the only place they run. One
+# difference remains and it is in this runner's favour: opcache-swap-test.sh needs
+# warm PHP workers to reproduce the symlink-swap hazard, so it does the real work
+# here against the capsule and reports SKIPPED on a bare runner.
+step "Deploy machinery  (ci.yml: deploy-machinery)"
 for deploy_check in test/Deploy/*-test.sh; do
     rsh_log=$(mktemp)
     if bash "$deploy_check" > "$rsh_log" 2>&1; then

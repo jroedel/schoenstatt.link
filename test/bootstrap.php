@@ -14,3 +14,6 @@ require __DIR__ . '/Smoke/MagicLinkSignIn.php';
 // before running anything. Adding it here rather than to composer's autoload-dev
 // keeps the integration suite runnable from a --no-dev install, which is what CI does.
 require __DIR__ . '/Integration/RequiresApcu.php';
+// Its companion, for the runner that has APCu and no database — which is what CI
+// became on 2026-09-08. Same reason it is required here: test/ is on no PSR-4 path.
+require __DIR__ . '/Integration/RequiresDatabase.php';
