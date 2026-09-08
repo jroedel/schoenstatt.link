@@ -1,0 +1,22 @@
+{#
+  The 404 page for the Symfony front controller, rendered by App\Http\LegacyBridge when the
+  laminas application it bridges answers a request neither router knows with an HTML 404.
+
+  It reproduces module/Application/view/error/404.phtml as production renders it — which is
+  the two lines below and nothing else, because `display_exceptions` is off there, so the
+  reason/controller/exception branches of that .phtml never draw. The heading and the
+  "Page not found." message are `translate()`d exactly as the .phtml is, so the phrase rows
+  already exist and both front controllers say the same thing.
+
+  Why this exists rather than letting the bridge keep rendering the .phtml: Phase A of the
+  laminas-mvc removal (2026-09-08). Once this is in place the bridge renders **no HTML page
+  to any visitor** — only the admin-only kernel-switch redirect and the JSON API refusal
+  remain behind it — which is what turns retiring the canary (Phase B) into a clean deletion
+  rather than a visible change to the 404. See docs/strangler.md.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('A 404 error occurred') }}</h1>
+<h2>{{ translate('Page not found.') }}</h2>
+{% endblock %}

@@ -388,7 +388,10 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // an adjacent factory uses is indirection without a reader.
             LegacyBridge::class => fn (): LegacyBridge => new LegacyBridge(
                 $this->appConfig,
-                new LaminasResponseConverter()
+                new LaminasResponseConverter(),
+                //Twig, so an HTML 404 out of laminas is re-rendered in the shared layout
+                //rather than served as the .phtml. Phase A of the laminas-mvc removal.
+                $this->twig()
             ),
             HealthController::class => fn (): HealthController => new HealthController(
                 new MaintenanceKey($this->laminas()),
