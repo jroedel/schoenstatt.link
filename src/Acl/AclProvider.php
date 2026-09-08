@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace App\Acl;
 
-use App\Laminas\ServiceBridge;
-
-use function is_array;
-use function is_object;
-use function is_string;
-use function method_exists;
+use App\Laminas\LaminasServices;
 
 /**
  * The per-request seam every live authorization consumer shares, and the replacement for
@@ -22,17 +17,18 @@ use function method_exists;
  *    and wraps it in an {@see Authorizer} once. Measured ~0.45 ms warm — as cheap as reading
  *    BjyAuthorize's *cached* `Acl` back was (0.37 ms), because `AclData` is plain arrays, not
  *    a `Laminas\Permissions\Acl` object graph. So this needs no cross-request APCu cache the
- *    way BjyAuthorize did; per-request memoization is enough. (`App\Acl\AclCacheInvalidator`
- *    still exists for BjyAuthorize's own cache while that package is installed.)
+ *    way BjyAuthorize did; per-request memoization is enough, which is why the ACL-cache
+ *    invalidation this once needed (App\Acl\AclCacheInvalidator) is gone.
  *
- *  - **Resolves the current identity's roles.** `currentRoles()` asks the same identity
- *    provider BjyAuthorize asked — `getIdentityRoles()`, which returns the account's role
- *    *names* (or `[default_role]` when anonymous) — and memoizes the answer. BjyAuthorize
- *    baked those into a synthetic `bjyauthorize-identity` role at the first `isAllowed()`
- *    call of the request; this resolves them at the first `currentRoles()` call, which is the
- *    same first-touch, so it reproduces that behaviour including the one place it bites (see
- *    `App\JUser\Host\Access`, which is why `userMayReachRoute()` takes an explicit user
- *    rather than trusting the ambient identity right after sign-in).
+ *  - **Resolves the current identity's roles.** `currentRoles()` delegates to
+ *    {@see IdentityRoles}, which reproduces what BjyAuthorize's identity provider returned
+ *    (the account's role *names*, or `[default_role]` when anonymous) without loading it, and
+ *    memoizes the answer. BjyAuthorize baked those into a synthetic `bjyauthorize-identity`
+ *    role at the first `isAllowed()` call of the request; this resolves them at the first
+ *    `currentRoles()` call, which is the same first-touch, so it reproduces that behaviour
+ *    including the one place it bites (see `App\JUser\Host\Access`, which is why
+ *    `userMayReachRoute()` takes an explicit user rather than trusting the ambient identity
+ *    right after sign-in).
  *
  * `isAllowed()` is the ambient question — "may the current visitor …?" — that the Twig
  * `is_allowed()` function, `visitorMayReachRoute()`, and every ported controller's private
@@ -46,15 +42,12 @@ use function method_exists;
  */
 final class AclProvider
 {
-    /** The registered identity-provider service id — BjyAuthorize's, JUser's implementation. */
-    private const IDENTITY_PROVIDER = 'BjyAuthorize\Provider\Identity\ProviderInterface';
-
     private ?Authorizer $authorizer = null;
 
     /** @var list<string>|null */
     private ?array $currentRoles = null;
 
-    public function __construct(private readonly ServiceBridge $laminas)
+    public function __construct(private readonly LaminasServices $laminas)
     {
     }
 
@@ -89,27 +82,6 @@ final class AclProvider
     /** @return list<string> */
     private function resolveCurrentRoles(): array
     {
-        if (! $this->laminas->has(self::IDENTITY_PROVIDER)) {
-            return [];
-        }
-        $provider = $this->laminas->get(self::IDENTITY_PROVIDER);
-        if (! is_object($provider) || ! method_exists($provider, 'getIdentityRoles')) {
-            return [];
-        }
-
-        /** @var mixed $roles */
-        $roles = $provider->getIdentityRoles();
-        if (! is_array($roles)) {
-            return [];
-        }
-
-        $names = [];
-        foreach ($roles as $role) {
-            if (is_string($role) && '' !== $role) {
-                $names[] = $role;
-            }
-        }
-
-        return $names;
+        return (new IdentityRoles($this->laminas))->current();
     }
 }

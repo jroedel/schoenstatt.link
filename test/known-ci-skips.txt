@@ -66,8 +66,8 @@ SchoenstattTest\Integration\UserFormUniquenessTest            # asserts the emai
 
 # --- Needs a reachable database, via a connection attempt --------------------
 # No local.php guard; these catch the connection failure instead and skip on it.
-SchoenstattTest\Integration\AclCacheTest                      # partly: apcu is installed here now, so the wiring tests run, but testEveryRoleAnAccountCanHoldExistsInTheAcl reads user_role
 SchoenstattTest\Integration\AclParityTest                     # sweeps the live BjyAuthorize ACL as oracle; reads user_role and the per-library rules
+SchoenstattTest\Integration\AclIdentityRolesParityTest       # compares IdentityRoles to the bjy provider for every account; reads user_role_linker
 SchoenstattTest\Integration\AssociationLinkingTest            # compares an association reached two ways
 SchoenstattTest\Integration\ConstrainedChoiceFieldsFitTheirDataTest  # every choice field's haystack vs stored values
 SchoenstattTest\Integration\EmptyStringToTypedColumnTest      # reads the information_schema column types
