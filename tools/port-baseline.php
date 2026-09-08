@@ -3,6 +3,12 @@
 /**
  * Two-front-controller, five-locale rendering diff for a route being ported.
  *
+ * **Retired in practice since 2026-09-08.** The SYMFONY_KERNEL canary is gone, so the
+ * `SetEnv SYMFONY_KERNEL 0` step below no longer forces the laminas front controller —
+ * `public/index.php` runs App\Kernel unconditionally — and there are no unported pages
+ * left to diff anyway. Kept for its normalization rules and as the record of how the port
+ * was verified; a laminas capture is no longer obtainable.
+ *
  * This is the procedure docs/strangler.md calls "Verifying a port against
  * production, across every locale", turned into a tool. Batch 3 ran it by hand and
  * it is what found the translation defect: the ported pages were diffed

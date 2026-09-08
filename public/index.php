@@ -59,24 +59,16 @@ ini_set('memory_limit', '512M');
 
 // Run the application!
 //
-// Two front controllers live here while the Symfony strangler is young, chosen
-// by the SYMFONY_KERNEL environment variable (Apache SetEnv; see
-// docs/strangler.md). Unset or "0" is the laminas-mvc entry point that has
-// always been here, unchanged. "1" puts the Symfony kernel in front, with a
-// catch-all route delegating every unported path back to that same laminas
-// application — so the observable behaviour is meant to be identical, and the
-// smoke suite is what says whether it is.
-//
-// The variable, rather than a config key, because this branch has to be taken
-// before any configuration is loaded; and an environment variable makes
-// reverting production an .htaccess edit rather than a deploy, which matters
-// while phploy still has its mid-deploy broken window.
-if ('1' === (string) (getenv('SYMFONY_KERNEL') ?: '0')) {
-    $kernel   = new Kernel($appConfig);
-    $request  = Request::createFromGlobals();
-    $response = $kernel->handle($request);
-    $response->send();
-    $kernel->terminate($request, $response);
-} else {
-    Application::init($appConfig)->run();
-}
+// One front controller: App\Kernel (symfony/http-kernel). A catch-all route
+// (App\Http\LegacyBridge) still boots a per-request Laminas\Mvc\Application for the
+// handful of unported laminas routes, but the SYMFONY_KERNEL canary — the branch that
+// let production revert to the *laminas front controller* a cookie away — was retired on
+// 2026-09-08, once the Symfony kernel had been the site-wide default and green for a
+// month (docs/strangler.md, "The endgame"). Rolling back is a redeploy now, not an
+// .htaccess edit. The `SYMFONY_KERNEL` environment variable is no longer read here or
+// set anywhere; `App\Kernel` is unconditional.
+$kernel   = new Kernel($appConfig);
+$request  = Request::createFromGlobals();
+$response = $kernel->handle($request);
+$response->send();
+$kernel->terminate($request, $response);

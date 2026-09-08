@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\View;
 
-use App\Http\KernelCanary;
-
-use function getenv;
 use function implode;
 
 /**
@@ -65,58 +62,28 @@ final class ServingNote
         ?string $handler = null,
         mixed $cookies = null
     ): string {
-        $symfonyIsLive = KernelCanary::symfonyKernelIsLive();
-
-        //stated as two facts joined by an arrow rather than one label, because the pair
-        //is what identifies the three cases — and case 3 is the one nothing else shows
-        $how = $symfonyIsLive
-            ? 'Served by the Symfony kernel'
-            : 'Served by Laminas\Mvc\Application';
-        $how .= ' → ' . $renderer;
-        if ($symfonyIsLive && self::RENDERER_PHTML === $renderer) {
+        //$cookies is accepted and ignored since the SYMFONY_KERNEL canary was retired
+        //(2026-09-08): there is one front controller now, so the note no longer reports
+        //which one served the page or whether a cookie overrode it. It kept the parameter
+        //so the two callers (the Twig function and the laminas view helper) need no edit.
+        $how = 'Served by the Symfony kernel → ' . $renderer;
+        if (self::RENDERER_PHTML === $renderer) {
+            //still worth stating while LegacyBridge exists: a .phtml reaching a visitor
+            //came through the bridge, not a ported Twig template
             $how .= ' via LegacyBridge';
         }
 
         $parts = [$how];
         if (null !== $route && '' !== $route) {
-            //the raw name, `.locale` suffix and all: on the Symfony side that suffix is
-            //how you see whether the locale-prefixed twin matched, which is exactly the
-            //kind of thing worth knowing when a page looks subtly wrong
+            //the raw name, `.locale` suffix and all: that suffix is how you see whether
+            //the locale-prefixed twin matched, which is worth knowing when a page looks
+            //subtly wrong
             $parts[] = 'route ' . $route;
         }
         if (null !== $handler && '' !== $handler) {
             $parts[] = $handler;
         }
-        $parts[] = self::origin($cookies, $symfonyIsLive);
 
         return implode(' · ', $parts);
-    }
-
-    /**
-     * Where this request's `SYMFONY_KERNEL` value came from — the field that answers
-     * "why am I on this one, and is my cookie even being honoured?".
-     *
-     * @param array<string, mixed>|object|null $cookies
-     */
-    private static function origin(mixed $cookies, bool $symfonyIsLive): string
-    {
-        $raw   = getenv(KernelCanary::ENV_VAR);
-        $value = false === $raw || '' === $raw
-            ? KernelCanary::ENV_VAR . ' unset'
-            : KernelCanary::ENV_VAR . '=' . $raw;
-
-        if (! KernelCanary::isOverriding($cookies)) {
-            return $value . ', the site default';
-        }
-
-        $wants  = KernelCanary::forcesSymfony($cookies);
-        $cookie = KernelCanary::COOKIE . '='
-            . ($wants ? KernelCanary::FORCE_SYMFONY : KernelCanary::FORCE_LAMINAS);
-
-        //the cookie asked for one front controller and a different one is serving: only
-        //possible when something above .htaccess sets the variable, i.e. a vhost SetEnv
-        return $wants === $symfonyIsLive
-            ? $value . ' from the ' . $cookie . ' cookie'
-            : $value . ' from server config; the ' . $cookie . ' cookie is being ignored';
     }
 }

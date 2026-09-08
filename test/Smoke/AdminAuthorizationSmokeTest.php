@@ -71,9 +71,8 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
         ['/en/sm/data-problems', 'Data problems'],
         //'Literature maintenance' was the eleventh entry until 2026-08-17, when the 2020
         //data-source migration behind it was measured as finished and retired.
-        //appended 2026-08-11, when the kernel toggle moved out of the navbar. It is
-        //sch_administrator-only, so it appears in this list and in no other case below.
-        ['/en/kernel-switch', 'Switch kernel'],
+        //'Switch kernel' (/en/kernel-switch) was the last entry until 2026-09-08, when the
+        //SYMFONY_KERNEL canary was retired and its toggle deleted with it.
     ];
 
     /**

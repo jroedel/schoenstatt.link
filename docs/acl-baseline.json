@@ -20,12 +20,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 118,
-        "guarded_routes_total": 118,
+        "guarded_routes_existing": 117,
+        "guarded_routes_total": 117,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 119,
+        "route_guard_entries": 118,
         "routes_declared_twice": 1,
         "routes_shadowed_by_symfony": 115,
         "routes_uncomparable": 0,
@@ -34,7 +34,7 @@
         "symfony_routes_open": 31,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 255,
-        "total_routes": 130,
+        "total_routes": 129,
         "unguarded_routes": 12,
         "unguarded_routes_matchable": 0
     },
@@ -1602,29 +1602,6 @@
             "matchable": true,
             "public": false,
             "route": "juser/user/edit"
-        },
-        "kernel-switch": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "sch_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "sch_administrator"
-            ],
-            "effective_roles": [
-                "sch_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "kernel-switch"
         },
         "libraries": {
             "anonymous_allowed": false,

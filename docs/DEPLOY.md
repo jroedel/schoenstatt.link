@@ -677,9 +677,9 @@ in `juser.api_token_roles` — which is `sch_api_bot` and `sch_api_translator`, 
 **must be extended whenever a new API role is introduced**, or the account is refused
 everywhere and no screen will issue it a token.
 
-**Until `SYMFONY_KERNEL` is flipped globally, v3 answers only behind the canary
-cookie** — which an agent will not send. The canary is how to verify the endpoints
-against production data before the flip, not a way to run agents.
+**v3 is reachable to agents directly** — the global flip landed on 2026-08-11 and the
+`SYMFONY_KERNEL` canary was retired on 2026-09-08, so there is no cookie to send and one
+front controller serves everyone.
 
 ## Before deploying a PHP-version rung
 
@@ -694,142 +694,47 @@ the capsule verifies before the rung lands.
 Also copy the per-version `php.ini` across (see Server facts below) — the new
 version reads a different file.
 
-## The two front controllers, and the cookies that override them
+## The front controller, and rolling back
 
-`public/.htaccess` picks one front controller per request, from a site-wide default plus
-two per-visitor overrides. It is deployed with the file — nothing to enable by hand.
+`public/index.php` runs `App\Kernel` (symfony/http-kernel) unconditionally. There is one
+front controller. A catch-all route, `App\Http\LegacyBridge`, still boots a per-request
+`Laminas\Mvc\Application` for the handful of unported laminas routes, but they all 404 and
+no laminas *view* reaches a visitor.
 
-| cookie | front controller | what it is for |
-|---|---|---|
-| *(none)* | the site default — **laminas-mvc today** | every visitor and every agent |
-| `sl_symfony_canary=1` | `App\Kernel` | verifying ported routes against production before the flip |
-| `sl_symfony_canary=0` | `Laminas\Mvc\Application` | the way back for one person after the flip |
+**The `SYMFONY_KERNEL` canary was retired 2026-09-08 (Phase B of the laminas-mvc removal).**
+Until then `public/.htaccess` chose a front controller per request — a site-wide default
+plus `sl_symfony_canary` cookie overrides — and reverting production was an `.htaccess`
+edit. All of that is gone: the flip line, both cookie overrides, the `kernel-switch` toggle
+and `App\Http\KernelCanary`. Nothing reads the variable. See docs/strangler.md, "The
+endgame", for what the flip and the canary were.
 
-Both overrides are deployed now, so the global flip is one *added* line rather than an
-edit; see "Flipping the Symfony kernel on globally" below.
+**Rolling back is a redeploy now.** The Symfony kernel has been the site-wide default and
+green since the 2026-08-11 deploy, which is the confidence the retirement rests on; if a
+release misbehaves, roll it back the ordinary way (`tools/deploy.sh` from the previous
+release's checkout, or the atomic-deploy symlink swap back — see the layout section). There
+is no per-visitor or per-request escape hatch any more.
 
-To have the post-deploy smoke run exercise it, set it in `.deploy.local`:
+### The production front-controller smoke checks
 
-```sh
-DEPLOY_CANARY_COOKIE=sl_symfony_canary=1
-```
+`tools/smoke-prod.sh` checks the Symfony front controller against production on every deploy
+now — the block used to be gated on a `SMOKE_PROD_CANARY_COOKIE` that carried the canary
+cookie, and since there is one front controller it just runs. It renders every public
+ported route against production's own data, ICU and translations, checks the three
+`LaminasResponseConverter` rules on a bridged page behind the real TLS proxy (the one thing
+the capsule cannot reproduce), and verifies the v3 API answers and refuses correctly. No
+`.deploy.local` variable is needed for it.
 
-`tools/deploy.sh` passes it through as `SMOKE_PROD_CANARY_COOKIE`.
-
-That adds ~35 checks. The variable is only a switch now — its *value* is not read, because
-there are two cookies and the script names both itself. What it asserts is the **pair**:
-whichever kernel is the site default really serves ordinary traffic, and the override
-really reaches the other one. It probes which is the default rather than assuming, so the
-same hook keeps working across the flip instead of failing loudly on the one day it most
-needs to be believed. Leaving the variable unset skips the whole block, which is the
-default.
-
-Two things worth checking through the canary after a deploy that touches ported routes,
-both public and side-effect-free:
+Two v3 endpoints worth a manual look after a deploy that touches ported routes, both public
+and side-effect-free — no cookie needed, because an agent sends none and there is one front
+controller:
 
 ```bash
-curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/schema        # 200 JSON
-curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/associations  # 401
-curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/schema/phrase # 200 JSON
-curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/phrases       # 401
+curl https://schoenstatt.link/api/v3/schema        # 200 JSON
+curl https://schoenstatt.link/api/v3/associations  # 401 JSON (the token gate is on)
 ```
 
-The first proves the whole ServiceBridge path works in production — the schema is
-generated from live config and a live database query — and the second proves the token
-gate is on. A 302 to `/en/…` from either means the canary cookie did not take effect,
-not that v3 is broken.
-
-Checking a *signed-in* ported page is still manual and is the one thing the canary buys
-that a global flip could not. Sign in as an administrator and use the **Switch kernel**
-link on `/en/admin` — it offers whichever kernel you are *not* currently on, and says which
-you have moved to — then load `/en/sm/view-changes`, `/en/sm/data-problems`,
-`/en/sm/phpinfo`, `/en/admin` and one association edit form. Click it again to clear the
-override and go back to the site default; closing the browser does the same, since it is a
-session cookie.
-
-The item is visible to `sch_administrator` only, and it needs cookie consent: without it
-the site strips every `Set-Cookie` and the toggle reports that instead of appearing to
-work.
-
-**Never add a `SetEnv SYMFONY_KERNEL` line to `.htaccess`, for either value.** mod_env
-runs after all of mod_setenvif, so it wins regardless of order and both cookies stop
-working silently. `test/Integration/KernelCanaryTest` fails on it.
-
-## Flipping the Symfony kernel on globally
-
-The one change that makes every visitor — and every automated agent, which sends no
-cookie — reach `App\Kernel` instead of `Laminas\Mvc\Application`. It is what the v3 API was
-waiting for.
-
-**Committed 2026-08-10**, above the two cookie overrides in `public/.htaccess`:
-
-```apache
-SetEnvIf Request_URI ".*" SYMFONY_KERNEL=1
-```
-
-**It is in the repository, not yet in production.** It takes effect on the next deploy,
-and the checklist below is what has to be true before that deploy runs — not before the
-merge.
-
-Order and directive are both load-bearing, and each failure mode is silent — a default
-written *below* an override overwrites it (mod_setenvif takes the last match), and a
-`SetEnv` beats every override whatever the order. Both are pinned by
-`test/Integration/KernelCanaryTest`, which is why the flip is a commit rather than a
-hand-edit on the server.
-
-**The capsule cannot verify any of this.** `docker/apache-vhost.conf` sets
-`SYMFONY_KERNEL` with `SetEnv`, and mod_env runs after all of mod_setenvif, so every
-kernel line in `.htaccess` — the default and both cookies — is masked locally. Measured:
-a request carrying `sl_symfony_canary=0` is served by Symfony in the capsule both with
-and without the flip line. Production's vhost has no such `SetEnv`, which is why
-`.htaccess` governs there. The behaviour has to be checked against production, through
-the "After" list below.
-
-### Before
-
-- [ ] `DEPLOY_CANARY_COOKIE` is set in `.deploy.local`, and the last
-      deploy's run passed. That is the pre-flip evidence: it renders every public ported
-      route through the Symfony kernel against production's own data, ICU and
-      translations, and checks the three `LaminasResponseConverter` rules on a bridged
-      page behind the real TLS proxy — the one thing the capsule cannot reproduce.
-- [ ] `database/db6.6.sql` **and `database/db6.8.sql`** are applied, and at least one
-      agent account holds the relevant API role (see the v3 prerequisites above).
-      Without it every agent request 401s the moment the flip makes v3 reachable —
-      db6.6 for `/api/v3/associations`, db6.8 for `/api/v3/phrases`.
-- [ ] `database/db6.9.sql` is applied, or two `pt_BR` strings render in English. Unrelated
-      to the flip; it is simply the other migration waiting on a deploy.
-- [ ] The signed-in walk-through above has been done through the canary, in a
-      non-English locale as well as English. `tools/port-baseline.php` is the mechanical
-      version; `docs/strangler.md` has the procedure and the known differences.
-
-### After
-
-- [ ] Re-run `bash tools/smoke-prod.sh` (with the canary variable set). It flips its own
-      assertions automatically: the default is now Symfony and the `=0` cookie must
-      reach laminas.
-- [ ] Watch `data/exceptions` — `tools/fetch-exceptions.sh`. Ported routes now report
-      through the configured pipeline including notification, so a new failure class
-      arrives as email rather than silence.
-- [ ] `/en/sm/cache-status` for APCu saturation: the Twig compile cache is on disk, not
-      APCu, but ported routes touch different cache keys than the laminas twins did.
-
-### Rolling back
-
-In order of how much they cost:
-
-1. **One person, no deploy.** Set `sl_symfony_canary=0` — the **Switch kernel** link on
-   `/en/admin` does it — and that visitor is back on laminas immediately. Enough to compare a
-   suspect page against its laminas twin. This is now the escape hatch rather than a
-   curiosity, which is why it was deployed ahead of the flip and exercised first.
-2. **Everyone, no deploy.** Delete the added line from the server's
-   `public_html/schoenstatt.link/public/.htaccess`. Takes effect on the next request; no
-   pool restart, because `.htaccess` is read per request. Note that **the next deploy
-   overwrites it** — the pre-deploy hook copies the server's file into
-   `data/htaccess-backups/` precisely because of that — so this buys time, it does not
-   end the incident.
-3. **Everyone, durably.** Revert the flip commit and deploy. This is the only rollback
-   that survives the next deploy, and the reason to keep the flip as its own commit that
-   touches nothing else.
+The first proves the whole ServiceBridge path works in production — the schema is generated
+from live config and a live database query — and the second proves the token gate is on.
 
 ## Database migrations
 

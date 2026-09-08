@@ -10,9 +10,8 @@
 
   Why this exists rather than letting the bridge keep rendering the .phtml: Phase A of the
   laminas-mvc removal (2026-09-08). Once this is in place the bridge renders **no HTML page
-  to any visitor** — only the admin-only kernel-switch redirect and the JSON API refusal
-  remain behind it — which is what turns retiring the canary (Phase B) into a clean deletion
-  rather than a visible change to the 404. See docs/strangler.md.
+  to any visitor** — after the canary was retired (Phase B, 2026-09-08) the bridge serves
+  only the handful of unported laminas routes, all of which 404. See docs/strangler.md.
 #}
 {% extends 'layout.html.twig' %}
 

@@ -49,11 +49,6 @@ final class AdminIndex
         'sion-model/data-problems'     => 'Data problems',
         //'admin/literature-maintenance' was listed here until 2026-08-17, when the 2020
         //data-source migration behind it was measured as finished and retired.
-        //the Symfony-kernel canary toggle, moved here from the navbar 2026-08-11.
-        //`route/kernel-switch` is sch_administrator-only, so the template's per-item
-        //ACL check hides it from the moderators and translators who also reach this
-        //page — the same filtering that already hides six of the ten links above.
-        'kernel-switch'                => 'Switch kernel',
     ];
 
     /**
