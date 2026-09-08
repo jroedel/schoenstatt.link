@@ -39,6 +39,7 @@ use Throwable;
 class AclCacheTest extends TestCase
 {
     use RequiresApcu;
+    use RequiresDatabase;
 
     private static ?ServiceBridge $bridge = null;
 
@@ -109,6 +110,11 @@ class AclCacheTest extends TestCase
     public function testTheStoredAclCarriesNoIdentity(): void
     {
         $this->requireApcu();
+        //And the database, because isAllowed() below assembles the ACL and the role
+        //providers read user_role. Installing APCu on the CI runner is what exposed this:
+        //the test had never got past requireApcu() there, and with the extension present
+        //it reached DbAdapterServiceFactory and errored on the missing `db` config.
+        $this->requireDatabase($this->bridge());
 
         $storage = $this->aclStorage();
         $key     = (string) ($this->bjyConfig()['cache_key'] ?? 'acl');
@@ -144,6 +150,10 @@ class AclCacheTest extends TestCase
     public function testTheAclHoldsNoPerUserRoles(): void
     {
         $this->requireApcu();
+        //assertNotEmpty($roles) below is the reason: with no database the providers
+        //contribute nothing and the assertion fails rather than skipping, which reads as
+        //"the real roles are gone" when it means "there is nowhere to read them from".
+        $this->requireDatabase($this->bridge());
 
         $acl   = $this->authorize()->getAcl();
         $roles = array_map('strval', $acl->getRoles());
@@ -223,6 +233,9 @@ class AclCacheTest extends TestCase
     public function testATableIsWiredToTheRegistry(): void
     {
         $this->requireApcu();
+        //UserTable's factory reaches the adapter, so building it needs credentials even
+        //though this test never runs a query.
+        $this->requireDatabase($this->bridge());
 
         /** @var UserTable $users */
         $users = $this->bridge()->get(UserTable::class);
