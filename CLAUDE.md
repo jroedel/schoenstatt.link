@@ -119,6 +119,36 @@ suites run from the superproject working tree.
   is `is_default = 1`. Read [docs/libraries.md](docs/libraries.md) before changing any of
   it: the permissive `checkout` rule is deliberate, and `refresh-sort` answers GET with a
   confirmation because the laminas action rewrote every book in the library on one.
+  **Two corrections to the sentence above, both from 2026-09-08.** `administrate` is *not*
+  per-library: `LibraryTable::getRules()` emits it for `lib_administrator` against **every**
+  library row unconditionally (its own `@todo` wants a per-library administrator table and
+  there is none), so for that permission the per-row check distinguishes nobody. `show` and
+  `checkout` are the genuinely per-row ones. And `libraries/library/delete` is now the one
+  guard on the surface that does *not* name `lib_user` — it names `lib_administrator`, which
+  also makes it the first entry whose `is_allowed('route/' ~ route)` filter in the admin menu
+  template does anything.
+  **Deleting a library is Symfony-only, and it is the first page here that never had a
+  laminas rendering** — the route name existed from 2020, refused twice over (no guard entry,
+  and the entity's `enable_delete_action` commented out). `App\Books\LibraryDelete` is why it
+  had to be written rather than ported: `SionTable::deleteEntity()` is a single-row `DELETE`,
+  and of the four tables carrying a library id only `lib_imports` has a foreign key, so the
+  generic delete would have left PUC's **16,383 books** pointing at a library that no longer
+  exists — on no page, in no catalogue, and nothing would have errored. The cascade is
+  explicit, in one transaction, children first; **checkouts must be deleted before books**
+  (they are reached by joining `lib_books`) and **the cache invalidation must follow the
+  commit**. The confirmation asks for the library's name typed exactly, the change log gets
+  an aggregate rather than 16,383 rows, and the laminas generic delete stays **disabled** on
+  purpose, because under `SYMFONY_KERNEL=0` it would delete the row without any of that.
+  One consequence that is not specific to this page: a library created by SQL rather than
+  through the app has no `library_<id>` ACL resource until the persistent cache is flushed,
+  so it answers 403 to everyone.
+  **The four event write routes are gone as of 2026-09-08** — `event` (show), `event-edit`,
+  `event-delete` and `events/create`, plus the nine `event` entity-spec keys that named them.
+  They had existed since 2020, reachable by nobody, with no form, no template and no create
+  handler behind them, so a guard entry alone would have produced a 500. `/timeline` and its
+  Symfony controller are untouched, the 527 rows are untouched, and Part 2 of
+  [docs/timeline-and-corpus.md](docs/timeline-and-corpus.md) always meant to declare its
+  routes Symfony-side. Do not re-add them as a stepping stone.
   **The whole JUser surface is served by the module's own controllers since 2026-08-21** —
   `/user`, `/user/login`, `/user/verify`, `/user/logout`, `/users`, the two create forms, the
   account form, the delete confirmation and the API-token screen with its revoke twin.

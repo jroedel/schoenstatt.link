@@ -160,6 +160,68 @@ per-library rules are the inner one and are in that same file under "Per-library
 **Every guard on this surface names `lib_user`, which is `is_default = 1`** — so the outer
 gate means no more than "signed in", and the inner one is the whole of the protection.
 
+Two exceptions to that sentence, and they pull in opposite directions:
+
+- `libraries/library/delete` names `lib_administrator`, the only guard here that is not a
+  default role. See below.
+- **`administrate` is not actually per-library**, which matters because the table above
+  invites the opposite reading. `LibraryTable::getRules()` emits
+  `[['lib_administrator'], $object['resourceId'], 'administrate']` for *every* library row,
+  unconditionally — its own `@todo` wants a table of per-library administrators and there
+  is none. So `lib_administrator` administers all six libraries, and for `administrate` the
+  inner gate currently distinguishes nobody. `show` and `checkout` are the genuinely
+  per-row ones, because they read `ViewRole` and `CheckoutBooksRole` off the row.
+
+## Deleting a library
+
+`/libraries/{id}/delete` — added 2026-09-08, and the first page on this surface that never
+had a laminas rendering. The route name has been in `module/Books/config/module.config.php`
+since 2020 and was reachable by nobody, refused twice over: no guard entry, and the
+`library` entity leaves `enable_delete_action` commented out.
+
+**The reason it needed writing rather than porting is the cascade.**
+`SionTable::deleteEntity()` is a single-row `DELETE`, and of the four tables carrying a
+library id only `lib_imports` has a foreign key (`ON DELETE CASCADE`). `lib_books`,
+`lib_collections` and `lib_borrower_tokens` have none. So the generic delete would have left
+PUC's **16,383 books** in the table pointing at a library that no longer exists — on no
+page, in no catalogue, and reachable by no screen in the application. Nothing would have
+errored.
+
+`App\Books\LibraryDelete` does it explicitly instead, in one transaction, children first:
+checkouts (reached by joining `lib_books`, since `lib_checkouts` has no library id of its
+own), then books, collections, borrower tokens, imports, then the library row. Two orderings
+in it are load-bearing and neither fails loudly if reversed — the checkout delete must
+precede the book delete, and the cache invalidation must follow the commit.
+
+Three decisions worth knowing before changing any of it:
+
+- **The confirmation asks for the library's name to be typed**, exactly and
+  case-sensitively. Every other delete on the site is a CSRF token and a button, which is
+  proportionate for one record; this one destroys a catalogue.
+- **The change log records an aggregate**: one `entryDeleted` row carrying the library's
+  name in `OldValue`, plus one counted row per dependent kind. Not 16,383 book rows. The
+  name is in the log because the row that held it is the one being deleted.
+- **The laminas generic delete stays disabled on purpose.** Switching
+  `enable_delete_action` on would have let `SionController::deleteAction()` handle the row —
+  and under `SYMFONY_KERNEL=0`, the documented rollback, that action would delete the
+  library *without* the cascade. Leaving it off means laminas answers "this entity cannot be
+  deleted, please check the configuration", which is the right answer from a front
+  controller that cannot do the job.
+
+Outstanding checkouts (`CheckedInOn IS NULL`) are counted and shown separately from the
+checkout total, because they mean a book is physically out and the delete destroys the
+record of who has it. They do not block the deletion — the person confirming is the one who
+knows whether that matters.
+
+One operational consequence, which is not specific to this page but is easiest to hit here:
+**a library created outside the application is not administrable until the persistent cache
+is flushed.** `getRules()` derives its `library_<id>` resources from the cached
+`getObjects('library')`, and the assembled ACL is itself cached in APCu, so a row inserted
+by SQL has no resource and default deny answers 403. A write through the application
+invalidates both; a migration or a DBA does not. `test/Smoke/LibraryDeleteSmokeTest` hits
+`/sm/clear-persistent-cache` after building its fixtures for exactly this reason — it cost
+that test six failures first.
+
 ## Two things on this surface that are broken and reproduced
 
 Both were found by the batch-11b audit and left as they were, because fixing either is a

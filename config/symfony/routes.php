@@ -56,6 +56,7 @@ use App\Controller\LibrariesController;
 use App\Controller\LibraryCollectionsController;
 use App\Controller\LibraryCheckoutController;
 use App\Controller\LibraryController;
+use App\Controller\LibraryDeleteController;
 use App\Controller\LibraryFormController;
 use App\Controller\LibraryImportConfigureController;
 use App\Controller\LibraryImportsController;
@@ -1943,6 +1944,32 @@ $ported(
     LibrarySortController::class,
     RouteAccess::guardedBy('route/libraries/library/refresh-sort'),
     $textDomain('Books') + [LibrarySortController::REFRESH => true],
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// Deleting a library, and everything in it. **The first route here with no laminas page
+// behind it at all** — not "not ported yet", never written: `libraries/library/delete` has
+// been in module.config.php since 2020 with no guard entry and with the `library` entity's
+// `enable_delete_action` commented out, so both gates refused it independently. There is
+// therefore nothing for tools/port-baseline.php to compare, and the laminas route is kept
+// only so `laminas_path()` and the new guard entry can name it.
+//
+// It is also the only route on this surface guarded by `lib_administrator` rather than
+// `lib_user`. App\Controller\LibraryDeleteController has the authorization reasoning —
+// including why the per-row check it makes on top distinguishes nobody today — and
+// App\Books\LibraryDelete has the cascade, which is the part that matters: SionModel's
+// generic delete would leave 16,383 books pointing at a library that no longer exists.
+//
+// Declared above `libraries/library` for the same reason the edit and delete batches are
+// declared above the show block. Belt and braces here rather than the only defence, since
+// `library_id` is constrained to digits and `/libraries/4/delete` has a segment the bare
+// route cannot absorb — but on a destructive route that is the right way round.
+$ported(
+    'libraries/library/delete',
+    '/libraries/{library_id}/delete',
+    LibraryDeleteController::class,
+    RouteAccess::guardedBy('route/libraries/library/delete'),
+    $textDomain('Books'),
     ['library_id' => '[0-9]{1,5}']
 );
 
