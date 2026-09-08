@@ -57,7 +57,6 @@ class ReservedVerbRoutingSmokeTest extends SmokeTestCase
             //being refused does not depend on which front controller refuses you.
             'publication edit'           => ['/en/SL202186L/edit'],
             'publication delete'         => ['/en/SL202186L/delete'],
-            'publication upload cover'   => ['/en/SL202186L/upload-cover'],
             'publication new edition'    => ['/en/SL202186L/create-new-edition'],
             'publication to main corpus' => ['/en/SL202186L/copy-to-main-corpus'],
             //Ported rather than bridged, and guarded `sch_moderator, sch_user`, so it

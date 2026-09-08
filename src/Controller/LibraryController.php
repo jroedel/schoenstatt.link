@@ -14,7 +14,6 @@ use Laminas\Form\Element\Select;
 use JTranslate\Model\TranslationsTable;
 use Laminas\I18n\Translator\TranslatorInterface;
 use SionModel\Problem\EntityProblem;
-use SionModel\Service\ProblemService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -47,13 +46,12 @@ use function stripos;
  * search terms" and the page shows its category statistics instead. Reproduced exactly,
  * including the cap.
  *
- * ## What the admin menu counts, and the one that used to worry me
+ * ## What the admin menu counts
  *
- * Three of the four badges are counts. The fourth calls
- * `ProblemService::autoFixProblems()`, whose name says it writes — it does not: the
- * parameter is `$simulate = true` and the action passes nothing. Verified rather than
- * assumed, because a GET that silently repairs data is exactly the kind of thing this
- * batch went looking for, and this one is innocent.
+ * Every badge is a count. A fourth used to call `ProblemService::autoFixProblems()` for
+ * the auto-fix entry — a dry run, not a write, verified at the time — but that entry had
+ * been commented out of the `pages` config for years, so the branch never ran, and the
+ * route itself was retired on 2026-09-08 (docs/strangler.md).
  */
 final class LibraryController
 {
@@ -246,13 +244,6 @@ final class LibraryController
             //read 14 against laminas' 0 before this, on a library with none.
             $table->setLibraryId($libraryId);
             $pages['library-imports/library']['badges'] = [count(SionResult::rows($table->getLibraryImports()))];
-        }
-        if (isset($pages['sion-model/auto-fix-data-problems'])) {
-            /** @var ProblemService $problems */
-            $problems = $this->laminas->get(ProblemService::class);
-            //$simulate defaults true, so this counts rather than repairs — see the class docblock
-            $found = SionResult::rows($problems->autoFixProblems());
-            $pages['sion-model/auto-fix-data-problems']['badges'] = [count($found)];
         }
 
         foreach ($pages as $route => $values) {

@@ -683,11 +683,11 @@ rediscovered.
 - [ ] **Upload a book cover from the site.** There is no working way to do it, and this
   is the request that came out of the retirement above. Whoever picks it up starts from
   three separate defects, not one:
-  - **`publication-upload-cover` exists and is dead three ways over** — see the
-    unguarded-routes item under "Config rot" for the detail. No guard entry; an inverted
-    success test in `uploadCoverAction()`; and `bookCoverFileId`, the column it writes,
-    does not exist in `sch_publications` and is hardcoded to `null` in the row
-    projection. Granting the route a role fixes none of that.
+  - ~~**`publication-upload-cover` exists and is dead three ways over**~~ — **deleted
+    2026-09-08** (route, `uploadCoverAction()`, `Books\Form\UploadForm`, template, and its
+    `ReservedVerbs` entry). It had no guard entry, an inverted success test, and wrote
+    `bookCoverFileId`, a column that does not exist in `sch_publications`. Whoever builds
+    this starts from nothing rather than from that, which is the better place to start.
   - **Display and storage disagree about what a cover *is*.** Both readers resolve one
     by filename convention — `public/covers/<publicationId>-400px.jpg` in
     `App\Controller\PublicationController`, `-80px.jpg` in
@@ -771,8 +771,10 @@ rediscovered.
 - [ ] **More form routes, now that the form layer exists.** `src/Form/BootstrapFormRenderer`
   landed with `association-edit` (2026-08-09) and reproduces TwbBundle's markup
   byte-for-byte. What that unblocks, roughly in order of ease:
-  - `sion-model/auto-fix-data-problems` — POST + CSRF, no new element types, and its
-    template is already ported for the read-only sibling.
+  - ~~`sion-model/auto-fix-data-problems` — POST + CSRF, no new element types, and its
+    template is already ported for the read-only sibling.~~ **Retired 2026-09-08** rather
+    than ported: `refresh-sort` does a superset of its one fix. See the Problem-architecture
+    item under "Product decisions needed".
   - **Done:** the create surface, batch 9 (2026-08-15) — **nine of the sixteen**
     `*/create` routes. The sizing note this item used to carry was wrong in a way worth
     keeping: it predicted "much less shared leverage than the edit or delete surfaces gave,
@@ -1007,12 +1009,30 @@ rediscovered.
   the remaining `error_log()` calls to `Psr\Log\LoggerInterface`, which lands in
   `data/logs/` where everything else already is. The JTranslate GUI's two are done.
 
-- [ ] **`sion-model/auto-fix-data-problems` is guarded `lib_administrator`** while its
-  read-only sibling `sion-model/data-problems` is `sch_general_moderator`
-  (`config/autoload/acl.global.php:90`). A *library* administrator being the one account
-  that may auto-fix site-wide data problems looks like a copy-paste rather than a decision,
-  and the route is the last easy port left — so decide the guard before porting it, not
-  after, or the port reproduces it faithfully and makes it a fact.
+- [x] ~~**`sion-model/auto-fix-data-problems` is guarded `lib_administrator`** while its
+  read-only sibling `sion-model/data-problems` is `sch_general_moderator`.~~ **Settled by
+  retiring the route, 2026-09-08.** The guard turned out to fit: the only auto-fix any
+  provider implements writes library data (`lib_books.sort_text`). But that fix is a strict
+  subset of `LibraryTable::refreshLibrarySort()`, which the ported `refresh-sort`
+  confirmation already runs behind `administrate`, so the page was redundant. Route, action,
+  `ConfirmForm`, guard entry, template branch and two dead badge branches are gone;
+  SionModel's `ProblemTable` (reading `a_data_problems`, which does not exist) went with it.
+
+- [ ] **Is the Problem architecture worth keeping in schoenstatt.link?** Asked 2026-09-08
+  when the auto-fix route was retired, and measured rather than argued. The whole
+  site-wide report is **35 problems in six kinds**: 22 persons without an email, 5 libraries
+  with no sort-text format, 4 collections and 1 library with an invalid call-number regex, 1
+  library with no regex, 2 associations with two main roles. It reaches four surfaces —
+  `/sm/data-problems`, the admin-index badge, the per-library data-problems page and its
+  admin-menu badge — through `SionModel\Service\ProblemService`, two providers
+  (`LibraryTable`, `SchoenstattTable`), `EntityProblem`, `ProblemProviderInterface` and two
+  `problem_specifications` config blocks. The per-library configuration checks are the one
+  part a librarian acts on (a missing regex or format is exactly what stops sort text and
+  call-number validation working); the person and association checks are lint nobody has
+  acted on, and `autoFixProblems()` has no non-redundant implementation here. patres has "a
+  couple small use cases", so the SionModel classes stay either way; the question is only
+  what this application wires up. Decide with the SionModel convergence work rather than
+  alone.
 
 - [ ] **Phrase 7469 is a blank phrase with a blank `en_US` translation**, written 2019-08-16.
   It is the single row that makes "an empty translation counts as translated" more than

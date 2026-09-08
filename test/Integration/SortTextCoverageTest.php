@@ -15,7 +15,9 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 /**
  * What the auto-fix page knows about books with no sort text, and what it admits to.
  *
- * `sion-model/auto-fix-data-problems` backfills `lib_books.sort_text`. Measured on the
+ * `LibraryTable::autoFixProblems()` backfills `lib_books.sort_text` (the route that ran it,
+ * `sion-model/auto-fix-data-problems`, was retired 2026-09-08 — `refresh-sort` recomputes
+ * every book's sort text and is a strict superset of it). Measured on the
  * capsule 2026-08-21: **27,910 active books have no sort text**, the page offers to fix
  * 9,764 of them — every one in Colegio Mayor — and said nothing whatever about the other
  * 17,207, including the whole of PUC's 16,383-book catalogue. The number on screen read
