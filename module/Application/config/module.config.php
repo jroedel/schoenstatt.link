@@ -19,7 +19,6 @@ use Laminas\Router\Http\Literal;
 use Laminas\Navigation\Service\DefaultNavigationFactory;
 use Laminas\I18n\Translator\TranslatorServiceFactory;
 use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
-use BjyAuthorize\Guard\Route;
 use Laminas\Cache\Storage\StorageInterface;
 use Application\Session\SessionBootstrap;
 use Application\View\GdprStrategy;
@@ -198,7 +197,8 @@ return [
     ],
     'bjyauthorize' => [
         'guards' => [
-            Route::class => [
+            // legacy identifier string (BjyAuthorize removed); App\Acl\AclAssembler keys guards on it
+            'BjyAuthorize\Guard\Route' => [
                 ['route' => 'redirect-pre-april-2020-sl-id', 'roles' => ['guest', 'user']],
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],

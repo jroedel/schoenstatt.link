@@ -270,7 +270,7 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
      * This corrects a belief written down in tools/form-regression.php, which elevates
      * *before* redeeming the magic link because "BjyAuthorize reads the roles when the
      * session identity is established". It does not:
-     * `JUser\Provider\Identity\ZfcUserZendDbPlusSelfAsRole::getIdentityRoles()` selects
+     * `App\Acl\IdentityRoles` selects
      * from `user_role_linker` on every request, and `bjyauthorize.cache_enabled` is
      * false, so nothing about a role is cached in the session at all. The first attempt
      * here 403s and the second 200s with the same cookie jar, which is that fact stated

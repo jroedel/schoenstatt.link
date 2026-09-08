@@ -2,7 +2,6 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use BjyAuthorize\Exception\UnAuthorizedException;
 use Laminas\View\Model\ViewModel;
 
 class CollectionsController extends SionController
@@ -23,7 +22,7 @@ class CollectionsController extends SionController
         $libraryId = $this->params()->fromRoute('library_id');
         $resourceId = 'library_' . $libraryId;
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
         $view = parent::createAction();
         if ($view instanceof \Laminas\Stdlib\ResponseInterface) {

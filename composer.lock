@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a1ac28ad2d05d40848f5be270f6176f8",
+    "content-hash": "7ff8c7ec43f4c591b8e918400a993fd8",
     "packages": [
         {
             "name": "brick/varexporter",
@@ -811,78 +811,6 @@
                 "source": "https://github.com/giggsey/Locale/tree/2.9.0"
             },
             "time": "2026-02-24T15:32:13+00:00"
-        },
-        {
-            "name": "kokspflanze/bjy-authorize",
-            "version": "2.4.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/kokspflanze/BjyAuthorize.git",
-                "reference": "e576cd0a212b59a2b42f63a2bb3a55242193daad"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/kokspflanze/BjyAuthorize/zipball/e576cd0a212b59a2b42f63a2bb3a55242193daad",
-                "reference": "e576cd0a212b59a2b42f63a2bb3a55242193daad",
-                "shasum": ""
-            },
-            "require": {
-                "laminas/laminas-authentication": "^2.8.0",
-                "laminas/laminas-cache": "^2.13.2 || ^3.1.0",
-                "laminas/laminas-eventmanager": "^3.4.0",
-                "laminas/laminas-http": "^2.15.0",
-                "laminas/laminas-mvc": "^3.2.0",
-                "laminas/laminas-permissions-acl": "^2.8.0",
-                "laminas/laminas-servicemanager": "^3.7.0",
-                "laminas/laminas-view": "^2.14.2",
-                "php": "^7.3 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0"
-            },
-            "require-dev": {
-                "doctrine/persistence": "^1.3.8 || ^2.2.2",
-                "laminas/laminas-cache-storage-adapter-memory": "@stable",
-                "laminas/laminas-coding-standard": "^2.3.0",
-                "laminas/laminas-db": "^2.13.4",
-                "laminas/laminas-developer-tools": "^2.1.1",
-                "lm-commons/lmc-user": "^3.5.0",
-                "phpunit/phpunit": "^9.5.9"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "BjyAuthorize\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Ben Youngblood",
-                    "email": "bx.youngblood@gmail.com",
-                    "homepage": "http://bjyoungblood.com/",
-                    "role": "Developer"
-                },
-                {
-                    "name": "Marco Pivetta",
-                    "email": "ocramius@gmail.com",
-                    "homepage": "http://ocramius.github.com/",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Laminas\\Acl based firewall system for Laminas dispatch protection",
-            "homepage": "https://github.com/kokspflanze/BjyAuthorize",
-            "keywords": [
-                "acl",
-                "authorization",
-                "laminas",
-                "lmc-user"
-            ],
-            "support": {
-                "issues": "https://github.com/kokspflanze/BjyAuthorize/issues",
-                "source": "https://github.com/kokspflanze/BjyAuthorize/tree/2.4.4"
-            },
-            "time": "2026-02-26T21:14:16+00:00"
         },
         {
             "name": "laminas/laminas-authentication",

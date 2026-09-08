@@ -22,15 +22,12 @@ $modules = [
     'Laminas\Validator',
     //provides the session factories JUser\Module::onBootstrap starts
     'Laminas\Session',
-    //cache + its adapters must precede BjyAuthorize, whose Module declares a
-    //dependency on Laminas\Cache
+    //Laminas\Cache + its APCu/Filesystem adapters back the application's own caches
+    //(config/autoload's StorageInterface, the SionModel persistent cache).
     'Laminas\Cache',
     'Laminas\Cache\Storage\Adapter\Apcu',
     'Laminas\Cache\Storage\Adapter\Filesystem',
-    //BjyAuthorize's default cache_options ask for the memory adapter
-    'Laminas\Cache\Storage\Adapter\Memory',
     'Laminas\Serializer',
-    'BjyAuthorize',
     'SlmLocale',
     'RestApi',
     'JUser',

@@ -2,7 +2,6 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use BjyAuthorize\Exception\UnAuthorizedException;
 use Books\Model\PublicationsTable;
 use Books\Model\LibraryTable;
 
@@ -12,7 +11,7 @@ class BooksController extends SionController
     {
         $resourceId = 'library_' . $this->params()->fromRoute('library_id');
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
         $view = parent::createAction();
         if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
