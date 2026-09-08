@@ -132,12 +132,13 @@ the last one moves, `LegacyBridge` is deleted.
 ## What is left, and in what order
 
 Written down on 2026-09-08 because "what's next on the strangler?" has been answered from
-scratch twice, and the answer is not obvious from the counts: **17 laminas routes remain,
-and only one of them is a page a person can open** (23 and six on the morning of
-2026-09-08; batch 16 took the four publication actions that afternoon, and the two
-"decisions" below were settled by deletion that evening). Regenerate with
-`tools/acl-table.php` before trusting the list; the classification is what has value, not
-the names.
+scratch twice, and the answer is not obvious from the counts: **16 laminas routes remain,
+and none of them is a page a person can open.** All sixteen are structural parents or
+machinery. (The morning of 2026-09-08 it was 23 routes and six pages; batch 16 took the
+four publication actions that afternoon, two "decisions" below were settled by deletion
+that evening, and batch 17 took `admin/import-father` — the last HTML page — the same day.)
+Regenerate with `tools/acl-table.php` before trusting the list; the classification is what
+has value, not the names.
 
 ### The twelve that are not pages
 
@@ -150,31 +151,21 @@ own. Plus `roles/role`, which *is* guarded (`sch_moderator`) but declares
 **None of these needs porting.** They exist so their children can be named, and they
 evaporate with `LegacyBridge`. Do not count them as work.
 
-### The one real page
+### No real pages are left
 
-| route | guard | what it needs |
-|---|---|---|
-| `admin/import-father` | `sch_administrator` | a real form; also the subject `ServingNoteSmokeTest` currently uses to observe the bridge |
+Every one of the sixteen remaining routes is a structural parent or machinery. The last
+page a person could open, `admin/import-father`, was ported by batch 17 on 2026-09-08 — see
+"The last laminas HTML page" below.
 
-`sion-model/auto-fix-data-problems` sat in this table too, with "settle the guard first".
-Settling it turned into retiring it — see "Two decisions, both answered by deletion" below.
-
-Four more sat in this table until the afternoon of 2026-09-08 — `publication-create-new-edition`,
-`publication-copy-to-main-corpus`, `publications/export` and `publications/prime-authors` —
-and batch 16 took them the same day; see "The last four publication actions" below. One row
-of that table was wrong and is worth correcting here rather than deleting silently:
-`publications/export` does **not** return a spreadsheet. It is `parent::indexAction()` over
-the whole corpus rendered as one HTML table of four columns, and the description was inferred
-from the name.
-
-**`admin/import-father` has a second cost.** It is the last unported HTML page of any kind,
-and `test/Smoke/ServingNoteSmokeTest::testAnUnportedRouteReportsTheBridge` uses it to prove
-that a bridged `.phtml` reports itself as bridged. When it ports there is **no other
-candidate** — the auto-fix page was the last one and it was retired — so the test loses its
-subject for good. What the bridge still renders after that is the laminas **404 page** for
-any URL neither router knows, which is a `.phtml` through the bridge too; whether that is a
-worthy subject or the signal that this half of the note is dead code is the decision to make
-in that batch, and the test's own docblock says which way it leans.
+Three tables' worth of pages emptied out that day, and the history is worth keeping because
+the counts hide it. Four publication actions
+(`publication-create-new-edition`, `publication-copy-to-main-corpus`, `publications/export`,
+`publications/prime-authors`) went in batch 16; two more
+(`sion-model/auto-fix-data-problems`, `publication-upload-cover`) were retired rather than
+ported; and `admin/import-father` was the last port. One correction worth stating rather
+than deleting: `publications/export` does **not** return a spreadsheet, as an earlier
+version of this table claimed from the name — it is `parent::indexAction()` over the whole
+corpus rendered as one HTML table of four columns.
 
 ### Two decisions, both answered by deletion — 2026-09-08
 
@@ -2566,6 +2557,46 @@ Fifty of the 1,272 captures differ and none is an auth path: ten pages × five l
 of them signed-in pages reading data the suites wrote between the two captures (`users` grew
 test accounts, `admin`'s translation badge went 2,546 → 2,549 as the new templates filed
 their phrases, `users-create` gained the eight bytes of `checked` from the previous PR).
+
+### The last laminas HTML page — batch 17, 2026-09-08
+
+`admin/import-father`, `sch_administrator` only: one select of Schoenstatt Fathers and a
+button that copies the chosen record from the Patres API into `sch_persons`. It was the
+last route serving an HTML page from laminas, and porting it means every page a person can
+open on this site is Symfony-served.
+
+`App\Controller\ImportFatherController` is small, because the interesting parts stay where
+they were. The form comes from the laminas container — `Schoenstatt\Form\ImportFatherForm`,
+whose factory fills the select by calling the Patres person-list API — so the controller
+asks the bridge for it rather than rebuilding the remote call. The three POST outcomes are
+`AdminController::importFatherAction()`'s, reproduced: a record that fails Patres's own
+person input filter is a form-level error naming the fields at fault; an already-imported
+record is *refreshed* and says so; a new one is the plain success. All three are
+now-messages on a re-rendered page, through `App\Laminas\HostMessages`.
+
+**One behaviour changed, and it is a fix.** `personId` is `required => false` and filters an
+empty value to null, so on laminas an empty submission reached `importRemotePerson(null)`,
+which built a request for `/api/persons/` and threw — a 500 for leaving the picker blank.
+The ported controller answers a form error instead. Everything the gateway throws for a real
+reason (a network failure, a non-200 from Patres) still propagates to the error handler,
+because a remote service being down is worth reporting.
+
+The laminas action and its `.phtml` **stay**, as the rollback path — the same choice batch
+16 made for the publication actions, and unlike the JUser and JTranslate GUI ports which
+deleted their laminas twins. `admin/import-father` shares `AdminController` with the still-
+bridged `/admin` index, so there was nothing module-shaped to delete; keeping the action
+means the canary still renders every page under `SYMFONY_KERNEL=0`.
+
+#### The serving-note test lost its last subject, and gained the 404 page
+
+`test/Smoke/ServingNoteSmokeTest` proved the bridge by pointing at an unported page and
+reading "`.phtml` via LegacyBridge" out of its footer. Every subject it ever used has now
+been ported — `/user/login` (batch 13), `/admin/translations` (batch 14),
+`admin/import-father` (this one). What the bridge still serves is laminas' **404 page** for
+any URL neither router matches, which carries the same note minus the `route …/Controller`
+clause (no route matched). The test points there now and answers a 404 rather than a 200.
+When the canary is retired with `LegacyBridge`, that whole half of the note becomes dead
+code; until then it has a genuine subject, and a real test beats a deleted one.
 
 ### The last four publication actions — batch 16, 2026-09-08
 
