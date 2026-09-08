@@ -54,9 +54,25 @@ class BreadcrumbDataLabelsSmokeTest extends SmokeTestCase
                 '/it/literature/150-preguntas-sobre-schoenstatt',
                 '150 preguntas sobre Schoenstatt',
             ],
+            //**The expected label is the English one, and that is a finding rather than a
+            //relaxation.** A shrine's name is assembled by SchoenstattTable, which
+            //translates the *kind* ("Schoenstatt Shrine") in the `Schoenstatt` text domain
+            //— and that phrase has de/en/es/pt translations and no `it_IT`, in either of
+            //its two duplicate rows (6526 and 7458). So the Italian page renders the
+            //English kind, on this site as much as in the capsule.
+            //
+            //This case expected "Santuario di Schoenstatt …" until 2026-09-08 and passed,
+            //because a **fossil catalog** — `language/Schoenstatt/it_IT.lang.php`, written
+            //by an export that did not know which domains are modules — still carried an
+            //Italian translation the database no longer has. Removing the fossil is what
+            //made the gap visible; see App\Laminas\TranslationsTableConfigurator for why
+            //those files existed at all, and docs/BACKLOG.md for the translation gap.
+            //
+            //What this case still checks is what it was written for: the label reaches the
+            //deepest crumb, and rendering the page does not file it as a phrase.
             'shrine name'      => [
                 '/it/SL100458A/schoenstatt-shrine-mont-sion-gikungu',
-                'Santuario di Schoenstatt Mont Sion Gikungu',
+                'Schoenstatt Shrine Mont Sion Gikungu',
             ],
         ];
     }

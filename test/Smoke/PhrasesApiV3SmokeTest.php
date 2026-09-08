@@ -1260,12 +1260,32 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
      * so what the app wrote is what this reads. These files are gitignored and
      * generated — a fresh checkout has none, which is why the test that uses this
      * writes first.
+     *
+     * **Two locations, and this used to know only one of them.** A text domain that names
+     * a loaded module is exported *into that module* — `module/Schoenstatt/language/` —
+     * and every other domain to `language/<Domain>/`. Until 2026-09-08 this method looked
+     * only in the second place and the test passed, because nothing under the Symfony
+     * front controller had ever told `TranslationsTable` which domains are modules: this
+     * API's own write put every module domain in the wrong directory, and the assertion
+     * was written against what it found. See `App\Laminas\TranslationsTableConfigurator`.
+     *
+     * Both are checked rather than the module one alone, because the domain is a
+     * parameter and some of them genuinely are not modules.
      */
     private function catalogFor(string $textDomain, string $locale): ?string
     {
-        $path = __DIR__ . '/../../language/' . $textDomain . '/' . $locale . '.lang.php';
+        $candidates = [
+            __DIR__ . '/../../module/' . $textDomain . '/language/' . $locale . '.lang.php',
+            __DIR__ . '/../../language/' . $textDomain . '/' . $locale . '.lang.php',
+        ];
 
-        return is_file($path) ? (string) file_get_contents($path) : null;
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return (string) file_get_contents($path);
+            }
+        }
+
+        return null;
     }
 
     // --------------------------------------------------------------- tokens

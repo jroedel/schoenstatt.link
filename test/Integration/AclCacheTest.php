@@ -38,6 +38,8 @@ use Throwable;
  */
 class AclCacheTest extends TestCase
 {
+    use RequiresApcu;
+
     private static ?ServiceBridge $bridge = null;
 
     /**
@@ -106,6 +108,8 @@ class AclCacheTest extends TestCase
      */
     public function testTheStoredAclCarriesNoIdentity(): void
     {
+        $this->requireApcu();
+
         $storage = $this->aclStorage();
         $key     = (string) ($this->bjyConfig()['cache_key'] ?? 'acl');
 
@@ -139,6 +143,8 @@ class AclCacheTest extends TestCase
      */
     public function testTheAclHoldsNoPerUserRoles(): void
     {
+        $this->requireApcu();
+
         $acl   = $this->authorize()->getAcl();
         $roles = array_map('strval', $acl->getRoles());
 
@@ -158,6 +164,11 @@ class AclCacheTest extends TestCase
      */
     public function testEveryRoleAnAccountCanHoldExistsInTheAcl(): void
     {
+        //Before the try below, and not inside it: that catch only wraps the query, and it
+        //would report an unbuildable cache as "no reachable database" — which is how this
+        //one hid behind the DB skip on a runner that has neither.
+        $this->requireApcu();
+
         try {
             /** @var Adapter $adapter */
             $adapter = $this->bridge()->get(Adapter::class);
@@ -189,6 +200,8 @@ class AclCacheTest extends TestCase
 
     public function testTheListenerRegistryIsRegisteredAndCarriesTheAclInvalidator(): void
     {
+        $this->requireApcu();
+
         self::assertTrue(
             $this->bridge()->has(EntityChangeListeners::class),
             'without this in the container SionTableWiring wires nothing and no write ever expires the ACL'
@@ -209,6 +222,8 @@ class AclCacheTest extends TestCase
      */
     public function testATableIsWiredToTheRegistry(): void
     {
+        $this->requireApcu();
+
         /** @var UserTable $users */
         $users = $this->bridge()->get(UserTable::class);
         $wired = (new ReflectionProperty($users, 'entityChangeListeners'))->getValue($users);

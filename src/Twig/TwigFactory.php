@@ -6,11 +6,14 @@ namespace App\Twig;
 
 use App\Books\CurrentLibrary;
 use App\Http\CspNonce;
+use App\JTranslate\Host\UrlBuilder as JTranslateUrlBuilder;
 use App\JUser\Host\UrlBuilder as JUserUrlBuilder;
+use App\Laminas\HostUrls;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\View\SiteChrome;
+use JTranslate\Twig\JTranslateExtension;
 use JUser\Twig\JUserExtension;
 use SionModel\Form\BootstrapFormRenderer;
 use SionModel\Twig\FormExtension;
@@ -140,9 +143,22 @@ final class TwigFactory
         //so the Kernel building its own for the controllers costs nothing and cannot drift.
         $loader->addPath(JUserExtension::templatePath(), JUserExtension::TEMPLATE_NAMESPACE);
         $twig->addExtension(new JUserExtension(
-            new JUserUrlBuilder($urls, $requests),
+            new JUserUrlBuilder(new HostUrls($urls, $requests)),
             'layout.html.twig',
             'juser/_person-cell.html.twig'
+        ));
+        //JTranslate's three templates, addressed as `@jtranslate/…`, on the same terms: a
+        //namespace so nothing can collide, and this application's layout named as a global
+        //rather than shipped by the package.
+        //
+        //Its templates lean on rather more of the host than JUser's do — `truncate()`,
+        //`short_date()` and the whole `form_*` set — and every one of those is registered
+        //above. A missing one is a Twig error naming the function, not a broken page, which
+        //is the failure mode to want here.
+        $loader->addPath(JTranslateExtension::templatePath(), JTranslateExtension::TEMPLATE_NAMESPACE);
+        $twig->addExtension(new JTranslateExtension(
+            new JTranslateUrlBuilder(new HostUrls($urls, $requests)),
+            'layout.html.twig'
         ));
         $twig->addExtension(new MarkdownExtension());
         //One page minifies its inline script on laminas; see the extension's docblock.

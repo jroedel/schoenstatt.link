@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use JTranslate\Model\TranslationsTable;
 use Laminas\Mvc\I18n\Translator as MvcI18nTranslator;
 use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
@@ -118,9 +119,26 @@ final class ServiceBridge
         //attempt used 'MvcTranslator' and silently did nothing. Registering the class
         //covers every alias pointing at it, `MvcTranslator` and `jtranslate_translator`
         //included.
+        //`TranslationsTable` is decorated too, and for a reason the translator delegator
+        //cannot cover: `setUserModules()` decides **where an exported catalog is written**
+        //— `module/<M>/language` for a loaded module, `language/<M>` for anything else —
+        //and until 2026-09-08 the only thing that called it was the delegator above.
+        //
+        //So the map was set exactly when something asked for a *translator*, which is not
+        //the same as when something asks for the *table*. The translation GUI's save is the
+        //case that breaks: a successful write redirects, so nothing renders, nothing builds
+        //a translator, and `writePhpTranslationArrays()` ran with an empty map — putting
+        //every module domain's catalog under `language/<M>/` instead of in the module.
+        //
+        //It reads as harmless because both directories are registered as *read* paths, and
+        //`language/*` is registered last so the misplaced file even wins. The hazard is the
+        //pair: `bin/console jtranslate:export-catalogs` writes the module copy, the GUI
+        //wrote the other, and a phrase deleted through the GUI would go on being served
+        //from whichever copy the console did not rewrite.
         $services->configure([
             'delegators' => [
                 MvcI18nTranslator::class => [TranslatorConfigurator::class],
+                TranslationsTable::class => [TranslationsTableConfigurator::class],
             ],
         ]);
 

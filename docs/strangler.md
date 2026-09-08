@@ -95,9 +95,15 @@ by asking whether `_route` is anything other than `legacy`:
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
 
 **Run `tools/acl-table.php` for the count; do not cite the number below.** As of
-2026-08-18 it was **161 Symfony-served routes** (134 ACL-checked, 27 declared open — most
-paths are declared twice, once with a locale prefix and once without) shadowing **70 of
-the 142 laminas routes**, leaving 72.
+2026-09-08 it was **237 Symfony-served routes** (210 ACL-checked, 27 declared open — most
+paths are declared twice, once with a locale prefix and once without) shadowing **108 of
+the 136 laminas routes**, leaving 28.
+
+Of those 28, roughly a third are pages: twelve are structural parents with no action of
+their own (`may_terminate => false`, or a guard entry on a route that is not a page), and
+six are matchable but have no guard entry at all, so default deny makes them reachable by
+nobody. `kernel-switch` is laminas on purpose — it is the canary toggle and has to work
+from both sides.
 
 That figure has been wrong twice in two days, which is why the instruction comes before
 it. It read "110 of the 188 … as of batch 6" for four batches — and the two numerators
@@ -2418,6 +2424,109 @@ Fifty of the 1,272 captures differ and none is an auth path: ten pages × five l
 of them signed-in pages reading data the suites wrote between the two captures (`users` grew
 test accounts, `admin`'s translation badge went 2,546 → 2,549 as the new templates filed
 their phrases, `users-create` gained the eight bytes of `checked` from the previous PR).
+
+### The translation-administration surface — batch 14, 2026-09-08
+
+The three reachable `jtranslate/*` routes: the worklist at `/admin/translations`, the phrase
+form, and the delete confirmation. `jtranslate/phrase` is their parent, `may_terminate =>
+false`, and not a page — so there is no fourth.
+
+**Declared by the module, like JUser's eleven.** `module/JTranslate/config/symfony-routes.php`
+returns a closure that `config/symfony/routes.php` calls back into, so this file still reads
+as the migration status top to bottom while the paths and controllers live with the code that
+serves them. What the application adds on the way through is the half only it knows: the ACL
+resource each guard entry lives under, and the `JTranslate` text domain.
+
+The shape is batch 13's, one size smaller: `JTranslate\Page\PhraseAdmin` for what all three
+open with, `JTranslate\Host\{FlashInterface,Severity,UrlBuilderInterface}` for what the module
+needs from a host, `JTranslate\Twig\JTranslateExtension` for `@jtranslate/…` and
+`jtranslate_layout`, and three templates. The laminas controller and its three `.phtml` were
+**deleted with the switch**, so rolling this back is a deploy.
+
+Three things are worth knowing before touching any of it, and the first two are the module's
+own decisions rather than this application's.
+
+**`JTranslate` stays a laminas module, and its `onBootstrap` stays.** Unlike JUser 3.0.0, the
+contract here takes no package out of `require`: the translator listener, the validator
+translator, the view helpers and `nowMessenger` are all still laminas and all still needed —
+the *reader* side of translation is laminas' on both front controllers. What the port buys is
+that the GUI renders under a front controller that has none of them.
+
+**Its `Severity` enum is a second copy of JUser's, deliberately.** JUser depends on JTranslate
+(for `TranslatableMessage`, among other things), so JTranslate cannot depend back, and a
+shared enum would have to live somewhere neither owns. `test/Integration/JTranslateHostContractTest`
+pins both against the laminas flash namespaces *and* against each other, because the failure
+mode is silent: a flash crosses a redirect in the session, and every successful write on this
+surface redirects.
+
+**One `FlashMessenger` per request now means per request and not per module.** Both modules'
+`Flash` adapters share `App\Laminas\HostMessages`, which holds the memo that used to live in
+`App\JUser\Host\Flash`. Two instances lose one of two messages — measured on redemption in
+batch 13 — and one-per-module is one too many the moment a second module serves pages here.
+`App\Laminas\HostUrls` was extracted in the same pass and for the same reason: the
+`force_canonical` request-URI priming is a fact about this application, and it should be
+written once.
+
+#### What the port found, and none of it was in the GUI
+
+**The catalog export was writing to the wrong directory on every Symfony-served write, and
+had been since the v3 API shipped.** `TranslationsTable::setUserModules()` decides between
+`module/<M>/language/` and `language/<M>/`, and the only thing calling it on this front
+controller was `App\Laminas\TranslatorConfigurator` — which runs when something asks for a
+*translator*. A write that succeeds **redirects**, so nothing renders, nothing translates, and
+the map was empty: every module text domain's catalog went to `language/<M>/`.
+
+It reads as harmless, which is why it survived: both directories are registered as *read*
+paths and `language/*` is registered last, so the misplaced file even wins. The damage is the
+**pair** — `bin/console jtranslate:export-catalogs` rewrites the module copy, a GUI or API
+write rewrote the other, and a translation edited or deleted through one goes on being served
+from the copy the other did not touch. `App\Laminas\TranslationsTableConfigurator` is the fix:
+a delegator on the table, so the guarantee no longer depends on what happened to be built
+first. `PhrasesApiV3SmokeTest::catalogFor()` had been written against the wrong location and
+asserted it faithfully.
+
+**A fossil catalog was translating a page the database cannot.** Removing the stray
+`language/Schoenstatt/it_IT.lang.php` from the capsule turned
+`BreadcrumbDataLabelsSmokeTest`'s Italian shrine case red: it expected "Santuario di
+Schoenstatt Mont Sion Gikungu", and that translation is in **no** database row — the kind
+label `Schoenstatt Shrine` carries de/en/es/pt and no `it_IT` in either of its two duplicate
+phrase rows. The file was a snapshot from an era when it did. So Italian shrine names render
+in English, on production too, and the capsule had been lying about it for as long as the
+fossil sat there.
+
+**`error_log()` writes nothing in the capsule.** `log_errors` is `Off`, so the module's
+"could not compile translation files" line — and every other `error_log()` in the tree — is
+discarded. That cost half an hour of this port: the export was throwing, the controller
+reported it correctly, and the reason was invisible. The ported code logs through
+`Psr\Log\LoggerInterface` instead, which lands in `data/logs/`.
+
+**The capsule's `module/*/language/` directories can end up root-owned**, because
+`docker compose exec` runs as root and `jtranslate:export-catalogs` writes as whoever ran it.
+`www-data` is remapped to the host uid, so a root-owned catalog directory makes every
+web-served export fail with `Permission denied` — the same family as the root-owned compiled
+Twig in CLAUDE.md. Run it as `docker compose exec -u www-data`.
+
+#### Verifying it
+
+`tools/port-baseline.php` compared all seven URL/state combinations across five locales and
+both identities. The two `edit` renderings, both `delete` confirmations and both not-found
+redirects came out **identical**; the listing was identical on all **3,287** rows the two
+captures shared, in both its filtered and its `showAll` state. The Symfony capture had 25 rows
+the laminas one did not, every one a phrase *discovered while the captures ran*.
+
+Two differences were found and fixed rather than accepted, both whitespace beside a `&nbsp;` —
+it decodes to U+00A0, which the harness deliberately does not collapse, so a newline next to
+one renders as a space laminas does not emit. One difference stays and is not the port's: an
+anonymous request to a guarded ported route keeps the query string in `?redirect=`, where
+BjyAuthorize dropped it. That is better, and it works because `App\JUser\Host\RouteResolver`
+resolves a path with a query string — `test/Smoke/TranslationSmokeTest` pins it.
+
+**The tool itself could not run when this batch started**, and had not been able to since
+batch 13: `capture laminas` signs in by POSTing `/en/user/login`, which is Symfony-only now
+and answers 404 under `SYMFONY_KERNEL=0`. It has a `session` mode as of this batch — sign in
+once on the default front controller, then flip — which works because the session is laminas'
+on both sides, one cookie holding only a user id. Ten paths with no laminas side left were
+removed from its list at the same time.
 
 ### The user-administration surface — batch 12, 2026-08-21
 

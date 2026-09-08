@@ -22,11 +22,18 @@
  *
  * Usage, inside the app container:
  *
- *     # 1. append `SetEnv SYMFONY_KERNEL 0` to public/.htaccess
+ *     # 1. on the default front controller, sign in once and keep the session
+ *     docker compose exec -T app php tools/port-baseline.php session
+ *     # 2. append `SetEnv SYMFONY_KERNEL 0` to public/.htaccess
  *     docker compose exec -T app php tools/port-baseline.php capture laminas
- *     # 2. remove that line again
+ *     # 3. remove that line again
  *     docker compose exec -T app php tools/port-baseline.php capture symfony
  *     docker compose exec -T app php tools/port-baseline.php compare laminas symfony
+ *
+ * Step 1 is **not optional for the laminas capture**, and that is new as of 2026-09-08:
+ * the sign-in surface is Symfony-only since batch 13, so under `SYMFONY_KERNEL=0` the
+ * login form this tool used to POST answers 404 and the capture dies in setup. See
+ * {@see storeSession()}.
  *
  * Exit 0 = every response identical once normalized, 1 = drift, 2 = setup failure.
  *
@@ -148,6 +155,26 @@ const EMAIL_ACCOUNT  = EMAIL_PREFIX . 'account';
 const EMAIL_DOMAIN   = '@example.com';
 const OUT_ROOT       = __DIR__ . '/../data/port-baseline';
 
+/**
+ * Where `session` keeps its jar, and therefore a capture name nobody may use.
+ *
+ * A directory under OUT_ROOT rather than a temp file, because the whole point is that it
+ * survives between two invocations of this tool with a front-controller flip in between.
+ */
+const SESSION_NAME = 'session';
+
+/**
+ * The URL {@see assertSignedIn()} probes, and it has to satisfy three things at once:
+ * guarded (so an anonymous visitor gets a 302 rather than the page), served by **both**
+ * front controllers, and not data-dependent.
+ *
+ * `/en/admin` is the site's first restricted route and both sides still render it — the
+ * laminas action stays until the .phtml does. Most of the obvious alternatives no longer
+ * qualify: `/en/users` and `/en/user/login` are Symfony-only since batch 12/13, and any
+ * entity path depends on a row the capsule may not have.
+ */
+const SESSION_PROBE = '/en/admin';
+
 /** The five configured aliases, i.e. every prefix a visitor can actually be on. */
 const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
 
@@ -160,6 +187,57 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 14 — the translation administration surface: the three reachable routes of the
+    // JTranslate GUI. `jtranslate/phrase` is their parent and is `may_terminate => false`,
+    // so there is no fourth path to fetch.
+    //
+    // **GET only, like batches 7 and 8**, and it matters more here than on either of them:
+    // a POST to the delete confirmation destroys every translation of the phrase in every
+    // language *and* rewrites the compiled catalogs, so the site stops serving those
+    // strings. The harness only ever POSTs the sign-in form.
+    //
+    // The listing is fetched in both of its states because the filter is the page's whole
+    // feature: without `showAll` it renders only phrases some locale is still missing —
+    // computed row by row in the .phtml, which is one of the things this port moves — and
+    // with it, all 3,331 phrases of this project. `project` is why that number is not 4,237:
+    // the phrase table is shared, and the 875 `patres` rows must never appear on either
+    // rendering.
+    //
+    // Three phrase ids, each for a branch rather than for coverage's sake:
+    //   10028  has real `trans_translations_history` rows, so the edit screen renders the
+    //          "Previous versions" panel — the only place a replaced translation is
+    //          recoverable from.
+    //   6192   has five translations and no history at all, so the same screen renders
+    //          without the panel. Both, because a panel rendered unconditionally passes any
+    //          test that only looks for it.
+    //   99999  names nothing. Both actions answer it with a flash and a 302 to the listing,
+    //          which is the branch a stale link or a double submit takes. Within the
+    //          laminas route's `[0-9]{1,5}` on purpose — see the constraint note in
+    //          module/JTranslate/config/symfony-routes.php.
+    // **Compared on 2026-09-08 and then removed from this list**, for the reason the JUser
+    // paths below are gone: the port deleted `JTranslateController` and its three `.phtml`,
+    // so there is no laminas rendering left to diff against. The result is recorded here
+    // because the list is where the next porter will look for it:
+    //
+    //   - the two `edit` renderings (a phrase with history, one without) and both `delete`
+    //     confirmations came out **identical** across all five locales and both identities,
+    //     as did the two not-found redirects;
+    //   - the listing came out identical on all **3,287** rows the two captures had in
+    //     common, in both its filtered and its `showAll` state. The Symfony capture had 25
+    //     rows the laminas one did not, all of them phrases *discovered while the captures
+    //     ran* — new ids above 14,434 plus one unretired by a page view. Nothing was in the
+    //     laminas listing and missing from the Symfony one;
+    //   - two differences were found and fixed rather than accepted, both whitespace either
+    //     side of a `&nbsp;`: it decodes to U+00A0, which rule 6 below deliberately does not
+    //     collapse, so a newline next to one renders as a space laminas does not emit.
+    //
+    //   - one difference is **not** the port's and is worth knowing before reading a future
+    //     diff: an anonymous request to a guarded ported route redirects to
+    //     `?redirect=/en/admin/translations%3FshowAll%3Dtrue`, where laminas drops the query
+    //     string entirely. That is `App\Authorization\RouteGuard` versus BjyAuthorize's
+    //     strategy, it applies to every ported guarded route, and the Symfony behaviour is
+    //     the better one — `App\JUser\Host\RouteResolver` keeps the query when it resolves
+    //     the destination, so signing in returns the visitor to the filter they asked for.
     // batch 11b — the library circulation surface: 24 routes across five controllers.
     //
     // **Two of the batch's routes are deliberately absent, and both would do real work if
@@ -413,14 +491,17 @@ const PATHS = [
     // reason `/dictionary/xx` is last in this list: each sets a flash message, and a flash
     // is read by the next page rendered in the same session. They are covered by
     // test/Smoke/JUserAdminSmokeTest instead.
-    '/users',
-    '/users/create',
-    '/users/roles/create',
-    '/users/5/edit',
-    '/users/6/edit',
-    '/users/5/delete',
-    '/users/5/api-tokens',
-    '/users/5/api-tokens/1/revoke',
+    //
+    // **The eight paths are gone from this list, and will not come back** (2026-09-08).
+    // Batch 12 deleted the laminas controller that served them along with its `.phtml`, so
+    // `capture laminas` answers **404 in 124 bytes** for every one — measured, not
+    // assumed — and a path with no laminas side cannot be diffed against one. Leaving them
+    // here turned every run into forty phantom differences that read as "this drifted"
+    // when they mean "this was ported hard". Same reasoning, and same wording, as the
+    // `/library-imports/…` removal above.
+    //
+    // What covers them instead: test/Smoke/JUserAdminSmokeTest, UserSmokeTest,
+    // UserCreateSmokeTest and ApiTokenAdminSmokeTest.
 
     // The auth surface — batch 13's subject, listed here ahead of it so its capture has a
     // before as well as an after. **Two of the four routes cannot be here, and neither is
@@ -442,8 +523,15 @@ const PATHS = [
     //
     // Note the signed-in half of these two is a redirect, not a page. That is the
     // behaviour under test, not a gap in the capture.
-    '/user',
-    '/user/login',
+    //
+    // **Both are gone from this list too** (2026-09-08), for the reason the eight above
+    // are: batch 13 deleted `JUser\Controller\LoginController`, so there is no laminas
+    // rendering left to compare against. This one cost more than a phantom diff — it broke
+    // the tool outright, because `signInWithEveryRole()` POSTs `/en/user/login` and a 404
+    // there kills `capture laminas` in setup. See {@see storeSession()}.
+    //
+    // test/Smoke/AuthSmokeTest is what covers this surface, end to end and with real
+    // tokens.
 
     // earlier batches, re-compared because every port re-enters the same layout,
     // the same translator and the same authorization listener
@@ -472,10 +560,18 @@ function main(array $argv): int
 {
     $mode = $argv[1] ?? '';
 
+    if ($mode === 'session') {
+        return storeSession();
+    }
+
     if ($mode === 'capture') {
         $name = $argv[2] ?? '';
         if ($name === '' || ! preg_match('/^[a-z0-9-]+$/', $name)) {
             fwrite(STDERR, "capture needs a name, e.g. `capture laminas`\n");
+            return 2;
+        }
+        if ($name === SESSION_NAME) {
+            fwrite(STDERR, "`" . SESSION_NAME . "` is reserved for the stored sign-in; pick another name\n");
             return 2;
         }
         return capture($name);
@@ -497,9 +593,124 @@ function main(array $argv): int
 
     fwrite(
         STDERR,
-        "Usage: php tools/port-baseline.php capture <name> | compare <name> <name> | show <name> <file>\n"
+        "Usage: php tools/port-baseline.php session | capture <name> | compare <name> <name> "
+        . "| show <name> <file>\n"
     );
     return 2;
+}
+
+// ------------------------------------------------------------------- session
+
+/**
+ * Sign in once and keep the cookie jar, so a later capture does not have to sign in itself.
+ *
+ * ## Why this exists: the laminas front controller can no longer sign anybody in
+ *
+ * Every capture needs an authenticated identity — the guarded pages are the ones worth
+ * comparing — and until 2026-08-21 each one got its own by POSTing `/en/user/login`.
+ * That stopped working the day `JUser\Controller\LoginController` was deleted: the whole
+ * sign-in surface is served by the module's Symfony controllers now, so under
+ * `SYMFONY_KERNEL=0` the login form is a **404** and `capture laminas` fails in setup
+ * before it fetches anything.
+ *
+ * Nothing noticed for two and a half weeks because no port ran in between. The tool's
+ * documented procedure was simply broken, which is worth stating plainly: a verification
+ * tool that cannot run is indistinguishable from one that passes.
+ *
+ * ## Why carrying the session across the flip is legitimate
+ *
+ * The session is **laminas'** on both front controllers — one `Laminas\Session`
+ * container, one cookie, and only the user id inside it, re-read every request. That is
+ * exactly what `Application\Session\SessionBootstrap` exists to guarantee for
+ * `SYMFONY_KERNEL=0`. So a session opened under Symfony is a session laminas resolves,
+ * and reusing it changes nothing about the *rendering* being compared: the identity is
+ * the same account with the same roles either way.
+ *
+ * It also removes a real hazard the per-capture sign-in had — two runs, two redemptions,
+ * two `sch_changes` rows — without touching the fixed-local-part reasoning above.
+ *
+ * ## The procedure, in full
+ *
+ *     # 1. with the site on its default front controller (Symfony)
+ *     docker compose exec -T app php tools/port-baseline.php session
+ *     # 2. append `SetEnv SYMFONY_KERNEL 0` to public/.htaccess
+ *     docker compose exec -T app php tools/port-baseline.php capture laminas
+ *     # 3. remove that line again, then port the route
+ *     docker compose exec -T app php tools/port-baseline.php capture symfony
+ *     docker compose exec -T app php tools/port-baseline.php compare laminas symfony
+ *
+ * Step 1 is skippable only in the sense that `capture` falls back to signing in itself
+ * when no session is stored — which works on Symfony and cannot work on laminas.
+ */
+function storeSession(): int
+{
+    $dir = OUT_ROOT . '/' . SESSION_NAME;
+    resetDir($dir);
+
+    $jar = $dir . '/JAR';
+    file_put_contents($jar, netscapeJarWithConsent());
+
+    try {
+        $account = signInWithEveryRole($jar);
+        assertSignedIn($jar);
+    } catch (RuntimeException $e) {
+        fwrite(STDERR, 'SIGN-IN FAILED: ' . $e->getMessage() . "\n");
+        return 2;
+    }
+
+    file_put_contents($dir . '/ACCOUNT', $account . "\n");
+
+    printf("Signed in as %s; session stored in data/port-baseline/%s/\n", $account, SESSION_NAME);
+    printf("Flip the front controller now — the next capture will reuse this session.\n");
+
+    return 0;
+}
+
+/**
+ * The stored jar copied to a scratch file, and the account it belongs to — or null when
+ * nothing is stored.
+ *
+ * A copy rather than the file itself: a capture drops `slm_locale` from its jar between
+ * fetches (see the comment in {@see capture()}), and curl rewrites the whole file on every
+ * response. Handing it the stored one would leave the session store rewritten by whatever
+ * the last request happened to set, which is a thing that works until it does not.
+ *
+ * @return array{jar: string, account: string}|null
+ */
+function storedSession(string $scratchJar): ?array
+{
+    $dir     = OUT_ROOT . '/' . SESSION_NAME;
+    $jar     = $dir . '/JAR';
+    $account = @file_get_contents($dir . '/ACCOUNT');
+    if (! is_file($jar) || false === $account) {
+        return null;
+    }
+
+    copy($jar, $scratchJar);
+
+    return ['jar' => $scratchJar, 'account' => trim($account)];
+}
+
+/**
+ * Fail now rather than after a hundred fetches, if the identity is not actually there.
+ *
+ * A stale or unresolvable session does not error: every guarded URL answers a 302 to the
+ * sign-in page, so the capture *succeeds* and produces a directory of redirects. Compared
+ * against another such directory it even passes. This is the check that tells the two
+ * apart, and it is the reason a stored session is safe to reuse across a front-controller
+ * flip: if laminas cannot resolve what Symfony opened, the very next line says so.
+ */
+function assertSignedIn(string $jar): void
+{
+    $response = httpGet(SESSION_PROBE, $jar);
+    if (200 !== $response['status']) {
+        throw new RuntimeException(sprintf(
+            'the session does not carry an identity: GET %s answered %d, expected 200'
+            . ' (a guarded page redirects an anonymous visitor)',
+            SESSION_PROBE,
+            $response['status']
+        ));
+    }
 }
 
 // ------------------------------------------------------------------- capture
@@ -511,8 +722,13 @@ function capture(string $name): int
     file_put_contents($anonymousJar, netscapeJarWithConsent());
     file_put_contents($signedInJar, netscapeJarWithConsent());
 
+    //A stored session is used when there is one, and on laminas it is the only thing that
+    //can work — see storeSession() on why the login form is a 404 there. The fallback
+    //keeps a Symfony-only capture a one-liner.
+    $stored = storedSession($signedInJar);
     try {
-        $account = signInWithEveryRole($signedInJar);
+        $account = $stored['account'] ?? signInWithEveryRole($signedInJar);
+        assertSignedIn($signedInJar);
     } catch (RuntimeException $e) {
         fwrite(STDERR, 'SETUP FAILED: ' . $e->getMessage() . "\n");
         @unlink($anonymousJar);
@@ -562,7 +778,11 @@ function capture(string $name): int
         count(LOCALES) + 1,
         $name
     );
-    printf("Signed-in account: %s\n", $account);
+    printf(
+        "Signed-in account: %s (%s)\n",
+        $account,
+        null === $stored ? 'signed in by this run' : 'reused the stored session'
+    );
 
     return 0;
 }
