@@ -246,7 +246,12 @@ stores it *before* adding the identity's roles.
 | serialized ACL | 127,565 B | 80,560 B |
 | `unserialize` on a hit | — | 0.37 ms |
 
-Invalidation is `App\Acl\AclCacheInvalidator`, driven from
+> **Superseded 2026-09-09:** the ACL is no longer cached across requests (the ACL cutover
+> moved authorization to `App\Acl\Authorizer`, which assembles per request from plain arrays),
+> so `App\Acl\AclCacheInvalidator` has been removed. The figures above are the record of what
+> BjyAuthorize's cache achieved.
+
+Invalidation was `App\Acl\AclCacheInvalidator`, driven from
 `SionCacheTrait::removeDependentCacheItems()` through SionModel's new
 `EntityChangeListeners` — the one point every write in every module passes through, rather
 than the four write paths that exist today across two repositories. That is correctness, not
