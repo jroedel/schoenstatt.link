@@ -89,18 +89,18 @@ suites run from the superproject working tree.
 
 ## Architecture
 
-- **One front controller.** `public/index.php` runs `App\Kernel`
-  (symfony/http-kernel, hand-wired — no FrameworkBundle) unconditionally. A catch-all
-  route (`App\Http\LegacyBridge`) still boots a per-request `Laminas\Mvc\Application`
-  for the handful of unported laminas routes, all of which 404 — a Symfony-rendered 404
-  since Phase A of the laminas-mvc removal, and the `/api` refusal moved off it too, so
-  the bridge renders no laminas view to any visitor. **The `SYMFONY_KERNEL` canary was
-  retired 2026-09-08 (Phase B):** the front-controller flip and its `sl_symfony_canary`
-  cookies are gone, nothing reads the variable, and rolling production back to the laminas
-  front controller is a redeploy now, not an `.htaccess` edit. The Symfony kernel has been
-  the site-wide default since the 2026-08-11 deploy; `curl https://schoenstatt.link/_health`
-  confirms it. Deleting `LegacyBridge` (and then laminas-mvc from composer) is what
-  remains. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
+- **One front controller, and no MVC bridge.** `public/index.php` runs `App\Kernel`
+  (symfony/http-kernel, hand-wired — no FrameworkBundle) unconditionally. **The
+  `SYMFONY_KERNEL` canary and `App\Http\LegacyBridge` were both deleted 2026-09-08 (Phase
+  B).** The catch-all is `App\Controller\NotFoundController`: an unmatched path is a plain
+  Symfony 404 from `error/404.html.twig`, not a laminas round-trip. Nothing dispatches
+  through laminas-mvc's MVC layer any more — no canary cookies, no bridge, nothing reads
+  `SYMFONY_KERNEL`. Rolling back to the laminas front controller is a redeploy, not an
+  `.htaccess` edit. `App\Laminas\ServiceBridge` still builds the laminas *ServiceManager*
+  for the services ported controllers use — that is laminas-servicemanager, not
+  laminas-mvc, and dropping laminas-mvc from composer is the remaining Phase C. The Symfony
+  kernel has been the site-wide default since the 2026-08-11 deploy;
+  `curl https://schoenstatt.link/_health` confirms it. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
   `public/index.php`, or anything about response headers — it records which of
   the two is live where, what the bridge preserves and why, and how to add a
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
