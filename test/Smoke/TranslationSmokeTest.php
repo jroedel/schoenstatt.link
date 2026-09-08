@@ -15,6 +15,12 @@ use function preg_match;
 use function random_bytes;
 use function substr_count;
 
+//This test uses JTranslate\Model\PhraseIdentity to compute a phrase hash. The smoke suite
+//does not autoload by default, so it loads vendor/ itself rather than depending on a sibling
+//test having done so first — which is what silently broke when the serving-note tests that
+//used to require it were deleted (2026-09-08).
+require_once __DIR__ . '/../../vendor/autoload.php';
+
 /**
  * JTranslate module: the translation administration area.
  *

@@ -102,9 +102,12 @@ class ReservedVerbRoutingSmokeTest extends SmokeTestCase
     {
         $response = $this->get('/en/SL500001C/editorial-notes');
 
+        //200 with the composition's canonical link proves the ported show route served it
+        //rather than the reserved-verb lookahead 404-ing a slug that merely starts with
+        //`edit`. (The serving note that used to prove this was removed with the strangler.)
         $this->assertSame(200, $response['status']);
         $this->assertStringContainsString(
-            'route composition.locale',
+            '/en/SL500001C/',
             $response['body'],
             'a slug that merely begins with a reserved verb must still be served by the ported show route'
         );
