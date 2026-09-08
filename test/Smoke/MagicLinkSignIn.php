@@ -28,7 +28,7 @@ use RuntimeException;
  * corrects a comment in tools/form-regression.php which claims the role has to exist
  * first because "BjyAuthorize reads the roles when the session identity is
  * established". It does not:
- * `JUser\Provider\Identity\ZfcUserZendDbPlusSelfAsRole::getIdentityRoles()` runs a
+ * `App\Acl\IdentityRoles` runs a
  * `SELECT` against `user_role_linker` on **every request**, and
  * `bjyauthorize.cache_enabled` is false, so a role granted mid-session is in force on
  * the next request. Measured — the assertion is in AdminAuthorizationSmokeTest.

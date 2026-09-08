@@ -4,7 +4,6 @@ namespace Books\Model;
 use SionModel\Db\Model\SionTable;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Adapter\AdapterInterface;
-use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
 use Laminas\Permissions\Acl\Resource\GenericResource;
 use voku\Html2Text\Html2Text;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
@@ -13,7 +12,7 @@ use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
 use voku\helper\UTF8;
 
-class EventTextTable extends SionTable implements ResourceProviderInterface
+class EventTextTable extends SionTable
 {
     const TEXT_KIND_JK_TEXT = 'jk-text';
 

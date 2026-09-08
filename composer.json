@@ -20,7 +20,6 @@
         "tijsverkoyen/css-to-inline-styles": "^2.2",
         "diablomedia/laminas-twb-bundle": "dev-feat/php-8.4",
         "phpoffice/phpspreadsheet": "^5.9",
-        "kokspflanze/bjy-authorize": "^2.4",
         "matriphe/iso-639": "^1.0",
         "spatie/schema-org": "^4.0",
         "slm/locale": "dev-feat/php-8.4",
