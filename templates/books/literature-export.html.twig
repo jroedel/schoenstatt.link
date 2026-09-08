@@ -1,0 +1,19 @@
+{#
+  module/Books/view/books/publications/export.phtml, ported — /literature/export.
+
+  Every publication in the corpus as one table: id, authors, title, edition. The .phtml is
+  five lines — the `publication-list` partial and a column list — and so is this. No
+  `covers` and no `downloads`: the columns do not include the cover, and the original
+  passes no `files`, so no row carries the downloads icon. The partial's per-row
+  `is_allowed(resourceId, 'show')` is the access control here; see its header.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{% include 'books/_publication-list.html.twig' with {
+    'objects': objects,
+    'columns': ['publicationId', 'authors', 'title', 'edition'],
+    'covers': {},
+    'downloads': {},
+} only %}
+{% endblock %}

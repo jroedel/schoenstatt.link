@@ -96,6 +96,8 @@ use App\Controller\PersonController;
 use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
+use App\Controller\PublicationDuplicateController;
+use App\Controller\PublicationReportsController;
 use App\Controller\RolesController;
 use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
@@ -710,6 +712,24 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->viewHelpers(),
                 $this->preferredUrls()
             ),
+            // Batch 16, the last four publication routes. The two per-row actions share
+            // EntityShow for the row and HostMessages for the flash — the one messenger
+            // per request that a raw `new FlashMessenger()` would steal from.
+            PublicationDuplicateController::class => fn (): PublicationDuplicateController
+                => new PublicationDuplicateController(
+                    $this->laminas(),
+                    $this->entityShow(),
+                    $this->twig(),
+                    $this->routeUrl(),
+                    $this->hostMessages()
+                ),
+            // The two whole-corpus listings. The bridge and Twig and nothing else: neither
+            // page builds a URL or a message, and the partial asks the ACL through Twig.
+            PublicationReportsController::class => fn (): PublicationReportsController
+                => new PublicationReportsController(
+                    $this->laminas(),
+                    $this->twig()
+                ),
             // Batch 7, the edit surface. One controller for every entity edit form, over
             // App\Sion\EntityEdit — see config/symfony/routes.php, where the entity, its
             // id parameter, its template and its title are declared per route.

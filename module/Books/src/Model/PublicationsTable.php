@@ -1266,6 +1266,72 @@ ORDER BY `Publisher`";
         return $newId;
     }
 
+    /**
+     * Create a new edition of an existing publication: a copy of the row with every
+     * edition-specific field cleared, filed under the same main publication.
+     *
+     * Moved here from `PublicationsController::createNewEditionAction()` on 2026-09-08 so
+     * that both front controllers run one copy of the field list. The action used to
+     * hold it inline and **wrote on a plain GET** — no method check, no token, no
+     * confirmation — which is the shape `copyPublicationToMainCorpus()`'s caller had until
+     * 2026-08-14 and the same hazard: nine effective roles hold `pub_moderator`, and a
+     * browser prefetching a link a moderator hovered over was enough to create a
+     * publication. Both actions confirm now, and this is the write they confirm.
+     *
+     * The new row's `mainPublicationId` is the source's own if the source has none, else
+     * the source's — so every edition of a work points at the same main record, and a
+     * new edition made from a sub-edition does not start a second tree.
+     *
+     * @param int $publicationId the edition to copy
+     * @return int the new publication's id
+     * @throws \Exception when the source row does not exist
+     */
+    public function createNewEdition($publicationId)
+    {
+        $object = $this->getObject('publication', (int) $publicationId, true);
+        if (! is_array($object) || empty($object)) {
+            throw new \Exception('No publication found');
+        }
+
+        //set the new mainPublicationId to the old publicationId
+        if (! isset($object['mainPublicationId'])) { //else, leave it as it was
+            $object['mainPublicationId'] = $object['publicationId'];
+        }
+
+        //unset edition-specific fields, and create new publication
+        unset($object['publicationId']);
+        unset($object['bookEdition']);
+        unset($object['numberOfPages']);
+        unset($object['datePublishedText']);
+        unset($object['publishingStatus']);
+        unset($object['isbn']);
+        unset($object['hasNoISBN']);
+        unset($object['hasNoExplictEditionNumber']);
+        unset($object['editionNotes']);
+        unset($object['isAwaitingMerge']);
+        unset($object['isRevisedWithBookInHand']);
+        unset($object['isFormallyPublished']);
+        unset($object['url1']);
+        unset($object['url1Label']);
+        unset($object['url2']);
+        unset($object['url2Label']);
+        unset($object['url3']);
+        unset($object['url3Label']);
+        unset($object['dataSource']);
+        unset($object['dataSourceId']);
+        unset($object['dataSourceUpdatedOn']);
+        unset($object['createdOn']);
+        unset($object['createdBy']);
+        unset($object['updatedOn']);
+        unset($object['updatedBy']);
+
+        $newId = $this->createEntity('publication', $object);
+        if (! is_numeric($newId)) {
+            throw new \Exception('We were expecting a numeric result from the creation of a new publication');
+        }
+        return (int) $newId;
+    }
+
     // Four more methods lived here until 2026-08-17, all reachable only from the retired
     // /admin/literature-maintenance routes: updateMainPublicationIdReferences(),
     // updateTranslatedFromPublicationIdReferences(), updateCoverImages() and

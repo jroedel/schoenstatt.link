@@ -132,26 +132,9 @@ final class EntityShow
         ?Closure $loader = null,
         ?string $selfUrl = null
     ): ?EntityShowData {
-        $table = $this->table($entity);
-
-        if (! $table->existsEntity($entity, $id)) {
-            return null;
-        }
-
-        //`true` is $failSilently — SionController::getEntityObject() passes it, so a
-        //projection that cannot build this row answers null rather than throwing.
-        //Held as mixed on purpose: SionTable::getObject() is annotated `@return mixed[]`
-        //and returns null on that path, so the annotation is wrong and the guard below
-        //is the one that matters. Typing the local would make PHPStan believe the
-        //docblock and call the check redundant.
-        /** @var mixed $object */
-        $object = null === $loader ? $table->getObject($entity, $id, true) : $loader($id);
-        if (! is_array($object) || [] === $object) {
-            return null;
-        }
-        /** @var array<string, mixed> $object */
-
-        if (! $this->isShowAllowed($entity, $object)) {
+        $table  = $this->table($entity);
+        $object = $this->row($entity, $id, $loader);
+        if (null === $object) {
             return null;
         }
 
@@ -195,6 +178,55 @@ final class EntityShow
             $commentForm,
             $visits
         );
+    }
+
+    /**
+     * The row alone — existence, the projection, and the per-row ACL check — with none of
+     * the page around it.
+     *
+     * This is the first half of `load()`, split out on 2026-09-08 for the two publication
+     * actions that open with the row and then render something other than the show page:
+     * the copy-to-main-corpus and create-new-edition confirmations. Their laminas
+     * counterparts got the row in two different ways, and neither is quite what a
+     * confirmation wants. `copyToMainCorpusAction()` called `parent::showAction()`, so
+     * every view of the confirmation **registered a visit** against the publication and
+     * built a comment form nobody rendered; `createNewEditionAction()` called
+     * `getEntityObject()`, which does **no ACL check at all**, so a moderator refused the
+     * publication's own page could still clone it into an edit form. Both actions want the
+     * row and the permission and nothing else, which is what this answers.
+     *
+     * Null on the same three conditions as `load()` — missing, unprojectable, refused —
+     * and `deniedMessage()` still distinguishes them for the flash.
+     *
+     * @param Closure(int): mixed $loader see load()
+     * @return array<string, mixed>|null
+     */
+    public function row(string $entity, int $id, ?Closure $loader = null): ?array
+    {
+        $table = $this->table($entity);
+
+        if (! $table->existsEntity($entity, $id)) {
+            return null;
+        }
+
+        //`true` is $failSilently — SionController::getEntityObject() passes it, so a
+        //projection that cannot build this row answers null rather than throwing.
+        //Held as mixed on purpose: SionTable::getObject() is annotated `@return mixed[]`
+        //and returns null on that path, so the annotation is wrong and the guard below
+        //is the one that matters. Typing the local would make PHPStan believe the
+        //docblock and call the check redundant.
+        /** @var mixed $object */
+        $object = null === $loader ? $table->getObject($entity, $id, true) : $loader($id);
+        if (! is_array($object) || [] === $object) {
+            return null;
+        }
+        /** @var array<string, mixed> $object */
+
+        if (! $this->isShowAllowed($entity, $object)) {
+            return null;
+        }
+
+        return $object;
     }
 
     /**
