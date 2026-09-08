@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Acl;
 
-use App\Laminas\ServiceBridge;
+use App\Laminas\LaminasServices;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\ResultSet\ResultSetInterface;
 
@@ -40,7 +40,7 @@ final class AclAssembler
     private const CONFIG_RULE_PROVIDER = 'BjyAuthorize\Provider\Rule\Config';
     private const ROUTE_GUARD          = 'BjyAuthorize\Guard\Route';
 
-    public function __construct(private readonly ServiceBridge $laminas)
+    public function __construct(private readonly LaminasServices $laminas)
     {
     }
 

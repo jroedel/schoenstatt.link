@@ -10,7 +10,9 @@
 
 namespace Application;
 
-use App\Acl\AclCacheInvalidator;
+use App\Acl\AclProvider;
+use App\Acl\IsAllowed;
+use App\Laminas\ContainerServices;
 use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
 use Laminas\Router\Http\Literal;
@@ -138,14 +140,12 @@ return [
              * an APCu handle and nothing more.
              */
             EntityChangeListeners::class => static function (ContainerInterface $c): EntityChangeListeners {
-                $listeners = new EntityChangeListeners();
-                /** @var array<string, mixed> $bjy */
-                $bjy = $c->get('BjyAuthorize\Config');
-                /** @var StorageInterface $cache */
-                $cache = $c->get('BjyAuthorize\Cache');
-                $listeners->add(new AclCacheInvalidator($cache, (string) ($bjy['cache_key'] ?? 'acl')));
-
-                return $listeners;
+                // Empty since the ACL cutover: the new engine (App\Acl\Authorizer) assembles
+                // per request from plain arrays (~0.45ms) rather than caching an Acl object
+                // across requests, so a role/library/text change is picked up on the next
+                // request with nothing to invalidate. BjyAuthorize's cache, which this used to
+                // clear, is no longer written — nothing resolves its Authorize service.
+                return new EntityChangeListeners();
             },
         ],
         'aliases' => [
@@ -218,6 +218,18 @@ return [
         ],
         'factories' => [
             View\Helper\RequestUri::class  => Service\RequestUriFactory::class,
+            /*
+             * The `isAllowed` view helper, since the ACL cutover pointed at App\Acl\Authorizer
+             * rather than BjyAuthorize\View\Helper\IsAllowed (the only prior registrant, which
+             * disappears with the package). This one registration covers every laminas-side
+             * caller at once: the ported controllers that fetch it from the ViewHelperManager,
+             * and the module view helpers (Books\FormatField, Schoenstatt\FormatAssociation)
+             * that call `$this->view->isAllowed()`. The container a view-helper factory receives
+             * is the app ServiceManager itself, so ContainerServices adapts it without building
+             * a second one.
+             */
+            'isAllowed'                    => static fn (ContainerInterface $c): IsAllowed
+                => new IsAllowed(new AclProvider(new ContainerServices($c))),
         ],
     ],
 ];
