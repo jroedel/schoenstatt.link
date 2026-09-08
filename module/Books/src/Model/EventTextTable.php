@@ -4,7 +4,6 @@ namespace Books\Model;
 use SionModel\Db\Model\SionTable;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Permissions\Acl\Resource\GenericResource;
 use voku\Html2Text\Html2Text;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
@@ -324,37 +323,5 @@ class EventTextTable extends SionTable
         }
 
         return $data;
-    }
-
-    /**
-     * One ACL resource per distinct `AclResourceId` in `texts` — `txt_institute` and
-     * `txt_public` today, which is what gates the Fr. Kentenich texts.
-     *
-     * Until the blog was removed this also bucketed `blog_post_*` ids under a
-     * `blog_post` parent, for a per-author permission scheme. No row ever carried one:
-     * every `AclResourceId` in the table is `txt_institute` or `txt_public`, so that
-     * branch had never fired. It went with the feature.
-     *
-     * @return \Laminas\Permissions\Acl\Resource\GenericResource[]
-     */
-    public function getResources()
-    {
-        $cacheKey = 'event-text-resources';
-        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
-            return $cache;
-        }
-
-        $sql = "SELECT DISTINCT `AclResourceId` FROM `texts` ORDER BY AclResourceId";
-        $results = $this->fetchSome(null, $sql, null);
-
-        $return = [];
-        foreach ($results as $row) {
-            $resourceId = $this->filterDbString($row['AclResourceId']);
-            if (isset($resourceId)) {
-                $return[] = new GenericResource($resourceId);
-            }
-        }
-        $this->cacheEntityObjects($cacheKey, $return, ['text']);
-        return $return;
     }
 }
