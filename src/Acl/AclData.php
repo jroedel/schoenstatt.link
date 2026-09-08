@@ -72,6 +72,17 @@ final class AclData
     }
 
     /**
+     * Does the model carry any rule for this resource? The counterpart of
+     * `Laminas\Permissions\Acl::hasResource()`, and the seam callers that must fail *open*
+     * on an unknown resource use — the sitemap's `App\Sitemap\GuestAccess`, which treats a
+     * resource it cannot find as public rather than denied.
+     */
+    public function hasResource(string $resource): bool
+    {
+        return array_key_exists($resource, $this->rulesByResource);
+    }
+
+    /**
      * Every distinct privilege named in any rule — the set AclParityTest sweeps each
      * resource against, together with the null "resource generally" query.
      *

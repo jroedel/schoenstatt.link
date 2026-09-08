@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
-use BjyAuthorize\View\Helper\IsAllowed;
+use App\Acl\AclProvider;
+use App\Acl\IsAllowed;
 use Closure;
 use Books\View\Helper\BooksJsonLd;
 use Books\View\Helper\Coins;
@@ -65,6 +66,8 @@ use TwbBundle\View\Helper\TwbBundleLabel;
 final class ViewHelpers
 {
     private ?HelperPluginManager $helpers = null;
+
+    private ?IsAllowed $isAllowed = null;
 
     /**
      * @param Closure(): RouteUrl $urls handed to App\Laminas\LocaleUrlSubstitute below.
@@ -345,12 +348,16 @@ final class ViewHelpers
         return $helper;
     }
 
+    /**
+     * The authorization check every Twig `is_allowed()` call and every ported controller's
+     * `isAllowed()` wrapper reaches. Since the ACL cutover this is `App\Acl\IsAllowed` over
+     * `App\Acl\Authorizer`, not `BjyAuthorize\View\Helper\IsAllowed` — the call signature
+     * is identical and test/Integration/AclParityTest pins the decision. Memoized so the
+     * request assembles the model and resolves the identity once.
+     */
     public function isAllowed(): IsAllowed
     {
-        /** @var IsAllowed $helper */
-        $helper = $this->helpers()->get('isAllowed');
-
-        return $helper;
+        return $this->isAllowed ??= new IsAllowed(new AclProvider($this->laminas));
     }
 
     public function displayName(): ZfcUserDisplayName

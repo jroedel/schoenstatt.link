@@ -6,7 +6,7 @@ namespace App\Sion;
 
 use App\Books\LibraryScopedForms;
 use App\Laminas\ServiceBridge;
-use BjyAuthorize\View\Helper\IsAllowed;
+use App\Acl\IsAllowed;
 use Closure;
 use Laminas\Form\FormInterface;
 use SionModel\Form\DeleteEntityForm;

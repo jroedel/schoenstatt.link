@@ -12,7 +12,7 @@ use App\View\PreferredUrls;
 use App\Sion\SiteWideIdentifier;
 use Books\Model\LibraryTable;
 use Books\Service\DriveGateway;
-use BjyAuthorize\View\Helper\IsAllowed;
+use App\Acl\IsAllowed;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
