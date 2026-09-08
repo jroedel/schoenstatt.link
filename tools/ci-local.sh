@@ -151,6 +151,22 @@ else
     bad "PHPStan — run it directly to see the errors"
 fi
 
+# --- ci.yml job 6: PSR-12 on the paths that must stay clean ----------------
+# NOT `composer cs-check`, whose scope reports 425 errors and always will —
+# see tools/phpcs-clean-paths.txt for why "clean" has to be an explicit list,
+# and note that this step and the ci.yml job read that same file so the two
+# cannot drift.
+step "PSR-12 on the clean paths  (ci.yml: coding-standard)"
+mapfile -t CS_PATHS < <(sed 's/#.*//' tools/phpcs-clean-paths.txt | grep -v '^[[:space:]]*$')
+OUT=$(in_capsule php vendor/bin/phpcs -q --report=summary "${CS_PATHS[@]}" 2>&1)
+CS_STATUS=$?
+if [ "$CS_STATUS" -eq 0 ]; then
+    ok "${#CS_PATHS[@]} paths clean"
+else
+    quiet <<< "$OUT" | tail -20
+    bad "phpcs on the clean paths (exit $CS_STATUS)"
+fi
+
 # suite <testsuite> <lines-of-tail> — run it ONCE, show the summary, judge the exit code.
 #
 # The first version of this ran each suite twice: once piped to `tail` for the summary,
@@ -169,13 +185,18 @@ suite() {
     [ "$status" -eq 0 ] && rm -f "$log"
 }
 
-# --- Beyond CI: the deploy's own machinery ---------------------------------
-# Not in ci.yml and not PHP suites: plain bash, no server, ~10s each. They live here
-# because tools/deploy.sh is the least-tested code that can do the most damage. The
-# glob is deliberate — a new test/Deploy/*-test.sh is picked up without editing this
-# file, which is the difference between a check that gets written and one that gets
-# written and then forgotten outside the runner.
-step "Deploy machinery  (NOT in ci.yml — plain bash)"
+# --- ci.yml job 7: the deploy's own machinery ------------------------------
+# Plain bash, no server, ~10s each. They live here because tools/deploy.sh is the
+# least-tested code that can do the most damage. The glob is deliberate — a new
+# test/Deploy/*-test.sh is picked up without editing this file, which is the
+# difference between a check that gets written and one that gets written and then
+# forgotten outside the runner.
+#
+# In ci.yml since 2026-09-08, so this is no longer the only place they run. One
+# difference remains and it is in this runner's favour: opcache-swap-test.sh needs
+# warm PHP workers to reproduce the symlink-swap hazard, so it does the real work
+# here against the capsule and reports SKIPPED on a bare runner.
+step "Deploy machinery  (ci.yml: deploy-machinery)"
 for deploy_check in test/Deploy/*-test.sh; do
     rsh_log=$(mktemp)
     if bash "$deploy_check" > "$rsh_log" 2>&1; then

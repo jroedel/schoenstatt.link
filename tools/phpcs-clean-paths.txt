@@ -1,0 +1,47 @@
+# The paths that are PSR-12 clean today and must stay clean. One per line;
+# `#` comments and blank lines ignored.
+#
+# Read by BOTH the `coding-standard` job in .github/workflows/ci.yml and the
+# corresponding step in tools/ci-local.sh, so the two cannot drift apart. That
+# is not a hypothetical concern here: App\Books\LibraryAclRules exists as a
+# second copy of LibraryTable::getRules() and needed its own drift test.
+#
+# Why not `composer cs-check`: that runs phpcs at the scope of phpcs.xml, which
+# sweeps module/{Application,Books,Schoenstatt} wholesale — 425 errors and 450
+# warnings across 254 files, almost all of it .phtml the config picks up by
+# accident. Its exit status has carried no signal for years, and narrowing
+# phpcs.xml or fixing the 421 auto-fixable violations are decisions nobody has
+# taken. Until one of them is, "clean" has to be a list.
+#
+# Measured 2026-09-08: 211 files, zero errors, zero warnings.
+
+# Symfony-side application code. Holds itself to PHPStan level 8 as well.
+src
+config/symfony
+
+# Left src/ for the SionModel submodule on 2026-08-21. Still Symfony-side code
+# holding the same standard — only the path stopped saying so. SionModel's own
+# phpcs.xml covers them, which is exactly why they are easy to forget here.
+module/SionModel/src/Form/BootstrapFormRenderer.php
+module/SionModel/src/Twig
+
+# JUser's Symfony surface (batch 13). The Controller directory is safe to name
+# as a whole since 2026-08-21, when the legacy LoginController was deleted with
+# the no-deploy rollback — all eight controllers there are new code now.
+module/JUser/src/Host
+module/JUser/src/Page
+module/JUser/src/Controller
+module/JUser/src/Routing
+module/JUser/src/Twig
+
+# JTranslate's Symfony surface (batch 14). Note the asymmetry with JUser: the
+# three controllers are named individually because that directory ALSO holds
+# the legacy LazyControllerFactory and a Plugin/ tree. Naming the directory
+# would sweep in level-0 legacy code and the job would never pass.
+module/JTranslate/src/Host
+module/JTranslate/src/Page
+module/JTranslate/src/Routing
+module/JTranslate/src/Twig
+module/JTranslate/src/Controller/PhraseIndexController.php
+module/JTranslate/src/Controller/PhraseEditController.php
+module/JTranslate/src/Controller/PhraseDeleteController.php

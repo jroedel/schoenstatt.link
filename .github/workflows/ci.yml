@@ -32,6 +32,14 @@
 # integration: the test/Integration suite. Needs real vendor/ libraries but
 # no running app and no DB, so it rides on a plain composer install.
 #
+# coding-standard: phpcs on the paths CLAUDE.md declares clean and requires to
+# stay clean. Deliberately NOT `composer cs-check`, whose scope has carried no
+# signal for years — the job's own comment has the numbers.
+#
+# deploy-machinery: the five test/Deploy/*-test.sh checks. Plain bash, no
+# server, and local-only until 2026-09-08 for no reason other than that they
+# were written into tools/ci-local.sh and left there.
+#
 # phpstan: static analysis at level 0, contract "no new errors" against
 # phpstan-baseline.neon. It needs vendor/ (bootstrapFiles + class discovery)
 # but no DB and no running app. This job exists because the analyzer sat
@@ -44,8 +52,40 @@
 # reasons about 8.4 semantics; the lint and the two test jobs are what actually
 # exercise 8.5.
 #
-# Still local-only: the smoke suite (needs the docker time capsule with a
-# production DB dump) — see docs/BACKLOG.md.
+# HOW MUCH THIS ACTUALLY COVERS, because a green tick here overstates it.
+# Measured 2026-09-08 on master: the integration job runs `Tests: 1334,
+# Assertions: 3085, Skipped: 195`; the same suite in the docker capsule runs
+# `Tests: 1364, Assertions: 7214, Skipped: 14`. So CI executes about 43% of the
+# assertions, and 181 more tests skip here than locally.
+#
+# That gap is structural and is not going to close. `database/` holds ninety
+# incremental migrations and NO base schema; the capsule's data is a gitignored
+# production export; and a good number of these tests assert against real rows —
+# 527 events, the per-library ACL rules derived from lib_libraries, the
+# sort-text coverage. A MariaDB service container would not make them pass, it
+# would make them fail, which is why one is not configured here and adding one
+# is not a pending task.
+#
+# What is enforced instead is that the gap stays *named*:
+# tools/check-ci-skips.php pins the set of classes that skip, against
+# test/known-ci-skips.txt, so a class which used to run here and stops fails by
+# name rather than vanishing into the number 195.
+#
+# The consequence for a reviewer: `./tools/ci-local.sh` is the stricter check,
+# not the weaker stand-in. It mirrors these jobs and then runs the smoke suite,
+# the fuzz harness and tools/smoke-prod.sh, none of which can run here at all.
+#
+# Still local-only, and each for a reason rather than by omission:
+#
+#   - the smoke suite, which needs the capsule's Apache/MariaDB/APCu;
+#   - tools/smoke-prod.sh, which the deploy runs against production;
+#   - the fuzz harness. Worth spelling out because it looks portable and is
+#     not: test/Fuzz/FormRepository pulls Laminas\Db\Adapter\Adapter out of the
+#     container to profile the queries a form's value options make, and
+#     SchemaColumnWidths reads the live column types. It needs a database as
+#     much as the parity tests do.
+#
+# See docs/BACKLOG.md.
 name: CI
 
 on:
@@ -130,9 +170,23 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.5"
-          # intl is a hard composer requirement; the rest are what PHPUnit and
-          # PhpSpreadsheet need and the host PHP does not carry by default.
-          extensions: intl, mbstring, dom, xmlwriter, zip
+          # intl is a hard composer requirement; dom/xmlwriter/mbstring are what
+          # PHPUnit needs and zip is PhpSpreadsheet's. apcu is here for the ACL
+          # cache tests: the assembled BjyAuthorize ACL has been cached in APCu
+          # since 2026-08-22, and test/Integration/AclCacheTest asserts what the
+          # stored copy may and may not contain — that no identity is baked into
+          # it, and that no per-user role survives in it. Without the extension
+          # those tests could only skip, and until 2026-09-08 they did not even
+          # manage that: the skip lived in the test body, so the container the
+          # test builds threw "ext/apcu is disabled" first and they reported as
+          # four errors. RequiresApcu fixed the reporting; this makes them run.
+          extensions: intl, mbstring, dom, xmlwriter, zip, apcu
+          # apcu is a CLI-hostile extension by default — apc.enable_cli defaults
+          # to 0, so the extension loads and every apcu_* call fails. And note
+          # what this does NOT buy: a CLI process gets its own segment, so this
+          # can never test what the web server's cache holds (see the memory
+          # note "APCu segment belongs to its SAPI"). It tests the wiring.
+          ini-values: apc.enable_cli=1
           coverage: none
       - name: Cache composer downloads
         uses: actions/cache@v4
@@ -148,7 +202,24 @@ jobs:
         # memory_limit=1G for the same reason the fuzz job needs it, and since
         # batch 10 for the same code: three of these tests build every form in
         # the application through test/Fuzz/FormRepository. 512M dies partway.
-        run: php -d memory_limit=1G tools/phpunit.phar --testsuite integration
+        #
+        # --log-junit is for the step below and costs nothing here.
+        run: >
+          php -d memory_limit=1G tools/phpunit.phar --testsuite integration
+          --log-junit integration-junit.xml
+
+      - name: Every skipped class says why it cannot run here
+        # This job runs a little over half the assertions the capsule does — no
+        # database, no production data, no base schema to build one from — and
+        # a green tick said nothing about the rest. tools/check-ci-skips.php
+        # pins the *set of classes* that skip, so a class which used to run and
+        # now does not fails the build by name instead of disappearing into a
+        # count. test/known-ci-skips.txt carries the reason for each.
+        #
+        # Runs even if the suite failed: a failure plus a new skip is two
+        # findings, and the second one is the one nobody would go looking for.
+        if: always()
+        run: php tools/check-ci-skips.php --bare integration-junit.xml
 
   composer-install:
     name: composer install --no-dev (deploy rehearsal)
@@ -193,3 +264,76 @@ jobs:
           '
       - name: No new security advisories against locked versions
         run: php composer.phar audit --locked
+
+  coding-standard:
+    name: PSR-12 on the paths that must stay clean
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Set up PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          # phpcs needs the tokenizer to parse and SimpleXML/xmlwriter to read
+          # its own ruleset and emit reports. The host PHP that runs the capsule
+          # lacks all three, which is why the local command goes through docker.
+          extensions: intl, mbstring, dom, xmlwriter, simplexml, tokenizer
+          coverage: none
+      - name: Cache composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      # phpcs is a dev dependency, so this is the one job that installs WITH dev.
+      - name: Install from lock
+        run: php composer.phar install --no-interaction --no-progress
+      - name: phpcs
+        # The path list lives in tools/phpcs-clean-paths.txt, which this job and
+        # the matching step in tools/ci-local.sh both read, so the two cannot
+        # drift. That file carries the reasoning, including the three paths that
+        # do NOT follow from their location and must be named explicitly.
+        run: |
+          set -eu
+          mapfile -t PATHS < <(sed 's/#.*//' tools/phpcs-clean-paths.txt | grep -v '^[[:space:]]*$')
+          echo "checking ${#PATHS[@]} paths"
+          php vendor/bin/phpcs -q --report=full "${PATHS[@]}"
+
+  deploy-machinery:
+    name: Deploy machinery (bash, no server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: none
+      - name: test/Deploy/*-test.sh
+        # tools/deploy.sh is the least-tested code in the repository that can do
+        # the most damage, and these five checks — the remote-call machinery, the
+        # per-segment cache gate, the OPcache symlink-swap reproduction, the
+        # interned-strings sampler and the smoke script's cache-status parsing —
+        # ran only in tools/ci-local.sh until now. They are plain bash and need
+        # no server, so there was never a reason for CI not to run them; they
+        # were simply written into the local runner and left there.
+        #
+        # opcache-swap-test.sh is the one exception and reports SKIPPED here: it
+        # needs warm PHP workers to reproduce the hazard, so it wants the
+        # capsule. It exits 0 rather than failing, deliberately — see its own
+        # comment. The other four are the full check.
+        #
+        # The glob is the same deliberate choice tools/ci-local.sh makes: a new
+        # test/Deploy/*-test.sh is picked up without editing this file.
+        run: |
+          set -eu
+          FAILED=0
+          for check in test/Deploy/*-test.sh; do
+            echo "--- $check"
+            if ! bash "$check"; then
+              FAILED=1
+            fi
+          done
+          exit "$FAILED"

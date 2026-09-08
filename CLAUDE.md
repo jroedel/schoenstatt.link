@@ -213,9 +213,18 @@ suites run from the superproject working tree.
   class it replaces, and a blanket string search reported four of six files as violations
   for documenting their own purpose. Like SionModel's two files, the module's new code holds
   level 8 and PSR-12 without its path saying so: a level-8 audit must name
-  `module/JUser/src/{Host,Page,Controller,Routing,Twig}` alongside `src`, and analysing
-  `module/JUser/src/Controller` as a *directory* sweeps in the legacy `LoginController`,
-  whose 17 findings are level-0 legacy and not new.
+  `module/JUser/src/{Host,Page,Controller,Routing,Twig}` alongside `src`. This line warned
+  until 2026-09-08 that naming `module/JUser/src/Controller` as a *directory* would sweep in
+  the legacy `LoginController` and its 17 level-0 findings — **that stopped being true on
+  2026-08-21**, when that controller was deleted along with the no-deploy rollback, and all
+  eight controllers there are new code now. The trap is real one module over:
+  `module/JTranslate/src/Controller` still holds `LazyControllerFactory` and a `Plugin/`
+  tree, which is why the three `Phrase*Controller.php` are named individually.
+  **The PSR-12 half of that is now enforced rather than asserted.** The path list lives in
+  `tools/phpcs-clean-paths.txt` — 16 entries, read by both the `coding-standard` job in
+  `.github/workflows/ci.yml` and the matching step in `tools/ci-local.sh`, so the two cannot
+  drift — and it exists as an explicit list because `composer cs-check`'s own scope reports
+  425 errors and always will.
   **The translation GUI is served by JTranslate's own controllers since 2026-09-08** —
   `/admin/translations`, the phrase form and the delete confirmation, the last three
   reachable `jtranslate/*` routes (`jtranslate/phrase` is a `may_terminate => false` parent
@@ -450,24 +459,42 @@ suites run from the superproject working tree.
 
 ## Verifying code
 
-- **CI cannot run until 2026-09-01.** The account's 2,000 GitHub Actions minutes/month
-  allowance was exhausted on 2026-08-14, so every workflow run fails in ~2 seconds with
-  **no runner assigned and zero steps executed** — a quota, not a build break. Do not
-  diagnose it as code and do not `gh run rerun`; it reproduces. Confirm the shape with
+- **CI runs again since 2026-09-01, and the first real run in three and a half weeks found
+  two breakages.** The account's 2,000 GitHub Actions minutes/month allowance was exhausted
+  on 2026-08-14, so from then until the monthly reset every workflow run failed in ~2
+  seconds with **no runner assigned and zero steps executed**. That shape is worth
+  remembering rather than forgetting, because it reads exactly like a build break and is a
+  quota: confirm it with
   `gh api repos/jroedel/schoenstatt.link/actions/runs/<id>/jobs --jq '.jobs[] | "\(.name): \(.conclusion) steps=\(.steps|length) runner=\(.runner_name)"'`
   (the annotation naming the reason needs `checks:read`, which a fine-grained PAT cannot
-  hold). **Verify with `./tools/ci-local.sh` instead** and paste its result into the PR.
-  It mirrors ci.yml's five jobs in order — lint, composer `--no-dev` rehearsal, PHPStan
-  level 0, unit, integration — plus every `test/Deploy/*-test.sh` (plain bash, no server:
-  the deploy's remote-call machinery, its per-segment cache gate, the OPcache swap
-  reproduction, the smoke script's cache-status parsing — the glob picks up new ones
-  without editing the runner), and then runs **smoke, fuzz, and `tools/smoke-prod.sh`
-  itself, none of which CI can run at all** because they need a live
-  Apache/MariaDB/APCu. So a green run there is a stricter
-  check than a green run on GitHub, not a weaker stand-in; say so in the PR body, because
-  the reflex is to read local verification as second best. `--ci` skips the ~4-minute
-  smoke suite, the fuzz harness and the smoke-script run; the deploy-machinery checks run
-  either way, since they need no server.
+  hold). What accumulated in the gap — four `AclCacheTest` errors from an unreachable
+  in-body skip, and seven `Undefined array key "db"` warnings that `failOnWarning` turns
+  fatal — is the argument for the paragraph below.
+- **`./tools/ci-local.sh` is still the stricter check, and the PR body should say so**,
+  because the reflex is to read local verification as second best. It mirrors ci.yml's
+  seven jobs in order — lint, composer `--no-dev` rehearsal, PHPStan level 0, PSR-12 on the
+  clean paths, unit, integration, and every `test/Deploy/*-test.sh` — and then runs
+  **smoke, fuzz, and `tools/smoke-prod.sh` itself, none of which CI can run at all**
+  because they need a live Apache/MariaDB/APCu. `--ci` skips the ~4-minute smoke suite, the
+  fuzz harness and the smoke-script run; the deploy-machinery checks run either way, since
+  they need no server.
+  - **Quantified 2026-09-08, because a green tick on GitHub overstates itself:** the
+    integration job there reports `Tests: 1334, Assertions: 3085, Skipped: 195`; the same
+    suite in the capsule reports `Tests: 1364, Assertions: 7214, Skipped: 14`. CI executes
+    about **43% of the assertions** and skips 181 more tests. That gap is structural and is
+    not a pending task — `database/` holds ninety incremental migrations and **no base
+    schema**, the capsule's data is a gitignored production export, and many of these tests
+    assert against real rows (527 events, the per-library ACL rules, the sort-text
+    coverage), so a MariaDB service container would make them *fail*, not pass. **Do not
+    propose one.**
+  - What is enforced instead is that the gap stays *named*. `tools/check-ci-skips.php --bare`
+    pins the **set of classes** that skip against `test/known-ci-skips.txt`, so a class that
+    used to run on CI and stops fails by name rather than disappearing into the number 195;
+    a baselined class that starts running prints as stale, the same contract
+    `test/Fuzz/known-form-gaps.php` uses. `--bare` is mandatory and not detected: against a
+    capsule log every verdict in that file inverts, and an earlier draft that guessed from
+    the ratio of stale entries would have silenced a real finding whenever several classes
+    were fixed at once.
   - **`tools/smoke-prod.sh` is not the `smoke` suite.** The suite is PHPUnit under
     `test/Smoke`; that script is the bash one the *deploy* runs against production as its
     last step. Until 2026-08-19 nothing but a deploy had ever executed it, so its own
