@@ -27,15 +27,10 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class ServingNoteSmokeTest extends SmokeTestCase
 {
-    use MagicLinkSignIn;
-
-    /** Distinct from every other class's, or one tearDown deletes another's accounts. */
-    private const EMAIL_PREFIX = 'serving-note-smoke-';
-
-    protected function emailPrefix(): string
-    {
-        return self::EMAIL_PREFIX;
-    }
+    // No sign-in and no accounts: every subject here — a ported route, a bridged route and
+    // the overruled-cookie case — renders its note for an anonymous visitor, so this class
+    // dropped the MagicLinkSignIn trait when its last guarded subject (admin/import-father)
+    // was ported in batch 17.
 
     /** A ported route: Twig, no bridge. */
     public function testAPortedRouteReportsTwig(): void
@@ -52,46 +47,33 @@ class ServingNoteSmokeTest extends SmokeTestCase
     }
 
     /**
-     * An unported route: the same front controller, a laminas rendering. This is the
-     * combination the note exists to make visible, because the page itself looks exactly
-     * like a laminas-served one.
+     * The bridge still renders a laminas `.phtml`, and this is what proves it: the same
+     * Symfony front controller, a laminas view script, reported as such in the footer.
      *
-     * ## This test has to sign in now, and the reason is a milestone rather than a nuisance
+     * ## The subject is now the 404 page, and that is a milestone rather than a workaround
      *
-     * It used `/en/user/login` until batch 13 ported it (2026-08-21). Finding a replacement
-     * turned up that **there is no anonymous-reachable unported HTML page left**: of the 118
-     * guarded laminas routes, 106 are now shadowed by a Symfony route, and of the 13 that
-     * are not, the only one an anonymous visitor may reach is
-     * `redirect-pre-april-2020-sl-id` — which is a redirect and renders no layout at all.
+     * This test walked the migration down to its end. It used `/en/user/login` until batch
+     * 13 ported it (2026-08-21); then `/admin/translations` until batch 14 (2026-09-08);
+     * then `admin/import-father`, which batch 17 ported the same day — and that was the
+     * **last HTML page laminas served**. There is no unported page left to point at.
      *
-     * So the bridge can only be observed from behind a guard. It was `jtranslate`
-     * (`/admin/translations`) until **batch 14 ported that too**, on 2026-09-08 — the case
-     * the paragraph above predicted, arriving less than three weeks later. The subject is
-     * now `admin/import-father` (`sch_administrator`), chosen on the same three grounds:
-     * a real HTML page with the shared layout, a GET that writes nothing, and cheap —
-     * measured at 0.43 s and 10 kB, because its form's person list comes from the local
-     * database and not from the Patres API.
+     * What the bridge still serves, and will until `LegacyBridge` is deleted with the
+     * canary, is laminas' own **404 page** for any URL neither router matches. It is a
+     * `.phtml` through the bridge like any other, so it carries the same note — minus the
+     * `route …/Controller` clause, because no route matched, which is the one assertion
+     * below that had to go. When the canary is retired this whole half of the note becomes
+     * dead code; until then it has a real subject, and a real one is better than a deleted
+     * test. See `docs/strangler.md` § "What is left, and in what order".
      *
-     * When it ports too, there is **no** other page-shaped subject: on 2026-09-08 batch 16
-     * took the four publication actions and the auto-fix page was retired the same evening,
-     * so `admin/import-father` is the last HTML page the bridge serves. What the bridge still
-     * renders after that is laminas' own 404 page for a URL neither router knows — a `.phtml`
-     * with the layout and the note, so it *could* stand in here. Whether it should, or whether
-     * this half of the note is then dead code to delete rather than patch, is the decision for
-     * that batch; `docs/strangler.md` § "What is left, and in what order" records the state.
+     * A 404, so it uses `noteOn()`'s `$expectStatus` rather than the default 200.
      */
-    public function testAnUnportedRouteReportsTheBridge(): void
+    public function testTheBridgeStillRendersALaminasViewScript(): void
     {
-        $jar = $this->newCookieJar();
-        $this->signIn($jar, ['sch_administrator']);
-
-        $note = $this->noteOn('/en/admin/import-father', $jar);
+        $note = $this->noteOn('/en/no-such-page-on-either-router', null, 404);
 
         self::assertStringContainsString(ServingNote::RENDERER_PHTML, $note);
         self::assertStringContainsString('via LegacyBridge', $note);
         self::assertStringContainsString('Symfony kernel', $note);
-        //the laminas side reports controller::action, resolved by the dispatcher
-        self::assertStringContainsString('Controller', $note);
     }
 
     /**
@@ -119,10 +101,10 @@ class ServingNoteSmokeTest extends SmokeTestCase
     }
 
     /** The note as rendered, with the surrounding markup stripped. */
-    private function noteOn(string $path, ?string $jar = null): string
+    private function noteOn(string $path, ?string $jar = null, int $expectStatus = 200): string
     {
         $response = $this->get($path, false, $jar);
-        self::assertSame(200, $response['status'], "GET $path should render");
+        self::assertSame($expectStatus, $response['status'], "GET $path should render");
 
         $found = preg_match(
             '#<p class="[^"]*' . preg_quote(ServingNote::CSS_CLASS, '#') . '[^"]*">(.*?)</p>#s',
