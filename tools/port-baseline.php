@@ -187,6 +187,12 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // Phase A of the laminas-mvc removal, 2026-09-08: the pre-April-2020 identifier
+    // redirect, the last anonymous-reachable route the bridge served. An eight-character
+    // old id 301s to the record's current URL. Anonymous only (guest+user), and a redirect
+    // — it renders no layout, so what the compare checks is the Location, which the tool
+    // normalizes and diffs like any other. `SL10001A` is association 1 (old start 10000).
+    '/SL10001A',
     // batch 17 — `admin/import-father`, the last HTML page laminas served. One GET, signed
     // in as `sch_administrator`; anonymously it is the sign-in redirect. The select's
     // option list is a Patres API call made by the form factory, and the capsule's key is a

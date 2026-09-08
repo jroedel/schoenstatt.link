@@ -72,6 +72,7 @@ use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PersonController;
 use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
+use App\Controller\PreApril2020RedirectController;
 use App\Controller\PublicationController;
 use App\Controller\PublicationDuplicateController;
 use App\Controller\PublicationReportsController;
@@ -2261,6 +2262,25 @@ $ported(
             $requirements
         );
     }
+);
+
+// The pre-April-2020 identifier redirect, declared **last before the catch-all** because it
+// is deliberately broad: `/{sw_id}[/{slug}]` for the eight-character old identifier format.
+// Everything more specific — every ported show route, which requires six digits — has
+// already been declared above, and its constraint (five digits, `[APLC]`) is disjoint from
+// theirs by length, so it can share the `/{sw_id}/{slug}` shape without swallowing them.
+// It shadows the laminas `redirect-pre-april-2020-sl-id` route and carries its guard.
+// See App\Controller\PreApril2020RedirectController; Phase A of the laminas-mvc removal.
+$ported(
+    'redirect-pre-april-2020-sl-id',
+    '/{sw_id}/{slug}',
+    PreApril2020RedirectController::class,
+    RouteAccess::guardedBy('route/redirect-pre-april-2020-sl-id'),
+    //A text domain even though it renders nothing translatable — a bare 301 — because the
+    //sibling redirects declare one and PortedRouteTranslationTest requires it of every HTML
+    //route. `Application`, the module the laminas route lives in.
+    $textDomain('Application') + ['slug' => null],
+    ['sw_id' => trim(SchoenstattLinkIdentifier::GENERAL_OLD_REGEX, '/^$')]
 );
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"

@@ -132,9 +132,10 @@ the last one moves, `LegacyBridge` is deleted.
 ## What is left, and in what order
 
 Written down on 2026-09-08 because "what's next on the strangler?" has been answered from
-scratch twice, and the answer is not obvious from the counts: **16 laminas routes remain,
-and none of them is a page a person can open.** All sixteen are structural parents or
-machinery. (The morning of 2026-09-08 it was 23 routes and six pages; batch 16 took the
+scratch twice, and the answer is not obvious from the counts: **15 laminas routes remain,
+and none of them is a page a person can open.** All fifteen are structural parents or
+machinery (`redirect-pre-april-2020-sl-id` was the sixteenth until Phase A of the laminas-mvc
+removal ported it, 2026-09-08). (The morning of 2026-09-08 it was 23 routes and six pages; batch 16 took the
 four publication actions that afternoon, two "decisions" below were settled by deletion
 that evening, and batch 17 took `admin/import-father` — the last HTML page — the same day.)
 Regenerate with `tools/acl-table.php` before trusting the list; the classification is what
@@ -196,13 +197,19 @@ the way of `libraries/library/delete`.
   "upload a book cover from the site" item in BACKLOG.md is a feature to design, not a
   route to port, and it is untouched.
 
-### The two that are not going anywhere yet
+### The one that is not going anywhere yet
 
-- **`redirect-pre-april-2020-sl-id`** (`guest, user`) is a 301 for pre-2020 identifiers. It
-  renders no layout, so there is nothing to compare and little to gain; it is the cheapest
-  route left and the least valuable.
 - **`kernel-switch`** (`sch_administrator`) is laminas **on purpose** — it is the canary
   toggle and has to answer from both front controllers.
+
+`redirect-pre-april-2020-sl-id` was here too until **Phase A of the laminas-mvc removal**
+(2026-09-08). It was described as "the cheapest route left and the least valuable", and it
+was ported anyway for a reason the description missed: it was the **last anonymous-reachable
+route the bridge still served**. Porting it (`App\Controller\PreApril2020RedirectController`,
+a 301 to the record's current URL) means the only thing `LegacyBridge` answers for a normal
+visitor now is a 404 — and the only thing it answers at all, once that 404 is Symfony-served
+too, is `kernel-switch`. That is what makes retiring the canary a clean deletion rather than
+a behaviour change. See "The endgame" below and Phase A in docs/history.md.
 
 ### The endgame is a decision, not a port
 
