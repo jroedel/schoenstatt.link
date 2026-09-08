@@ -96,6 +96,7 @@ use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PersonController;
 use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
+use App\Controller\PreApril2020RedirectController;
 use App\Controller\PublicationController;
 use App\Controller\PublicationDuplicateController;
 use App\Controller\PublicationReportsController;
@@ -805,6 +806,10 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->routeUrl()
             ),
+            // The pre-April-2020 identifier redirect — a 301 to the current URL, no Twig.
+            // RouteUrl only: it needs no laminas service, just the router to build the target.
+            PreApril2020RedirectController::class => fn (): PreApril2020RedirectController
+                => new PreApril2020RedirectController($this->routeUrl()),
             // The whole JUser surface, served by the module's own controllers since
             // 2026-08-21. Everything they reach for is one of the six adapters below —
             // there is no ServiceBridge in any of them, which is what makes the module

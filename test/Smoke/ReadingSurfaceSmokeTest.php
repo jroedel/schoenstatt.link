@@ -132,6 +132,58 @@ class ReadingSurfaceSmokeTest extends SmokeTestCase
     }
 
     /**
+     * The pre-April-2020 identifier redirect — Symfony-served since Phase A of the
+     * laminas-mvc removal (2026-09-08), where it had been the last anonymous-reachable
+     * bridged route. An eight-character old id (five digits) 301s to the same record's
+     * current nine-character URL: association 1 was `SL10001A` and is `SL100001A` now.
+     *
+     * Three things are pinned because each was a way to get it wrong. The **301** (not the
+     * default 302 a redirect would give) is what tells a crawler the old URL is gone for
+     * good. The **locale hop** first, as every other HTML route here takes and as the
+     * laminas action did through SlmLocale. And that a current nine-character id is **not
+     * swallowed** by this broad `/{sw_id}/{slug}` route — its own show route answers it —
+     * which the disjoint digit-count constraint is what guarantees.
+     */
+    public function testAPreApril2020IdentifierIsPermanentlyRedirectedToItsCurrentUrl(): void
+    {
+        $response = $this->get('/en/SL10001A');
+
+        self::assertSame(301, $response['status'], 'a pre-2020 id must be a permanent redirect');
+        self::assertStringContainsString('/en/SL100001A', $response['redirect']);
+    }
+
+    public function testTheBarePreApril2020FormTakesTheLocaleHopFirst(): void
+    {
+        $response = $this->get('/SL10001A');
+
+        self::assertSame(302, $response['status']);
+        self::assertStringContainsString('/en/SL10001A', $response['redirect']);
+    }
+
+    public function testACurrentIdentifierIsNotSwallowedByThePreApril2020Redirect(): void
+    {
+        //A nine-character (six-digit) id is a real show route, not a redirect. If the
+        //pre-2020 route swallowed it, this would 301 to a re-encoded id; instead its own
+        //route answers, which is anything but a 301 to /SL1000001A.
+        $response = $this->get('/en/SL100001A');
+
+        self::assertNotSame(301, $response['status']);
+        if (isset($response['redirect']) && '' !== $response['redirect']) {
+            self::assertStringNotContainsString('/SL1000001A', $response['redirect']);
+        }
+    }
+
+    /**
+     * A pre-2020 **person** id has no current public route (`ENTITY_TYPE_ROUTES` maps it to
+     * null), so it is a 404 rather than the 500 the laminas action would have produced by
+     * redirecting to a null route. See App\Controller\PreApril2020RedirectController.
+     */
+    public function testAPreApril2020PersonIdentifierIsNotFound(): void
+    {
+        self::assertSame(404, $this->get('/en/SL30001P')['status']);
+    }
+
+    /**
      * A merged publication sends an anonymous visitor to the surviving edition, and shows
      * the merged row itself to anyone holding `publication_user`. The 301 is the visitor's
      * only route to the real record.
