@@ -93,6 +93,14 @@ class LocalePrefixDeclarationTest extends TestCase
         'api-v3/schema-entity'                  => 'JSON API',
         'api-v3/schema-entity-method'           => 'JSON API',
         'api-v3/schema-method'                  => 'JSON API',
+        // Undeclared: the /api refusal, ported off LegacyBridge 2026-09-08. Like the v3
+        // API it answers its own path rather than redirecting to a language — a machine
+        // caller has no Accept-Language preference worth a hop. The prefixed twins exist
+        // only because crawlers indexed /{locale}/api/v1/… and those must still 410.
+        'api-not-found'                         => 'JSON refusal for unmatched /api paths',
+        'api-not-found.locale'                  => 'the prefixed twin of the above',
+        'api-not-found/rest'                    => 'JSON refusal for unmatched /api paths',
+        'api-not-found/rest.locale'             => 'the prefixed twin of the above',
     ];
 
     public function testTheSetOfRoutesThatDoNotRedirectIsExactlyTheDeclaredOne(): void

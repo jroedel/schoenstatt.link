@@ -51,9 +51,9 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
 | symfony routes acl checked | 224 |
-| symfony routes open | 27 |
+| symfony routes open | 31 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 251 |
+| symfony served routes | 255 |
 | total routes | 130 |
 | unguarded routes | 12 |
 | unguarded routes matchable | 0 |
@@ -90,6 +90,10 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `admin.locale` | `/{_locale}/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
 | `admin/import-father` | `/admin/import-father` | `route/admin/import-father` | sch_administrator | html | `App\Controller\ImportFatherController` |
 | `admin/import-father.locale` | `/{_locale}/admin/import-father` | `route/admin/import-father` | sch_administrator | html | `App\Controller\ImportFatherController` |
+| `api-not-found` | `/api` | _open_ | everyone — reason below | n/a | `App\Controller\Api\ApiRouteNotFoundController` |
+| `api-not-found.locale` | `/{_locale}/api` | _open_ | everyone — reason below | n/a | `App\Controller\Api\ApiRouteNotFoundController` |
+| `api-not-found/rest` | `/api/{rest}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\ApiRouteNotFoundController` |
+| `api-not-found/rest.locale` | `/{_locale}/api/{rest}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\ApiRouteNotFoundController` |
 | `api-v3/association` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\AssociationsV3Controller::show` |
 | `api-v3/association-method` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/association-patch` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\AssociationsV3Controller::patch` |
@@ -341,6 +345,10 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 Each is the string passed to `RouteAccess::openToEveryone()`. Declaring openness is a statement,
 not a default, and this is where the statement is reviewed.
 
+- `api-not-found` — the JSON refusal for unmatched /api paths; the laminas route it shadows admits everyone (guest, user) and every response is a machine envelope, not a page
+- `api-not-found.locale` — the JSON refusal for unmatched /api paths; the laminas route it shadows admits everyone (guest, user) and every response is a machine envelope, not a page
+- `api-not-found/rest` — the JSON refusal for unmatched /api paths; the laminas route it shadows admits everyone (guest, user) and every response is a machine envelope, not a page
+- `api-not-found/rest.locale` — the JSON refusal for unmatched /api paths; the laminas route it shadows admits everyone (guest, user) and every response is a machine envelope, not a page
 - `api-v3/association` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `api-v3/association-method` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `api-v3/association-patch` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
