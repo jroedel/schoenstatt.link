@@ -64,20 +64,25 @@ class ServingNoteSmokeTest extends SmokeTestCase
      * are not, the only one an anonymous visitor may reach is
      * `redirect-pre-april-2020-sl-id` — which is a redirect and renders no layout at all.
      *
-     * So the bridge can only be observed from behind a guard, and `jtranslate`
-     * (`/admin/translations`, `sch_general_moderator` or `translator`) is the clearest of
-     * the twelve: a real HTML page with the shared layout, no write, and cheap to render.
-     * When it ports too, this test needs another of the twelve — and when the twelve run
-     * out, `App\Http\LegacyBridge` has nothing left to bridge and this half of the note is
-     * dead code, which is the point of the migration and should be deleted rather than
+     * So the bridge can only be observed from behind a guard. It was `jtranslate`
+     * (`/admin/translations`) until **batch 14 ported that too**, on 2026-09-08 — the case
+     * the paragraph above predicted, arriving less than three weeks later. The subject is
+     * now `admin/import-father` (`sch_administrator`), chosen on the same three grounds:
+     * a real HTML page with the shared layout, a GET that writes nothing, and cheap —
+     * measured at 0.43 s and 10 kB, because its form's person list comes from the local
+     * database and not from the Patres API.
+     *
+     * When it ports too, this test needs another of the nine left. When they run out,
+     * `App\Http\LegacyBridge` has nothing to bridge and this half of the note is dead
+     * code — which is the point of the migration, and it should be deleted rather than
      * patched.
      */
     public function testAnUnportedRouteReportsTheBridge(): void
     {
         $jar = $this->newCookieJar();
-        $this->signIn($jar, ['translator']);
+        $this->signIn($jar, ['sch_administrator']);
 
-        $note = $this->noteOn('/en/admin/translations', $jar);
+        $note = $this->noteOn('/en/admin/import-father', $jar);
 
         self::assertStringContainsString(ServingNote::RENDERER_PHTML, $note);
         self::assertStringContainsString('via LegacyBridge', $note);

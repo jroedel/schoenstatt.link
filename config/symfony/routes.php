@@ -26,6 +26,7 @@
 declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
+use JTranslate\Routing\RouteAudience as JTranslateAudience;
 use JUser\Routing\RouteAudience;
 use App\Controller\AdminController;
 use App\Controller\AssignmentSearchController;
@@ -2107,6 +2108,68 @@ $ported(
 // the swapped-in page rendered without being authorized at all. That swap needs no route —
 // it builds a RouteMatch by hand — which is why deleting the route cost the rollback path
 // nothing.
+
+// ---------------------------------------------------------------------------
+// Batch 14, ported 2026-09-08: the translation-administration surface — three routes,
+// three controllers, one `JTranslate\Page\PhraseAdmin`.
+// ---------------------------------------------------------------------------
+//
+// **Declared by the module**, like JUser's eleven: `module/JTranslate/config/symfony-routes.php`
+// returns a closure that calls back into `$ported()` here, so this file still reads as the
+// migration status top to bottom while the paths, the controllers and the audience live with
+// the code that serves them. What this application adds on the way through is what only it
+// knows: the ACL resource each route's guard entry lives under, and the `JTranslate` text
+// domain its templates translate in.
+//
+// The route names are the laminas ones (`jtranslate`, `jtranslate/phrase/edit`,
+// `jtranslate/phrase/delete`) because three things already name them and none of them is
+// this file: `App\Schoenstatt\AdminIndex` links to the listing by route name,
+// `config/autoload/acl.global.php` keys the guard entries on them, and
+// `docs/acl-baseline.json` is a committed snapshot of exactly those keys. Porting changed
+// none of it, and the acl-table diff says so precisely: three rows move into the
+// Symfony-served table, each **checking the same resource** its laminas guard named, with
+// the same three effective roles (`translator`, `sch_general_moderator`, `sch_administrator`
+// by inheritance). No rule, role or resource changed. That shape — new shadow rows, nothing
+// else — is the check to repeat.
+//
+// **The laminas routes stay declared and their controller does not.** `JTranslateController`
+// and its three `.phtml` were deleted with the switch, so rolling this back is a deploy and
+// not a config change — the same trade batch 12 made for the user-administration half, and
+// for the same reason: two copies of a page drift, and this one is small enough that the
+// capsule plus `tools/port-baseline.php` cover it. What the routes are still for is
+// `laminas_path()` and the guards; nothing dispatches them.
+//
+// `phrase_id` is `[0-9]+` here against the laminas route's `[0-9]{1,5}`, which is the one
+// place the fragment deliberately does not reproduce what it replaces — see its docblock.
+// The short version: ids are at 14,434 and climbing, and at 100,000 the old constraint stops
+// matching a phrase whose pencil link the listing still renders.
+//
+// Ordering: all three paths are under `/admin/translations`, and the ported `/admin` above is
+// a literal with no trailing-slash variant, so neither can reach the other. They sit here,
+// next to the JUser fragment, because both are module-declared and reading them together is
+// worth more than grouping by path.
+(require __DIR__ . '/../../module/JTranslate/config/symfony-routes.php')(
+    static function (
+        string $name,
+        string $path,
+        string|array $controller,
+        JTranslateAudience $audience,
+        array $defaults = [],
+        array $requirements = []
+    ) use (
+        $ported,
+        $textDomain
+    ): void {
+        $ported(
+            $name,
+            $path,
+            $controller,
+            RouteAccess::guardedBy('route/' . $name),
+            $textDomain('JTranslate') + $defaults,
+            $requirements
+        );
+    }
+);
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

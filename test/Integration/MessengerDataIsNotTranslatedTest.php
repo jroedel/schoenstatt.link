@@ -39,6 +39,8 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class MessengerDataIsNotTranslatedTest extends TestCase
 {
+    use RequiresApcu;
+
     private static ?ServiceBridge $bridge = null;
 
     /** A JWT-shaped string: what must never reach the translator. */
@@ -59,6 +61,8 @@ class MessengerDataIsNotTranslatedTest extends TestCase
 
     public function testTheFlashMessengerHelperIsJTranslates(): void
     {
+        $this->requireApcu();
+
         self::assertInstanceOf(
             JTranslateFlashMessenger::class,
             $this->helpers()->get('flashMessenger'),
@@ -69,6 +73,8 @@ class MessengerDataIsNotTranslatedTest extends TestCase
     /** Every alias the flash-messenger module registers must reach the same override. */
     public function testEveryAliasResolvesToTheOverride(): void
     {
+        $this->requireApcu();
+
         foreach (['flashmessenger', 'flashMessenger', 'FlashMessenger'] as $alias) {
             self::assertInstanceOf(
                 JTranslateFlashMessenger::class,
@@ -88,6 +94,8 @@ class MessengerDataIsNotTranslatedTest extends TestCase
     #[DataProvider('messengerProvider')]
     public function testTheTemplateIsTranslatedAndTheDataIsNot(string $helperName): void
     {
+        $this->requireApcu();
+
         $helper = $this->helpers()->get($helperName);
         self::assertTrue(
             $helper instanceof JTranslateFlashMessenger || $helper instanceof JTranslateNowMessenger,
