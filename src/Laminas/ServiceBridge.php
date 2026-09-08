@@ -44,7 +44,7 @@ use SionModel\Cache\CacheFlushQueue;
  * be: a request is either routed to a ported controller or handed to the bridge,
  * never both, so at most one ServiceManager is ever built per request.
  */
-final class ServiceBridge
+final class ServiceBridge implements LaminasServices
 {
     private ?ServiceManager $services = null;
 

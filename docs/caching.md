@@ -137,8 +137,15 @@ Three things about it are easy to get wrong, and each fails quietly:
   So "the new admin page 403s for everyone right after a config change" and "every request
   by one account is a 500" are the same root cause wearing two very different faces.
 
-Which is why invalidation is not a `clear()` call in each write path. `App\Acl\AclCacheInvalidator`
-implements SionModel's `EntityChangeListenerInterface` and is driven from
+> **Superseded by the ACL cutover (2026-09-09).** BjyAuthorize's ACL is no longer cached —
+> nothing resolves its `Authorize` service any more (see [strangler.md](strangler.md) and
+> `App\Acl\Authorizer`). The new engine assembles per request from plain arrays (~0.45 ms,
+> as cheap as the cached read below), so there is no cross-request ACL cache to invalidate and
+> `App\Acl\AclCacheInvalidator` has been removed. The mechanism below is kept as the record of
+> what BjyAuthorize's cache did and why its invalidation had to hang off the write paths.
+
+Which is why invalidation was not a `clear()` call in each write path. `App\Acl\AclCacheInvalidator`
+implemented SionModel's `EntityChangeListenerInterface` and was driven from
 `SionCacheTrait::removeDependentCacheItems()` — the one point every create, update and delete
 in every module passes through. It expires on three entities and no others:
 

@@ -16,14 +16,12 @@ return [
          * the flag on without also naming a real adapter would have looked like a change
          * and done nothing at all, which is why the two live next to each other here.
          *
-         * The identity is never part of what is stored: `Authorize::load()` writes the ACL
-         * to the cache and only then calls `addRole($identity, $parentRoles)`, so one
-         * cached document is correct for every visitor.
-         *
-         * Invalidation is App\Acl\AclCacheInvalidator, driven from
-         * SionCacheTrait::removeDependentCacheItems() — read its docblock before changing
-         * anything here, in particular before trusting the TTL to do the job. The TTL is a
-         * backstop; a role creation that outran it would be a 500, not a stale page.
+         * INERT since the ACL cutover (see App\Acl\Authorizer): nothing resolves
+         * BjyAuthorize's Authorize service any more, so this cache is never built or read,
+         * and the invalidator that once cleared it has been removed. The keys stay only
+         * because BjyAuthorize is still installed; they and the rest of this bjy config go
+         * with the package. The new engine assembles per request from plain arrays (~0.45ms),
+         * so a role/library/text change is simply picked up on the next request.
          */
         'cache_enabled' => true,
         'cache_options' => [

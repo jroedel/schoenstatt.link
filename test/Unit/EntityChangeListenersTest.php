@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../module/SionModel/src/Cache/EntityChangeListeners.
  * create, update and delete in every module.
  *
  * Small enough to look obviously right, and pinned anyway because of what hangs off it
- * here: `App\Acl\AclCacheInvalidator`, which expires the cached BjyAuthorize ACL. A
+ * here: an ACL-cache invalidator (removed with the ACL cutover; the new engine caches nothing across requests). A
  * notification that never arrives is not a stale page —
  * `Laminas\Permissions\Acl\Acl::addRole()` throws on a parent role it has never heard of,
  * so an ACL cached before a role existed is a 500 on every request by whoever was granted
