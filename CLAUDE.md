@@ -89,16 +89,18 @@ suites run from the superproject working tree.
 
 ## Architecture
 
-- **Two front controllers.** `public/index.php` branches on the `SYMFONY_KERNEL`
-  environment variable: unset/`0` runs `Laminas\Mvc\Application` as it always
-  has, `1` runs `App\Kernel` (symfony/http-kernel, hand-wired — no
-  FrameworkBundle) with a catch-all route delegating every unported path back to
-  the laminas application. **Both are now `1`:** the capsule through
-  `docker/apache-vhost.conf`, and production through the site-wide default in
-  `public/.htaccess` — committed 2026-08-10 and **live since the 2026-08-11 deploy**, confirmed by `curl https://schoenstatt.link/_health`. Since 2026-09-08 (Phase A of the laminas-mvc
-  removal) `LegacyBridge` also re-renders an HTML 404 out of laminas through
-  `error/404.html.twig`, so the bridge renders no laminas view to any visitor — only
-  `kernel-switch` and the JSON API refusal remain behind it. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
+- **One front controller.** `public/index.php` runs `App\Kernel`
+  (symfony/http-kernel, hand-wired — no FrameworkBundle) unconditionally. A catch-all
+  route (`App\Http\LegacyBridge`) still boots a per-request `Laminas\Mvc\Application`
+  for the handful of unported laminas routes, all of which 404 — a Symfony-rendered 404
+  since Phase A of the laminas-mvc removal, and the `/api` refusal moved off it too, so
+  the bridge renders no laminas view to any visitor. **The `SYMFONY_KERNEL` canary was
+  retired 2026-09-08 (Phase B):** the front-controller flip and its `sl_symfony_canary`
+  cookies are gone, nothing reads the variable, and rolling production back to the laminas
+  front controller is a redeploy now, not an `.htaccess` edit. The Symfony kernel has been
+  the site-wide default since the 2026-08-11 deploy; `curl https://schoenstatt.link/_health`
+  confirms it. Deleting `LegacyBridge` (and then laminas-mvc from composer) is what
+  remains. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
   `public/index.php`, or anything about response headers — it records which of
   the two is live where, what the bridge preserves and why, and how to add a
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
@@ -491,7 +493,7 @@ suites run from the superproject working tree.
 ## Local environment (Docker time capsule)
 
 - `docker compose up -d` → app at http://localhost:8080 (redirects to `/en/`), Mailpit UI at http://localhost:8025, MariaDB on host port 33306 (`schoenstatt`/`schoenstatt`, db `ourlink_db1`).
-- The capsule serves through the **Symfony** front controller (`SYMFONY_KERNEL=1` in `docker/apache-vhost.conf`), and so does production since the 2026-08-11 deploy — `curl https://schoenstatt.link/_health` answers `{"status":"ok","kernel":"symfony"}`, which is the cheapest way to confirm which one is live. Changing the vhost needs `docker compose build && docker compose up -d` — it is `COPY`d into the image, not mounted. Note also that `public/.htaccess` — **tracked, and deployed by phploy** — sets `APP_ENV=production` and `AllowOverride All` lets it win, so **the capsule runs in production mode** despite the vhost's `SetEnv APP_ENV "development"`. One capsule-only caveat: the vhost sets `SYMFONY_KERNEL` with `SetEnv`, and mod_env runs after all of mod_setenvif, so the `.htaccess` kernel lines — including both canary cookies — have **no effect in the capsule**. Production's vhost has no such line, which is why `.htaccess` is the flip mechanism there and why the cookies can only be exercised against production.
+- The capsule serves through the **Symfony** front controller, and so does production since the 2026-08-11 deploy — `curl https://schoenstatt.link/_health` answers `{"status":"ok","kernel":"symfony"}`, which is the cheapest way to confirm the app booted. Since the `SYMFONY_KERNEL` canary was retired 2026-09-08, `public/index.php` runs `App\Kernel` unconditionally, so there is no front-controller choice to make: the old `SetEnv SYMFONY_KERNEL "1"` is gone from `docker/apache-vhost.conf` (a stale copy may linger in a not-yet-rebuilt image, and is ignored). Changing the vhost needs `docker compose build && docker compose up -d` — it is `COPY`d into the image, not mounted. Note that `public/.htaccess` — **tracked, deployed with the release** — sets `APP_ENV=production` and `AllowOverride All` lets it win, so **the capsule runs in production mode** despite the vhost's `SetEnv APP_ENV "development"`.
 - Apache + MariaDB + APCu. **The PHP version is switchable** via `PHP_VERSION`/`APCU_VERSION` in `.env`, then `docker compose build && docker compose up -d`: `8.5`/`5.1.24` is what the capsule serves now and what production runs; `8.4`/`5.1.24` is the rung-4b build; `8.3`/`5.1.24` and `7.4`/`5.1.22` are the earlier rungs, kept switchable for bisecting (8.3+ needs APCu 5.1.24+). Two build gotchas, both cost real time: `docker compose build` has **no DNS** in this environment while `docker build --network=host` does, so build by hand and tag `schoenstattlink-app:latest`, then `docker compose up -d --no-build`; and a single-file bind mount follows the **inode**, so editing `docker/local.docker.php` changes nothing until the container is recreated. `.env` is gitignored, so every machine sets this for itself. Check which one is live with `docker compose exec -T app php -v` before drawing conclusions from a test run. Container config `docker/local.docker.php` is mounted over `config/autoload/local.php`; the host file is untouched.
 - Database comes from a **current production export** in `database/dumps/` (gitignored) plus the `zz-db*.sql` migrations that postdate it — today `schoenstatt_dump_2026-08-01.sql.gz` + `zz-db6.4.sql` + `zz-db6.5.sql`. initdb runs the directory alphabetically, which is what the `zz-` prefix is for. Re-import: `docker compose down -v && docker compose up -d`.
   - **This line said "a 2021-06-24 production dump" until 2026-08-13 and that was five years wrong.** The 2021 dump was only the first import, on the day the repo was reopened; a fresh export replaced it within days. The stale claim is worth flagging rather than just deleting, because it does not read as a bug — it reads as a reason to distrust the capsule, and it was repeated as fact in `docs/strangler.md` and in a dozen test comments. It cost a wrong risk assessment on the batch-6 deploy: "production has five years more data" was offered as a caveat when the capsule's data is days old. **The capsule's row counts and payload sizes are representative of production**; when they are not, say which table and measure it. **`user` is the one table where they are not, and the exception is the test suites' own doing:** on 2026-08-21, 6,011 of its 6,303 rows were `@example.com` accounts left behind by nine smoke classes that never purged, against 292 real ones — enough to make `getUsers()` cache 14 MiB instead of 0.55 MiB and `/users` render 6,303 rows instead of ~292. The leak is fixed (`MagicLinkSignIn` purges from an `#[After]` method, which a class's own `tearDown()` cannot silently override) but the lesson outlives it: **exclude `%@example.com` before taking a count off `user`**, and check the other end too — `trans_phrases` grows the same way, from ported pages filing missing phrases during a baseline capture.

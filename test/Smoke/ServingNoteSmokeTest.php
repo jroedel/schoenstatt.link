@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
-use App\Http\KernelCanary;
 use App\View\ServingNote;
 
 //the smoke suite does not autoload by default, and restating these strings here is
@@ -79,30 +78,6 @@ class ServingNoteSmokeTest extends SmokeTestCase
         self::assertStringContainsString('App\Http\LegacyBridge', $note);
     }
 
-    /**
-     * And a cookie that the server is overruling says so.
-     *
-     * The capsule is the only place this state can be produced: docker/apache-vhost.conf
-     * sets SYMFONY_KERNEL with `SetEnv`, and mod_env beats all of mod_setenvif, so an
-     * opt-out cookie here is accepted by the browser and ignored by Apache. In production
-     * the same request would move the visitor to laminas — which is why this assertion
-     * belongs to the capsule and not to tools/smoke-prod.sh.
-     */
-    public function testACookieTheServerOverrulesIsReportedAsIgnored(): void
-    {
-        $jar = $this->newCookieJar();
-        //write the opt-out cookie straight into curl's jar: no sign-in needed, since the
-        //note is rendered for everyone
-        $this->writeCookie($jar, KernelCanary::COOKIE, KernelCanary::FORCE_LAMINAS);
-
-        $note = $this->noteOn('/en/shrines', $jar);
-
-        self::assertStringContainsString('from server config', $note);
-        self::assertStringContainsString(KernelCanary::COOKIE . '=0 cookie is being ignored', $note);
-        //and the front controller reported is the one that really served it
-        self::assertStringContainsString('Symfony kernel', $note);
-    }
-
     /** The note as rendered, with the surrounding markup stripped. */
     private function noteOn(string $path, ?string $jar = null, int $expectStatus = 200): string
     {
@@ -123,14 +98,5 @@ class ServingNoteSmokeTest extends SmokeTestCase
         );
 
         return html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    }
-
-    /** A Netscape cookie-jar line curl will send back: domain, path, name, value. */
-    private function writeCookie(string $jar, string $name, string $value): void
-    {
-        file_put_contents(
-            $jar,
-            "# Netscape HTTP Cookie File\nlocalhost\tFALSE\t/\tFALSE\t0\t$name\t$value\n"
-        );
     }
 }

@@ -518,100 +518,19 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
     fi
 fi
 
-# --- The two front controllers --------------------------------------------
+# --- The Symfony front controller ----------------------------------------
 #
-# public/.htaccess picks one per request: a site-wide default plus two cookie
-# overrides, `sl_symfony_canary=1` for App\Kernel and `=0` for laminas-mvc. See
-# docs/strangler.md.
+# The only front controller since the SYMFONY_KERNEL canary was retired
+# (2026-09-08), so these checks run on every deploy rather than only when a canary
+# cookie was passed. This is the one place the ported code is checked outside the
+# capsule, so the assertions have to *discriminate*: /_health exists only in the
+# Symfony route table, and a stray slm_locale=en_US Set-Cookie is what a page
+# quietly bridged back to laminas looks like.
 #
-# **Which one is the default is asked, not assumed.** This section used to hard-code
-# "production is laminas, the cookie is the exception", and that assertion becomes a
-# false failure the day the flip lands — the one day the script most needs to be
-# believed. So it probes first and then asserts the *pair*: whichever kernel is the
-# default serves ordinary traffic, and the override reaches the other one. A default
-# that has silently reverted and an override that has silently stopped working are
-# both failures, and only checking both directions tells either from success.
-#
-# This is also the only place the ported code is checked outside the capsule, so the
-# assertions have to *discriminate*. Every check above passes under either front
-# controller by design — flipping a kernel and re-running them would prove nothing.
-# Two markers separate them:
-#
-#   /_health          exists only in the Symfony route table
-#   slm_locale=en_US  is set by SlmLocale, which only laminas runs
-#
-# Skipped unless SMOKE_PROD_CANARY_COOKIE is set; the phploy hook passes it. Its
-# *value* is no longer read: both cookies are named here because there are now two of
-# them and neither is a secret (docs/strangler.md explains why that is safe), and
-# because each deploying machine's phploy.ini is a file no commit here can update.
-#
-# **Pointing this at the capsule fails two checks by design.** docker/apache-vhost.conf
-# sets SYMFONY_KERNEL with `SetEnv`, and mod_env beats all of mod_setenvif, so no cookie
-# can move a capsule request off the Symfony kernel — the opt-out assertions below have
-# nothing to work with there. Everything else in this section is useful locally.
-if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
-    echo
-    FORCE_SYMFONY_COOKIE="sl_symfony_canary=1"
-    FORCE_LAMINAS_COOKIE="sl_symfony_canary=0"
-
-    fetch "$BASE/_health"
-    if [ "$STATUS" = "200" ] && grep -q '"status"' "$BODY"; then
-        DEFAULT_KERNEL=symfony
-    else
-        DEFAULT_KERNEL=laminas
-    fi
-    echo "Front controllers (site default: $DEFAULT_KERNEL)"
-
-    if [ "$DEFAULT_KERNEL" = "laminas" ]; then
-        pass "ordinary traffic gets laminas (/_health is not served, status $STATUS)"
-
-        fetch "$BASE/en/shrines"
-        if grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
-            pass "ordinary traffic gets laminas (SlmLocale set its cookie)"
-        else
-            fail "no slm_locale cookie without an override — has SYMFONY_KERNEL been set for everyone?"
-        fi
-
-        # The opt-in override has to reach App\Kernel, or nothing below this proves
-        # anything about the ported routes. Everything after this point runs through it,
-        # including the *bridged* checks at the end — an unported page fetched without the
-        # cookie never touches LaminasResponseConverter at all, so checking it would
-        # assert nothing about the code the flip puts in front of the whole site.
-        SYMFONY_HEADERS=(-H "Cookie: $FORCE_SYMFONY_COOKIE")
-        EXTRA_HEADERS=("${SYMFONY_HEADERS[@]}")
-        fetch "$BASE/_health"
-        if [ "$STATUS" = "200" ] && grep -q '"status"' "$BODY"; then
-            pass "the opt-in cookie reaches the Symfony kernel (/_health answers)"
-        else
-            fail "/_health should answer 200 with $FORCE_SYMFONY_COOKIE (got $STATUS) — is the SetEnvIf deployed?"
-        fi
-        # ...and the ported routes below are then checked through that same cookie
-    else
-        pass "ordinary traffic gets the Symfony kernel (/_health answers)"
-
-        # After the flip this is the check that matters most, because it is the way
-        # back. An admin has no other route to laminas without a deploy, and a
-        # mis-ordered .htaccess kills it with no other symptom (see
-        # test/Integration/KernelCanaryTest).
-        EXTRA_HEADERS=(-H "Cookie: $FORCE_LAMINAS_COOKIE")
-        fetch "$BASE/_health"
-        if [ "$STATUS" != "200" ]; then
-            pass "the opt-out cookie reaches laminas (/_health stops answering, status $STATUS)"
-        else
-            fail "/_health still answered 200 with $FORCE_LAMINAS_COOKIE — the escape hatch back to laminas is dead"
-        fi
-
-        fetch "$BASE/en/shrines"
-        if grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
-            pass "the opt-out cookie really renders through laminas (SlmLocale set its cookie)"
-        else
-            fail "no slm_locale cookie with $FORCE_LAMINAS_COOKIE — the opt-out is not reaching laminas"
-        fi
-
-        # the ported routes are checked as ordinary traffic sees them, i.e. no cookie
-        SYMFONY_HEADERS=()
-        EXTRA_HEADERS=()
-    fi
+# SYMFONY_HEADERS stays defined and empty: the checks below still reference it, and
+# emptying it is simpler than editing each expansion.
+SYMFONY_HEADERS=()
+EXTRA_HEADERS=()
 
     # Every ported HTML route that a signed-out visitor may see. The absence of the
     # SlmLocale cookie is what proves each was not quietly bridged back to laminas —
@@ -643,11 +562,13 @@ if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
         pass "symfony: ported pages keep the request's protocol version (HTTP/${HTTPVER:-?})"
     fi
 
-    # The v3 API, which exists *only* on the Symfony kernel and is the reason the flip
-    # matters to anything other than this migration: an automated agent sends no cookie,
-    # so before the flip v3 is unreachable for its actual callers.
+    # The v3 API for automated agents. The top-level schema lists its resources under
+    # `entities`, so the marker is the `association` key (its entity schema at
+    # /api/v3/schema/association is what carries `"entity":"association"`). Checked here
+    # unconditionally since the canary was retired — an agent sends no cookie, and there
+    # is one front controller now.
     fetch "$BASE/api/v3/schema"
-    json_ok "symfony: api/v3 schema" '"entity":"association"'
+    json_ok "symfony: api/v3 schema" '"association":'
     fetch "$BASE/api/v3/associations"
     if [ "$STATUS" = "401" ] && [[ "$CTYPE" == application/json* ]]; then
         pass "symfony: api/v3 associations refuses an unauthenticated caller as JSON (401)"
@@ -725,8 +646,7 @@ if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
         pass "bridged: no invented Cache-Control on a bridged page"
     fi
 
-    EXTRA_HEADERS=()
-fi
+EXTRA_HEADERS=()
 
 echo
 if [ "$FATAL_200S" -gt 0 ]; then

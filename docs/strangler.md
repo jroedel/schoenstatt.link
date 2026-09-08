@@ -214,30 +214,39 @@ re-renders it through `error/404.html.twig`. So the bridge renders **no laminas 
 visitor**: only `kernel-switch` (an admin redirect) and, until it was ported the same week,
 `RestApi`'s JSON refusal remained behind it. **The API refusal moved on 2026-09-08 too**
 (`App\Controller\Api\ApiRouteNotFoundController`, shadowing the laminas `api-route-not-found`),
-so the only thing the bridge still answers is `kernel-switch`. That is what makes retiring
-the canary a clean deletion rather than a behaviour change — see "The endgame" below.
+so the bridge answered nothing but `kernel-switch`, which was itself deleted when the
+canary was retired (Phase B, below). The bridge now serves only the unported laminas
+routes, all of which 404.
 
-### The endgame is a decision, not a port
+### The endgame: Phase B is done, the canary is retired
 
-This is the part the counts hide. `LegacyBridge` cannot be deleted while `kernel-switch`
-has a job, and `kernel-switch`'s job is to make reverting production to laminas a cookie
-away. So finishing the strangler ends with **retiring the canary**, which is a judgement
-about how much confidence the Symfony front controller has earned — not a batch of work.
-It has been the site-wide default since the 2026-08-11 deploy.
+This was the part the counts hid. `LegacyBridge` could not be deleted while `kernel-switch`
+had a job, and `kernel-switch`'s job was to make reverting production to laminas a cookie
+away. Retiring the canary was a judgement about earned confidence, not a batch of work —
+and it was made on **2026-09-08 (Phase B)**, after the Symfony kernel had been the
+site-wide default and green for a month.
 
-**Phase A is done (2026-09-08) and deliberately stops short of that decision.** Its two
-pieces — porting `redirect-pre-april-2020-sl-id` and Symfony-rendering the 404 — leave the
-bridge dormant for every normal visitor while the canary is untouched, so the rollback
-still works and the decision can be taken later against a bridge that provably renders
-nothing anyone sees. What is left, in order:
+What Phase B did: `public/index.php` runs `App\Kernel` unconditionally now; the
+`SYMFONY_KERNEL` environment variable is read nowhere and set nowhere; the front-controller
+flip and both `sl_symfony_canary` cookie overrides are gone from `public/.htaccess` and the
+capsule vhost; and `kernel-switch` — the route, its action, its admin-menu entry — was
+deleted along with `App\Http\KernelCanary` and the serving note's cookie/kernel reporting.
+**Rolling production back to the laminas front controller is a redeploy now, not an
+`.htaccess` edit.** `App\View\ServingNote` survives, reporting only the renderer (a ported
+Twig template versus a `.phtml` still bridged through `LegacyBridge`), because that
+distinction stays meaningful until `LegacyBridge` itself goes.
 
-- **Phase B**: retire the canary. Make `SYMFONY_KERNEL=1` unconditional in
-  `public/index.php`, delete `kernel-switch` and its cookie, then delete `LegacyBridge` and
-  the `legacy` catch-all. (`RestApi`'s JSON refusal was ported ahead of this on 2026-09-08,
-  so by Phase B `kernel-switch` is the only thing left bridged.) This ends the no-deploy
-  rollback, so it is the decision above rather than a mechanical step. The laminas `RestApi`
-  module and the `api-route-not-found` route stay until then as the canary's rollback path,
-  the same way the ported publication and import-father actions do.
+**Phase A came first (2026-09-08) and deliberately stopped short of that decision** — it
+ported `redirect-pre-april-2020-sl-id` and Symfony-rendered the 404, leaving the bridge
+dormant for every normal visitor while the canary was still there, so the decision could be
+taken against a bridge that provably rendered nothing anyone saw. What is left, in order:
+
+- **Phase B — done (2026-09-08): the canary is retired.** `public/index.php` runs
+  `App\Kernel` unconditionally; `kernel-switch`, the `.htaccess`/vhost flip, both cookie
+  overrides and `App\Http\KernelCanary` are deleted. `LegacyBridge` and the `legacy`
+  catch-all **stay** for now — they still bridge the unported structural laminas routes to a
+  404 — and are the next thing to delete. The laminas front controller can no longer serve a
+  request; rollback is a redeploy.
 - **Phase C**: drop `laminas/laminas-mvc` and its dependents (`bjy-authorize`,
   `laminas-twb-bundle`, the `mvc-plugin-*` packages, `laminas-developer-tools`) from
   `composer.json`, replacing their remaining runtime uses. This is what the strangler was

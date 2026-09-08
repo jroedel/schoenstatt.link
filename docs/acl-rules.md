@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 118 |
-| guarded routes total | 118 |
+| guarded routes existing | 117 |
+| guarded routes total | 117 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 119 |
+| route guard entries | 118 |
 | routes declared twice | 1 |
 | routes shadowed by symfony | 115 |
 | routes uncomparable | 0 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 31 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 255 |
-| total routes | 130 |
+| total routes | 129 |
 | unguarded routes | 12 |
 | unguarded routes matchable | 0 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (118 + 12 = 130). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (117 + 12 = 129). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -681,7 +681,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `juser/user/api-tokens` | yes | administrator | administrator (1) | no |  |
 | `juser/user/delete` | yes | administrator | administrator (1) | no |  |
 | `juser/user/edit` | yes | administrator | administrator (1) | no |  |
-| `kernel-switch` | yes | sch_administrator | sch_administrator (1) | no |  |
 | `libraries` | yes | lib_administrator | lib_administrator (1) | no |  |
 | `libraries/create` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `libraries/library` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |

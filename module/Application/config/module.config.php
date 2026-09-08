@@ -81,19 +81,6 @@ return [
                     ],
                 ],
             ],
-            //The Symfony-kernel canary toggle. A laminas route on purpose: the Symfony
-            //kernel bridges every unported path back here, so this one action can switch
-            //the canary *both* ways. See App\Http\KernelCanary.
-            'kernel-switch' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/kernel-switch',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'kernelSwitch',
-                    ],
-                ],
-            ],
             'redirect-pre-april-2020-sl-id' => [
                 'type' => Segment::class,
                 'options' => [
@@ -221,7 +208,6 @@ return [
                 //Administrators only. The canary itself is not a privilege — both front
                 //controllers enforce the same ACL — but a menu item that changes how the
                 //site renders has no business being offered to visitors.
-                ['route' => 'kernel-switch', 'roles' => ['sch_administrator']],
             ],
         ],
     ],
