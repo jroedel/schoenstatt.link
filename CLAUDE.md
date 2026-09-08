@@ -149,6 +149,19 @@ suites run from the superproject working tree.
   Symfony controller are untouched, the 527 rows are untouched, and Part 2 of
   [docs/timeline-and-corpus.md](docs/timeline-and-corpus.md) always meant to declare its
   routes Symfony-side. Do not re-add them as a stepping stone.
+  **The last four publication actions are Symfony-served since 2026-09-08 (batch 16)** —
+  `publications/export`, `publications/prime-authors`, `publication-copy-to-main-corpus` and
+  `publication-create-new-edition`, behind `App\Controller\PublicationReportsController` and
+  `App\Controller\PublicationDuplicateController`. Every `Books` route a person can open is
+  Symfony-served now; `publication-upload-cover` is the one publication route left on laminas
+  and it is reachable by nobody (no guard entry). Two things to know. **`export` is an HTML
+  table of all 10,166 rows, not a spreadsheet** — docs said otherwise until the port, inferred
+  from the name. And **`create-new-edition` wrote on a plain GET until this batch**, the same
+  hazard the copy action had until 2026-08-14; the field list is
+  `PublicationsTable::createNewEdition()` now and *both* front controllers confirm through
+  `Books\Form\CreateNewEditionForm`, so the rollback path carries the fix. `EntityShow::row()`
+  is the half of `load()` that resolves a row and asks its `show` permission without
+  registering a visit — use it for anything that opens with a row and is not the show page.
   **The whole JUser surface is served by the module's own controllers since 2026-08-21** —
   `/user`, `/user/login`, `/user/verify`, `/user/logout`, `/users`, the two create forms, the
   account form, the delete confirmation and the API-token screen with its revoke twin.

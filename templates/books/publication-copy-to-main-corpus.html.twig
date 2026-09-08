@@ -1,0 +1,31 @@
+{#
+  module/Books/view/books/publications/copy-to-main-corpus.phtml, ported.
+
+  The confirmation page for copying a data-sourced publication into the main corpus. The
+  copy used to happen on the GET that now merely renders this; see the .phtml's header and
+  App\Controller\PublicationDuplicateController. Cancel is a link, not a form element —
+  a Cancel *button* inside a destructive form is what made SionModel\Form\DeleteEntityForm
+  delete records for years.
+
+  The `&nbsp;` between the button and the link is content, not layout: the .phtml echoes
+  them with nothing else between, and tools/port-baseline.php preserves U+00A0 while
+  collapsing other whitespace, so the control here keeps the two renderings identical.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Copy into main corpus') }}</h1>
+
+<p class="lead">{{ translate('This will create a new publication in the main corpus from “%s”.')|format(entity.title ?? entity.identifier ?? '') }}</p>
+
+<p>{{ translate('The imported record it came from is left untouched. This cannot be undone automatically.') }}</p>
+
+{% if entity.dataSource is defined and entity.dataSource is not null %}
+<p><strong>{{ translate('Data source') }}</strong>: {{ entity.dataSource }}</p>
+{% endif %}
+{{ form_open(form, form_action) }}
+{{- form_row(form.get('security')) -}}
+{{- form_submit(form.get('submit')) -}}
+&nbsp;<a href="{{ cancel_url }}" class="btn btn-default">{{ translate('Cancel') }}</a>
+{{- form_close() }}
+{% endblock %}

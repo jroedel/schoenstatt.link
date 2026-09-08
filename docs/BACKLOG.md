@@ -899,6 +899,22 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
+- [x] ~~**`publication-create-new-edition` created the row on a plain GET.**~~ **Fixed
+  2026-09-08, on both front controllers, in the batch that ported it.**
+  `PublicationsController::createNewEditionAction()` was `createEntity()` plus a redirect to
+  the new edition's edit form — no method check, no CSRF token, no confirmation — which is
+  the shape `copyToMainCorpusAction()` had until 2026-08-14 and the same hazard: a browser
+  prefetching the "Add another edition" link a `pub_moderator` hovered over filed a
+  publication. It went unmeasured because the button is gated on the route resource, so no
+  crawler ever reached it, and `create-new-edition.phtml` was an empty file because the
+  action never rendered. Now: the field list is `PublicationsTable::createNewEdition()`,
+  both actions confirm through `Books\Form\CreateNewEditionForm`, the Symfony side also asks
+  the row's `show` permission (the laminas action never did), and
+  `test/Smoke/PublicationActionsSymfonySmokeTest` asserts the GET writes nothing. Worth
+  keeping as a pattern: **an action whose template is empty is an action that never
+  renders, and an action that never renders on a GET is writing on it.** See
+  [strangler.md](strangler.md) § "The last four publication actions".
+
 - [ ] **Italian shrine names render in English, and a fossil catalog was hiding it.**
   `SchoenstattTable` builds a shrine's name by translating its *kind* in the `Schoenstatt`
   text domain, and the phrase `Schoenstatt Shrine` carries `de_DE`, `en_US`, `es_ES` and

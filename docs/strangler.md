@@ -132,9 +132,10 @@ the last one moves, `LegacyBridge` is deleted.
 ## What is left, and in what order
 
 Written down on 2026-09-08 because "what's next on the strangler?" has been answered from
-scratch twice, and the answer is not obvious from the counts: **23 laminas routes remain,
-and only six of them are pages a person can open.** Regenerate with `tools/acl-table.php`
-before trusting the list; the classification is what has value, not the names.
+scratch twice, and the answer is not obvious from the counts: **19 laminas routes remain,
+and only two of them are pages a person can open** (23 and six that morning, before batch
+16 took the four publication actions). Regenerate with `tools/acl-table.php` before trusting
+the list; the classification is what has value, not the names.
 
 ### The twelve that are not pages
 
@@ -147,26 +148,28 @@ own. Plus `roles/role`, which *is* guarded (`sch_moderator`) but declares
 **None of these needs porting.** They exist so their children can be named, and they
 evaporate with `LegacyBridge`. Do not count them as work.
 
-### The six real pages
+### The two real pages
 
 | route | guard | what it needs |
 |---|---|---|
-| `publication-create-new-edition` | `pub_moderator` | its own action, not the generic create — see the batch-10 notes |
-| `publication-copy-to-main-corpus` | `pub_moderator` | POST + CSRF; `CopyToMainCorpusSmokeTest` already exists |
-| `publications/export` | `pub_moderator` | returns a spreadsheet, not HTML — the only one here that is not a page in the usual sense |
-| `publications/prime-authors` | `pub_administrator` | a maintenance action |
 | `admin/import-father` | `sch_administrator` | a real form; also the subject `ServingNoteSmokeTest` currently uses to observe the bridge |
 | `sion-model/auto-fix-data-problems` | `lib_administrator` | POST + CSRF, and its template is already ported for the read-only sibling — **but settle the guard first**, see below |
 
-The four publication actions are the largest coherent batch left and share one controller.
-They are a *mixed* batch rather than a clean one, and that is the thing to plan for: four
-separate characterizations, not one shared reproduction.
+Four more sat in this table until the afternoon of 2026-09-08 — `publication-create-new-edition`,
+`publication-copy-to-main-corpus`, `publications/export` and `publications/prime-authors` —
+and batch 16 took them the same day; see "The last four publication actions" below. One row
+of that table was wrong and is worth correcting here rather than deleting silently:
+`publications/export` does **not** return a spreadsheet. It is `parent::indexAction()` over
+the whole corpus rendered as one HTML table of four columns, and the description was inferred
+from the name.
 
 **`admin/import-father` has a second cost.** It is the last anonymous-unreachable unported
 HTML page, and `test/Smoke/ServingNoteSmokeTest::testAnUnportedRouteReportsTheBridge` uses
 it to prove that a bridged `.phtml` reports itself as bridged. Porting it means finding
-another subject — and when the subjects run out, that half of the serving note is dead code
-and should be deleted rather than patched. The test's own docblock says so.
+another subject — and after batch 16 there is exactly **one** other candidate,
+`sion-model/auto-fix-data-problems`, which has a guard to settle first. When the subjects
+run out, that half of the serving note is dead code and should be deleted rather than
+patched. The test's own docblock says so.
 
 ### The two decisions, neither of which is a porting question
 
@@ -2544,6 +2547,79 @@ Fifty of the 1,272 captures differ and none is an auth path: ten pages × five l
 of them signed-in pages reading data the suites wrote between the two captures (`users` grew
 test accounts, `admin`'s translation badge went 2,546 → 2,549 as the new templates filed
 their phrases, `users-create` gained the eight bytes of `checked` from the previous PR).
+
+### The last four publication actions — batch 16, 2026-09-08
+
+`publications/export`, `publications/prime-authors`, `publication-copy-to-main-corpus` and
+`publication-create-new-edition`: the four `PublicationsController` actions still on laminas
+after batches 5, 7, 8 and 9 took the publication show, edit, delete and create pages. With
+them gone, every route in the `Books` module that a person can open is Symfony-served, and
+`publication-upload-cover` is the one publication route left on laminas — unguarded, and
+reachable by nobody on either front controller.
+
+Two controllers, because the four are two shapes. `App\Controller\PublicationReportsController`
+renders the two whole-corpus listings — `export` through the shared `_publication-list`
+partial with the four columns `export.phtml` asks for, `primeAuthors` as one row per author.
+`App\Controller\PublicationDuplicateController` serves the two "make a new row from this
+one" actions, each a two-element confirmation form over the same row resolution: GET renders,
+a POST carrying a valid token writes and redirects, a POST without one re-renders with a 400.
+
+#### `create-new-edition` wrote on a plain GET, and the port is what found it
+
+`createNewEditionAction()` was `createEntity()` and a redirect to the new row's edit form —
+no method check, no token, no confirmation. That is exactly the shape the copy action had
+until 2026-08-14 (see "The action behind it copied a publication on a GET" in
+[history.md](history.md)), and the same hazard: nine effective roles hold `pub_moderator`,
+and a browser prefetching the "Add another edition" link a moderator had merely hovered over
+was enough to file a publication. Nothing measured it because nothing pointed a crawler at it
+— the button is gated on the route resource — so it sat there from 2020 until the port read
+the action.
+
+**Fixed on both front controllers, not just the ported one.** The field list moved to
+`PublicationsTable::createNewEdition()`, the laminas action became a confirmation over
+`Books\Form\CreateNewEditionForm` (the same two elements and 900-second token as
+`CopyToMainCorpusForm`), and `create-new-edition.phtml` — **an empty file since 2020**,
+because the action never rendered — got its first content. This is the "editing the laminas
+action" the porting rules say to avoid, and it is done here on purpose: a write-on-GET on the
+rollback path is a security fix, not a reproduction, and the copy action set the precedent.
+`test/Smoke/PublicationActionsSymfonySmokeTest` takes the publication count before and after
+the GET, because "the confirmation rendered" and "the GET wrote nothing" are different claims.
+
+#### Two things the Symfony side does differently, both on purpose
+
+- **Both actions ask the row's `show` permission.** The copy action always did, by way of
+  `parent::showAction()`; the new-edition action never did — `getEntityObject()` makes no
+  ACL check — so a moderator refused a publication's own page could clone it into an edit
+  form and read every field there. `App\Sion\EntityShow::row()` is the half of `load()` that
+  answers existence, projection and the per-row check, split out for this batch; `load()`
+  now calls it.
+- **The confirmation registers no visit.** The copy action's did, as a by-product of reusing
+  `showAction()`, and built a comment form nothing rendered. A confirmation is not a page
+  view of the publication. The baseline diff cannot see this one — visit counts are one of
+  the two things it normalizes away — so it is stated here.
+
+#### Verifying it
+
+`tools/port-baseline.php` compared the four paths across five locales, the unprefixed form
+and both identities — **48 responses, all identical** once normalized. The anonymous half is
+the sign-in redirect on every one; the signed-in half is the four pages, and two of them are
+the largest responses the tool has ever compared: `/literature/export` is **5.2 MB** per
+locale (10,166 rows through the `_publication-list` partial) and `prime-authors` is 3.6 MB.
+Both confirmations came out identical too, `&nbsp;` included — the whitespace trap batch 14
+hit was avoided by writing the control in from the start.
+
+The four paths are in the tool's list now, at the top, and they could not have been listed
+before this batch: a laminas capture of `/…/create-new-edition` would have created twelve
+publications. That is stated in the list itself, because the next person to add a path there
+should ask the same question of it.
+
+The whole-site run that produced those 48 also reported 355 differences among the other
+1,176 responses. None of them is on a path this batch touched — the 355 are on the earlier
+batches' pages, which this branch changed nothing in (the `_publication-list` partial the
+export reuses is untouched, and the `EntityShow::load()` refactor is a pure extraction) — and
+the whole-site total was already noisy when batch 14 ran the tool on 2026-09-08 for reasons
+that predate this branch. That total was **not** re-measured against `master` here, so it is
+recorded as an observation and not as a baseline. Read a run by path, not by the total.
 
 ### The translation-administration surface — batch 14, 2026-09-08
 

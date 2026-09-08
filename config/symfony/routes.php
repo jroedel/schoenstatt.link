@@ -72,6 +72,8 @@ use App\Controller\PersonController;
 use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
+use App\Controller\PublicationDuplicateController;
+use App\Controller\PublicationReportsController;
 use App\Controller\RolesController;
 use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
@@ -1198,6 +1200,35 @@ $delete(
     ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)]
 );
 
+// ---------------------------------------------------------------------------
+// Batch 16, ported 2026-09-08: the last two per-row publication actions, both of them
+// "make a new row from this one" and both behind a two-element confirmation form. Same
+// controller, one method each — see App\Controller\PublicationDuplicateController.
+//
+// Both reserve their verb in App\Sion\ReservedVerbs, so the `publication` show route
+// below cannot swallow them whatever the declaration order; declared above it anyway,
+// because that is where the reader expects the more specific route and because the
+// other verbs on this identifier (`edit`, `delete`) are.
+//
+// `publication-create-new-edition` **wrote on a plain GET** on laminas until this port.
+// The laminas action confirms now too (same day), so the rollback path carries the fix.
+$ported(
+    'publication-copy-to-main-corpus',
+    '/{sw_id}/copy-to-main-corpus',
+    [PublicationDuplicateController::class, 'copyToMainCorpus'],
+    RouteAccess::guardedBy('route/publication-copy-to-main-corpus'),
+    $textDomain('Books'),
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)]
+);
+$ported(
+    'publication-create-new-edition',
+    '/{sw_id}/create-new-edition',
+    [PublicationDuplicateController::class, 'createNewEdition'],
+    RouteAccess::guardedBy('route/publication-create-new-edition'),
+    $textDomain('Books'),
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)]
+);
+
 // `text` is the entity whose delete was broken in a way no status code showed: its
 // `delete_action_redirect_route` was `text-delete` — this very route, which needs an `sw_id`
 // — so redirectAfterDelete() asked the router to assemble it with no parameters and got
@@ -1314,6 +1345,26 @@ $ported(
     RouteAccess::guardedBy('route/publications/search'),
     //no NAV_ROUTE: laminas marks nothing active in the navbar on the search page, and
     //declaring one lit up "Literature" where the original leaves it plain
+    $textDomain('Books')
+);
+// Batch 16, 2026-09-08: the two moderator listings. Literals, six and thirteen letters
+// long, so `{inLanguage}`'s two-letter constraint already keeps them apart — declared
+// before it all the same, with `search`, so that the three literals under /literature
+// read together. `publications/export` is an HTML table of the whole corpus, not a
+// file: docs/strangler.md said "spreadsheet" until this port, and that was inferred from
+// the name. See App\Controller\PublicationReportsController.
+$ported(
+    'publications/export',
+    '/literature/export',
+    [PublicationReportsController::class, 'export'],
+    RouteAccess::guardedBy('route/publications/export'),
+    $textDomain('Books')
+);
+$ported(
+    'publications/prime-authors',
+    '/literature/prime-authors',
+    [PublicationReportsController::class, 'primeAuthors'],
+    RouteAccess::guardedBy('route/publications/prime-authors'),
     $textDomain('Books')
 );
 $ported(
