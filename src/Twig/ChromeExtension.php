@@ -7,7 +7,6 @@ namespace App\Twig;
 use App\Http\CspNonce;
 use App\Http\SymfonyRoute;
 use App\Locale\Locales;
-use App\View\ServingNote;
 use App\View\SiteChrome;
 use Locale;
 use Symfony\Component\HttpFoundation\Request;
@@ -64,28 +63,7 @@ final class ChromeExtension extends AbstractExtension
             new TwigFunction('search_box', $this->searchBox(...)),
             new TwigFunction('display_name', $this->displayName(...)),
             new TwigFunction('json_ld', $this->jsonLd(...), ['is_safe' => ['html']]),
-            new TwigFunction('serving_note', $this->servingNote(...)),
         ];
-    }
-
-    /**
-     * The footer's "how was this page served" line — see App\View\ServingNote.
-     *
-     * Not declared `is_safe: html`: it is plain text containing class names with
-     * backslashes, and Twig escaping it is correct.
-     */
-    public function servingNote(): string
-    {
-        $request = $this->requests->getMainRequest();
-        $route   = $request?->attributes->get('_route');
-        $handler = $request?->attributes->get('_controller');
-
-        return ServingNote::describe(
-            ServingNote::RENDERER_TWIG,
-            is_string($route) ? $route : null,
-            is_string($handler) ? $handler : null,
-            $request?->cookies
-        );
     }
 
     /**
