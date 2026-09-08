@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 # Run everything .github/workflows/ci.yml runs, locally, in the capsule.
 #
-# WHY THIS EXISTS: the account's 2,000 GitHub Actions minutes/month allowance was
-# exhausted on 2026-08-14. Until it resets on the 1st, every job fails in ~2 seconds
-# with no runner assigned and no steps executed — which looks alarming and is not about
-# your code. Do not spend time re-running those; run this instead and paste the result.
+# WHY THIS EXISTS: it is the stricter check, and it stayed useful for a reason nobody
+# planned. The account's 2,000 GitHub Actions minutes/month allowance was exhausted on
+# 2026-08-14 and every job then failed in ~2 seconds with no runner assigned and no steps
+# executed — which looks alarming and is not about your code. That lasted until the
+# 2026-09-01 reset, and the first real run afterwards immediately found two breakages
+# that had accumulated in the gap. So this script is not a stand-in for CI being down;
+# it is what should be run before pushing, whether or not CI is healthy.
 #
-# It mirrors ci.yml's five jobs in the same order, plus the three things CI CANNOT run
+# It mirrors ci.yml's seven jobs in the same order, plus the three things CI CANNOT run
 # because they need a live application: the smoke suite, the fuzz harness, and
 # tools/smoke-prod.sh itself. That makes a green run here a STRICTER check than a green
 # run on GitHub, not a weaker one — worth saying out loud, because the reflex is to
 # treat a local pass as second best.
+#
+# Quantified 2026-09-08: CI's integration job runs 3,085 assertions with 195 skipped;
+# the same suite here runs 7,214 with 14 skipped. CI has no database and cannot get one
+# (see .github/workflows/ci.yml's header), so roughly 57% of the assertions only ever
+# execute here.
 #
 # The last of those was added on 2026-08-19 and is a different kind of coverage from the
 # other two. smoke-prod.sh is the bash script the DEPLOY runs against production as its
@@ -19,8 +27,8 @@
 # error` after an otherwise successful deploy. Pointing it at the capsule exercises the
 # script, not just the site.
 #
-#   ./tools/ci-local.sh          # the five CI jobs, then smoke, fuzz + smoke-prod.sh
-#   ./tools/ci-local.sh --ci     # only the five CI jobs (faster; skips the ~4min smoke)
+#   ./tools/ci-local.sh          # the seven CI jobs, then smoke, fuzz + smoke-prod.sh
+#   ./tools/ci-local.sh --ci     # only the seven CI jobs (faster; skips the ~4min smoke)
 #
 # Everything runs through `docker compose exec app` except the syntax lint, which needs
 # no extensions and so is fine on the host. The smoke suite MUST NOT be parallelised —
