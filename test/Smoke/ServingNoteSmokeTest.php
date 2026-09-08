@@ -72,13 +72,13 @@ class ServingNoteSmokeTest extends SmokeTestCase
      * measured at 0.43 s and 10 kB, because its form's person list comes from the local
      * database and not from the Patres API.
      *
-     * When it ports too, this test needs another of the few left — **one** as of the evening
-     * of 2026-09-08, after batch 16 took the four publication actions (five that morning),
-     * and `docs/strangler.md` § "What is left, and in what order" keeps the current list
-     * rather than this docblock, precisely because a count here goes stale silently while
-     * the test keeps passing. When they run out, `App\Http\LegacyBridge` has nothing to
-     * bridge and this half of the note is dead code — which is the point of the migration,
-     * and it should be deleted rather than patched.
+     * When it ports too, there is **no** other page-shaped subject: on 2026-09-08 batch 16
+     * took the four publication actions and the auto-fix page was retired the same evening,
+     * so `admin/import-father` is the last HTML page the bridge serves. What the bridge still
+     * renders after that is laminas' own 404 page for a URL neither router knows — a `.phtml`
+     * with the layout and the note, so it *could* stand in here. Whether it should, or whether
+     * this half of the note is then dead code to delete rather than patch, is the decision for
+     * that batch; `docs/strangler.md` § "What is left, and in what order" records the state.
      */
     public function testAnUnportedRouteReportsTheBridge(): void
     {

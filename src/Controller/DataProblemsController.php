@@ -16,18 +16,18 @@ use Twig\Environment;
  * Guarded by `route/sion-model/data-problems`, which admits `sch_general_moderator`
  * and its descendants: 2 effective roles of 43.
  *
- * ## Only the read-only half moves
+ * ## Only the read-only half moved, and the other half is gone
  *
- * `data-problems.phtml` serves two laminas routes. This one lists problems;
- * `sion-model/auto-fix-data-problems` renders the same template with `isSimulation`
- * set plus a CSRF-protected confirm form, and **stays on laminas** — there is no form
- * layer on the Symfony side, and inventing one for a single admin button is not what
- * this batch is for. So the ported template drops the simulation branch rather than
- * half-reproducing it; the .phtml keeps serving both routes until that one moves too.
+ * `data-problems.phtml` used to serve two laminas routes. This one lists problems;
+ * `sion-model/auto-fix-data-problems` rendered the same template with `isSimulation` set
+ * plus a CSRF-protected confirm form, and stayed on laminas when this was ported. It was
+ * **retired on 2026-09-08** rather than ported: measured, the only fix any provider
+ * implements is backfilling `lib_books.sort_text` (9,764 books, all in one library), and
+ * `LibraryTable::refreshLibrarySort()` — behind the ported, `administrate`-gated
+ * `refresh-sort` confirmation — recomputes every book's sort text, a strict superset.
  *
- * That is also why this controller ignores POST: it never had a POST to handle. The
- * route is declared without a method constraint, exactly as the laminas route is, so a
- * POST to it renders the list — which is what happens today.
+ * This controller ignores POST because it never had one to handle. The route is declared
+ * without a method constraint, exactly as the laminas route is, so a POST renders the list.
  *
  * ## The entity cell is the interesting part
  *

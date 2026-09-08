@@ -33,7 +33,7 @@ require_once __DIR__ . '/harness.php';
  *     the input regardless, so the typo is doubly silent: the field it was meant to
  *     guard is unguarded, and `getData()` gains a key holding `null`.
  *     `CommentForm` specs `text` for an element called `comment`; `UploadForm`
- *     specs `fileupload` for `fileUpload`.
+ *     specced `fileupload` for `fileUpload` until it was deleted on 2026-09-08.
  *  4. **A dropdown that stopped being a dropdown.** Because the spec *replaces*
  *     the element's input, naming a `Select` in the spec without repeating an
  *     `InArray` destroys its domain check. The field is now free text pointed at an
@@ -243,8 +243,9 @@ final class FormValidationContractTest extends TestCase
      *
      * A typo here disables validation for the field it was meant to protect *and*
      * adds a phantom `null` to `getData()`, with no error either way. Both known
-     * instances — `CommentForm`'s `text` for `comment`, `UploadForm`'s `fileupload`
-     * for `fileUpload` — are one-character-class mistakes that survived years.
+     * instances — `CommentForm`'s `text` for `comment`, and `UploadForm`'s `fileupload`
+     * for `fileUpload` until that form was deleted — are one-character-class mistakes
+     * that survived years.
      */
     public function testEverySpecificationKeyNamesARealElement(): void
     {

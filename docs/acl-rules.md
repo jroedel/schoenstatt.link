@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 119 |
-| guarded routes total | 119 |
+| guarded routes existing | 118 |
+| guarded routes total | 118 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 120 |
+| route guard entries | 119 |
 | routes declared twice | 1 |
 | routes shadowed by symfony | 113 |
 | routes uncomparable | 0 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 247 |
-| total routes | 132 |
-| unguarded routes | 13 |
-| unguarded routes matchable | 1 |
+| total routes | 130 |
+| unguarded routes | 12 |
+| unguarded routes matchable | 0 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (119 + 13 = 132). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (118 + 12 = 130). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -722,7 +722,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `schoenstatt` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |
 | `shrines` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `shrines/submitting-photos` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `sion-model/auto-fix-data-problems` | yes | lib_administrator | lib_administrator (1) | no |  |
 | `sion-model/cache-status` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `sion-model/clear-persistent-cache` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `sion-model/data-problems` | yes | sch_general_moderator | sch_administrator, sch_general_moderator (2) | no |  |
@@ -753,7 +752,7 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-1 of the 13 are endpoints reachable by nobody.
+0 of the 12 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
@@ -768,7 +767,6 @@ the matched route name, so the missing guard costs nothing. The `yes` rows are t
 | `jtranslate/phrase` | no |
 | `juser/user` | no |
 | `library-imports` | no |
-| `publication-upload-cover` | **yes** |
 | `sion-model` | no |
 
 ## Phantom guard entries (guard names a route the router does not have)
