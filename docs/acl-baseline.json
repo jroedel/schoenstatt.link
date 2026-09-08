@@ -27,13 +27,13 @@
         "roles": 45,
         "route_guard_entries": 119,
         "routes_declared_twice": 1,
-        "routes_shadowed_by_symfony": 113,
+        "routes_shadowed_by_symfony": 114,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 220,
+        "symfony_routes_acl_checked": 222,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 247,
+        "symfony_served_routes": 249,
         "total_routes": 130,
         "unguarded_routes": 12,
         "unguarded_routes_matchable": 0
@@ -4242,6 +4242,16 @@
             "probe": "/admin"
         },
         {
+            "laminas_route": "admin/import-father",
+            "path": "/admin/import-father",
+            "symfony_route": "admin/import-father",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/admin/import-father",
+            "access_kind": "acl",
+            "probe": "/admin/import-father"
+        },
+        {
             "laminas_route": "api-route-not-found",
             "path": "/api/v3/schema",
             "symfony_route": "api-v3/schema",
@@ -6812,6 +6822,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/admin",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "admin/import-father": {
+            "path": "/admin/import-father",
+            "controller": "App\\Controller\\ImportFatherController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/admin/import-father",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "admin/import-father.locale": {
+            "path": "/{_locale}/admin/import-father",
+            "controller": "App\\Controller\\ImportFatherController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/admin/import-father",
                 "reason": null,
                 "denial_style": "html"
             }
