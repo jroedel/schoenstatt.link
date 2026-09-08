@@ -1,1 +1,39 @@
 <?php
+/**
+ * Confirmation page for creating a new edition of a publication.
+ *
+ * This file was empty — a bare `<?php` — from 2020 until 2026-09-08, because the action
+ * never rendered: it created the row on the GET and redirected. It renders now for the
+ * same reason `copy-to-main-corpus.phtml` exists: the write moved behind a POST.
+ * Cancelling is a plain link rather than a form element, for the reason given there.
+ *
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Books\Form\CreateNewEditionForm $form
+ * @var array $entityObject
+ * @var string $cancelUrl
+ */
+$title = $this->translate('Add another edition');
+$this->headTitle($title);
+
+$name = $entityObject['title'] ?? $entityObject['identifier'] ?? '';
+$form = $this->form;
+$form->prepare();
+?>
+<h1><?= $this->escapeHtml($title) ?></h1>
+
+<p class="lead"><?= $this->escapeHtml(sprintf(
+    $this->translate('This will create a new edition of “%s” and open it for editing.'),
+    $name
+)) ?></p>
+
+<p><?= $this->escapeHtml($this->translate(
+    'The new edition starts as a copy of this one with the edition-specific fields cleared: edition number, pages, publication date, ISBN, links and notes.'
+)) ?></p>
+
+<?php
+echo $this->form()->openTag($form);
+echo $this->formRow($form->get('security'));
+echo $this->formSubmit($form->get('submit'));
+echo '&nbsp;<a href="' . $this->escapeHtmlAttr($cancelUrl) . '" class="btn btn-default">'
+    . $this->escapeHtml($this->translate('Cancel')) . '</a>';
+echo $this->form()->closeTag();

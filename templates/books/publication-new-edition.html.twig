@@ -1,0 +1,23 @@
+{#
+  module/Books/view/books/publications/create-new-edition.phtml, ported — and written the
+  same day, because that file was empty from 2020 until 2026-09-08: the laminas action
+  created the row on the GET and redirected, so nothing ever rendered. Both front
+  controllers confirm now. See App\Controller\PublicationDuplicateController.
+
+  Same shape as publication-copy-to-main-corpus.html.twig, including the `&nbsp;`.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Add another edition') }}</h1>
+
+<p class="lead">{{ translate('This will create a new edition of “%s” and open it for editing.')|format(entity.title ?? entity.identifier ?? '') }}</p>
+
+<p>{{ translate('The new edition starts as a copy of this one with the edition-specific fields cleared: edition number, pages, publication date, ISBN, links and notes.') }}</p>
+
+{{ form_open(form, form_action) }}
+{{- form_row(form.get('security')) -}}
+{{- form_submit(form.get('submit')) -}}
+&nbsp;<a href="{{ cancel_url }}" class="btn btn-default">{{ translate('Cancel') }}</a>
+{{- form_close() }}
+{% endblock %}

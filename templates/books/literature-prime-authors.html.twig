@@ -1,0 +1,31 @@
+{#
+  module/Books/view/books/publications/prime-authors.phtml, ported — /literature/prime-authors.
+
+  One row per author text, with every publication carrying that author formatted after it.
+  The two headers are **not translated** in the original — bare `<th>Author</th>` — and are
+  not translated here either; the page is `pub_administrator`-only and a reproduction does
+  not invent phrase rows.
+
+  `format_entity` with no options is the .phtml's `formatEntity('publication', $publication)`:
+  the general path, which links the title to the show page when the viewer may reach it.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<table class="table">
+<thead>
+<tr>
+    <th>Author</th>
+    <th>Publications</th>
+</tr>
+</thead>
+<tbody>
+{% for author, publications in authors %}
+<tr>
+    <td>{{ author }}</td>
+    <td>{% for publication in publications %}{% if not loop.first %}, {% endif %}{{ format_entity('publication', publication) }}{% endfor %}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}

@@ -187,6 +187,29 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 16 — the last four publication actions: the two whole-corpus listings and the
+    // two "make a new row from this one" confirmations.
+    //
+    // **All four are safe GETs on both front controllers now, and one of them was not until
+    // this batch.** `/…/create-new-edition` created the new edition on the GET under
+    // laminas — the same write-on-GET the copy action had until 2026-08-14 — so listing it
+    // here before the laminas action was changed would have created twelve publications
+    // per capture. The action confirms now (module/Books, same batch), which is what makes
+    // the path listable; its `.phtml` was an empty file until then, so this is the first
+    // laminas rendering of that page as well as the first Symfony one.
+    //
+    // SL201727L is data-sourced and unmerged (CopyToMainCorpusSmokeTest's fixture), which
+    // is the precondition the copy confirmation checks; a publication without a data source
+    // answers a flash and a redirect instead, and a flash would decorate the next path.
+    // SL202186L is an ordinary first-class publication for the new-edition confirmation.
+    //
+    // `/literature/export` is the whole corpus as one table — 10,166 rows, the largest
+    // response in this list by some distance — and `prime-authors` is `pub_administrator`
+    // only, so its anonymous half is a redirect and its signed-in half is the report.
+    '/literature/export',
+    '/literature/prime-authors',
+    '/SL201727L/copy-to-main-corpus',
+    '/SL202186L/create-new-edition',
     // batch 14 — the translation administration surface: the three reachable routes of the
     // JTranslate GUI. `jtranslate/phrase` is their parent and is `may_terminate => false`,
     // so there is no fourth path to fetch.

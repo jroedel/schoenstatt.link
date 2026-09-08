@@ -5,6 +5,7 @@ use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use SionModel\Controller\SionController;
 use Books\Form\CopyToMainCorpusForm;
+use Books\Form\CreateNewEditionForm;
 use Books\Form\PublicationsSearchForm;
 use SionModel\Db\Model\FilesTable;
 use Books\Form\UploadForm;
@@ -447,50 +448,62 @@ class PublicationsController extends SionController
         return $view;
     }
 
+    /**
+     * Create a new edition of this publication. **GET confirms, POST creates.**
+     *
+     * The same change `copyToMainCorpusAction()` got on 2026-08-14, made here on
+     * 2026-09-08 when the route was ported: this action created the row on the GET —
+     * `createEntity()` and a redirect to the new edition's edit form, with no method
+     * check, no token and no confirmation — so a moderator's browser prefetching the
+     * "Add another edition" link was enough to file a publication. The field list moved
+     * to `PublicationsTable::createNewEdition()`, which both front controllers call.
+     *
+     * Unlike the copy action this one does not go through `parent::showAction()`, and
+     * never did: it opens with `getEntityObject()`, which makes no per-row ACL check. That
+     * is kept as it was here; the Symfony twin (`App\Controller\PublicationDuplicateController`)
+     * asks the row's `show` permission, and is the copy that dispatches.
+     */
     public function createNewEditionAction()
     {
         /** @var PublicationsTable $table */
         $table      = $this->getSionTable();
         $id         = (int)$this->getEntityIdParam('show');
         $object     = $this->getEntityObject($id);
-
-        //set the new mainPublicationId to the old publicationId
-        if (! isset($object['mainPublicationId'])) { //else, leave it as it was
-            $object['mainPublicationId'] = $object['publicationId'];
+        if (! is_array($object) || empty($object)) {
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+                ->addMessage('Publication not found.');
+            return $this->redirect()->toRoute('publications');
         }
 
-        //unset edition-specific fields, and create new publication
-        unset($object['publicationId']);
-        unset($object['bookEdition']);
-        unset($object['numberOfPages']);
-        unset($object['datePublishedText']);
-        unset($object['publishingStatus']);
-        unset($object['isbn']);
-        unset($object['hasNoISBN']);
-        unset($object['hasNoExplictEditionNumber']);
-        unset($object['editionNotes']);
-        unset($object['isAwaitingMerge']);
-        unset($object['isRevisedWithBookInHand']);
-        unset($object['isFormallyPublished']);
-        unset($object['url1']);
-        unset($object['url1Label']);
-        unset($object['url2']);
-        unset($object['url2Label']);
-        unset($object['url3']);
-        unset($object['url3Label']);
-        unset($object['dataSource']);
-        unset($object['dataSourceId']);
-        unset($object['dataSourceUpdatedOn']);
-        unset($object['createdOn']);
-        unset($object['createdBy']);
-        unset($object['updatedOn']);
-        unset($object['updatedBy']);
+        $request = $this->getRequest();
+        $form = new CreateNewEditionForm();
 
-        $newId = $table->createEntity('publication', $object);
+        if ($request->isPost()) {
+            $form->setData($request->getPost());
+            if ($form->isValid()) {
+                $newId = $table->createNewEdition($id);
+                $swFilter = new ToSchoenstattLinkIdentifier('publication');
+                $identifier = $swFilter->filter($newId);
+                return $this->redirect()->toRoute('publication-edit', ['sw_id' => $identifier]);
+            }
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                ->addMessage('Your confirmation expired. Please try again.');
+            $this->getResponse()->setStatusCode(400);
+        }
 
-        $swFilter = new ToSchoenstattLinkIdentifier('publication');
-        $identifier = $swFilter->filter($newId);
-        return $this->redirect()->toRoute('publication-edit', ['sw_id' => $identifier]);
+        $form->setAttribute('action', $request->getRequestUri());
+
+        $confirm = new ViewModel([
+            'form'         => $form,
+            'entityObject' => $object,
+            'cancelUrl'    => $this->url()->fromRoute('publication', [
+                'sw_id' => $object['identifier'],
+                'slug'  => $object['slug'] ?? null,
+            ]),
+        ]);
+        $confirm->setTemplate('books/publications/create-new-edition');
+
+        return $confirm;
     }
 
     public function uploadCoverAction()
