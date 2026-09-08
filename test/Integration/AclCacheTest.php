@@ -17,9 +17,6 @@ use RuntimeException;
 use SionModel\Cache\EntityChangeListeners;
 use Throwable;
 
-use function apcu_enabled;
-use function extension_loaded;
-
 /**
  * The assembled BjyAuthorize ACL is cached, and something expires it.
  *
@@ -41,6 +38,8 @@ use function extension_loaded;
  */
 class AclCacheTest extends TestCase
 {
+    use RequiresApcu;
+
     private static ?ServiceBridge $bridge = null;
 
     /**
@@ -59,36 +58,6 @@ class AclCacheTest extends TestCase
         $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
         return self::$bridge = new ServiceBridge($appConfig);
-    }
-
-    /**
-     * Skip when this process cannot use APCu at all.
-     *
-     * `BjyAuthorize\Cache` is an APCu storage adapter, and laminas-cache refuses to build
-     * one when `apc.enabled`/`apc.enable_cli` says the extension is off — a
-     * `ServiceNotCreatedException` from the *container*, not a cache miss. So every service
-     * below it is unreachable, which is four of the tests here: they resolve `Authorize`,
-     * the storage itself, `EntityChangeListeners` or a table wired to it.
-     *
-     * That is the state on a bare CI runner, and it is why this call exists rather than the
-     * "nothing was stored" skip further down: the exception happens while the container is
-     * still building, so a skip inside the test body is never reached. The two pure-config
-     * tests above need none of this and keep running there, which is the point of guarding
-     * per test rather than in `setUp()`.
-     *
-     * Discovered 2026-09-08, on the first CI run since the Actions quota reset — the ACL
-     * cache landed on 2026-08-22, eight days into an outage that made every job fail in two
-     * seconds with no runner, so these four had never once executed on a runner.
-     */
-    private function requireApcu(): void
-    {
-        if (! extension_loaded('apcu') || ! apcu_enabled()) {
-            self::markTestSkipped(
-                'APCu is unusable in this process (apc.enabled / apc.enable_cli), so the '
-                . 'container cannot build BjyAuthorize\Cache. The capsule has it; a bare CI '
-                . 'runner does not.'
-            );
-        }
     }
 
     /** @return array<string, mixed> */

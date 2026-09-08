@@ -914,31 +914,41 @@ rediscovered.
   `it_IT` gaps at the same time — the language was added last and is the thinnest). Worth
   knowing that the *duplicate* rows make it two edits, or one after a merge.
 
-- [ ] **`TranslationsTable` cannot be built at all without APCu, and `PhraseCacheFactory`
-  promises otherwise.** That factory's docblock says "every failure path here degrades to a
-  cache-less PhraseCache rather than throwing" — and it does guard its own code, but the
-  *service* it asks for throws first: `Laminas\Cache\Storage\Adapter\Apcu` refuses to be
-  created when `apc.enabled`/`apc.enable_cli` says the extension is off, so the container
-  fails above the guard.
-  Consequence, measured 2026-09-08 with `php -d apc.enable_cli=0`: any integration test that
-  reaches the table dies — `AdminIndexParityTest` fatals with "LazyControllerFactory couldn't
-  create an instance of JTranslate\Model\TranslationsTable", not an assertion failure. It is
-  invisible on CI only because a bare runner has no database either, so those tests skip for
-  the *other* reason first. A runner with a database and no APCu would be a wall of fatals.
-  Three lines in `PhraseCacheFactory::psrCache()` (catch the adapter build, not just the
-  config translation) make the promise true. Submodule change, so its own PR.
+- [ ] **Without APCu the container cannot build half the application, and the reach of that
+  is the surprising part.** `BjyAuthorize\Cache` is an APCu storage adapter named
+  explicitly by `config/autoload/acl.global.php`, and laminas-cache refuses to create one
+  when `apc.enabled`/`apc.enable_cli` says the extension is off — a `ServiceNotCreatedException`
+  while the container is still building. `BjyAuthorize\Service\Authorize` is what
+  SionModel's acting-user provider resolves, that provider is a constructor argument of
+  `JTranslate\Model\TranslationsTable`, and the table is a constructor argument of half the
+  controllers. So on a machine without APCu, asking for a view helper lands on "ext/apcu is
+  disabled" — measured 2026-09-08 with `php -d apc.enable_cli=0`, where
+  `AdminIndexParityTest` fatals rather than skipping.
+  (JTranslate's *own* cache is not the problem and degrades correctly:
+  `PhraseCacheFactory::storage()` catches the same exception and translates without a cache.
+  An earlier version of this item blamed that factory; it was wrong.)
+  `test/Integration/RequiresApcu` is the stopgap — eight tests skip rather than error — and
+  the real fix is one of: a fallback in the ACL cache config, or APCu on every machine that
+  runs the suite.
 
-- [ ] **CI's integration job skips 191 of 1,334 tests**, because a bare runner has neither a
+- [ ] **CI's integration job skips ~195 of 1,334 tests**, because a bare runner has neither a
   database nor APCu — measured on the 2026-09-07 run, the first real one since the Actions
-  quota reset. That is by design and documented, but the number is worth watching: it is the
-  share of integration coverage that only ever runs locally, and `tools/ci-local.sh` is the
-  only place it runs at all. Two things would shrink it: a MariaDB service container for the
-  job, and `apc.enable_cli=1` on the runner's PHP.
-  Related, and the reason this is a backlog item rather than a note: **the quota outage hid
-  a real breakage for three weeks.** Four `AclCacheTest` tests errored on the first run back
-  because the ACL cache landed on 2026-08-22, eight days into an outage where every job
-  failed in two seconds with no runner assigned. Nothing was wrong with the code; the tests
-  had simply never executed on a runner. Expect one more batch of that kind of finding.
+  quota reset. That is by design and documented, but the number is the share of integration
+  coverage that only ever runs locally, and `tools/ci-local.sh` is the only place it runs.
+  **What it would take is more than a MariaDB service container**, and this is the part worth
+  writing down: 28 of these test files skip on `is_readable('config/autoload/local.php')` as
+  a *proxy* for "there is a database". Copying `local.php.dist` into place on CI — tried on
+  2026-09-08 and reverted — satisfies the proxy without providing a database, so 14 tests
+  stopped skipping and 5 of them errored: `EventTimelineParityTest` builds its container with
+  the config caches **on** and dies writing `data/config`, and four more hit the APCu wall
+  above. So the order is: give the job a real database *and* APCu, then convert those 28
+  guards from "is there a config file" to "can I connect", then remove the proxy.
+  Related, and the reason this is an item rather than a note: **the quota outage hid two real
+  breakages for three weeks.** Four `AclCacheTest` errors and seven
+  `Undefined array key "db"` warnings (fatal under `failOnWarning`) both landed while every
+  job failed in two seconds with no runner assigned. Nothing was wrong with the code that
+  produced them; the tests had simply never executed on a runner. Expect one more batch of
+  that shape.
 
 - [ ] **`error_log()` writes nothing in the capsule**, because `log_errors` is `Off` in the
   container's ini. Every `error_log()` call in the tree is silently discarded — there are
