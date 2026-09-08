@@ -23,7 +23,6 @@
         "matriphe/iso-639": "^1.0",
         "spatie/schema-org": "^4.0",
         "slm/locale": "dev-feat/php-8.4",
-        "laminas/laminas-permissions-acl": "^2.7",
         "laminas/laminas-navigation": "^2.9",
         "laminas/laminas-authentication": "^2.6",
         "laminas/laminas-json": "^3.1",

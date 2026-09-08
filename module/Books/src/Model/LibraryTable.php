@@ -16,7 +16,6 @@ use Laminas\Db\Sql\Predicate\Like;
 use Laminas\Db\Sql\Predicate\Operator;
 use Laminas\Db\Sql\Predicate\PredicateSet;
 use Laminas\Db\Sql\Predicate\In;
-use Laminas\Permissions\Acl\Resource\GenericResource;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
 use Laminas\Db\Sql\Predicate\IsNull;
@@ -2474,16 +2473,6 @@ ORDER BY CreatedOn DESC";
             }
         }
         return $problems;
-    }
-
-    public function getResources()
-    {
-        $return = [];
-        $libraries = $this->getObjects('library');
-        foreach ($libraries as $libraryId => $object) {
-            $return[] = new GenericResource($object['resourceId']);
-        }
-        return $return;
     }
 
     /**
