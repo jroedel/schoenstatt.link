@@ -1,0 +1,43 @@
+{#
+  module/Schoenstatt/view/schoenstatt/admin/import-father.phtml, ported — /admin/import-father.
+
+  One select, its CSRF token and a button. The select is rendered with option translation
+  **off** (`form_row(…, false)`), which is the .phtml's
+  `formSelect()->setTranslatorEnabled(false)` around that one row: the options are people's
+  names, and translating them would file a phrase row per Schoenstatt Father.
+
+  The page loads selectize's stylesheet and script itself, as the .phtml does through
+  headLink()/headScript(), and turns the select into a searchable picker from the inline
+  block — a list of several hundred names is unusable as a plain dropdown.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/selectize.bootstrap3.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/_selectize.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Import Schoenstatt Father') }}</h1>
+{{ form_open(form, form_action) }}
+{{- form_row(form.get('personId'), false) -}}
+{{- form_row(form.get('security')) -}}
+{{- form_submit(form.get('submit')) -}}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+<script nonce="{{ csp_nonce() }}">
+{% apply minify_js %}
+$(function () {
+$("select[name='personId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+});
+{% endapply %}
+</script>
+{% endblock %}
