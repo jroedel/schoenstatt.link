@@ -211,9 +211,11 @@ visitor is a 404 — and **that 404 is Symfony-served too now**, completing Phas
 day. `LegacyBridge` catches an HTML 404 out of laminas (a 404 whose content type is not
 JSON — the laminas error page sets none until PHP's SAPI default does, at send time) and
 re-renders it through `error/404.html.twig`. So the bridge renders **no laminas view to any
-visitor**: only `kernel-switch` (an admin redirect) and `RestApi`'s JSON refusal remain
-behind it, and neither is an HTML page. That is what makes retiring the canary a clean
-deletion rather than a behaviour change — see "The endgame" below.
+visitor**: only `kernel-switch` (an admin redirect) and, until it was ported the same week,
+`RestApi`'s JSON refusal remained behind it. **The API refusal moved on 2026-09-08 too**
+(`App\Controller\Api\ApiRouteNotFoundController`, shadowing the laminas `api-route-not-found`),
+so the only thing the bridge still answers is `kernel-switch`. That is what makes retiring
+the canary a clean deletion rather than a behaviour change — see "The endgame" below.
 
 ### The endgame is a decision, not a port
 
@@ -230,9 +232,12 @@ still works and the decision can be taken later against a bridge that provably r
 nothing anyone sees. What is left, in order:
 
 - **Phase B**: retire the canary. Make `SYMFONY_KERNEL=1` unconditional in
-  `public/index.php`, delete `kernel-switch` and its cookie, port `RestApi`'s JSON refusal
-  (the one thing still bridged), then delete `LegacyBridge` and the `legacy` catch-all. This
-  ends the no-deploy rollback, so it is the decision above rather than a mechanical step.
+  `public/index.php`, delete `kernel-switch` and its cookie, then delete `LegacyBridge` and
+  the `legacy` catch-all. (`RestApi`'s JSON refusal was ported ahead of this on 2026-09-08,
+  so by Phase B `kernel-switch` is the only thing left bridged.) This ends the no-deploy
+  rollback, so it is the decision above rather than a mechanical step. The laminas `RestApi`
+  module and the `api-route-not-found` route stay until then as the canary's rollback path,
+  the same way the ported publication and import-father actions do.
 - **Phase C**: drop `laminas/laminas-mvc` and its dependents (`bjy-authorize`,
   `laminas-twb-bundle`, the `mvc-plugin-*` packages, `laminas-developer-tools`) from
   `composer.json`, replacing their remaining runtime uses. This is what the strangler was

@@ -54,6 +54,7 @@ use JUser\Page\UserAdmin;
 use App\Books\LibraryScopedForms;
 use App\Controller\AdminController;
 use App\Controller\Api\ApiSchemaController;
+use App\Controller\Api\ApiRouteNotFoundController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\Api\PhrasesV3Controller;
@@ -520,6 +521,10 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 new BotIdentity($this->laminas())
             ),
             ApiSchemaController::class => fn (): ApiSchemaController => new ApiSchemaController($this->laminas()),
+            // The JSON refusal for unmatched /api paths — the bridge served this until it
+            // was ported (Phase B prep). The bridge for the response format config only.
+            ApiRouteNotFoundController::class => fn (): ApiRouteNotFoundController
+                => new ApiRouteNotFoundController($this->laminas()),
             MethodNotAllowedController::class
                 => static fn (): MethodNotAllowedController => new MethodNotAllowedController(),
             // The first form route. Same three dependencies as every other ported

@@ -384,6 +384,9 @@ suites run from the superproject working tree.
   `ApiController` base class and every v1/v2 controller across `Books`, `Schoenstatt`
   and `JUser` were deleted 2026-08-14 — see [docs/strangler.md](docs/strangler.md) for
   the access-log evidence. Do not add API code there; `/api/v3` lives in `src/`.
+  **Since 2026-09-08 that one laminas route is shadowed by a Symfony one**
+  (`App\Controller\Api\ApiRouteNotFoundController`), so `/api/*` no longer reaches the
+  bridge; the laminas route stays only as the canary rollback path until Phase B.
   `SionModel` and the `J*` modules are shared libraries vendored into this repo — changes there may affect other projects.
 - Each module follows the ZF convention: `config/module.config.php`, `src/` (`Controller/`, `Form/`, `Model/`, `Service/`, `Validator/`, `Filter/`, `View/`), and `view/` for `.phtml` templates.
 - Enabled modules are listed in `config/modules.config.php`; environment-specific config lives in `config/autoload/` (`*.global.php` is committed, `*.local.php` is machine-specific and created from the `.dist` files by `config.sh`).

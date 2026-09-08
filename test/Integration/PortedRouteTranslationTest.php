@@ -384,6 +384,13 @@ class PortedRouteTranslationTest extends TestCase
             return false;
         }
 
+        //the /api refusal, ported off LegacyBridge 2026-09-08 — a JSON 410/404 for
+        //unmatched /api paths, by prefix for the same reason v3 is: it grows (bare,
+        ///rest, and both locale twins) and a hand-list would fail for the wrong reason.
+        if (str_starts_with($name, 'api-not-found')) {
+            return false;
+        }
+
         //the two maintenance endpoints and /_health answer JSON; the GeoJSON pair does
         //too, and the sitemap answers XML. Enumerated because these are individual routes
         //among HTML siblings, not a namespace.

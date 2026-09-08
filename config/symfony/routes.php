@@ -31,6 +31,7 @@ use JUser\Routing\RouteAudience;
 use App\Controller\AdminController;
 use App\Controller\AssignmentSearchController;
 use App\Controller\Api\ApiSchemaController;
+use App\Controller\Api\ApiRouteNotFoundController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\Api\PhrasesV3Controller;
@@ -2282,6 +2283,46 @@ $ported(
     $textDomain('Application') + ['slug' => null],
     ['sw_id' => trim(SchoenstattLinkIdentifier::GENERAL_OLD_REGEX, '/^$')]
 );
+
+// The JSON refusal for any /api/... path no real route above matched — Symfony-served since
+// it was ported off LegacyBridge (Phase B prep of the laminas-mvc removal, 2026-09-08). It
+// shadows the laminas `api-route-not-found` route and, like it, is declared last so it never
+// shadows /api/v3.
+//
+// Four explicit routes, not $ported(): the bare `/api` and `/api/{rest}`, each with a
+// locale-prefixed twin. **Declared, not redirected.** The laminas route inherits SlmLocale's
+// 302 hop on the unprefixed form; these answer directly instead, the same choice the /api/v3
+// endpoints make — an agent has no Accept-Language preference worth a redirect, and every
+// answer here is a machine envelope. (Trying to reproduce the hop through $ported() fataled:
+// its locale-redirect listener cannot rebuild a target for a `{rest}` catch-all whose value
+// carries slashes.) The prefixed twins exist because crawlers indexed `/{locale}/api/v1/…`
+// and those must still 410; the controller's retired-path regex accepts the optional locale
+// segment for exactly them. Because they answer their own unprefixed path, all four are
+// declared in LocalePrefixDeclarationTest::NO_REDIRECT.
+//
+// Open: no laminas guard to name (the laminas entry is guest+user, i.e. everyone). Every
+// answer is the controller's own JSON envelope, so no HTML denial style is needed.
+$apiRefusal = RouteAccess::openToEveryone(
+    'the JSON refusal for unmatched /api paths; the laminas route it shadows admits everyone '
+    . '(guest, user) and every response is a machine envelope, not a page'
+);
+$apiRefusalPaths = [
+    'api-not-found'             => '/api',
+    'api-not-found/rest'        => '/api/{rest}',
+    'api-not-found.locale'      => '/{_locale}/api',
+    'api-not-found/rest.locale' => '/{_locale}/api/{rest}',
+];
+// Distinct loop-variable names on purpose: config/symfony/routes.php is loaded with
+// `require` — including by test/Integration/ReservedVerbsTest, which does it *inside a
+// method* — so any top-level $name/$path here would leak into and clobber the caller's
+// variables of those names. `$apiRefusalName`/`$apiRefusalPath` cannot collide.
+foreach ($apiRefusalPaths as $apiRefusalName => $apiRefusalPath) {
+    $routes->add($apiRefusalName, new Route(
+        $apiRefusalPath,
+        ['_controller' => ApiRouteNotFoundController::class, RouteAccess::ATTRIBUTE => $apiRefusal, 'rest' => ''],
+        ['rest' => '.*', '_locale' => $locales]
+    ));
+}
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.
