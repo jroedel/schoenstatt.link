@@ -76,6 +76,7 @@ use App\Controller\EntityCreateController;
 use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
+use App\Controller\ImportFatherController;
 use App\Controller\LibrariesController;
 use App\Controller\LibraryCollectionsController;
 use App\Controller\LibraryCheckoutController;
@@ -673,6 +674,15 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl()
+            ),
+            // Batch 17, the last laminas HTML page. The bridge for the form (its option
+            // list is assembled by the laminas factory) and the Patres gateway; HostMessages
+            // for the three outcomes, which are now-messages on a re-rendered page.
+            ImportFatherController::class => fn (): ImportFatherController => new ImportFatherController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->hostMessages()
             ),
             // Batch 5, the reading surface. The four entity show pages share
             // App\Sion\EntityShow — one reproduction of SionController::showAction()
