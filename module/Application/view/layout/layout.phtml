@@ -377,19 +377,6 @@ $locale = \Locale::getDefault();
                 <hr>
                 <p class="text-center"><a href="https://creativecommons.org/licenses/by-sa/3.0/">
                 <img src="/img/CC-BY-SA_icon-88.png" alt="Cc-by-sa"/></a></p>
-                <?php
-                // TEMPORARY migration instrument — delete with the strangler. See App\View\ServingNote.
-                //
-                // Guarded on the helper being registered, and that guard is not paranoia: it
-                // is registered in merged config, production caches merged config in
-                // data/config/, and the deploy empties that cache *after* uploading files.
-                // In that window the new layout meets the old service map, and an unresolved
-                // helper inside a layout throws after the response is assembled — i.e. every
-                // laminas-rendered page becomes a blank HTTP 200. Degrading to "no note" costs
-                // a diagnostic line for a few seconds; the alternative costs the site.
-                if ($this->getHelperPluginManager()->has('servingNote')): ?>
-                <p class="text-center small text-muted serving-note"><?= $this->escapeHtml($this->servingNote()) ?></p>
-                <?php endif; ?>
             </div>
         </div> <!-- /container -->
         <div class="eupopup eupopup-bottomright"></div>
