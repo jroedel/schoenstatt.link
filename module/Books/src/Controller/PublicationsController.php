@@ -8,7 +8,6 @@ use Books\Form\CopyToMainCorpusForm;
 use Books\Form\CreateNewEditionForm;
 use Books\Form\PublicationsSearchForm;
 use SionModel\Db\Model\FilesTable;
-use Books\Form\UploadForm;
 use Books\Service\DriveGateway;
 use Books\Model\LibraryTable;
 use Books\Model\DictionaryTable;
@@ -506,42 +505,10 @@ class PublicationsController extends SionController
         return $confirm;
     }
 
-    public function uploadCoverAction()
-    {
-        $id = $this->getEntityIdParam();
-        $form = new UploadForm();
-        $request = $this->getRequest();
-        if ($request->isPost()) {
-            $data = array_merge_recursive(
-                $this->getRequest()->getPost()->toArray(),
-                $this->getRequest()->getFiles()->toArray()
-            );
-            $form->setData($data);
-            if ($form->isValid()) {
-                $data = $form->getData();
-//                 var_dump($data);
-                /** @var FilesTable $filesTable */
-                $filesTable = $this->services[FilesTable::class];
-                if (! $newId = $filesTable->createEntity('file', $data)) {
-                    //update the publication record
-                    $publicationData = [
-                        'bookCoverFileId' => $newId
-                    ];
-                    $publicationTable = $this->getSionTable();
-                    $publicationTable->updateEntity('publication', $id, $publicationData);
-
-                    $swFilter = new ToSchoenstattLinkIdentifier('publication');
-                    $identifier = $swFilter->filter($id);
-                    return $this->redirect()->toRoute('publication', ['sw_id' => $identifier]);
-                } else {
-                    throw new \Exception('Error uploading file.');
-                }
-            }
-        }
-        return new ViewModel([
-            'form' => $form,
-        ]);
-    }
+    // uploadCoverAction() lived here from 2020 until 2026-09-08 and never worked: its route
+    // had no guard entry, its success test was inverted, and `bookCoverFileId` — the column
+    // it wrote — does not exist in sch_publications. Deleted with the route and Books\Form
+    // \UploadForm rather than ported; docs/BACKLOG.md carries the cover-upload feature.
 
     public function primeAuthorsAction()
     {

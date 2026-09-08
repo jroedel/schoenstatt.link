@@ -77,8 +77,10 @@ final class ReservedVerbs
 {
     /**
      * Every second segment a laminas `/:sw_id/<verb>` route claims, as of 2026-08-13:
-     * five `edit` routes, five `delete` routes and three publication-only actions,
-     * across thirteen route definitions.
+     * five `edit` routes, five `delete` routes and two publication-only actions,
+     * across twelve route definitions. `upload-cover` was the third until 2026-09-08,
+     * when `publication-upload-cover` was deleted — it had no guard entry and never
+     * worked — so `/{sw_id}/upload-cover` is an ordinary slug again.
      *
      * Sorted, because `test/Integration/ReservedVerbsTest` compares it as a set and a
      * stable order keeps the diff of an addition to one line.
@@ -90,7 +92,6 @@ final class ReservedVerbs
         'create-new-edition',
         'delete',
         'edit',
-        'upload-cover',
     ];
 
     /**

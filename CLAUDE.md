@@ -153,8 +153,10 @@ suites run from the superproject working tree.
   `publications/export`, `publications/prime-authors`, `publication-copy-to-main-corpus` and
   `publication-create-new-edition`, behind `App\Controller\PublicationReportsController` and
   `App\Controller\PublicationDuplicateController`. Every `Books` route a person can open is
-  Symfony-served now; `publication-upload-cover` is the one publication route left on laminas
-  and it is reachable by nobody (no guard entry). Two things to know. **`export` is an HTML
+  Symfony-served now, and `publication-upload-cover` — reachable by nobody since 2020, no
+  guard entry, inverted success test, nonexistent target column — was **deleted** the same
+  evening along with `sion-model/auto-fix-data-problems` (redundant with `refresh-sort`) and
+  SionModel's `ProblemTable` (read a table that does not exist). Two things to know. **`export` is an HTML
   table of all 10,166 rows, not a spreadsheet** — docs said otherwise until the port, inferred
   from the name. And **`create-new-edition` wrote on a plain GET until this batch**, the same
   hazard the copy action had until 2026-08-14; the field list is

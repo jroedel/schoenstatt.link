@@ -171,10 +171,10 @@ class ReservedVerbsTest extends TestCase
      * "not a show route". Batch 7 moved `text-edit` and `composition-edit` and batch 8 moved
      * all four `delete` verbs, each of which failed this test on the way through and was
      * meant to, and batch 16 moved `publication-create-new-edition` and
-     * `publication-copy-to-main-corpus`. The one `legacy` entry left is
-     * `publication-upload-cover`, which has no guard entry and is reachable by nobody on
-     * either front controller — docs/strangler.md § "What is left" has it as a decision
-     * to make, not a port.
+     * `publication-copy-to-main-corpus`. No `legacy` entry is left: the last one,
+     * `publication-upload-cover`, was deleted the same day rather than ported — it had no
+     * guard entry and never worked — so `/SL…L/upload-cover` is an ordinary slug now and
+     * *should* reach the show route, which is why it is not in this list.
      * What must *never* appear in this column is `composition`, `text`, `publication` or
      * `association` — a show route claiming a verb path is the bug this file exists for.
      *
@@ -189,14 +189,13 @@ class ReservedVerbsTest extends TestCase
             //text — likewise
             'text edit is ported'          => ['/SL400003T/edit', 'text-edit'],
             'text delete is ported'        => ['/SL400003T/delete', 'text-delete'],
-            //publication, which has all five verbs — and is still the only entity with a
-            //*mixture*: four ported and one bridged on the same path shape (it was two and
-            //three until batch 16 moved the last two actions). That makes it the sharpest
-            //case in this file for the reserved-verb lookahead doing its job rather than
-            //the declaration order doing it by luck.
+            //publication, which had all five verbs and has four since `upload-cover` was
+            //deleted on 2026-09-08. It was the only entity with a *mixture* — ported and
+            //bridged on the same path shape — until batch 16 moved the last two actions,
+            //and is still the sharpest case in this file for the reserved-verb lookahead
+            //doing its job rather than the declaration order doing it by luck.
             'publication edit is ported'   => ['/SL202186L/edit', 'publication-edit'],
             'publication delete is ported' => ['/SL202186L/delete', 'publication-delete'],
-            'publication upload cover'     => ['/SL202186L/upload-cover', 'legacy'],
             'publication new edition'      => ['/SL202186L/create-new-edition', 'publication-create-new-edition'],
             'publication to main corpus'   => ['/SL202186L/copy-to-main-corpus', 'publication-copy-to-main-corpus'],
             //association: both ported. `delete` was `legacy` here until batch 8, and it is
