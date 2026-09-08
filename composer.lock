@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e0e5fd96e4bd82c103774641636eb1a7",
+    "content-hash": "5687140616eb4e5363daddbe1b8432e6",
     "packages": [
         {
             "name": "brick/varexporter",
@@ -7591,87 +7591,6 @@
         }
     ],
     "packages-dev": [
-        {
-            "name": "laminas/laminas-developer-tools",
-            "version": "2.10.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laminas/laminas-developer-tools.git",
-                "reference": "238ecd3272a1b54d5b4b0aa65a9c5ec8a4053a51"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-developer-tools/zipball/238ecd3272a1b54d5b4b0aa65a9c5ec8a4053a51",
-                "reference": "238ecd3272a1b54d5b4b0aa65a9c5ec8a4053a51",
-                "shasum": ""
-            },
-            "require": {
-                "laminas/laminas-eventmanager": "^3.4",
-                "laminas/laminas-http": "^2.15",
-                "laminas/laminas-modulemanager": "^2.10",
-                "laminas/laminas-mvc": "^3.3",
-                "laminas/laminas-servicemanager": "^3.8",
-                "laminas/laminas-stdlib": "^3.8",
-                "laminas/laminas-view": "^2.14",
-                "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0",
-                "symfony/var-dumper": "^6.0 || ^7.0"
-            },
-            "conflict": {
-                "zendframework/zend-developer-tools": "*"
-            },
-            "require-dev": {
-                "laminas/laminas-coding-standard": "~3.0.0",
-                "phpunit/phpunit": "^10.5.38",
-                "psalm/plugin-phpunit": "^0.19.0",
-                "vimeo/psalm": "^5.26.1"
-            },
-            "suggest": {
-                "aist/aist-git-tools": "Show you information about current GIT repository",
-                "bjyoungblood/bjy-profiler": "Version: dev-master, allows the usage of the (Laminas) Db collector.",
-                "doctrine/doctrine-orm-module": "Profile DoctrineORM queries",
-                "jhuet/zdt-logger-module": "Show you log data from Laminas\\Log",
-                "ocramius/ocra-service-manager": "OcraServiceManager can help you track dependencies within your application.",
-                "san/san-session-toolbar": "SanSessionToolbar can help you see current Laminas\\Session data you're using within your application.",
-                "snapshotpl/api-tools-snap-event-debugger": "ZfSnapEventDebugger can help you debug events from Laminas\\EventManager"
-            },
-            "type": "library",
-            "extra": {
-                "laminas": {
-                    "module": "Laminas\\DeveloperTools"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laminas\\DeveloperTools\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "Module for developer and debug tools for use with laminas-mvc applications.",
-            "homepage": "https://laminas.dev",
-            "keywords": [
-                "debug",
-                "developer",
-                "laminas",
-                "module"
-            ],
-            "support": {
-                "chat": "https://laminas.dev/chat",
-                "forum": "https://discourse.laminas.dev",
-                "issues": "https://github.com/laminas/laminas-developer-tools/issues",
-                "rss": "https://github.com/laminas/laminas-developer-tools/releases.atom",
-                "source": "https://github.com/laminas/laminas-developer-tools"
-            },
-            "funding": [
-                {
-                    "url": "https://funding.communitybridge.org/projects/laminas-project",
-                    "type": "community_bridge"
-                }
-            ],
-            "time": "2024-12-29T18:21:12+00:00"
-        },
         {
             "name": "squizlabs/php_codesniffer",
             "version": "3.13.6",

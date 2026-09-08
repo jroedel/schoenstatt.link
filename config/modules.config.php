@@ -10,12 +10,6 @@
  *
  * This should be an array of module namespaces used in the application.
  */
-$toolsOrNot = [];
-$env = getenv('APP_ENV') ?: 'production';
-$inDevelopment = $env != 'production';
-if ($inDevelopment) {
-    $toolsOrNot[] = 'Laminas\DeveloperTools';
-}
 $modules = [
     'Laminas\Router',
     'Laminas\I18n',
@@ -47,5 +41,5 @@ $modules = [
     'Application',
     'TwbBundle',
 ];
-$modules = array_merge($toolsOrNot, $modules);
+
 return $modules;
