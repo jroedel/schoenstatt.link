@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Sitemap;
 
 use App\Controller\AssociationController;
+use App\Acl\AclAssembler;
+use App\Acl\Authorizer;
 use App\Laminas\ServiceBridge;
-use BjyAuthorize\Service\Authorize;
-use Laminas\Permissions\Acl\Acl;
 use Throwable;
 
 /**
@@ -48,7 +48,7 @@ final class GuestAccess
      */
     private const ANONYMOUS_ROLE = 'guest';
 
-    private ?Acl $acl = null;
+    private ?Authorizer $authorizer = null;
 
     /** @var array<string, bool> */
     private array $decided = [];
@@ -77,25 +77,21 @@ final class GuestAccess
             return $this->decided[$routeName];
         }
 
-        $acl = $this->acl();
-        if (null === $acl) {
+        $authorizer = $this->authorizer();
+        if (null === $authorizer) {
             return $this->decided[$routeName] = true;
         }
 
         $resource = 'route/' . $routeName;
 
-        try {
-            if (! $acl->hasResource($resource)) {
-                return $this->decided[$routeName] = true;
-            }
-
-            //asked of `guest` explicitly rather than of the current identity: this runs in a
-            //console process with no identity at all, and even in a request the answer has
-            //to be the crawler's, not the administrator's who triggered the rebuild
-            return $this->decided[$routeName] = $acl->isAllowed(self::ANONYMOUS_ROLE, $resource);
-        } catch (Throwable) {
+        if (! $authorizer->hasResource($resource)) {
             return $this->decided[$routeName] = true;
         }
+
+        //asked of `guest` explicitly rather than of the current identity: this runs in a
+        //console process with no identity at all, and even in a request the answer has to be
+        //the crawler's, not the administrator's who triggered the rebuild
+        return $this->decided[$routeName] = $authorizer->isAllowedForRoles([self::ANONYMOUS_ROLE], $resource);
     }
 
     /**
@@ -113,23 +109,19 @@ final class GuestAccess
      */
     public function isAllowedAsGuest(string $resource, ?string $privilege = null): bool
     {
-        $acl = $this->acl();
-        if (null === $acl) {
+        $authorizer = $this->authorizer();
+        if (null === $authorizer) {
             return true;
         }
 
-        try {
-            if (! $acl->hasResource($resource)) {
-                //an unknown resource is not a denial, for the same reason an unguarded route
-                //is not: this filter fails open, and the sitemap is over-broad rather than
-                //empty when the ACL and the navigation disagree about what exists
-                return true;
-            }
-
-            return $acl->isAllowed(self::ANONYMOUS_ROLE, $resource, $privilege);
-        } catch (Throwable) {
+        if (! $authorizer->hasResource($resource)) {
+            //an unknown resource is not a denial, for the same reason an unguarded route is
+            //not: this filter fails open, and the sitemap is over-broad rather than empty
+            //when the ACL and the navigation disagree about what exists
             return true;
         }
+
+        return $authorizer->isAllowedForRoles([self::ANONYMOUS_ROLE], $resource, $privilege);
     }
 
     /**
@@ -146,36 +138,25 @@ final class GuestAccess
         return AssociationController::PUBLIC_KINDS;
     }
 
-    private function acl(): ?Acl
+    /**
+     * The assembled engine, memoized, or null when it cannot be built (a console run with no
+     * reachable database). Null makes every caller above fail *open* — an over-broad sitemap
+     * is a recoverable mistake where an empty one is a Google error in its own right.
+     *
+     * Unlike the Laminas ACL this replaced, `App\Acl\Authorizer` matches role *names* and
+     * throws on nothing, so the old `hasRole('guest')` guard is gone: a missing guest role no
+     * longer means "every check throws", it means a rule naming `guest` still matches by name.
+     */
+    private function authorizer(): ?Authorizer
     {
-        if (null !== $this->acl) {
-            return $this->acl;
+        if (null !== $this->authorizer) {
+            return $this->authorizer;
         }
 
         try {
-            $authorize = $this->laminas->get(Authorize::class);
-            if (! $authorize instanceof Authorize) {
-                return null;
-            }
-            $acl = $authorize->getAcl();
+            return $this->authorizer = new Authorizer((new AclAssembler($this->laminas))->assemble());
         } catch (Throwable) {
             return null;
         }
-
-        if (! $acl instanceof Acl) {
-            return null;
-        }
-
-        try {
-            if (! $acl->hasRole(self::ANONYMOUS_ROLE)) {
-                //no guest role means every isAllowed() below would throw; treat the whole
-                //check as unavailable rather than answering "denied" 7,000 times
-                return null;
-            }
-        } catch (Throwable) {
-            return null;
-        }
-
-        return $this->acl = $acl;
     }
 }

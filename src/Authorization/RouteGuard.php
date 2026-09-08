@@ -7,7 +7,7 @@ namespace App\Authorization;
 use App\Http\SymfonyRoute;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use BjyAuthorize\Service\Authorize;
+use App\Acl\AclProvider;
 use Closure;
 use Laminas\Authentication\AuthenticationService;
 use Symfony\Component\HttpFoundation\Request;
@@ -64,6 +64,8 @@ final class RouteGuard
     /** The laminas route the denial redirects an anonymous visitor to. */
     private const LOGIN_ROUTE = 'zfcuser/login';
 
+    private ?AclProvider $acl = null;
+
     /**
      * @param Closure(): Environment $twig deferred on purpose. Only the 403 branch
      *        renders anything, and building the environment eagerly would put two
@@ -97,7 +99,7 @@ final class RouteGuard
         if (null === $access->resource) {
             return null;
         }
-        if ($this->authorize()->isAllowed($access->resource)) {
+        if ($this->acl()->isAllowed($access->resource)) {
             return null;
         }
 
@@ -189,11 +191,15 @@ final class RouteGuard
         return $auth->getIdentity();
     }
 
-    private function authorize(): Authorize
+    /**
+     * The authorization engine, memoized per request. Since the ACL cutover this is
+     * `App\Acl\Authorizer` via `App\Acl\AclProvider`, not `BjyAuthorize\Service\Authorize`
+     * — `AclProvider::isAllowed()` resolves the current visitor's roles (the same identity
+     * provider BjyAuthorize used) and asks the assembled model. Route resources carry no
+     * privilege, so this asks the "resource generally" question.
+     */
+    private function acl(): AclProvider
     {
-        /** @var Authorize $authorize */
-        $authorize = $this->laminas->get(Authorize::class);
-
-        return $authorize;
+        return $this->acl ??= new AclProvider($this->laminas);
     }
 }

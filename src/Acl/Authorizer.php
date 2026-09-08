@@ -49,6 +49,16 @@ final class Authorizer
     }
 
     /**
+     * Whether the model carries any rule for `$resource`. A caller that must fail *open* on
+     * an unknown resource (the sitemap) asks this first; the ordinary path does not need it,
+     * because {@see isAllowedForRoles()} already denies an unknown resource.
+     */
+    public function hasResource(string $resource): bool
+    {
+        return $this->data->hasResource($resource);
+    }
+
+    /**
      * The distinct privileges the model names — for test/Integration/AclParityTest to
      * sweep. Not part of the runtime decision; exposed here so the assembled data stays
      * encapsulated behind this facade.

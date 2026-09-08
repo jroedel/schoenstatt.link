@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Sion;
 
 use App\Laminas\ServiceBridge;
-use BjyAuthorize\View\Helper\IsAllowed;
+use App\Acl\IsAllowed;
 use Laminas\Form\FormInterface;
 use SionModel\Form\DeleteEntityForm;
 
