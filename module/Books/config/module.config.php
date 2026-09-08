@@ -6,8 +6,6 @@ use Laminas\Router\Http\Literal;
 use Laminas\Router\Http\Segment;
 use Books\Mailing\BooksMailer;
 use Schoenstatt\Model\SchoenstattTable;
-use BjyAuthorize\Guard\Route;
-use BjyAuthorize\Provider\Rule\Config;
 use Schoenstatt\Service\PatresGateway;
 use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
@@ -2388,7 +2386,7 @@ return [
         // resource providers provide a list of resources that will be tracked
         // in the ACL. like roles, they can be hierarchical
         'resource_providers' => [
-            \BjyAuthorize\Provider\Resource\Config::class => [
+            'BjyAuthorize\Provider\Resource\Config' => [
                 'book',
                 'book_teo',
                 'book_sch',
@@ -2413,7 +2411,7 @@ return [
         * *if you use assertions, define them using the service manager!*
         */
         'rule_providers' => [
-            Config::class => [
+            'BjyAuthorize\Provider\Rule\Config' => [
                 'allow' => [
                     [['pub_patres', 'pub_general_moderator'], 'publication_patres', 'show'],
                     [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'show-admin-info'],
@@ -2467,7 +2465,7 @@ return [
             //gone getRules() would have answered ['allow' => []] on every request.
         ],
         'guards' => [
-            Route::class => [
+            'BjyAuthorize\Guard\Route' => [
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
