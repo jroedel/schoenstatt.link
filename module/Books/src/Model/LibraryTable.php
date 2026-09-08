@@ -16,8 +16,6 @@ use Laminas\Db\Sql\Predicate\Like;
 use Laminas\Db\Sql\Predicate\Operator;
 use Laminas\Db\Sql\Predicate\PredicateSet;
 use Laminas\Db\Sql\Predicate\In;
-use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
-use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
 use Laminas\Permissions\Acl\Resource\GenericResource;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
@@ -26,8 +24,6 @@ use Laminas\Db\Sql\Predicate\IsNotNull;
 use Books\Filter\SortText;
 
 class LibraryTable extends SionTable implements
-    ResourceProviderInterface,
-    RuleProviderInterface,
     ProblemProviderInterface
 {
     const IMPORT_STATUS_PENDING = 'pending';
@@ -2492,7 +2488,8 @@ ORDER BY CreatedOn DESC";
 
     /**
      * {@inheritDoc}
-     * @see \BjyAuthorize\Provider\Rule\ProviderInterface::getRules()
+     * Consumed by App\Acl\AclAssembler (by method name, not an interface) as the per-library
+     * rule source.
      * Format of the allow key is [['role1', 'role2'], 'resourceId', 'permission']
      */
     public function getRules()

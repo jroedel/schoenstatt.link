@@ -18,10 +18,9 @@ use function method_exists;
  * The current visitor's role names, resolved app-side — the replacement for asking
  * BjyAuthorize's identity provider (`JUser\Bridge\Laminas\ZfcUserZendDbPlusSelfAsRole`).
  *
- * That class `implements BjyAuthorize\Provider\Identity\ProviderInterface`, so merely
- * loading it requires the bjy package. Reproducing its two-line logic here instead is what
- * lets this application stop resolving any `BjyAuthorize\*` service — and therefore drop the
- * package — while JUser keeps its bridge for patres, which is still on laminas.
+ * That class implemented a bjy interface, so keeping it meant keeping the bjy package.
+ * Reproducing its two-line logic here is what let this application drop `bjy-authorize`
+ * entirely; the class itself was then deleted from JUser (2026-09-09).
  *
  * The behaviour is transcribed from `getIdentityRoles()`, faithfully, because a divergence
  * would silently change who can reach what:

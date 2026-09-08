@@ -10,7 +10,6 @@ use Books\Form\CheckinForm;
 use Books\Form\MassCheckoutForm;
 use Schoenstatt\Service\PatresGateway;
 use Schoenstatt\Model\SchoenstattTable;
-use BjyAuthorize\Exception\UnAuthorizedException;
 
 class CheckoutsController extends SionController
 {
@@ -19,7 +18,7 @@ class CheckoutsController extends SionController
         $libraryId = $this->getLibraryId();
         $resourceId = 'library_' . $libraryId;
         if (! $this->isAllowed($resourceId, 'checkout')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
         $view = parent::createAction();
         if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
@@ -103,7 +102,7 @@ class CheckoutsController extends SionController
         $libraryId = $this->getLibraryId();
         $resourceId = 'library_' . $libraryId;
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
 
         $subset = $this->params()->fromRoute('subset', 'all');
@@ -131,7 +130,7 @@ class CheckoutsController extends SionController
         $libraryId = $this->getLibraryId();
         $resourceId = 'library_' . $libraryId;
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
 
         $form = new CheckinForm();
@@ -167,7 +166,7 @@ class CheckoutsController extends SionController
         $libraryId = $this->getLibraryId();
         $resourceId = 'library_' . $libraryId;
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
 
         $form = new MassCheckoutForm();

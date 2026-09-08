@@ -13,7 +13,6 @@ use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\PublicationsTable;
 use Books\Mailing\BooksMailer;
-use BjyAuthorize\Exception\UnAuthorizedException;
 use JTranslate\Model\TranslationsTable;
 
 class LibrariesController extends SionController
@@ -132,7 +131,7 @@ class LibrariesController extends SionController
     {
         $resourceId = 'library_' . $this->getLibraryId();
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
     }
 
@@ -140,7 +139,7 @@ class LibrariesController extends SionController
     {
         $resourceId = 'library_' . $this->getLibraryId();
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
@@ -163,7 +162,7 @@ class LibrariesController extends SionController
         $view = $this->showAction();
         $resourceId = 'library_' . $this->getLibraryId();
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
         $config = $this->config['books'];
         $pages = $config['admin_pages'];
@@ -242,7 +241,7 @@ class LibrariesController extends SionController
     {
         $resourceId = 'library_' . $this->getLibraryId();
         if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
         //get the parameter
         $libraryId = $this->getLibraryId();
@@ -288,7 +287,7 @@ class LibrariesController extends SionController
         $libraryId = $this->getLibraryId();
         $resourceId = 'library_' . $libraryId;
         if (! $this->isAllowed($resourceId, 'show')) {
-            throw new UnAuthorizedException();
+            throw new \RuntimeException('Unauthorized');
         }
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
