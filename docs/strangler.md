@@ -129,6 +129,82 @@ above `legacy` belongs to Symfony and everything else still belongs to
 laminas-mvc. Porting a route means moving one line up past the catch-all. When
 the last one moves, `LegacyBridge` is deleted.
 
+## What is left, and in what order
+
+Written down on 2026-09-08 because "what's next on the strangler?" has been answered from
+scratch twice, and the answer is not obvious from the counts: **23 laminas routes remain,
+and only six of them are pages a person can open.** Regenerate with `tools/acl-table.php`
+before trusting the list; the classification is what has value, not the names.
+
+### The twelve that are not pages
+
+`assignments`, `books`, `borrowers`, `checkouts`, `collections`,
+`collections/collection`, `comments`, `dictionary/entry`, `jtranslate/phrase`,
+`juser/user`, `library-imports`, `sion-model` — structural parents with no action of their
+own. Plus `roles/role`, which *is* guarded (`sch_moderator`) but declares
+`may_terminate => false` with the comment "no show action", so it is a parent too.
+
+**None of these needs porting.** They exist so their children can be named, and they
+evaporate with `LegacyBridge`. Do not count them as work.
+
+### The six real pages
+
+| route | guard | what it needs |
+|---|---|---|
+| `publication-create-new-edition` | `pub_moderator` | its own action, not the generic create — see the batch-10 notes |
+| `publication-copy-to-main-corpus` | `pub_moderator` | POST + CSRF; `CopyToMainCorpusSmokeTest` already exists |
+| `publications/export` | `pub_moderator` | returns a spreadsheet, not HTML — the only one here that is not a page in the usual sense |
+| `publications/prime-authors` | `pub_administrator` | a maintenance action |
+| `admin/import-father` | `sch_administrator` | a real form; also the subject `ServingNoteSmokeTest` currently uses to observe the bridge |
+| `sion-model/auto-fix-data-problems` | `lib_administrator` | POST + CSRF, and its template is already ported for the read-only sibling — **but settle the guard first**, see below |
+
+The four publication actions are the largest coherent batch left and share one controller.
+They are a *mixed* batch rather than a clean one, and that is the thing to plan for: four
+separate characterizations, not one shared reproduction.
+
+**`admin/import-father` has a second cost.** It is the last anonymous-unreachable unported
+HTML page, and `test/Smoke/ServingNoteSmokeTest::testAnUnportedRouteReportsTheBridge` uses
+it to prove that a bridged `.phtml` reports itself as bridged. Porting it means finding
+another subject — and when the subjects run out, that half of the serving note is dead code
+and should be deleted rather than patched. The test's own docblock says so.
+
+### The two decisions, neither of which is a porting question
+
+- **`sion-model/auto-fix-data-problems` is guarded `lib_administrator`** while its
+  read-only sibling `sion-model/data-problems` is `sch_general_moderator`. A *library*
+  administrator being the one account that may auto-fix site-wide data problems looks like
+  a copy-paste. **Decide before porting**, or the port reproduces it faithfully and makes
+  it a fact. Filed in [BACKLOG.md](BACKLOG.md).
+- **`publication-upload-cover`** is the last route that is matchable and has no guard entry
+  at all, so default deny makes it reachable by nobody. It is the same question the four
+  event routes answered on 2026-09-08 — retire it, or finish it — and it overlaps the open
+  "upload a book cover from the site" item. The event routes and `libraries/library/delete`
+  are the two precedents, and they went opposite ways, so this genuinely has to be looked
+  at rather than pattern-matched.
+
+### The two that are not going anywhere yet
+
+- **`redirect-pre-april-2020-sl-id`** (`guest, user`) is a 301 for pre-2020 identifiers. It
+  renders no layout, so there is nothing to compare and little to gain; it is the cheapest
+  route left and the least valuable.
+- **`kernel-switch`** (`sch_administrator`) is laminas **on purpose** — it is the canary
+  toggle and has to answer from both front controllers.
+
+### The endgame is a decision, not a port
+
+This is the part the counts hide. `LegacyBridge` cannot be deleted while `kernel-switch`
+has a job, and `kernel-switch`'s job is to make reverting production to laminas a cookie
+away. So finishing the strangler ends with **retiring the canary**, which is a judgement
+about how much confidence the Symfony front controller has earned — not a batch of work.
+It has been the site-wide default since the 2026-08-11 deploy.
+
+`assignments/assignment` deserves one line so nobody counts it as a page: it is guarded and
+`may_terminate => true` with an `action => show`, but the `assignment` entity's `show_route`
+is **`association`** — an assignment's canonical URL is its association's page — and no
+assignment show template exists. So the route resolves to `SionController::showAction()`
+looking for a view script that was never written. It is dead by configuration, and the fix
+is to delete it, not to port it.
+
 ## Which front controller is live
 
 `SYMFONY_KERNEL` is an Apache environment variable, read by `public/index.php`
@@ -138,11 +214,27 @@ config key.
 | where | set in | value now |
 |---|---|---|
 | capsule | `docker/apache-vhost.conf` (committed, baked into the image) | `1`, with `SetEnv` — so **no cookie can move a capsule request off it** |
-| production | `public/.htaccess` (**tracked and deployed**) | no site-wide default → `0`, plus a cookie override each way |
+| production | `public/.htaccess` (**tracked and deployed**) | `1` site-wide, plus a cookie override each way |
 
-So **the capsule runs the Symfony front controller and production does not.**
-That is the whole point of the gate: reverting production is an `.htaccess` edit and
-nothing else, which matters while phploy still has its mid-deploy broken window. To A/B
+> **This block said "the capsule runs the Symfony front controller and production does
+> not" until 2026-09-08, and had been wrong for four weeks.** Production's site-wide
+> default was committed 2026-08-10 and went live with the **2026-08-11 deploy**; the
+> paragraph below still described the pre-cutover state, and mentioned phploy's mid-deploy
+> broken window, which stopped existing when phploy was deleted on 2026-08-16. Left as a
+> correction rather than a silent edit because a stale claim about *which front controller
+> is live* is the most expensive kind in this file — it inverts the reading of every
+> other section.
+>
+> **Both are `1`.** The cheapest way to confirm, and the one to use rather than trusting
+> any document: `curl https://schoenstatt.link/_health` answers
+> `{"status":"ok","kernel":"symfony"}`.
+
+So **both run the Symfony front controller.** That is still the point of the gate:
+reverting production is an `.htaccess` edit and nothing else — no deploy — for everything
+except the surfaces whose laminas half has since been deleted (the JUser sign-in surface
+since 2026-08-21, the JTranslate GUI since 2026-09-08, `/library-imports`, and
+`libraries/library/delete`, which never had a laminas page at all). Rolling any of those
+back is a deploy. To A/B
 locally, edit `docker/apache-vhost.conf`, then
 `docker compose build && docker compose up -d` (the vhost is `COPY`d into the image, not
 mounted).
@@ -2426,6 +2518,14 @@ are now shadowed by a Symfony route; of the 13 that are not, the only one an ano
 visitor may reach is `redirect-pre-april-2020-sl-id`, which renders no layout.
 `ServingNoteSmokeTest` had to start signing in to observe the bridge at all, and when the
 remaining twelve port, `App\Http\LegacyBridge` has nothing left to bridge.
+
+> Numbers as measured at batch 13 and left as written, because the claim they support has
+> only got stronger. As of 2026-09-08 it is **109 of 119 shadowed, with 10 unshadowed
+> guarded routes**, and `redirect-pre-april-2020-sl-id` is still the only one an anonymous
+> visitor may reach. See [What is left, and in what order](#what-is-left-and-in-what-order)
+> for the current classification — and note that "when the remaining twelve port" was
+> already too optimistic when written: `kernel-switch` is deliberately never porting, so
+> deleting `LegacyBridge` ends with a decision about the canary rather than a last port.
 
 **The smoke suite runs in half the time**: 627 tests in 2:24, against 4:19 for the same 627
 before the port. Every suite that signs in was booting laminas-mvc to do it.

@@ -929,26 +929,56 @@ rediscovered.
   An earlier version of this item blamed that factory; it was wrong.)
   `test/Integration/RequiresApcu` is the stopgap — eight tests skip rather than error — and
   the real fix is one of: a fallback in the ACL cache config, or APCu on every machine that
-  runs the suite.
+  runs the suite. **The second of those landed for CI on 2026-09-08** (PR #177): the
+  integration job installs `apcu` with `apc.enable_cli=1`, so those tests execute there
+  instead of skipping. The *fallback* half is still open, and is what a contributor's
+  machine without APCu still needs — the trait remains the only thing standing between
+  them and a `ServiceNotCreatedException` raised while the container is still building.
 
-- [ ] **CI's integration job skips ~195 of 1,334 tests**, because a bare runner has neither a
-  database nor APCu — measured on the 2026-09-07 run, the first real one since the Actions
-  quota reset. That is by design and documented, but the number is the share of integration
-  coverage that only ever runs locally, and `tools/ci-local.sh` is the only place it runs.
-  **What it would take is more than a MariaDB service container**, and this is the part worth
-  writing down: 28 of these test files skip on `is_readable('config/autoload/local.php')` as
-  a *proxy* for "there is a database". Copying `local.php.dist` into place on CI — tried on
-  2026-09-08 and reverted — satisfies the proxy without providing a database, so 14 tests
-  stopped skipping and 5 of them errored: `EventTimelineParityTest` builds its container with
-  the config caches **on** and dies writing `data/config`, and four more hit the APCu wall
-  above. So the order is: give the job a real database *and* APCu, then convert those 28
-  guards from "is there a config file" to "can I connect", then remove the proxy.
-  Related, and the reason this is an item rather than a note: **the quota outage hid two real
-  breakages for three weeks.** Four `AclCacheTest` errors and seven
-  `Undefined array key "db"` warnings (fatal under `failOnWarning`) both landed while every
-  job failed in two seconds with no runner assigned. Nothing was wrong with the code that
-  produced them; the tests had simply never executed on a runner. Expect one more batch of
-  that shape.
+- [ ] **CI's integration job skips 194 of 1,334 tests and runs ~43% of the capsule's
+  assertions** (3,088 against 7,214). **Partly addressed 2026-09-08 (PR #177); what is left
+  is now a smaller and better-defined thing than this item originally described.**
+
+  *Done:* APCu is installed in the job with `apc.enable_cli=1`, so the ACL cache tests run
+  rather than skip. `test/Integration/RequiresDatabase` exists as `RequiresApcu`'s
+  companion — installing APCu immediately created the runner that trait's docblock had
+  warned about, one that has the extension and no database, and three `AclCacheTest` tests
+  went from skipping to failing. And the coverage gap is now *named* rather than silent:
+  `tools/check-ci-skips.php --bare` pins the set of 38 classes that skip against
+  `test/known-ci-skips.txt`, so a class that used to run there and stops fails by name.
+
+  *Not done, and deliberately not:* **a MariaDB service container is not the answer and
+  should not be proposed.** `database/` holds ninety incremental migrations and no base
+  schema, the capsule's data is a gitignored production export, and many of these tests
+  assert against real rows — 527 events, the per-library ACL rules, the sort-text coverage.
+  A database with only a schema would make them *fail*, not pass. The ci.yml header says so
+  at length for exactly this reason.
+
+  *What remains is one mechanical refactor:* 28 of these files still skip on
+  `is_readable('config/autoload/local.php')` as a *proxy* for "there is a database", and
+  should adopt `RequiresDatabase` instead. Note why the proxy cannot simply be deleted:
+  without `local.php` there is no `db` config key at all, so the pre-check is not redundant
+  — it is just imprecise. Copying `local.php.dist` into place on CI, tried and reverted on
+  2026-09-08, satisfies the proxy without providing a database: 14 tests stopped skipping
+  and 5 errored, `EventTimelineParityTest` among them because it builds its container with
+  the config caches **on** and dies writing `data/config`. So the conversion is worth doing
+  for tidiness and for the `connect()`-not-`get()` precision, and it changes no behaviour.
+
+  Related, and the reason this stays an item: **the quota outage hid two real breakages for
+  three weeks.** Four `AclCacheTest` errors and seven `Undefined array key "db"` warnings
+  (fatal under `failOnWarning`) both landed while every job failed in two seconds with no
+  runner assigned. Nothing was wrong with the code that produced them; the tests had simply
+  never executed on a runner. Expect one more batch of that shape.
+
+- [ ] **The PUC library has not actually been deleted.** `/libraries/4/delete` went live
+  with the 2026-09-08 deploy and the page is what the feature was built for — PUC holds
+  **16,383 books**, is documented in [libraries.md](libraries.md) as inactive, has
+  checkouts off, and has zero `sch_changes` rows against any of its books. Deleting it is a
+  deliberate operational act for whoever owns the catalogue, not a task to be tidied away:
+  it is irreversible, and the change log will record the aggregate rather than the 16,383
+  rows. Needs `lib_administrator`, and asks for the library name typed exactly.
+  Nothing breaks if it is never done; this entry exists so the question is not forgotten
+  along with the reason the page was written.
 
 - [ ] **`error_log()` writes nothing in the capsule**, because `log_errors` is `Off` in the
   container's ini. Every `error_log()` call in the tree is silently discarded — there are
