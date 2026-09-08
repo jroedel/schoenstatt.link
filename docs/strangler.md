@@ -207,9 +207,13 @@ the way of `libraries/library/delete`.
 was ported anyway for a reason the description missed: it was the **last anonymous-reachable
 route the bridge still served**. Porting it (`App\Controller\PreApril2020RedirectController`,
 a 301 to the record's current URL) means the only thing `LegacyBridge` answers for a normal
-visitor now is a 404 — and the only thing it answers at all, once that 404 is Symfony-served
-too, is `kernel-switch`. That is what makes retiring the canary a clean deletion rather than
-a behaviour change. See "The endgame" below and Phase A in docs/history.md.
+visitor is a 404 — and **that 404 is Symfony-served too now**, completing Phase A the same
+day. `LegacyBridge` catches an HTML 404 out of laminas (a 404 whose content type is not
+JSON — the laminas error page sets none until PHP's SAPI default does, at send time) and
+re-renders it through `error/404.html.twig`. So the bridge renders **no laminas view to any
+visitor**: only `kernel-switch` (an admin redirect) and `RestApi`'s JSON refusal remain
+behind it, and neither is an HTML page. That is what makes retiring the canary a clean
+deletion rather than a behaviour change — see "The endgame" below.
 
 ### The endgame is a decision, not a port
 
@@ -218,6 +222,22 @@ has a job, and `kernel-switch`'s job is to make reverting production to laminas 
 away. So finishing the strangler ends with **retiring the canary**, which is a judgement
 about how much confidence the Symfony front controller has earned — not a batch of work.
 It has been the site-wide default since the 2026-08-11 deploy.
+
+**Phase A is done (2026-09-08) and deliberately stops short of that decision.** Its two
+pieces — porting `redirect-pre-april-2020-sl-id` and Symfony-rendering the 404 — leave the
+bridge dormant for every normal visitor while the canary is untouched, so the rollback
+still works and the decision can be taken later against a bridge that provably renders
+nothing anyone sees. What is left, in order:
+
+- **Phase B**: retire the canary. Make `SYMFONY_KERNEL=1` unconditional in
+  `public/index.php`, delete `kernel-switch` and its cookie, port `RestApi`'s JSON refusal
+  (the one thing still bridged), then delete `LegacyBridge` and the `legacy` catch-all. This
+  ends the no-deploy rollback, so it is the decision above rather than a mechanical step.
+- **Phase C**: drop `laminas/laminas-mvc` and its dependents (`bjy-authorize`,
+  `laminas-twb-bundle`, the `mvc-plugin-*` packages, `laminas-developer-tools`) from
+  `composer.json`, replacing their remaining runtime uses. This is what the strangler was
+  for: it unblocks the PHP 8.5 platform pin, servicemanager 4, laminas-cache 4 and
+  FrameworkBundle. See the memory note "laminas-mvc is the real dependency ceiling".
 
 `assignments/assignment` deserves one line so nobody counts it as a page: it is guarded and
 `may_terminate => true` with an `action => show`, but the `assignment` entity's `show_route`
