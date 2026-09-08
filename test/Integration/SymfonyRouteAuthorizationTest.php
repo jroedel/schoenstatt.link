@@ -81,7 +81,7 @@ class SymfonyRouteAuthorizationTest extends TestCase
     {
         $routes = $this->collection();
 
-        $this->assertNotNull($routes->get(SymfonyRoute::LEGACY_ROUTE), 'the catch-all must still be there');
+        $this->assertNotNull($routes->get(SymfonyRoute::CATCH_ALL_ROUTE), 'the catch-all must still be there');
         $this->assertGreaterThanOrEqual(4, count($this->portedRoutes()), 'suspiciously few ported routes');
         foreach (['health', 'shrines', 'admin', 'sm-cache-status'] as $expected) {
             $this->assertNotNull($routes->get($expected), "route $expected disappeared");
@@ -91,7 +91,7 @@ class SymfonyRouteAuthorizationTest extends TestCase
     /** The catch-all must NOT declare one, or the guard would start second-guessing laminas-mvc. */
     public function testTheCatchAllDeclaresNothing(): void
     {
-        $legacy = $this->collection()->get(SymfonyRoute::LEGACY_ROUTE);
+        $legacy = $this->collection()->get(SymfonyRoute::CATCH_ALL_ROUTE);
 
         $this->assertNotNull($legacy);
         $this->assertNull($legacy->getDefault(RouteAccess::ATTRIBUTE));
@@ -240,7 +240,7 @@ class SymfonyRouteAuthorizationTest extends TestCase
     public function testABridgedRequestIsLeftEntirelyAlone(): void
     {
         $request = Request::create('/some/unported/page');
-        $request->attributes->set('_route', SymfonyRoute::LEGACY_ROUTE);
+        $request->attributes->set('_route', SymfonyRoute::CATCH_ALL_ROUTE);
 
         $this->assertNull($this->guard()->refuse($request));
     }
@@ -291,7 +291,7 @@ class SymfonyRouteAuthorizationTest extends TestCase
     {
         $names = [];
         foreach (self::loadCollection()->all() as $name => $route) {
-            if (SymfonyRoute::LEGACY_ROUTE !== $name) {
+            if (SymfonyRoute::CATCH_ALL_ROUTE !== $name) {
                 $names[(string) $name] = [(string) $name];
             }
         }
@@ -337,7 +337,7 @@ class SymfonyRouteAuthorizationTest extends TestCase
     {
         $ported = [];
         foreach ($this->collection()->all() as $name => $route) {
-            if (SymfonyRoute::LEGACY_ROUTE !== $name) {
+            if (SymfonyRoute::CATCH_ALL_ROUTE !== $name) {
                 $ported[(string) $name] = $route;
             }
         }

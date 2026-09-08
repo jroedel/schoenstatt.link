@@ -93,7 +93,10 @@ class PortedRouteTranslationTest extends TestCase
     {
         $missing = [];
         foreach ($this->routes() as $name => $route) {
-            if ('legacy' === $name || ! $this->rendersHtml($name)) {
+            //'not-found' is the catch-all 404 (App\Controller\NotFoundController); like the
+            //former 'legacy' bridge it renders the layout, but its two strings live in the
+            //default domain, not a module one, so it declares no text domain.
+            if ('not-found' === $name || ! $this->rendersHtml($name)) {
                 continue;
             }
             $domain = $route->getDefault(LaminasExtension::TEXT_DOMAIN_ATTRIBUTE);

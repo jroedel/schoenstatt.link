@@ -178,16 +178,14 @@ class ShrinesSymfonySmokeTest extends SmokeTestCase
      * two-segment path and answer it in English. laminas-mvc still owns this URL, and
      * it answers with SlmLocale's prefix redirect.
      */
-    public function testAnUnknownLocalePrefixStillFallsThroughToLaminas(): void
+    public function testAnUnknownLocalePrefixIsANotFound(): void
     {
+        //`xx` is not a configured locale, so no ported route matches `/xx/shrines`. Since
+        //LegacyBridge was deleted (Phase B step 2, 2026-09-08) it no longer bridges to
+        //laminas (which used to prepend the detected locale and 302); the catch-all 404s.
         $response = $this->get('/xx/shrines');
 
-        $this->assertSame(302, $response['status']);
-        $this->assertStringContainsString(
-            '/en/xx/shrines',
-            $response['redirect'],
-            'an unknown prefix should reach laminas, which prepends the detected locale'
-        );
+        $this->assertSame(404, $response['status']);
     }
 
     /**

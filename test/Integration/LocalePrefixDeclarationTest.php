@@ -67,8 +67,8 @@ class LocalePrefixDeclarationTest extends TestCase
         'comments/create.locale'                => 'POST only; a 302 drops the submission',
         // Undeclared: no prefixed form exists.
         'health'                                => 'shadows no laminas route and has no locale form',
-        // Undeclared: the bridge. laminas-mvc and SlmLocale do their own redirecting.
-        'legacy'                                => 'bridged to laminas-mvc, which runs SlmLocale itself',
+        // Undeclared: the catch-all 404. It answers unmatched paths directly, no locale hop.
+        'not-found'                             => 'the catch-all 404 answers directly, prefixed or not',
         // Undeclared: reached from an emailed link carrying a token in the query.
         'library/my-books'                      => 'borrower self-service, authorised by an emailed token',
         // Undeclared: the v3 API. A program does not follow a redirect to a language.

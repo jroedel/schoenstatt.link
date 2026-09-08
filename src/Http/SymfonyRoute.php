@@ -29,7 +29,8 @@ use function substr;
  */
 final class SymfonyRoute
 {
-    public const LEGACY_ROUTE = 'legacy';
+    /** The catch-all route name — App\Controller\NotFoundController, formerly the LegacyBridge. */
+    public const CATCH_ALL_ROUTE = 'not-found';
     public const LOCALE_SUFFIX = '.locale';
 
     /** True when Symfony itself is serving this request rather than bridging it to laminas-mvc. */
@@ -37,14 +38,14 @@ final class SymfonyRoute
     {
         $route = $request->attributes->get('_route');
 
-        return is_string($route) && self::LEGACY_ROUTE !== $route;
+        return is_string($route) && self::CATCH_ALL_ROUTE !== $route;
     }
 
     /** The laminas route name a ported route stands in for, or '' when the request is bridged. */
     public static function routeName(Request $request): string
     {
         $route = $request->attributes->get('_route');
-        if (! is_string($route) || self::LEGACY_ROUTE === $route) {
+        if (! is_string($route) || self::CATCH_ALL_ROUTE === $route) {
             return '';
         }
 

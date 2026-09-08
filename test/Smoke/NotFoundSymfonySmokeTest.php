@@ -42,14 +42,17 @@ class NotFoundSymfonySmokeTest extends SmokeTestCase
         $this->assertStringNotContainsString('.phtml view script', $response['body']);
     }
 
-    public function testTheUnprefixedUnknownPathTakesTheLocaleHopFirst(): void
+    public function testAnUnprefixedUnknownPathIsANotFoundDirectly(): void
     {
-        //an unknown path with no locale prefix is still negotiated to one before it 404s,
-        //exactly as every other route on the site is — the 404 itself is localised
+        //Since LegacyBridge was deleted (Phase B step 2, 2026-09-08) the catch-all answers
+        //a 404 directly, prefixed or not — the bridge used to inherit SlmLocale's 302 hop
+        //from the unprefixed form, and a redirect-to-404 is a wasted round trip. See
+        //App\Controller\NotFoundController.
         $response = $this->get('/no-such-page-unprefixed-xyz');
 
-        $this->assertSame(302, $response['status']);
-        $this->assertStringContainsString('/no-such-page-unprefixed-xyz', $response['redirect']);
+        $this->assertSame(404, $response['status']);
+        $this->assertStringContainsString('text/html', $response['contentType']);
+        $this->assertStringContainsString('A 404 error occurred', $response['body']);
     }
 
     public function testAnUnknownApiPathStaysJson(): void

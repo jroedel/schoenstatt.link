@@ -112,7 +112,7 @@ class AclShadowCompletenessTest extends TestCase
             $controller = is_array($controller)
                 ? implode('::', array_map('strval', $controller))
                 : (string) $controller;
-            if (str_starts_with($controller, 'App\Http\LegacyBridge')) {
+            if (str_starts_with($controller, 'App\Controller\NotFoundController')) {
                 continue;
             }
             $ported->add((string) $name, $route);
