@@ -9,7 +9,7 @@ use App\Laminas\ServiceBridge;
 use App\Authorization\Denial;
 use App\Sion\EntityCreate;
 use App\Sion\FormViewVariables;
-use BjyAuthorize\View\Helper\IsAllowed;
+use App\Acl\IsAllowed;
 use Laminas\Filter\StripTags;
 use Laminas\Form\Element\Select;
 use Laminas\Form\FormInterface;
