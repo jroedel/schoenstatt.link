@@ -10,6 +10,7 @@ use App\Books\CheckoutForms;
 use App\Books\Import\ImportStorage;
 use App\Books\Import\ImportTemplate;
 use App\Books\Import\SpreadsheetUpload;
+use App\Books\LibraryDelete;
 use App\Books\LibraryPage;
 use JUser\Model\PersonValueOptionsProviderInterface;
 use SionModel\Service\ActingUserProviderInterface;
@@ -20,6 +21,7 @@ use JUser\Service\LoginTokenService;
 use JUser\Service\Mailer;
 use Laminas\Db\Adapter\Adapter;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 use JUser\Controller\ApiTokensController;
 use JUser\Controller\LogoutController;
@@ -80,6 +82,7 @@ use App\Controller\LibraryCheckoutController;
 use App\Controller\LibraryController;
 use App\Controller\LibraryImportConfigureController;
 use App\Controller\LibraryImportsController;
+use App\Controller\LibraryDeleteController;
 use App\Controller\LibraryFormController;
 use App\Controller\LibraryMassCheckoutController;
 use App\Controller\LibraryNoticesController;
@@ -136,6 +139,7 @@ use App\Twig\TwigFactory;
 use App\View\NavigationTree;
 use App\View\PreferredUrls;
 use App\Twig\LaminasExtension;
+use Books\Model\LibraryTable;
 use Books\Service\SpreadsheetReader;
 use Closure;
 use SionModel\Cache\CacheFlushQueue;
@@ -604,6 +608,20 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     $this->libraryPage(),
                     new CheckoutForms($this->laminas())
                 ),
+            LibraryDeleteController::class => fn (): LibraryDeleteController => new LibraryDeleteController(
+                $this->libraryPage(),
+                $this->libraryDelete(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->laminas(),
+                //A NullLogger rather than a nullable dependency: this controller logs
+                //before and after the most destructive action in the application, and a
+                //`?LoggerInterface` would put a null check around every one of those calls
+                //for a case that only arises when the application has no logger at all.
+                $this->laminas()->has(LoggerInterface::class)
+                    ? $this->laminas()->get(LoggerInterface::class)
+                    : new NullLogger()
+            ),
             LibraryFormController::class => fn (): LibraryFormController => new LibraryFormController(
                 $this->laminas(),
                 $this->twig(),
@@ -1174,6 +1192,18 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             $this->laminas()->has(LoggerInterface::class)
                 ? $this->laminas()->get(LoggerInterface::class)
                 : null
+        );
+    }
+
+    /**
+     * The library cascade. Built fresh rather than memoized: it holds no state between
+     * calls, and the table it wraps is the container's shared instance either way.
+     */
+    private function libraryDelete(): LibraryDelete
+    {
+        return new LibraryDelete(
+            $this->laminas()->get(LibraryTable::class),
+            $this->laminas()->get(Adapter::class)
         );
     }
 

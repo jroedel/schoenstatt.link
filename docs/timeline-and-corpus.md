@@ -10,6 +10,11 @@ current production export (see [the capsule note in CLAUDE.md](../CLAUDE.md)) �
 2021 dump a stale line in that file claimed for five years. Where a number is an estimate
 derived from filenames rather than a count of rows, it says so.
 
+**Status, 2026-09-08:** Part 1 is done, and its last open item — 1.6, the guard entries —
+was closed by deleting the four write routes rather than guarding them. Part 2 is
+unstarted and still blocked on the two product decisions below. Nothing about the data
+changed; the 527 events and 2,757 texts are exactly as described.
+
 ## Contents
 
 - [What exists today](#what-exists-today)
@@ -80,7 +85,7 @@ Everything else about events is unreachable, and each for its own reason:
 
 | surface | why it is unreachable |
 | --- | --- |
-| `event` (show), `event-edit`, `event-delete`, `events/create` | no guard entry in `acl.global.php`; `BjyAuthorize\Guard\Route` default-denies. Listed as such in [acl-rules.md](acl-rules.md) |
+| `event` (show), `event-edit`, `event-delete`, `events/create` | **deleted 2026-09-08** (see 1.6). Until then: no guard entry in `acl.global.php`, so `BjyAuthorize\Guard\Route` default-denied all four, and behind them no form, no template and no create handler |
 | `EventsSearchForm` + `EventsController::searchAction()` + `search.phtml` | no route at all, and the entity's `controller_services` is `[]`, so `$this->services[EventsSearchForm::class]` is an undefined key |
 | `books/events/event-list.phtml` | not an event list — a copy of the publication list, calling `formatEntity('publication', …)`. Rendered by nothing |
 | `Books\Form\EventForm` | deleted in batch 12 (`19d5016`). It matched a pre-`db6.1` draft: fields `durationInDays` and `accuracy` that the shipped schema does not have, no Italian title, no slugs, place, Wikidata or URLs |
@@ -301,6 +306,32 @@ Four routes with no guard entry is indistinguishable from an oversight, and
 a show template exists, which is Part 2. Until then it should stay denied, because a
 guarded route with no template is a 500 rather than a page.
 
+**Resolved on 2026-09-08 by a third outcome this section did not consider: the four routes
+were deleted.** Recording the deny as deliberate had been the choice on 2026-08-15, and it
+held for three weeks before the obvious objection landed — a deliberate deny still leaves
+four route definitions one config line away from opening onto a surface with no form, no
+template and no create handler. Deleting them removes that, and removes the four entries
+from the "matchable but unguarded" column of [acl-rules.md](acl-rules.md), which was the
+other half of what 1.6 was trying to fix.
+
+What went, exactly: the `event`, `event-edit` and `event-delete` route definitions, the
+`create` child of `events`, and the nine `event` entity-spec keys that named them
+(`show_route` and its two companions, the three `edit_route*`, the three
+`create_action_redirect_route*`, plus `enable_delete_action`, `delete_route_key` and
+`delete_action_redirect_route`). The spec keys had to go in the same commit, because
+`test/Integration/EntitySpecRoutesAreAssemblableTest` asserts that every route a spec names
+exists — which is the assertion 1.2 added.
+
+`enable_delete_action => true` is the one worth pausing on. It was the only thing that made
+the events write surface differ from the library one, where the same key is commented out —
+so `event-delete` was a *working* generic delete sitting behind a closed guard, and had 1.6
+been resolved by opening guards, it would have deleted an event with a single-row `DELETE`.
+
+**Nothing else changed.** The 527 rows, the corrected spec, `processEventRow()`'s
+`identifier`, `/timeline` and its Symfony controller, and
+`test/Integration/EventFeatureStateTest` all stand. That test now pins the four routes as
+*absent* rather than unguarded, which is a stronger property and the same tripwire.
+
 ### 1.7 Answer the data questions, without acting on them
 
 Read-only investigations whose output is this register, not a migration. They are the
@@ -351,6 +382,16 @@ decisions needed") with pointers here so there is one account rather than three.
 ---
 
 ## Part 2 — after laminas is cut out
+
+**One thing changed under this section on 2026-09-08 and it changes no step in it:** the
+four laminas write routes were deleted (see 1.6). Part 2 was always going to declare its
+own routes on the Symfony side — steps 2.6 and 2.7 say so — so there is nothing here to
+re-plan. What it does mean is that **2.6 starts from no route at all rather than from a
+denied one**, which is simpler: a new route in `config/symfony/routes.php` with a controller
+and a template behind it, rather than a laminas route to be opened, ported and then removed.
+
+Do not re-add the laminas routes as a stepping stone. A route with no template is a 500
+rather than a page, and both open decisions below still block the surface.
 
 Ordered by dependency. Steps 2.2 and 2.5 must ship together or the timeline page breaks on
 the day the link lands.

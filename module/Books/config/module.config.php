@@ -228,6 +228,23 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
+            //Last, because it is the only destructive entry on the menu.
+            //
+            //**This is the first entry whose `is_allowed('route/' ~ route)` filter does
+            //anything.** books/view/library-admin.html.twig filters every entry on the
+            //route guard, and its own comment records that the check is weaker than it
+            //looks because all thirteen of the others name `lib_user`, a default role — so
+            //the filter passed for every signed-in account and the pages themselves did the
+            //restricting. This route names `lib_administrator`, so the entry is genuinely
+            //absent for everyone else rather than present and refused on click.
+            'libraries/library/delete'  => [
+                'label' => "Delete this library",
+                'description' => 'Permanently delete this library and every book, '
+                    . 'collection and checkout record in it. This cannot be undone.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
 //             'sion-model/auto-fix-data-problems' => [
 //                 'label' => "Auto-fix data problems",
 //                 'description' => 'Try to automatically fix some data problems.',
@@ -1074,6 +1091,27 @@ return [
                     ],
                 ],
             ],
+            //The timeline, and the only event route there is.
+            //
+            //**Four sibling routes were deleted on 2026-09-08**: `event` (show),
+            //`event-edit`, `event-delete` and this route's `create` child. All four had
+            //existed since 2020 and none had ever been reachable — no guard entry in
+            //acl.global.php, and BjyAuthorize's Route guard default-denies — and behind
+            //them there was nothing to reach: no create/edit/show template, no form
+            //(`EventForm` went in batch 12 for describing a pre-db6.1 draft), and
+            //`create_action_valid_data_handler` naming a method defined nowhere in the
+            //repository.
+            //
+            //They were placeholders, and deleting them takes nothing with it. The feature
+            //they were placeholders *for* is real and still pending — 527 events, a text
+            //corpus of 2,757 rows waiting to be linked to them, and a plan in
+            //docs/timeline-and-corpus.md whose Part 1 was executed on 2026-08-15. Part 2
+            //declares its own routes on the Symfony side (its steps 2.6 and 2.7 say so
+            //explicitly), which is why removing these is not a step backwards from it.
+            //
+            //Do not re-add them here. A route with no template is a 500 rather than a page,
+            //and two product decisions are still open: what the `kind` values are, and who
+            //curates the timeline.
             'events' => [
                 'type' => Literal::class,
                 'options' => [
@@ -1084,67 +1122,6 @@ return [
                     ],
                 ],
                 'may_terminate' => true,
-                'child_routes' => [
-                    'create' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/create',
-                            'defaults' => [
-                                'controller' => Controller\EventsController::class,
-                                'action'     => 'create',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-            'event' => [
-                'type'    => Segment::class,
-                'options' => [
-                    'route'    => '/:sw_id[/:slug]',
-                    'constraints' => [
-                        'sw_id' => trim(
-                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
-                            '/^$'
-                        ),
-                        'slug' => '[a-z0-9-]{1,200}',
-                    ],
-                    'defaults' => [
-                        'controller' => Controller\EventsController::class,
-                        'action'     => 'show',
-                    ],
-                ],
-            ],
-            'event-edit' => [
-                'type'    => Segment::class,
-                'options' => [
-                    'route'    => '/:sw_id/edit',
-                    'constraints' => [
-                        'sw_id' => trim(
-                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
-                            '/^$'
-                        ),
-                    ],
-                    'defaults' => [
-                        'controller' => Controller\EventsController::class,
-                        'action'     => 'edit',
-                    ],
-                ],
-            ],
-            'event-delete' => [
-                'type'    => Segment::class,
-                'options' => [
-                    'route'    => '/:sw_id/delete',
-                    'constraints' => [
-                        'sw_id' => trim(
-                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
-                            '/^$'
-                        ),
-                    ],
-                    'defaults' => [
-                        'controller' => Controller\EventsController::class,
-                        'action'     => 'delete',
-                    ],
-                ],
             ],
             'composition' => [
                 'type'    => Segment::class,
@@ -1279,17 +1256,23 @@ return [
              * @see \SionModel\Entity\Entity
              */
             /**
-             * The Fr. Kentenich timeline. **Only the index route is reachable** — `event`,
-             * `event-edit`, `event-delete` and `events/create` have no entry in
-             * acl.global.php and BjyAuthorize default-denies them. That is deliberate and
-             * documented in docs/timeline-and-corpus.md; do not add guard entries without
-             * reading it, because the write surface needs a form (there is none), a show
-             * template (there is none), and an ACL resource that exists (see below).
+             * The Fr. Kentenich timeline. **The index route at /timeline is the only event
+             * route there is** — as of 2026-09-08, when `event` (show), `event-edit`,
+             * `event-delete` and `events/create` were deleted. Until then they existed and
+             * were reachable by nobody, having never had a guard entry in acl.global.php.
+             *
+             * Deleting them was not a retreat from the feature. Behind the four routes there
+             * was no form, no template and no create handler, so opening a guard would have
+             * produced a 500 rather than a page; and Part 2 of docs/timeline-and-corpus.md
+             * declares its routes on the Symfony side anyway. Read that file before adding
+             * anything here — two product decisions are still open, and they are what block
+             * the feature rather than any of this configuration.
              *
              * Five keys below were corrected on 2026-08-15. They had described the April
              * 2020 *draft* of this entity rather than the schema database/db6.1.sql actually
-             * shipped, and because every route that would exercise them is denied, nothing
-             * ever failed to reveal it. Each correction is annotated where it sits.
+             * shipped, and because every route that would exercise them was denied, nothing
+             * ever failed to reveal it. Three of those five named routes and went with them;
+             * the rest are annotated where they sit.
              */
             'event' => [
                 'name'                                      => 'event',
@@ -1322,41 +1305,49 @@ return [
                 'index_route'                               => 'events',
                 'index_template'                            => 'books/events/index',
                 //CORRECTED: this said `association_id`, copy-pasted from the associations
-                //entity. Every route below takes a site-wide identifier on a `:sw_id` segment.
+                //entity. `processEventRow()` emits an `identifier` (2026-08-15) and that is
+                //the key any future event URL will be built on, so the value is kept even
+                //though nothing reads it today.
                 'default_route_key'                         => 'sw_id',
+
+                //**Every write-surface route key was removed on 2026-09-08**, with the four
+                //routes that named them: `show_route`/`show_route_key`/
+                //`show_route_key_field` (`event`), the three `edit_route*` keys
+                //(`event-edit`), the three `create_action_redirect_route*` keys, and
+                //`enable_delete_action` / `delete_route_key` /
+                //`delete_action_redirect_route` (`event-delete`).
+                //
+                //They had to go together with the routes rather than be left behind:
+                //test/Integration/EntitySpecRoutesAreAssemblableTest asserts that every
+                //route an entity spec names exists, which is the assertion that would have
+                //caught the 2020 drift these keys were corrected for in the first place.
+                //
+                //`enable_delete_action => true` is the one worth noticing on the way out.
+                //It was the *only* thing making the events write surface differ from the
+                //library one, where the same key stays commented out — so `event-delete`
+                //was a working generic delete behind a closed guard, and had the guard ever
+                //been opened it would have deleted an event with a single-row DELETE. The
+                //library equivalent is deliberately left disabled for exactly that reason
+                //(see App\Books\LibraryDelete).
+                //
+                //Part 2 of docs/timeline-and-corpus.md declares its routes on the Symfony
+                //side and will bring its own keys. Do not restore these to make a
+                //half-built surface look configured.
 //                 'show_action_template'                      => 'project/events/show',
-                //CORRECTED (four keys): the routes are top-level `event` / `event-edit`, not
-                //children of `events` — that route has exactly one child, `create`. And the
-                //segment is `:sw_id` matching /^SL(6[0-9]{5,5})E$/, not a bare `event_id`, so
-                //the key field is `identifier`. `processEventRow()` did not emit one of those
-                //until 2026-08-15 either, which is why no event URL could be built at all.
-                //Mirrors the `publication` entity below, which is the working example.
-                'show_route'                                => 'event',
-                'show_route_key'                            => 'sw_id',
-                'show_route_key_field'                      => 'identifier',
 //                 'edit_action_form'                          => Form\EditEventForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
-                'edit_route'                                => 'event-edit',
-                'edit_route_key'                            => 'sw_id',
-                'edit_route_key_field'                      => 'identifier',
                 //'create_action_form'                        => Form\CreateEventForm::class,
                 //CORRECTED: `create_action_valid_data_handler => 'createEvent'` named a method
                 //that is defined nowhere in the repository — not on EventTextTable, not on
                 //SionTable, nowhere. Commented out rather than pointed at something, because
                 //there is nothing to point it at until Part 2 of docs/timeline-and-corpus.md.
 //                 'create_action_valid_data_handler'          => 'createEvent',
-                'create_action_redirect_route'              => 'event',
-                'create_action_redirect_route_key'          => 'sw_id',
-                'create_action_redirect_route_key_field'    => 'identifier',
 //                 'create_action_template'                    => 'project/events/create',
 //                 'database_bound_data_preprocessor'          => 'preprocessEvent',
 //                 'database_bound_data_postprocessor'         => 'postprocessEvent',
 //                 'moderate_route'                            => 'events/event/moderate',
 //                 'moderate_route_entity_key'                 => 'event_id',
 //                 'suggest_form'                              => Form\SuggestEventForm::class,
-                'enable_delete_action'                      => true,
-                'delete_route_key'                          => 'sw_id',
-                'delete_action_redirect_route'              => 'events',
 
                 //CORRECTED: `aclResourcesId`, with an `s`. db6.1's last statement renamed the
                 //column `AclResourcesId` to `AclResourceId` and this key was not followed
@@ -2529,6 +2520,18 @@ return [
                 ['route' => 'libraries/create', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_user']],
+                //**The only route on this surface that does not name lib_user**, and the
+                //only one that needed a new guard entry rather than inheriting a 2020 one.
+                //lib_user is `is_default = 1`, so it means "signed in"; a page that can
+                //destroy 16,383 books in one POST should not be reachable by everyone with
+                //an account just to be told no by the per-row check.
+                //
+                //The per-row `administrate` check in App\Books\LibraryPage still runs and
+                //is still the shape the surface uses — but note that it resolves to this
+                //same role today, because getRules() below grants `administrate` to
+                //lib_administrator on every library unconditionally. See
+                //App\Controller\LibraryDeleteController.
+                ['route' => 'libraries/library/delete', 'roles' => ['lib_administrator']],
                 ['route' => 'libraries/library/book-list', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_user']],
@@ -2564,28 +2567,26 @@ return [
                 ['route' => 'music/create-composition', 'roles' => ['sch_user']],
 
                 /*
-                 * `events` is the timeline index at /timeline, and it is the ONLY event
-                 * route with a guard entry. `event` (show), `event-edit`, `event-delete`
-                 * and `events/create` have none, so BjyAuthorize default-denies all four.
-                 *
-                 * That is a decision, not an oversight, and it is recorded here because an
-                 * absent guard entry and a forgotten one look identical in this file.
-                 * Three things are missing before any of the four could be opened, and
-                 * none of them is a guard:
+                 * `events` is the timeline index at /timeline, and it is the only event
+                 * route in the application. It used to be the only one with a *guard entry*:
+                 * `event` (show), `event-edit`, `event-delete` and `events/create` had none
+                 * and were default-denied, and on 2026-09-08 all four were deleted outright
+                 * rather than guarded, because there was nothing behind them to guard —
                  *
                  *   - no form (EventForm was deleted in batch 12: it matched a pre-db6.1
                  *     draft with fields the schema does not have);
                  *   - no show, edit or create template;
                  *   - no ACL resource — all 527 rows carry `evt_public` and nothing
-                 *     registers it, so the per-row check would test an unknown resource.
+                 *     registers it, so the per-row check would have tested an unknown
+                 *     resource;
+                 *   - and no events moderator role in `user_role` to name, which is a
+                 *     product call about who curates the timeline rather than a config gap.
                  *
-                 * There is also no events moderator role in `user_role` to name, and
-                 * picking one is a product call about who curates the timeline. Adding a
-                 * guard entry alone would turn a clean default-deny into a 500.
-                 *
-                 * The whole feature — and the two-part plan for finishing it — is in
-                 * docs/timeline-and-corpus.md. test/Integration/EventFeatureStateTest pins
-                 * this state so that opening one of the four is a deliberate act.
+                 * So a guard entry alone would have turned a clean default-deny into a 500.
+                 * The feature and its two-part plan are in docs/timeline-and-corpus.md;
+                 * Part 2 declares its routes Symfony-side. test/Integration/
+                 * EventFeatureStateTest now pins that the four are *absent* rather than
+                 * unguarded, so re-adding one is a deliberate act that updates a test.
                  */
                 ['route' => 'events', 'roles' => ['user', 'guest']],
             ],

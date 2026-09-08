@@ -40,25 +40,25 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 118 |
-| guarded routes total | 118 |
+| guarded routes existing | 119 |
+| guarded routes total | 119 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 119 |
+| route guard entries | 120 |
 | routes declared twice | 1 |
-| routes shadowed by symfony | 108 |
+| routes shadowed by symfony | 109 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 210 |
+| symfony routes acl checked | 212 |
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 237 |
-| total routes | 136 |
-| unguarded routes | 18 |
-| unguarded routes matchable | 6 |
+| symfony served routes | 239 |
+| total routes | 132 |
+| unguarded routes | 13 |
+| unguarded routes matchable | 1 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (118 + 18 = 136). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (119 + 13 = 132). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -212,6 +212,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `libraries/library/collections.locale` | `/{_locale}/libraries/{library_id}/collections` | `route/libraries/library/collections` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryCollectionsController` |
 | `libraries/library/data-problems` | `/libraries/{library_id}/data-problems` | `route/libraries/library/data-problems` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
 | `libraries/library/data-problems.locale` | `/{_locale}/libraries/{library_id}/data-problems` | `route/libraries/library/data-problems` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/delete` | `/libraries/{library_id}/delete` | `route/libraries/library/delete` | lib_administrator | html | `App\Controller\LibraryDeleteController` |
+| `libraries/library/delete.locale` | `/{_locale}/libraries/{library_id}/delete` | `route/libraries/library/delete` | lib_administrator | html | `App\Controller\LibraryDeleteController` |
 | `libraries/library/edit` | `/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `libraries/library/edit.locale` | `/{_locale}/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `libraries/library/inactivate-books` | `/libraries/{library_id}/inactivate-books` | `route/libraries/library/inactivate-books` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryFormController` |
@@ -432,6 +434,7 @@ warning at the top of this file.
 | `libraries/library/checkout` | `/libraries/:library_id/checkout` | `/libraries/0/checkout` | `libraries/library/checkout` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/checkout` — **the same resource** |
 | `libraries/library/collections` | `/libraries/:library_id/collections` | `/libraries/0/collections` | `libraries/library/collections` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/collections` — **the same resource** |
 | `libraries/library/data-problems` | `/libraries/:library_id/data-problems` | `/libraries/0/data-problems` | `libraries/library/data-problems` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/data-problems` — **the same resource** |
+| `libraries/library/delete` | `/libraries/:library_id/delete` | `/libraries/0/delete` | `libraries/library/delete` | restricted to lib_administrator | `route/libraries/library/delete` — **the same resource** |
 | `libraries/library/edit` | `/libraries/:library_id/edit` | `/libraries/0/edit` | `libraries/library/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/edit` — **the same resource** |
 | `libraries/library/inactivate-books` | `/libraries/:library_id/inactivate-books` | `/libraries/0/inactivate-books` | `libraries/library/inactivate-books` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/inactivate-books` — **the same resource** |
 | `libraries/library/label-management` | `/libraries/:library_id/label-management` | `/libraries/0/label-management` | `libraries/library/label-management` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/label-management` — **the same resource** |
@@ -663,6 +666,7 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `libraries/library/checkout` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `libraries/library/collections` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `libraries/library/data-problems` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
+| `libraries/library/delete` | yes | lib_administrator | lib_administrator (1) | no |  |
 | `libraries/library/edit` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `libraries/library/inactivate-books` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `libraries/library/label-management` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
@@ -737,7 +741,7 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-6 of the 18 are endpoints reachable by nobody.
+1 of the 13 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
@@ -749,13 +753,8 @@ the matched route name, so the missing guard costs nothing. The `yes` rows are t
 | `collections/collection` | no |
 | `comments` | no |
 | `dictionary/entry` | no |
-| `event` | **yes** |
-| `event-delete` | **yes** |
-| `event-edit` | **yes** |
-| `events/create` | **yes** |
 | `jtranslate/phrase` | no |
 | `juser/user` | no |
-| `libraries/library/delete` | **yes** |
 | `library-imports` | no |
 | `publication-upload-cover` | **yes** |
 | `sion-model` | no |

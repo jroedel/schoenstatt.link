@@ -95,15 +95,25 @@ by asking whether `_route` is anything other than `legacy`:
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
 
 **Run `tools/acl-table.php` for the count; do not cite the number below.** As of
-2026-09-08 it was **237 Symfony-served routes** (210 ACL-checked, 27 declared open — most
-paths are declared twice, once with a locale prefix and once without) shadowing **108 of
-the 136 laminas routes**, leaving 28.
+2026-09-08, after the library-delete batch, it was **239 Symfony-served routes** (212
+ACL-checked, 27 declared open — most paths are declared twice, once with a locale prefix
+and once without) shadowing **109 of the 132 laminas routes**, leaving 23.
 
-Of those 28, roughly a third are pages: twelve are structural parents with no action of
-their own (`may_terminate => false`, or a guard entry on a route that is not a page), and
-six are matchable but have no guard entry at all, so default deny makes them reachable by
-nobody. `kernel-switch` is laminas on purpose — it is the canary toggle and has to work
-from both sides.
+Of those 23, seven are pages: thirteen are structural parents with no action of their own
+(`may_terminate => false`, or a guard entry on a route that is not a page), one is
+matchable with no guard entry at all — `publication-upload-cover`, where default deny makes
+it reachable by nobody — and `kernel-switch` is laminas on purpose, being the canary toggle
+that has to work from both sides.
+
+**That "matchable but unguarded" group went from six to one on 2026-09-08**, and in two
+different ways, which is the distinction to carry forward. Four of them —
+`event`, `event-edit`, `event-delete`, `events/create` — were **deleted**, because behind
+them there was no form, no template and no create handler, so opening a guard would have
+produced a 500 rather than a page (docs/timeline-and-corpus.md). The fifth,
+`libraries/library/delete`, was **built**: it got a guard entry, a Symfony controller and
+the cascade that makes deleting a library mean something (docs/libraries.md). Both moves
+shrink the same number and they are opposites — an unguarded route is a question, and the
+answer is sometimes "retire it" and sometimes "this was never finished".
 
 That figure has been wrong twice in two days, which is why the instruction comes before
 it. It read "110 of the 188 … as of batch 6" for four batches — and the two numerators
@@ -2019,6 +2029,16 @@ over: `library` declares no `enable_delete_action`, and `sion-model/delete-entit
 `deleteEntity` action `SionModelController` does not define. **This is the shape to check
 first on any future batch**: an unguarded route is not an unprotected route here, it is an
 unreachable one, and porting it would be work with no user.
+
+> **Two of those three were resolved on 2026-09-08, in opposite directions**, and the
+> paragraph above is kept as written because its reasoning is what led to both.
+> `event-delete` was **deleted** along with the other three event routes: there was nothing
+> behind it to port. `libraries/library/delete` was **built** — a guard entry, its own
+> Symfony controller, and a cascade, because "porting it would be work with no user" turned
+> out to be only half true. There *was* no user, and the reason was that the page had never
+> been finished; a library nobody could delete is a real gap once you have a 16,383-book
+> collection to retire. `sion-model/delete-entity` is still unreachable and still names an
+> action that does not exist. See docs/libraries.md § Deleting a library.
 
 #### The Cancel button deleted the record, on both front controllers
 
