@@ -95,7 +95,10 @@ suites run from the superproject working tree.
   FrameworkBundle) with a catch-all route delegating every unported path back to
   the laminas application. **Both are now `1`:** the capsule through
   `docker/apache-vhost.conf`, and production through the site-wide default in
-  `public/.htaccess` — committed 2026-08-10 and **live since the 2026-08-11 deploy**, confirmed by `curl https://schoenstatt.link/_health`. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
+  `public/.htaccess` — committed 2026-08-10 and **live since the 2026-08-11 deploy**, confirmed by `curl https://schoenstatt.link/_health`. Since 2026-09-08 (Phase A of the laminas-mvc
+  removal) `LegacyBridge` also re-renders an HTML 404 out of laminas through
+  `error/404.html.twig`, so the bridge renders no laminas view to any visitor — only
+  `kernel-switch` and the JSON API refusal remain behind it. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
   `public/index.php`, or anything about response headers — it records which of
   the two is live where, what the bridge preserves and why, and how to add a
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
