@@ -433,10 +433,12 @@ $ported(
 );
 
 // SionModel's data-problems list, ported 2026-08-07. Guarded `sch_general_moderator`
-// (2 effective roles of 43). The *read-only* route only: its sibling
-// `sion-model/auto-fix-data-problems` renders the same .phtml with a CSRF confirm form
-// and stays on laminas, so that template keeps serving it. No method constraint, as the
-// laminas route has none.
+// (2 effective roles of 43). Until 2026-09-08 this was "the read-only route only": its
+// sibling `sion-model/auto-fix-data-problems` rendered the same .phtml with a CSRF
+// confirm form and stayed on laminas. That sibling was **retired rather than ported** —
+// the only fix it could apply (backfilling `lib_books.sort_text`) is a strict subset of
+// what the ported, `administrate`-gated `refresh-sort` does for a library. No method
+// constraint, as the laminas route has none.
 //
 // This is the port that needed App\Laminas\EntityFormatter — `formatEntity` is the
 // most-reused of the helpers a Symfony route cannot call, and reproducing it is what

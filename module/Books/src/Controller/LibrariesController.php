@@ -186,21 +186,6 @@ class LibrariesController extends SionController
             $importCount = $table->getLibraryImports();
             $pages['library-imports/library']['badges'] = [count($importCount)];
         }
-        if (isset($pages['sion-model/auto-fix-data-problems'])) {
-            //A count, not a dry run. This called $problemService->autoFixProblems() —
-            //which fetches all 27,910 books lacking sort text, computes a sort text for
-            //each and builds 9,764 EntityProblem objects — to put one integer on a menu
-            //entry. Measured on the capsule at 0.54s and a 120 MB peak; the count below
-            //is one grouped query, 0.076s and 10 MB. On a page a librarian opens to get
-            //somewhere else, that difference is the whole cost of the page.
-            //
-            //The number is an upper bound rather than the 9,764 the page will actually
-            //write, because a format can still decline an individual call number. See
-            //LibraryTable::getSortTextCoverage() — a badge is an indicator, and paying
-            //7x for an exact one is the wrong trade.
-            $coverage = $table->getSortTextCoverage();
-            $pages['sion-model/auto-fix-data-problems']['badges'] = [$coverage['withFormat']];
-        }
         $view->setVariables([
             'pages' => $pages,
         ]);

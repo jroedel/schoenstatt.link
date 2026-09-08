@@ -245,10 +245,6 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
-//             'sion-model/auto-fix-data-problems' => [
-//                 'label' => "Auto-fix data problems",
-//                 'description' => 'Try to automatically fix some data problems.',
-//             ],
 //             'admin/website-status'      => [
 //                 'label' => "Website status",
 //                 'description' => 'Known issues or upcoming plans.',
@@ -405,22 +401,10 @@ return [
                     ],
                 ],
             ],
-            'publication-upload-cover' => [
-                'type'    => Segment::class,
-                'options' => [
-                    'route'    => '/:sw_id/upload-cover',
-                    'constraints' => [
-                        'sw_id' => trim(
-                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
-                            '/^$'
-                        ),
-                    ],
-                    'defaults' => [
-                        'controller' => Controller\PublicationsController::class,
-                        'action'     => 'uploadCover',
-                    ],
-                ],
-            ],
+            // `publication-upload-cover` (`/:sw_id/upload-cover`) was declared here from 2020
+            // until 2026-09-08 and deleted without ever having worked: no guard entry, an
+            // inverted success test in its action, and a target column that does not exist.
+            // docs/BACKLOG.md "Upload a book cover from the site" is where the feature lives.
             'publications' => [
                 'type'    => Literal::class,
                 'options' => [

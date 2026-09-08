@@ -20,12 +20,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 119,
-        "guarded_routes_total": 119,
+        "guarded_routes_existing": 118,
+        "guarded_routes_total": 118,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 120,
+        "route_guard_entries": 119,
         "routes_declared_twice": 1,
         "routes_shadowed_by_symfony": 113,
         "routes_uncomparable": 0,
@@ -34,9 +34,9 @@
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 247,
-        "total_routes": 132,
-        "unguarded_routes": 13,
-        "unguarded_routes_matchable": 1
+        "total_routes": 130,
+        "unguarded_routes": 12,
+        "unguarded_routes_matchable": 0
     },
     "dynamic_providers": {
         "resource": [
@@ -3457,29 +3457,6 @@
             "matchable": true,
             "public": true,
             "route": "shrines/submitting-photos"
-        },
-        "sion-model/auto-fix-data-problems": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "lib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "lib_administrator"
-            ],
-            "effective_roles": [
-                "lib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "sion-model/auto-fix-data-problems"
         },
         "sion-model/cache-status": {
             "anonymous_allowed": true,
@@ -9282,12 +9259,9 @@
         "jtranslate/phrase",
         "juser/user",
         "library-imports",
-        "publication-upload-cover",
         "sion-model"
     ],
-    "unguarded_routes_matchable": [
-        "publication-upload-cover"
-    ],
+    "unguarded_routes_matchable": [],
     "unknown_roles_named_in_config": [],
     "warnings": []
 }

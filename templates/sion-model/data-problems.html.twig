@@ -1,14 +1,14 @@
 {#
   module/SionModel/view/sion-model/sion-model/data-problems.phtml, ported.
 
-  Only the **read-only** route moves. That .phtml serves two laminas routes:
-  `sion-model/data-problems` (a plain list) and `sion-model/auto-fix-data-problems`,
-  which sets `isSimulation` and renders a CSRF-protected confirm form. The auto-fix
-  route stays on laminas — there is no form layer on the Symfony side — so the
-  simulation branch is deliberately absent here rather than half-reproduced. Under
-  PhpRenderer the unset `$this->form` was silently null; under Twig's strict_variables
-  it would be an exception, which is a good reason for the branch to be gone rather than
-  guarded.
+  Only the **read-only** route was ported, in 2026-08. That .phtml served two laminas
+  routes then: `sion-model/data-problems` (a plain list) and
+  `sion-model/auto-fix-data-problems`, which set `isSimulation` and rendered a
+  CSRF-protected confirm form. The auto-fix route was **retired on 2026-09-08** — see
+  App\Controller\DataProblemsController — so there is no simulation branch anywhere now.
+  It was absent here from the start for a reason still worth knowing: under PhpRenderer
+  the unset `$this->form` was silently null; under Twig's strict_variables it would be an
+  exception.
 
   The entity cell goes through the dispatcher macro rather than format_entity()
   directly: `problem_specifications` names association and person as well as book,

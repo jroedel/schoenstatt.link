@@ -99,11 +99,11 @@ by asking whether `_route` is anything other than `legacy`:
 ACL-checked, 27 declared open — most paths are declared twice, once with a locale prefix
 and once without) shadowing **109 of the 132 laminas routes**, leaving 23.
 
-Of those 23, seven are pages: thirteen are structural parents with no action of their own
-(`may_terminate => false`, or a guard entry on a route that is not a page), one is
-matchable with no guard entry at all — `publication-upload-cover`, where default deny makes
-it reachable by nobody — and `kernel-switch` is laminas on purpose, being the canary toggle
-that has to work from both sides.
+Of those 23, seven were pages: thirteen are structural parents with no action of their own
+(`may_terminate => false`, or a guard entry on a route that is not a page), one was
+matchable with no guard entry at all — `publication-upload-cover`, where default deny made
+it reachable by nobody, **deleted later the same day** — and `kernel-switch` is laminas on
+purpose, being the canary toggle that has to work from both sides.
 
 **That "matchable but unguarded" group went from six to one on 2026-09-08**, and in two
 different ways, which is the distinction to carry forward. Four of them —
@@ -132,10 +132,12 @@ the last one moves, `LegacyBridge` is deleted.
 ## What is left, and in what order
 
 Written down on 2026-09-08 because "what's next on the strangler?" has been answered from
-scratch twice, and the answer is not obvious from the counts: **19 laminas routes remain,
-and only two of them are pages a person can open** (23 and six that morning, before batch
-16 took the four publication actions). Regenerate with `tools/acl-table.php` before trusting
-the list; the classification is what has value, not the names.
+scratch twice, and the answer is not obvious from the counts: **17 laminas routes remain,
+and only one of them is a page a person can open** (23 and six on the morning of
+2026-09-08; batch 16 took the four publication actions that afternoon, and the two
+"decisions" below were settled by deletion that evening). Regenerate with
+`tools/acl-table.php` before trusting the list; the classification is what has value, not
+the names.
 
 ### The twelve that are not pages
 
@@ -148,12 +150,14 @@ own. Plus `roles/role`, which *is* guarded (`sch_moderator`) but declares
 **None of these needs porting.** They exist so their children can be named, and they
 evaporate with `LegacyBridge`. Do not count them as work.
 
-### The two real pages
+### The one real page
 
 | route | guard | what it needs |
 |---|---|---|
 | `admin/import-father` | `sch_administrator` | a real form; also the subject `ServingNoteSmokeTest` currently uses to observe the bridge |
-| `sion-model/auto-fix-data-problems` | `lib_administrator` | POST + CSRF, and its template is already ported for the read-only sibling — **but settle the guard first**, see below |
+
+`sion-model/auto-fix-data-problems` sat in this table too, with "settle the guard first".
+Settling it turned into retiring it — see "Two decisions, both answered by deletion" below.
 
 Four more sat in this table until the afternoon of 2026-09-08 — `publication-create-new-edition`,
 `publication-copy-to-main-corpus`, `publications/export` and `publications/prime-authors` —
@@ -163,27 +167,43 @@ of that table was wrong and is worth correcting here rather than deleting silent
 the whole corpus rendered as one HTML table of four columns, and the description was inferred
 from the name.
 
-**`admin/import-father` has a second cost.** It is the last anonymous-unreachable unported
-HTML page, and `test/Smoke/ServingNoteSmokeTest::testAnUnportedRouteReportsTheBridge` uses
-it to prove that a bridged `.phtml` reports itself as bridged. Porting it means finding
-another subject — and after batch 16 there is exactly **one** other candidate,
-`sion-model/auto-fix-data-problems`, which has a guard to settle first. When the subjects
-run out, that half of the serving note is dead code and should be deleted rather than
-patched. The test's own docblock says so.
+**`admin/import-father` has a second cost.** It is the last unported HTML page of any kind,
+and `test/Smoke/ServingNoteSmokeTest::testAnUnportedRouteReportsTheBridge` uses it to prove
+that a bridged `.phtml` reports itself as bridged. When it ports there is **no other
+candidate** — the auto-fix page was the last one and it was retired — so the test loses its
+subject for good. What the bridge still renders after that is the laminas **404 page** for
+any URL neither router knows, which is a `.phtml` through the bridge too; whether that is a
+worthy subject or the signal that this half of the note is dead code is the decision to make
+in that batch, and the test's own docblock says which way it leans.
 
-### The two decisions, neither of which is a porting question
+### Two decisions, both answered by deletion — 2026-09-08
 
-- **`sion-model/auto-fix-data-problems` is guarded `lib_administrator`** while its
-  read-only sibling `sion-model/data-problems` is `sch_general_moderator`. A *library*
-  administrator being the one account that may auto-fix site-wide data problems looks like
-  a copy-paste. **Decide before porting**, or the port reproduces it faithfully and makes
-  it a fact. Filed in [BACKLOG.md](BACKLOG.md).
-- **`publication-upload-cover`** is the last route that is matchable and has no guard entry
-  at all, so default deny makes it reachable by nobody. It is the same question the four
-  event routes answered on 2026-09-08 — retire it, or finish it — and it overlaps the open
-  "upload a book cover from the site" item. The event routes and `libraries/library/delete`
-  are the two precedents, and they went opposite ways, so this genuinely has to be looked
-  at rather than pattern-matched.
+Neither was a porting question, and both went the way of the four event routes rather than
+the way of `libraries/library/delete`.
+
+- **`sion-model/auto-fix-data-problems`** was guarded `lib_administrator` while its
+  read-only sibling is `sch_general_moderator`, which looked like a copy-paste. Measuring
+  what the page could do settled it the other way and then made the question moot: of the
+  two `ProblemProviderInterface` implementors, `SchoenstattTable::autoFixProblems()` returns
+  `[]` and `LibraryTable`'s does exactly one thing — fill `lib_books.sort_text` where it is
+  null, **9,764 books, all in Colegio Mayor**. So the guard fitted what it wrote. But
+  `LibraryTable::refreshLibrarySort()`, behind the ported and `administrate`-gated
+  `refresh-sort` confirmation, recomputes every book's sort text for a library, which is a
+  strict superset. **Retired** — route, action, `ConfirmForm`, the `.phtml` branch, the
+  guard entry, and two badge branches that had been dead since the admin-menu entry was
+  commented out. `ProblemTable` went with it: it read `a_data_problems`, a table that does
+  not exist in this database, and `ProblemService` took it as a dependency and never called
+  it — it was the reason the UserTable/ProblemService/ProblemTable/AuthService cycle existed.
+  The interface keeps `autoFixProblems()`, because patres implements it and
+  `test/Integration/SortTextCoverageTest` uses `LibraryTable`'s as its oracle. The wider
+  question — whether the Problem architecture earns its place here at all, with 35 problems
+  in six kinds on the whole site — is filed in [BACKLOG.md](BACKLOG.md) with the numbers.
+- **`publication-upload-cover`** was the last matchable route with no guard entry, and it
+  was dead three ways over: default-denied, an inverted success test, and a target column
+  that does not exist. **Deleted** — route, action, `Books\Form\UploadForm`, template and
+  its `ReservedVerbs` entry, so `/SL…L/upload-cover` is an ordinary slug again. The
+  "upload a book cover from the site" item in BACKLOG.md is a feature to design, not a
+  route to port, and it is untouched.
 
 ### The two that are not going anywhere yet
 
@@ -1699,9 +1719,8 @@ before the route moved and compared byte for byte against the ported ones:
 Remember to put `changes_show_all`/`changes_model` back, and to clear `data/config/`
 either way — the merged config is cached there and an edit looks like it did nothing.
 
-`sion-model/auto-fix-data-problems` remains unported: it is POST-and-CSRF. The form layer
-it was waiting for now exists (`src/Form/BootstrapFormRenderer`), so it is a candidate
-for the next batch rather than a blocked one.
+`sion-model/auto-fix-data-problems` remained unported after this, and was retired rather
+than ported on 2026-09-08 — see "Two decisions, both answered by deletion" above.
 
 ### `assignments/assignment` (`/assignments/{id}`) — not a page at all
 
@@ -2553,9 +2572,9 @@ their phrases, `users-create` gained the eight bytes of `checked` from the previ
 `publications/export`, `publications/prime-authors`, `publication-copy-to-main-corpus` and
 `publication-create-new-edition`: the four `PublicationsController` actions still on laminas
 after batches 5, 7, 8 and 9 took the publication show, edit, delete and create pages. With
-them gone, every route in the `Books` module that a person can open is Symfony-served, and
-`publication-upload-cover` is the one publication route left on laminas — unguarded, and
-reachable by nobody on either front controller.
+them gone, every route in the `Books` module that a person can open is Symfony-served.
+`publication-upload-cover` was the one publication route left on laminas — unguarded, and
+reachable by nobody on either front controller — and was deleted the same evening.
 
 Two controllers, because the four are two shapes. `App\Controller\PublicationReportsController`
 renders the two whole-corpus listings — `export` through the shared `_publication-list`
