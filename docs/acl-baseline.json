@@ -20,23 +20,23 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 118,
-        "guarded_routes_total": 118,
+        "guarded_routes_existing": 119,
+        "guarded_routes_total": 119,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 119,
+        "route_guard_entries": 120,
         "routes_declared_twice": 1,
-        "routes_shadowed_by_symfony": 108,
+        "routes_shadowed_by_symfony": 109,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 210,
+        "symfony_routes_acl_checked": 212,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 237,
-        "total_routes": 136,
-        "unguarded_routes": 18,
-        "unguarded_routes_matchable": 6
+        "symfony_served_routes": 239,
+        "total_routes": 132,
+        "unguarded_routes": 13,
+        "unguarded_routes_matchable": 1
     },
     "dynamic_providers": {
         "resource": [
@@ -1891,6 +1891,29 @@
             "matchable": true,
             "public": false,
             "route": "libraries/library/data-problems"
+        },
+        "libraries/library/delete": {
+            "anonymous_allowed": false,
+            "assertion": null,
+            "declaration_count": 1,
+            "declarations": [
+                {
+                    "roles": [
+                        "lib_administrator"
+                    ],
+                    "assertion": null
+                }
+            ],
+            "declared_roles": [
+                "lib_administrator"
+            ],
+            "effective_roles": [
+                "lib_administrator"
+            ],
+            "exists_in_router": true,
+            "matchable": true,
+            "public": false,
+            "route": "libraries/library/delete"
         },
         "libraries/library/edit": {
             "anonymous_allowed": false,
@@ -4760,6 +4783,16 @@
             "now_checks": "route/libraries/library/data-problems",
             "access_kind": "acl",
             "probe": "/libraries/0/data-problems"
+        },
+        {
+            "laminas_route": "libraries/library/delete",
+            "path": "/libraries/:library_id/delete",
+            "symfony_route": "libraries/library/delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/delete",
+            "access_kind": "acl",
+            "probe": "/libraries/0/delete"
         },
         {
             "laminas_route": "libraries/library/edit",
@@ -8006,6 +8039,26 @@
                 "denial_style": "html"
             }
         },
+        "libraries/library/delete": {
+            "path": "/libraries/{library_id}/delete",
+            "controller": "App\\Controller\\LibraryDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/delete.locale": {
+            "path": "/{_locale}/libraries/{library_id}/delete",
+            "controller": "App\\Controller\\LibraryDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "libraries/library/edit": {
             "path": "/libraries/{library_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -9106,23 +9159,13 @@
         "collections/collection",
         "comments",
         "dictionary/entry",
-        "event",
-        "event-delete",
-        "event-edit",
-        "events/create",
         "jtranslate/phrase",
         "juser/user",
-        "libraries/library/delete",
         "library-imports",
         "publication-upload-cover",
         "sion-model"
     ],
     "unguarded_routes_matchable": [
-        "event",
-        "event-delete",
-        "event-edit",
-        "events/create",
-        "libraries/library/delete",
         "publication-upload-cover"
     ],
     "unknown_roles_named_in_config": [],

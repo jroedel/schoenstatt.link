@@ -1,0 +1,80 @@
+{#
+  Deleting a library, and everything in it.
+
+  There is no `.phtml` behind this one. `libraries/library/delete` has existed as a route
+  name since 2020 and was reachable by nobody — no guard entry, and the `library` entity
+  never enabled the generic delete action — so nothing was ever rendered for it. See
+  App\Controller\LibraryDeleteController.
+
+  The page is deliberately unlike the site's other seven delete confirmations, which are
+  an `<h1>` and a three-element form. Those destroy one record. This one destroys up to
+  16,383, so it prints the inventory first and asks for the library's name to be typed.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Delete library') }}</h1>
+
+{# translate: false — a library name is record content. Translating it would file a
+   phrase row per library, which is the mechanism docs/translation.md warns about. #}
+<p class="lead">{{ library_name }}</p>
+
+<div class="alert alert-danger">
+  <p><strong>{{ translate('This cannot be undone.') }}</strong></p>
+  <p>{{ translate('Deleting this library also deletes everything belonging to it. The change log will record that the library was deleted and how many records went with it, but not the records themselves.') }}</p>
+</div>
+
+<table class="table table-sm w-auto">
+  <caption class="caption-top">{{ translate('What will be destroyed') }}</caption>
+  <tbody>
+    <tr>
+      <th scope="row">{{ translate('Books') }}</th>
+      <td class="text-end">{{ dependents.books|number_format }}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{ translate('Collections') }}</th>
+      <td class="text-end">{{ dependents.collections|number_format }}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{ translate('Checkout records') }}</th>
+      <td class="text-end">{{ dependents.checkouts|number_format }}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{ translate('Borrower links') }}</th>
+      <td class="text-end">{{ dependents.borrowerTokens|number_format }}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{ translate('Spreadsheet imports') }}</th>
+      <td class="text-end">{{ dependents.imports|number_format }}</td>
+    </tr>
+  </tbody>
+</table>
+
+{#
+  Outstanding checkouts are a subset of the figure above and mean something different: a
+  book somebody physically has. Shown separately, and only when there are any, because
+  folding it into the total is exactly how it would be missed.
+#}
+{% if dependents.outstandingCheckouts > 0 %}
+<div class="alert alert-warning">
+  {{ translate('%s of those checkouts are still outstanding — those books have not been checked back in. Deleting the library destroys the record of who has them.')|format(dependents.outstandingCheckouts|number_format) }}
+</div>
+{% endif %}
+
+{% if dependents.books == 0 and dependents.checkouts == 0 %}
+<p>{{ translate('This library is empty.') }}</p>
+{% endif %}
+
+{{ form_open(form, form_action) }}
+{{- form_row(form.get('security')) -}}
+{#
+  The name is printed inside the label's help text as well as above, so that it can be
+  copied from beside the field rather than scrolled to. The comparison is exact and
+  case-sensitive — App\Books\LibraryDeleteForm says why.
+#}
+<p>{{ translate('To confirm, type the library name exactly:') }} <code>{{ library_name }}</code></p>
+{{- form_row(form.get('library_name')) -}}
+{{- form_submit(form.get('submit')) -}}
+<a href="{{ cancel_url }}" class="btn btn-secondary" id="cancel">{{ translate('Cancel') }}</a>
+{{ form_close() }}
+{% endblock %}
