@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Sion;
 
 use App\Laminas\ServiceBridge;
-use BjyAuthorize\View\Helper\IsAllowed;
+use App\Acl\IsAllowed;
 use Closure;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Db\Model\SionTable;

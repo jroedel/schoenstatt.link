@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
-use BjyAuthorize\View\Helper\IsAllowed;
+use App\Acl\IsAllowed;
 use Books\Form\PublicationsSearchForm;
 use Books\Model\DictionaryTable;
 use Books\Model\LibraryTable;

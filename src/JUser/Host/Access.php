@@ -4,38 +4,38 @@ declare(strict_types=1);
 
 namespace App\JUser\Host;
 
+use App\Acl\AclProvider;
 use App\Laminas\ServiceBridge;
-use BjyAuthorize\Service\Authorize;
 use JUser\Host\AccessInterface;
 use JUser\Model\User;
 use JUser\Model\UserTable;
-use Laminas\Permissions\Acl\Acl;
-use Throwable;
 
 use function is_array;
 use function is_string;
 
 /**
- * `JUser\Host\AccessInterface` over BjyAuthorize and the ACL both front controllers build.
+ * `JUser\Host\AccessInterface` over `App\Acl\Authorizer` (via `App\Acl\AclProvider`), the
+ * engine that replaced BjyAuthorize.
  *
  * The two methods reach authorization by two different routes, and that is not an
  * inconsistency — it is the whole reason the interface has two.
  *
  * ## `visitorMayReachRoute()` is the ordinary question
  *
- * `Authorize::isAllowed('route/<name>')`, which is exactly what the `is_allowed()` Twig
- * function and every `.phtml` on the site ask, so a link JUser draws appears under precisely
- * the same conditions as the same link drawn anywhere else. `isAllowed()` also swallows the
- * registry's `InvalidArgumentException` for an unknown resource and answers false, which is
- * the right direction for a typo.
+ * `AclProvider::isAllowed('route/<name>')` — the ambient check, exactly what the
+ * `is_allowed()` Twig function asks, so a link JUser draws appears under precisely the same
+ * conditions as the same link drawn anywhere else. An unknown resource answers false, the
+ * right direction for a typo.
  *
  * ## `userMayReachRoute()` cannot use it
  *
- * `Authorize::load()` runs once per request and bakes the identity's roles into the ACL as it
- * goes — and on the request that asks this, the route guard already triggered that load while
- * the visitor was still anonymous. So `isAllowed()` answers for `guest` no matter who just
- * signed in, and the answer is "no" for every guarded page: the visitor lands on the home
- * page with no explanation. Measured; it is why this method exists at all.
+ * `AclProvider` resolves the current identity's roles once per request, at the first
+ * authorization query — and on the request that asks this, the route guard already triggered
+ * that resolution while the visitor was still anonymous (the same first-touch BjyAuthorize
+ * baked at). So the ambient check answers for `guest` no matter who just signed in, and the
+ * answer is "no" for every guarded page: the visitor lands on the home page with no
+ * explanation. Measured against the old engine; it is why this method exists, and why it
+ * takes an explicit user and asks the engine about *that* account's roles instead.
  *
  * So it asks about the account's own roles against the ACL directly. Three details, all
  * transcribed from the class this replaces rather than rediscovered, and each of which
@@ -60,48 +60,32 @@ use function is_string;
  */
 final class Access implements AccessInterface
 {
+    private ?AclProvider $acl = null;
+
     public function __construct(private readonly ServiceBridge $laminas)
     {
     }
 
     public function visitorMayReachRoute(string $route): bool
     {
-        return (bool) $this->authorize()->isAllowed('route/' . $route);
+        return $this->acl()->isAllowed('route/' . $route);
     }
 
     public function userMayReachRoute(User $user, string $route): bool
     {
-        $acl      = $this->authorize()->getAcl();
-        $resource = 'route/' . $route;
+        $authorizer = $this->acl()->authorizer();
+        $resource   = 'route/' . $route;
 
-        if (! $acl->hasResource($resource)) {
+        // An undeclared route is reachable by nobody — the same default deny
+        // BjyAuthorize\Guard\Route applies to a missing entry.
+        if (! $authorizer->hasResource($resource)) {
             return false;
         }
 
-        if ($this->allows($acl, null, $resource)) {
-            return true;
-        }
-
-        foreach ($this->aclRoles($user) as $role) {
-            if ($acl->hasRole($role) && $this->allows($acl, $role, $resource)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * isAllowed() without the exceptions — laminas throws for an unknown role or resource,
-     * and either one means "no rule says yes", which is the same answer as false.
-     */
-    private function allows(Acl $acl, ?string $role, string $resource): bool
-    {
-        try {
-            return (bool) $acl->isAllowed($role, $resource);
-        } catch (Throwable) {
-            return false;
-        }
+        // The account's own role names, not the ambient identity. A rule naming the null
+        // role (a genuinely public route) is honoured by the engine's "all roles" handling
+        // even for an account holding no role the ACL knows.
+        return $authorizer->isAllowedForRoles($this->aclRoles($user), $resource);
     }
 
     /**
@@ -131,12 +115,9 @@ final class Access implements AccessInterface
         return $roles;
     }
 
-    private function authorize(): Authorize
+    private function acl(): AclProvider
     {
-        /** @var Authorize $authorize */
-        $authorize = $this->laminas->get(Authorize::class);
-
-        return $authorize;
+        return $this->acl ??= new AclProvider($this->laminas);
     }
 
     private function userTable(): UserTable

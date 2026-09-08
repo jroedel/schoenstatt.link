@@ -108,6 +108,96 @@ class AclParityTest extends TestCase
         );
 
         $this->assertAnonymousIdentityMatches($acl, $authorizer, $resources, $privileges, $bridge);
+        $this->assertNoDenyRules($bridge);
+        $this->assertMultiRoleIsOrOfSingles($authorizer, $roles, $resources, $privileges);
+    }
+
+    /**
+     * The whole engine treats authorization as pure allow + default-deny, which is what
+     * lets a multi-role identity decision be the OR of its single-role decisions (see
+     * assertMultiRoleIsOrOfSingles) and what the RouteGuard cutover relies on. A `deny`
+     * rule would break that composition silently, so pin its absence: BjyAuthorize's
+     * config here declares only `allow`, and AclAssembler reads only `allow`.
+     */
+    private function assertNoDenyRules(ServiceBridge $bridge): void
+    {
+        $bjy = $bridge->config()['bjyauthorize'] ?? [];
+        $deny = [];
+        $walk = static function (array $node, string $path) use (&$walk, &$deny): void {
+            foreach ($node as $key => $value) {
+                if ('deny' === $key && is_array($value) && [] !== $value) {
+                    $deny[] = $path . '/deny';
+                }
+                if (is_array($value)) {
+                    $walk($value, $path . '/' . $key);
+                }
+            }
+        };
+        if (is_array($bjy)) {
+            $walk($bjy, 'bjyauthorize');
+        }
+
+        self::assertSame([], $deny, 'the ACL now has deny rules; the new engine only models allow');
+    }
+
+    /**
+     * The RouteGuard cutover asks `isAllowedForRoles($identityRoles, ...)` with the whole
+     * role set an account holds — never one role at a time. With no deny rules a set's
+     * decision must be the OR of its members' decisions (which single-role parity above has
+     * already matched to BjyAuthorize), so this pins the voter's role-union logic directly.
+     *
+     * @param list<string>      $roles
+     * @param list<string>      $resources
+     * @param list<string|null> $privileges
+     */
+    private function assertMultiRoleIsOrOfSingles(
+        Authorizer $authorizer,
+        array $roles,
+        array $resources,
+        array $privileges
+    ): void {
+        // a handful of representative sets, including the widest (every role at once)
+        $sets = [
+            $roles,
+            array_slice($roles, 0, 3),
+            ['lib_patres', 'sch_patres', 'texts_administrator'],
+        ];
+
+        $mismatches = [];
+        foreach ($sets as $set) {
+            $set = array_values(array_intersect($set, $roles));
+            if ([] === $set) {
+                continue;
+            }
+            foreach ($resources as $resource) {
+                foreach ($privileges as $privilege) {
+                    $set_allows = $authorizer->isAllowedForRoles($set, $resource, $privilege);
+                    $or = false;
+                    foreach ($set as $one) {
+                        if ($authorizer->isAllowedForRoles([$one], $resource, $privilege)) {
+                            $or = true;
+                            break;
+                        }
+                    }
+                    if ($set_allows !== $or) {
+                        $mismatches[] = sprintf(
+                            '{%s} / %s / %s : set=%s or-of-singles=%s',
+                            implode(',', $set),
+                            $resource,
+                            $privilege ?? '(null)',
+                            $set_allows ? 'allow' : 'deny',
+                            $or ? 'allow' : 'deny'
+                        );
+                    }
+                }
+            }
+        }
+
+        self::assertSame(
+            [],
+            array_slice($mismatches, 0, 40),
+            count($mismatches) . ' multi-role decisions are not the OR of their single-role decisions'
+        );
     }
 
     /**
