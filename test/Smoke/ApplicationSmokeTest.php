@@ -32,7 +32,10 @@ class ApplicationSmokeTest extends SmokeTestCase
      * Regression: unknown web URLs used to match a global '/:*' catch-all
      * route named '404' (int!), get refused by the default-deny guard, and
      * fatal under HTTP 200 while assembling the int route name. They must
-     * instead reach Laminas' normal 404 handling.
+     * instead reach clean 404 handling — which since Phase A of the laminas-mvc
+     * removal (2026-09-08) is App\Http\LegacyBridge re-rendering the HTML 404
+     * through error/404.html.twig. This asserts the status and the absence of a
+     * leak; NotFoundSymfonySmokeTest asserts it is the Twig page specifically.
      */
     public function testUnknownWebUrlIsACleanNotFound(): void
     {
