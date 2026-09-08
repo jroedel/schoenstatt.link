@@ -72,10 +72,12 @@ class ServingNoteSmokeTest extends SmokeTestCase
      * measured at 0.43 s and 10 kB, because its form's person list comes from the local
      * database and not from the Patres API.
      *
-     * When it ports too, this test needs another of the nine left. When they run out,
-     * `App\Http\LegacyBridge` has nothing to bridge and this half of the note is dead
-     * code — which is the point of the migration, and it should be deleted rather than
-     * patched.
+     * When it ports too, this test needs another of the few left — five as of 2026-09-08,
+     * and `docs/strangler.md` § "What is left, and in what order" keeps the current list
+     * rather than this docblock, precisely because a count here goes stale silently while
+     * the test keeps passing. When they run out, `App\Http\LegacyBridge` has nothing to
+     * bridge and this half of the note is dead code — which is the point of the migration,
+     * and it should be deleted rather than patched.
      */
     public function testAnUnportedRouteReportsTheBridge(): void
     {

@@ -126,10 +126,16 @@ Three things about it are easy to get wrong, and each fails quietly:
   — `BjyAuthorize\Service\CacheFactory` reads the former and ignores the latter. Every other
   cache block in this application, including the one above, is shaped the other way. Getting
   it wrong leaves the ACL cached with no namespace and no TTL.
-- **A missed invalidation is a 500, not a stale page.**
+- **A missed invalidation is a 500, not a stale page — but only for roles.**
   `Laminas\Permissions\Acl\Acl::addRole()` throws on a parent role it has never heard of, and
   the identity's roles are added as exactly that — so an ACL cached before a role was created
   breaks every request by whoever was granted it, until the 300-second TTL runs out.
+  **An unknown *resource* behaves the opposite way and it is worth knowing which is which
+  when diagnosing.** Measured 2026-09-08: `isAllowed('route/totally-made-up-xyz')` returns
+  **`false`**, not an exception, so an ACL cached before a new `route/` guard entry existed
+  makes that route answer 403 rather than 500 — it fails closed and self-heals at the TTL.
+  So "the new admin page 403s for everyone right after a config change" and "every request
+  by one account is a 500" are the same root cause wearing two very different faces.
 
 Which is why invalidation is not a `clear()` call in each write path. `App\Acl\AclCacheInvalidator`
 implements SionModel's `EntityChangeListenerInterface` and is driven from
@@ -147,7 +153,14 @@ per request by the identity provider and never enters the stored document, so ex
 would throw the cache away every time anyone's roles changed, for nothing.
 
 Deploys need no entry: config guards and rules only change with a release, and the deploy
-flushes APCu as its last step.
+flushes APCu as its last step — `tools/deploy.sh` runs `bin/console cache:flush-persistent`
+against the new release, which goes over HTTP into the web server because a CLI
+`apcu_clear_cache()` flushes a segment nobody reads. **That step is a `warn`, not a hard
+failure**, so if it does not answer the deploy still completes and the ACL keeps whatever it
+had for up to 300 seconds. A guard entry added by that release is then denied rather than
+granted, per the fail-closed note above — benign, self-healing, and exactly the kind of
+thing that gets misdiagnosed as "the deploy didn't take". The warning tells the operator to
+re-run it.
 
 ## Why item size matters so much
 
