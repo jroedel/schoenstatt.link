@@ -17,9 +17,18 @@
 # here — an extension goes missing, a container stops building, a skip guard
 # gets added — its name appears in the failure instead of the count moving.
 #
-# Every entry below was confirmed against the run recorded in the pull request
-# that introduced this file. Keep the reasons specific: "needs a database" is
-# fine, "environment" is not.
+# Every entry below was confirmed against CI run 34202664497, and the first draft
+# was wrong in two ways worth knowing about, because both are easy to repeat:
+#
+#   - four entries were guessed from filenames rather than measured. Three of them
+#     (PreprocessorCreateSafetyTest, TemplatesCompileTest, TranslationCatalogWriteTest)
+#     turned out to RUN on a bare runner, and the fourth had the wrong namespace.
+#   - not every test class here is `SchoenstattTest\Integration`. PublicationLinkingTest
+#     is `BooksTest\Integration`, and a baseline line naming a class that does not exist
+#     exempts nothing while looking exactly like one that works. The checker now reports
+#     that as `unknown` and fails on it, which is how the mistake was found.
+#
+# Keep the reasons specific: "needs a database" is fine, "environment" is not.
 
 # --- Needs a reachable database, via the config/autoload/local.php guard -----
 # These 28 check `is_readable(config/autoload/local.php)` first and then try to
@@ -62,13 +71,10 @@ SchoenstattTest\Integration\AssociationLinkingTest            # compares an asso
 SchoenstattTest\Integration\ConstrainedChoiceFieldsFitTheirDataTest  # every choice field's haystack vs stored values
 SchoenstattTest\Integration\EmptyStringToTypedColumnTest      # reads the information_schema column types
 SchoenstattTest\Integration\PortedTemplatesRenderEveryNotNullFieldTest  # reads the schema for NOT NULL columns
-SchoenstattTest\Integration\PreprocessorCreateSafetyTest      # builds the laminas container
 SchoenstattTest\Integration\ProvenanceStoreTest               # reads and writes the provenance rows
-SchoenstattTest\Integration\PublicationLinkingTest            # sub-edition linking, on real publications
+BooksTest\Integration\PublicationLinkingTest                  # sub-edition linking, on real publications. NOTE the namespace: this file is BooksTest, not SchoenstattTest
 SchoenstattTest\Integration\ShrineCachingTest                 # asserts what the shrine cache holds
-SchoenstattTest\Integration\TemplatesCompileTest              # builds the container to get Twig
 
 # --- Not about the database --------------------------------------------------
 SchoenstattTest\Integration\HealthRevisionTest                # needs sion_model.api_keys, which only local.php carries
 SchoenstattTest\Integration\PatternValidatorContractTest      # by design: only failing values carry messages, so the passing data-provider cases skip. Skips in the capsule too
-SchoenstattTest\Integration\TranslationCatalogWriteTest       # writes a catalog to module/*/language, which needs the tree writable and a table to read
