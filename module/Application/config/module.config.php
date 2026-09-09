@@ -15,88 +15,15 @@ use App\JUser\Host\Session as JUserSession;
 use JUser\Host\SessionInterface as JUserSessionInterface;
 use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
-use Laminas\Router\Http\Literal;
 use JTranslate\I18n\Translator\Translator as AppTranslator;
 use SionModel\Cache\Storage as CacheStorage;
 use SionModel\Cache\StorageFactory as CacheStorageFactory;
 use Psr\Container\ContainerInterface;
-use Laminas\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use SionModel\Cache\EntityChangeListeners;
 use Psr\Log\LoggerInterface;
 
 return [
-    'router' => [
-        'routes' => [
-            'welcome' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'index',
-                    ],
-                ],
-            ],
-            'sitemap' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/sitemap.xml',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'sitemap',
-                    ],
-                ],
-            ],
-            'developers' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/developers',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'developers',
-                    ],
-                ],
-            ],
-            'privacy' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/privacy',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'privacy',
-                    ],
-                ],
-            ],
-            'acknowledgements' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/acknowledgements',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'acknowledgements',
-                    ],
-                ],
-            ],
-            'redirect-pre-april-2020-sl-id' => [
-                'type' => Segment::class,
-                'options' => [
-                    'route'    => '/:sw_id[/:slug]',
-                    'constraints' => [
-                        'sw_id' => trim(
-                            SchoenstattLinkIdentifier::GENERAL_OLD_REGEX,
-                            '/^$'
-                        ),
-                        'slug' => '[a-z0-9-]{1,200}',
-                    ],
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'redirectPreApril2020SlId',
-                    ],
-                ],
-            ],
-        ],
-    ],
     'service_manager' => [
         'factories' => [
             /*

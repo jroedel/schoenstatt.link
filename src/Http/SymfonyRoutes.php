@@ -6,7 +6,10 @@ namespace App\Http;
 
 use Symfony\Component\Routing\RouteCollection;
 
+use function array_keys;
 use function dirname;
+use function ksort;
+use function preg_replace;
 
 /**
  * The application's Symfony route collection, built once per process.
@@ -45,6 +48,32 @@ final class SymfonyRoutes
     ];
 
     private static ?RouteCollection $collection = null;
+
+    /**
+     * Every route name a bjyauthorize guard or an ACL resource can name.
+     *
+     * Two vocabularies have to be reconciled. A `.locale` twin is the same page as its bare
+     * form, so the suffix is stripped and the two collapse onto one name; and two pages were
+     * renamed when they were ported while the ACL kept the laminas name, which is what
+     * {@see self::ACL_NAME} maps back.
+     *
+     * `tools/acl-table.php` and the guard-drift test both need exactly this set, and before
+     * step 6 both derived it by walking the laminas `router` config's nested `child_routes`.
+     * That config is gone; this is what replaced it, in one place rather than three.
+     *
+     * @return array<string, true>
+     */
+    public static function aclNames(): array
+    {
+        $names = [];
+        foreach (array_keys(self::collection()->all()) as $name) {
+            $bare = preg_replace('/\\.locale$/', '', (string) $name) ?? (string) $name;
+            $names[self::ACL_NAME[$bare] ?? $bare] = true;
+        }
+        ksort($names);
+
+        return $names;
+    }
 
     public static function collection(): RouteCollection
     {

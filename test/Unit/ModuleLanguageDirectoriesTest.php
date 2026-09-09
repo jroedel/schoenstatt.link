@@ -85,7 +85,7 @@ final class ModuleLanguageDirectoriesTest extends TestCase
     public function testANameWithNoDirectoryIsNotInvented(): void
     {
         $modules = ModuleLanguageDirectories::forLoadedModules([
-            'Laminas\Router' => 'a vendor module, loaded, with no directory here',
+            'Laminas\Form' => 'a vendor module, loaded, with no directory here',
         ]);
 
         $this->assertSame([], $modules);
