@@ -5,7 +5,7 @@ use SionModel\Filter\ToAscii;
 use SionModel\Db\Model\SionTable;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
-use Laminas\I18n\Translator\TranslatorInterface;
+use Laminas\Translator\TranslatorInterface;
 use Laminas\Db\Adapter\AdapterInterface;
 use Laminas\Db\TableGateway\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;

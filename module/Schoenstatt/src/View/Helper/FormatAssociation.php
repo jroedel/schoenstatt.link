@@ -1,8 +1,16 @@
 <?php
 namespace Schoenstatt\View\Helper;
 
-use Laminas\Form\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 
+/**
+ * Extended `Laminas\Form\View\Helper\AbstractHelper` until 2026-09, which is a form
+ * helper and this is not one — it formats an association for display. That base class
+ * reaches laminas-i18n through `AbstractTranslatorHelper`, so it was the only live thing
+ * standing between this application and laminas-i18n's removal. Nothing from the form base
+ * was used: the one inherited call here is `$this->view->escapeHtml()`, which comes from
+ * laminas-view's own helper, and that is what it extends now.
+ */
 class FormatAssociation extends AbstractHelper
 {
     protected $associationTypeLabels = [];

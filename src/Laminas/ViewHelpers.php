@@ -16,8 +16,8 @@ use Books\View\Helper\Markdown;
 use JTranslate\View\Helper\CountryName;
 use JTranslate\View\Helper\Flag;
 use JTranslate\View\Helper\LanguageName;
-use Laminas\I18n\View\Helper\DateFormat;
-use Laminas\I18n\View\Helper\Translate;
+use App\View\Helper\DateFormat;
+use App\View\Helper\Translate;
 use Laminas\View\HelperPluginManager;
 use SionModel\I18n\View\Helper\DatePrecisionFormat;
 use SionModel\I18n\View\Helper\DayFormat;
@@ -108,10 +108,10 @@ final class ViewHelpers
     }
 
     /**
-     * Laminas' Intl date formatter. Reaches ext/intl and \Locale::getDefault() and
-     * nothing else — no MvcEvent — and reproducing it would mean re-deriving the
-     * IntlDateFormatter pattern per locale, which is exactly the kind of thing to reuse
-     * rather than copy.
+     * The Intl date formatter. Reaches ext/intl and `\Locale::getDefault()` and nothing
+     * else — no MvcEvent — which is why it is safe to resolve on a Symfony-served page.
+     * Ours since 2026-09; ext/intl still does the work of knowing each locale's date
+     * patterns, which is exactly the kind of thing not to reimplement.
      */
     public function dateFormat(): DateFormat
     {

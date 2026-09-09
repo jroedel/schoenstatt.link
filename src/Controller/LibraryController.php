@@ -12,7 +12,7 @@ use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Laminas\Form\Element\Select;
 use JTranslate\Model\TranslationsTable;
-use Laminas\I18n\Translator\TranslatorInterface;
+use Laminas\Translator\TranslatorInterface;
 use SionModel\Problem\EntityProblem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

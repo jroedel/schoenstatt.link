@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use JTranslate\I18n\Translator\Translator;
 use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
-use Laminas\EventManager\EventInterface;
-use Laminas\I18n\Translator\Translator;
-use Laminas\I18n\Translator\TranslatorInterface;
 use Laminas\ServiceManager\Factory\DelegatorFactoryInterface;
 use Laminas\Validator\AbstractValidator;
-use Laminas\Validator\Translator\Translator as ValidatorTranslator;
 use Locale;
 use Psr\Container\ContainerInterface;
 
@@ -66,18 +63,22 @@ use function str_replace;
  * hook. A listener would have had to be remembered by whoever added the next
  * consumer.
  *
- * Proven safe to attach to `MvcTranslator` alone because there is only one
- * translator: `MvcTranslator`, `jtranslate_translator` and
- * `SchoenstattTable::$translator` were measured to be the *same instance*, wrapping
- * the one `Laminas\I18n\Translator\Translator` that `TranslatorInterface` resolves
- * to.
+ * Proven safe to attach to one id alone because there is only one translator:
+ * `MvcTranslator`, `jtranslate_translator`, `Laminas\Translator\TranslatorInterface` and
+ * `SchoenstattTable::$translator` were measured to be the *same instance*. They are all
+ * aliases of `JTranslate\I18n\Translator\Translator`, which is the id this delegator is
+ * registered on — aliases resolve before delegators are looked up, so registering it on
+ * any of the other names would silently never run.
  *
  * ## Faithfulness
  *
  * Every step below is `onBootstrap`'s, in its order, including the parts that look
  * skippable:
  *
- * - `enableEventManager()` before attaching the listener, or the attach is a no-op.
+ * - the missing-translation listener, which since 2026-09 is a plain callable on the
+ *   translator rather than an event-manager attachment. There is no `enableEventManager()`
+ *   to forget any more; that call was load-bearing here for years because without it the
+ *   attach was a silent no-op.
  * - `setFallbackLocale('en_US')`, which is what makes an untranslated phrase come
  *   out in English rather than empty.
  * - `TranslatorEventListener`, which does **not** load translations — it records
@@ -110,7 +111,7 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
     ): mixed {
         /** @var mixed $translator */
         $translator = $callback();
-        if (! $translator instanceof TranslatorInterface) {
+        if (! $translator instanceof Translator) {
             return $translator;
         }
 
@@ -119,18 +120,8 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         return $translator;
     }
 
-    private function configure(ContainerInterface $container, TranslatorInterface $translator): void
+    private function configure(ContainerInterface $container, Translator $inner): void
     {
-        //Registered on Laminas\I18n\Translator\TranslatorInterface, the canonical id, so
-        //what arrives is laminas-i18n's own Translator; `MvcTranslator` is a
-        //Laminas\Validator\Translator\Translator wrapped around this same instance
-        //(App\Laminas\TranslatorFactory), so configuring it here configures both.
-        if (! $translator instanceof Translator) {
-            return;
-        }
-        $inner = $translator;
-
-        $inner->enableEventManager();
         $inner->setLocale(Locale::getDefault());
         $inner->setFallbackLocale(self::FALLBACK_LOCALE);
 
@@ -144,13 +135,19 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //getLocales(TRUE): the argument includes the key locale, and without it an
         //English page view can never discover a phrase. JTranslate\Module passes the
         //same thing. See TranslatorEventListener's class docblock.
-        $events    = $inner->getEventManager();
-        $bootstrap = static function (EventInterface $event) use (&$bootstrap, $events, $container): void {
-            $events->detach($bootstrap);
+        $bootstrap = static function (
+            string $message,
+            string $locale,
+            string $textDomain
+        ) use (
+            $inner,
+            $container
+        ): ?string {
+            $inner->clearMissingTranslationListeners();
             /** @var TranslationsTable $table */
             $table    = $container->get(TranslationsTable::class);
             $listener = new TranslatorEventListener($table, $table->getLocales(true));
-            $listener->attach($events);
+            $inner->onMissingTranslation($listener);
             //The listener only *queues* a miss; TranslationsTable::flush() writes it, from
             //the kernel's terminate listener. Armed here, on the first miss, so that a
             //request that misses nothing never builds the table. See App\Laminas\PhraseFlush.
@@ -159,11 +156,13 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
                 $phrases = $container->get(PhraseFlush::class);
                 $phrases->arm($table);
             }
-            //this miss too: a listener attached during a trigger does not see the event
-            //that attached it
-            $listener->missingTranslation($event);
+            //this miss too: the listener that replaced this one is not consulted for the
+            //very lookup that installed it
+            $listener->missingTranslation($message, $locale, $textDomain);
+
+            return null;
         };
-        $events->attach(Translator::EVENT_MISSING_TRANSLATION, $bootstrap, 1);
+        $inner->onMissingTranslation($bootstrap);
 
         //Validator messages are translated as templates, before laminas fills in
         //%value%/%hostname%/%min%, so a stranger's mistyped input never reaches the
@@ -173,9 +172,11 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //translate the finished message are off in step with this — see
         //SionModel\Form\BootstrapFormRenderer::errors().
         //
-        //The static setter is what laminas-validator itself offers; it wants its own
-        //TranslatorInterface, which laminas-validator's adapter provides over ours.
-        AbstractValidator::setDefaultTranslator(new ValidatorTranslator($inner), 'default');
+        //The static setter is what laminas-validator itself offers. It wants its own
+        //TranslatorInterface, which our translator implements directly — the adapter that
+        //used to wrap it went with laminas-i18n, and both it and the interface it took are
+        //@deprecated in laminas-validator 2.61.
+        AbstractValidator::setDefaultTranslator($inner, 'default');
 
         //The same map the writer side gets from App\Laminas\TranslationsTableConfigurator,
         //a delegator on the table itself — because a caller that *exports* catalogs must
