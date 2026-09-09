@@ -217,8 +217,8 @@ return [
              * rather than BjyAuthorize\View\Helper\IsAllowed (the only prior registrant, which
              * disappears with the package). This one registration covers every laminas-side
              * caller at once: the ported controllers that fetch it from the ViewHelperManager,
-             * and the module view helpers (Books\FormatField, Schoenstatt\FormatAssociation)
-             * that call `$this->view->isAllowed()`. The container a view-helper factory receives
+             * and the module view helpers (Schoenstatt\FormatAssociation, SionModel's two
+             * edit pencils) that call `$this->view->isAllowed()`. The container a view-helper factory receives
              * is the app ServiceManager itself, so ContainerServices adapts it without building
              * a second one.
              */

@@ -95,7 +95,3 @@ parameters:
 			count: 1
 			path: module/SionModel/src/Form/SionForm.php
 
-		-
-			message: "#^Call to an undefined method SionModel\\\\View\\\\Helper\\\\Tooltip\\:\\:escapeHtml\\(\\)\\.$#"
-			count: 1
-			path: module/SionModel/src/View/Helper/Tooltip.php

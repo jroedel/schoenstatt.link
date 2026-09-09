@@ -40,12 +40,14 @@ use function sprintf;
  * empty on every row. That is a property of the code rather than of the data, so it holds
  * on production too.
  *
- * It also explains something that would otherwise look alarming. The panel's markup calls
- * `formatPersonAssignment()`, whose default branch calls `$this->view->formatScope(...)`
- * — and **no `formatScope` helper is registered anywhere in this application**. If that
- * panel could render for an assignment whose scope is not `Community`, the person page
- * would be a fatal error. It cannot, so it is not; and reproducing dead markup whose
- * helper does not exist would mean inventing the helper too.
+ * It also explains something that would otherwise look alarming. The panel's markup called
+ * `formatPersonAssignment()`, whose default branch called `$this->view->formatScope(...)`
+ * — and **no `formatScope` helper was registered anywhere in this application**. If that
+ * panel could have rendered for an assignment whose scope is not `Community`, the person
+ * page would have been a fatal error. It could not, so it was not; and reproducing dead
+ * markup whose helper does not exist would have meant inventing the helper too. The
+ * `formatPersonAssignment` helper was deleted in 2026-09: it was registered nowhere and
+ * called by nothing, so the only thing keeping it was this explanation.
  *
  * ## The URL map
  *

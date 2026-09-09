@@ -81,7 +81,13 @@ final class ViewHelpers
     private ?DayFormat $dayFormat = null;
     private ?Tooltip $tooltip = null;
     private ?FormatPublicationUrlObject $formatPublicationUrlObject = null;
+    private ?Coins $coins = null;
+    private ?BooksJsonLd $booksJsonLd = null;
+    private ?FormatField $formatField = null;
+    private ?Address $address = null;
+    private ?DiffForHumans $diffForHumans = null;
     private ?TranslatorInterface $translator = null;
+    private ?Translate $translateHelper = null;
 
     /**
      * @param Closure(): RouteUrl $urls handed to App\Laminas\LocaleUrlSubstitute below.
@@ -157,10 +163,13 @@ final class ViewHelpers
      */
     public function formatField(): FormatField
     {
-        /** @var FormatField $helper */
-        $helper = $this->helpers()->get('formatField');
-
-        return $helper;
+        //the label goes through the shared `translate` **helper**, not the translator: it is
+        //the object that carries the domain useTextDomain() sets, and the helper passes none
+        return $this->formatField ??= new FormatField(
+            $this->translateHelper()->__invoke(...),
+            $this->isAllowed()->__invoke(...),
+            $this->dateFormat()->__invoke(...)
+        );
     }
 
     public function languageName(): LanguageName
@@ -177,18 +186,19 @@ final class ViewHelpers
 
     public function coins(): Coins
     {
-        /** @var Coins $helper */
-        $helper = $this->helpers()->get('coins');
-
-        return $helper;
+        return $this->coins ??= new Coins();
     }
 
     public function booksJsonLd(): BooksJsonLd
     {
-        /** @var BooksJsonLd $helper */
-        $helper = $this->helpers()->get('booksJsonLd');
+        if (null !== $this->booksJsonLd) {
+            return $this->booksJsonLd;
+        }
 
-        return $helper;
+        /** @var LocaleUrlSubstitute $localeUrl */
+        $localeUrl = $this->helpers()->get('localeUrl');
+
+        return $this->booksJsonLd = new BooksJsonLd($localeUrl->__invoke(...));
     }
 
     public function formatPublicationUrlObject(): FormatPublicationUrlObject
@@ -221,17 +231,13 @@ final class ViewHelpers
      * runs with no MvcEvent for the same reason dateFormat() above does. Measured on a
      * ported comment list.
      *
-     * The first-invocation latch inside the helper is why this returns the *shared*
-     * instance out of the plugin manager rather than a new one: `Carbon::setLocale()`
-     * is global state, and a second instance would set it a second time on a page that
-     * has already formatted a date.
+     * Memoized rather than built per call because of the first-invocation latch inside it:
+     * `Carbon::setLocale()` is global state, and a fresh instance would set it again on a
+     * page that has already formatted a date.
      */
     public function diffForHumans(): DiffForHumans
     {
-        /** @var DiffForHumans $helper */
-        $helper = $this->helpers()->get('diffForHumans');
-
-        return $helper;
+        return $this->diffForHumans ??= new DiffForHumans($this->dateFormat()->__invoke(...));
     }
 
     /**
@@ -248,10 +254,15 @@ final class ViewHelpers
      */
     public function address(): Address
     {
-        /** @var Address $helper */
-        $helper = $this->helpers()->get('address');
+        if (null !== $this->address) {
+            return $this->address;
+        }
 
-        return $helper;
+        //the place-line patterns, per country, that SionModel's config carries
+        /** @var array<string, mixed> $config */
+        $config = $this->laminas->get('SionModel\\Config');
+
+        return $this->address = new Address($config, $this->countryName()->__invoke(...));
     }
 
     public function countryName(): CountryName
@@ -317,10 +328,25 @@ final class ViewHelpers
      */
     public function useTextDomain(string $domain): void
     {
-        $translate = $this->helpers()->get('translate');
-        if ($translate instanceof Translate) {
-            $translate->setTranslatorTextDomain($domain);
+        $this->translateHelper()->setTranslatorTextDomain($domain);
+    }
+
+    /**
+     * The shared `translate` view helper, memoized because the domain set on it has to be
+     * the domain the helpers holding it read back.
+     *
+     * A host whose plugin manager answers with something else gets one that translates
+     * nothing, which is what a total catalog miss does anyway.
+     */
+    private function translateHelper(): Translate
+    {
+        if (null !== $this->translateHelper) {
+            return $this->translateHelper;
         }
+
+        $translate = $this->helpers()->get('translate');
+
+        return $this->translateHelper = $translate instanceof Translate ? $translate : new Translate();
     }
 
     /**
