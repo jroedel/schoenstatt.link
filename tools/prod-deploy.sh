@@ -34,6 +34,13 @@
 #   make prod-deploy                # checks, then hands over to tools/deploy.sh
 #   make prod-deploy DRY_RUN=1      # checks, then deploy.sh --dry-run (server untouched)
 #   make prod-deploy CI=1           # run ci-local.sh first, and refuse if it fails
+#   make prod-deploy CHECKS_ONLY=1  # run the checks and stop; never reaches deploy.sh
+#
+# CHECKS_ONLY exists because the checks are the part worth exercising — before a release,
+# or when changing this script — and every other way of doing that ends one step away from
+# a live deploy. Piping this script's output through `head` or `sed` truncates what you
+# see and does NOT stop it running, which is a foot-gun this flag removes rather than
+# documents.
 #
 # Everything after the checks is tools/deploy.sh, which has its own confirmation for an
 # unusual run and its own rollback. See docs/DEPLOY.md.
@@ -42,6 +49,7 @@ set -uo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
 CI="${CI:-0}"
+CHECKS_ONLY="${CHECKS_ONLY:-0}"
 
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; BOLD=$'\033[1m'; OFF=$'\033[0m'
 ok()   { printf '  %sok%s    %s\n' "$GREEN" "$OFF" "$1"; }
@@ -156,6 +164,12 @@ if [ "$CI" = "1" ]; then
 fi
 
 # --- hand over ---------------------------------------------------------------------
+if [ "$CHECKS_ONLY" = "1" ]; then
+    printf '\n%sAll checks passed. CHECKS_ONLY is set, so stopping here.%s\n' "$GREEN" "$OFF"
+    printf 'Run without CHECKS_ONLY to deploy.\n'
+    exit 0
+fi
+
 printf '\n%sChecks passed. Handing over to tools/deploy.sh%s\n\n' "$GREEN" "$OFF"
 if [ "$DRY_RUN" = "1" ]; then
     exec ./tools/deploy.sh --dry-run
