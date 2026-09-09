@@ -6,7 +6,7 @@ use JTranslate\I18n\TranslatableMessage;
 use JUser\Host\Severity;
 use JUser\Host\UrlBuilderInterface;
 use JUser\Twig\JUserExtension;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use SionModel\Messaging\FlashMessages;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Twig\Environment;
@@ -30,11 +30,11 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 class JUserHostContractTest extends TestCase
 {
     /**
-     * `Severity` and the laminas flash namespaces are the same five strings.
+     * `Severity` and `SionModel\Messaging\FlashMessages`' namespaces are the same five strings.
      *
      * Not a formality. A flash message crosses a redirect **in the session**, so during
      * the migration one request writes it through one front controller and a differently
-     * rendered page reads it through the other. `JTranslate\View\Helper\FlashMessenger`
+     * rendered page reads it through the other. the renderer (`JTranslate\I18n\MessageRenderer`)
      * reads by namespace, so a Severity whose value drifted from the laminas constant
      * would not be an error anywhere: the message would simply never be rendered, and
      * only for visitors who happened to be mid-flow across the two implementations.
@@ -46,7 +46,7 @@ class JUserHostContractTest extends TestCase
     public function testEverySeverityIsALaminasFlashNamespace(): void
     {
         $laminas = [];
-        foreach ((new ReflectionClass(FlashMessenger::class))->getConstants() as $name => $value) {
+        foreach ((new ReflectionClass(FlashMessages::class))->getConstants() as $name => $value) {
             if (0 === strpos($name, 'NAMESPACE_')) {
                 $laminas[] = $value;
             }
@@ -57,7 +57,7 @@ class JUserHostContractTest extends TestCase
         sort($laminas);
         sort($ours);
 
-        $this->assertSame($laminas, $ours, 'JUser\Host\Severity must cover exactly the laminas flash namespaces');
+        $this->assertSame($laminas, $ours, 'JUser\Host\Severity must cover exactly the FlashMessages namespaces');
     }
 
     /**

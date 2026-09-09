@@ -13,27 +13,15 @@ use function str_contains;
 use function str_replace;
 
 /**
- * Sends the same Content-Security-Policy on a Symfony-served HTML page that
- * SionModel\Mvc\CspListener sends on a laminas-served one.
+ * Sends the Content-Security-Policy on every HTML page, with the per-request nonce that
+ * whitelists the page's own inline scripts.
  *
- * docs/laminas-exit.md records the CSP as one of the things a ported route loses,
- * and for the two maintenance endpoints that was true and harmless — they answer
- * JSON. It stops being harmless the moment an HTML page moves: the shrines page
- * carries an inline <script> that sizes the progress bars, so the policy and the
- * nonce that whitelists that one script have to travel with it, or the first
- * ported page is also the first page on the site with no CSP at all.
- *
- * Two deliberate differences from the laminas listener:
- *
- * 1. The header goes on the Symfony Response instead of through `header()`.
- *    Response::sendHeaders() emits it either way, and putting it on the object
- *    keeps it visible to anything else listening on kernel.response.
- * 2. Only HTML responses get it, which also keeps /_health and the maintenance
- *    endpoints from paying for the module load this listener's config read needs:
- *    the ServiceBridge is lazy, and a JSON response returns before it is touched.
- *
- * Bridged requests are skipped — SionModel's listener runs inside
- * Application::run() and has already done this, at MvcEvent::EVENT_RENDER.
+ * The policy is `sion_model.csp_config.csp_string` with `{:nonce}` replaced; omitting
+ * that key switches the header off. Only HTML responses get it, which also keeps
+ * /_health and the maintenance endpoints from paying for the module load this
+ * listener's config read needs: the ServiceBridge is lazy, and a JSON response returns
+ * before it is touched. The header goes on the Symfony Response rather than through
+ * `header()`, so anything else listening on kernel.response can see it.
  */
 final class CspListener
 {
@@ -69,8 +57,7 @@ final class CspListener
 
     /**
      * Null when the application has switched the policy off, which it expresses by
-     * omitting `csp_string` or `inject_headers_event` — the same two keys
-     * SionModel\Mvc\CspListener::attach() checks before it attaches at all.
+     * omitting `sion_model.csp_config.csp_string`.
      */
     private function policy(): ?string
     {
@@ -80,7 +67,7 @@ final class CspListener
         }
 
         $csp = $config['csp_config'];
-        if (! isset($csp['inject_headers_event']) || ! is_string($csp['csp_string'] ?? null)) {
+        if (! is_string($csp['csp_string'] ?? null)) {
             return null;
         }
 

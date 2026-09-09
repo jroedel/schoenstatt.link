@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Fuzz;
 
+use App\Books\CheckoutForms;
+use App\Books\LibraryScopedForms;
+use App\Laminas\ContainerFactory;
+use App\Laminas\ServiceBridge;
 use Laminas\Form\Fieldset;
-use Laminas\Mvc\Application;
-use Laminas\Mvc\MvcEvent;
-use Laminas\Mvc\Service\ServiceManagerConfig;
-use Laminas\Router\RouteMatch;
 use Laminas\ServiceManager\ServiceManager;
 use Laminas\Session\Config\ConfigInterface as SessionConfigInterface;
 use Laminas\Session\Config\StandardConfig;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
-use ReflectionProperty;
 use Throwable;
 
 /**
@@ -42,26 +41,21 @@ use Throwable;
  * registered factory, this class resolves it through the ServiceManager so the
  * subject under test is the real thing.
  *
- * The container is built the way `bin/console` and
- * `test/Integration/AclGuardRouteDriftTest` build it: ServiceManager +
- * `loadModules()`, never `bootstrap()`. No MVC listeners, no request, no route
- * stack, no HTTP. Config caching is forced off so the module listener never writes
- * `data/config/`.
+ * The container is built the way `bin/console` and every integration test build it:
+ * `App\Laminas\ContainerFactory::build()`, with the config caches off so the module
+ * listener never writes `data/config/`. No request, no route stack, no HTTP.
  *
  * Two seams have to be filled in for the form factories specifically, and both are
  * documented here rather than hidden, because each is a place where the harness
  * departs from production:
  *
- * 1. **A route match.** `BookFormFactory`, `LibraryFormFactory`,
- *    `CollectionFormFactory` and `CheckoutFormFactory` all read
- *    `$container->get('Application')->getMvcEvent()->getRouteMatch()` to learn
- *    which library they are building a form for. Without `bootstrap()` there is no
- *    MvcEvent at all, and `Application::$event` is protected with no setter, so one
- *    is injected by reflection. The alternative — skipping four forms — is exactly
- *    the outcome the brief forbids, since an unconstructable form is where a hole
- *    hides. If laminas ever renames that property the reflection throws loudly and
- *    the four forms surface as construction failures, which is the right way to
- *    find out.
+ * 1. **A library.** The book, collection, library and checkout forms only mean
+ *    something against one library's value options, and the application builds them
+ *    through `App\Books\LibraryScopedForms` and `App\Books\CheckoutForms` with the
+ *    library id taken off the route. There is no route here, so the harness asks the
+ *    same two classes for library 1 — a real id from the capsule's production data.
+ *    The alternative — skipping four forms — is exactly the outcome the brief
+ *    forbids, since an unconstructable form is where a hole hides.
  *
  * 2. **A session config.** `SuggestFormFactory` reaches the authentication
  *    service, which reaches `Laminas\Session\Config\ConfigInterface`, whose
@@ -93,16 +87,8 @@ use Throwable;
  */
 final class FormRepository
 {
-    /** Route parameters the four route-aware form factories ask for. Real ids from the capsule's production data. */
-    private const SEEDED_ROUTE_PARAMS = [
-        'library_id'    => 1,
-        'book_id'       => 18370,
-        'collection_id' => 1,
-        'checkout_id'   => 1,
-        'person_id'     => 1,
-        'publication_id' => 1,
-        'text_id'       => 1,
-    ];
+    /** The library the four library-scoped forms are built for. A real id from the capsule's production data. */
+    private const LIBRARY_ID = 1;
 
     /** A renamed module directory must fail loudly, not silently cover nothing. */
     public const COUNT_SANITY_FLOOR = 35;
@@ -437,6 +423,32 @@ final class FormRepository
             }
         }
 
+        //The four library-scoped forms, built the way the application builds them.
+        $bridge = ServiceBridge::around($container);
+        $scoped = new LibraryScopedForms($bridge);
+        foreach (['book', 'collection', 'library'] as $entity) {
+            $form = $this->quietly(static function () use ($scoped, $entity): ?object {
+                try {
+                    return $scoped->formForLibrary($entity, self::LIBRARY_ID);
+                } catch (Throwable) {
+                    return null;
+                }
+            });
+            if ($form instanceof Fieldset && ! isset($byClass[$form::class])) {
+                $byClass[$form::class] = [$form, LibraryScopedForms::class . "::formForLibrary('$entity')"];
+            }
+        }
+        $checkout = $this->quietly(static function () use ($bridge): ?object {
+            try {
+                return (new CheckoutForms($bridge))->forLibrary(self::LIBRARY_ID);
+            } catch (Throwable) {
+                return null;
+            }
+        });
+        if ($checkout instanceof Fieldset && ! isset($byClass[$checkout::class])) {
+            $byClass[$checkout::class] = [$checkout, CheckoutForms::class . '::forLibrary()'];
+        }
+
         return $byClass;
     }
 
@@ -450,50 +462,19 @@ final class FormRepository
 
         $appConfig = require dirname(__DIR__, 2) . '/config/application.config.php';
 
-        // Never let the module listener write data/config/: it would be a cache
+        // Config caches off: the module listener must never write data/config/, a cache
         // owned by the wrong user sitting next to a real deployment.
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
-
-        $container = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))
-            ->configureServiceManager($container);
-        $container->setService('ApplicationConfig', $appConfig);
+        $container = $this->quietly(static fn (): ServiceManager => ContainerFactory::build($appConfig, false));
 
         $this->quietly(function () use ($container): void {
-            $container->get('ModuleManager')->loadModules();
-
             $container->setAllowOverride(true);
             $container->setService(SessionConfigInterface::class, new StandardConfig());
             $container->setAllowOverride(false);
 
-            $this->seedRouteMatch($container);
             $this->attachSqlRecorder($container);
         });
 
         return $this->container = $container;
-    }
-
-    /**
-     * Give the un-bootstrapped Application an MvcEvent carrying a RouteMatch, so
-     * the route-aware form factories can read the ids they need. See the class
-     * docblock for why this is reflection.
-     */
-    private function seedRouteMatch(ServiceManager $container): void
-    {
-        try {
-            $application = $container->get('Application');
-            $event       = new MvcEvent();
-            $event->setName(MvcEvent::EVENT_ROUTE);
-            $event->setTarget($application);
-            $event->setApplication($application);
-            $event->setRouteMatch(new RouteMatch(self::SEEDED_ROUTE_PARAMS));
-
-            (new ReflectionProperty(Application::class, 'event'))->setValue($application, $event);
-        } catch (Throwable) {
-            // Leave it unseeded. The four route-aware factories then fail, and
-            // those forms are reported as construction failures — visibly.
-        }
     }
 
     /**

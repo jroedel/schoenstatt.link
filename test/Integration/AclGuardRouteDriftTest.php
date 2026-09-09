@@ -2,7 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Mvc\Service\ServiceManagerConfig;
+use App\Laminas\ContainerFactory;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 
@@ -58,14 +58,8 @@ class AclGuardRouteDriftTest extends TestCase
         }
 
         $appConfig = require __DIR__ . '/../../config/application.config.php';
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $serviceManager = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))
-            ->configureServiceManager($serviceManager);
-        $serviceManager->setService('ApplicationConfig', $appConfig);
-        $serviceManager->get('ModuleManager')->loadModules();
+        $serviceManager = ContainerFactory::build($appConfig);
 
         /** @var array<string, mixed> $config */
         $config = $serviceManager->get('config');

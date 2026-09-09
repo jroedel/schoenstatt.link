@@ -6,12 +6,12 @@ namespace App\Controller;
 
 use App\Books\CheckoutForms;
 use App\Books\LibraryPage;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
 use Laminas\Form\Element\Collection;
-use JTranslate\Controller\Plugin\NowMessenger;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,7 +60,8 @@ final class LibraryMassCheckoutController
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
         private readonly LibraryPage $page,
-        private readonly CheckoutForms $forms
+        private readonly CheckoutForms $forms,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -91,7 +92,7 @@ final class LibraryMassCheckoutController
                 //validation: the page ships them once as JSON below, so leaving them on
                 //the elements would repeat the whole person list per row.
                 $this->forms->clearMassOptions($form);
-                $this->now(NowMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                $this->now(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
             }
         }
 
@@ -142,7 +143,7 @@ final class LibraryMassCheckoutController
         }
 
         if ([] !== $bad) {
-            $this->now(NowMessenger::NAMESPACE_ERROR, sprintf(
+            $this->now(FlashMessages::NAMESPACE_ERROR, sprintf(
                 'There was a problem checking out one or more of the books: (%s) Any other '
                 . 'books have been checked out. Please try again.',
                 implode(', ', $bad)
@@ -151,9 +152,7 @@ final class LibraryMassCheckoutController
             return null;
         }
 
-        (new FlashMessenger())
-            ->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage('Books successfully checked out.');
+        $this->messages->flash(FlashMessages::NAMESPACE_SUCCESS, 'Books successfully checked out.');
 
         return new RedirectResponse(
             $this->urls->path('checkouts/library/current', ['library_id' => $libraryId])
@@ -176,8 +175,6 @@ final class LibraryMassCheckoutController
 
     private function now(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 }

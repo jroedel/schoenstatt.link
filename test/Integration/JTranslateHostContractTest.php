@@ -8,7 +8,7 @@ use JTranslate\Host\Severity;
 use JTranslate\Host\UrlBuilderInterface;
 use JTranslate\Twig\JTranslateExtension;
 use JUser\Host\Severity as JUserSeverity;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use SionModel\Messaging\FlashMessages;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionNamedType;
@@ -33,10 +33,10 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 final class JTranslateHostContractTest extends TestCase
 {
     /**
-     * `Severity` and the laminas flash namespaces are the same five strings.
+     * `Severity` and `SionModel\Messaging\FlashMessages`' namespaces are the same five strings.
      *
      * A flash message crosses a redirect **in the session**, so one request writes it and a
-     * differently-rendered page reads it. `JTranslate\View\Helper\FlashMessenger` reads by
+     * differently-rendered page reads it. the renderer (`JTranslate\I18n\MessageRenderer`) reads by
      * namespace, so a value that drifted from the laminas constant is not an error
      * anywhere — the message is simply never rendered.
      *
@@ -51,7 +51,7 @@ final class JTranslateHostContractTest extends TestCase
     public function testEverySeverityIsALaminasFlashNamespace(): void
     {
         $laminas = [];
-        foreach ((new ReflectionClass(FlashMessenger::class))->getConstants() as $name => $value) {
+        foreach ((new ReflectionClass(FlashMessages::class))->getConstants() as $name => $value) {
             if (str_starts_with($name, 'NAMESPACE_')) {
                 $laminas[] = $value;
             }
@@ -65,7 +65,7 @@ final class JTranslateHostContractTest extends TestCase
         $this->assertSame(
             $laminas,
             $ours,
-            'JTranslate\Host\Severity must cover exactly the laminas flash namespaces'
+            'JTranslate\Host\Severity must cover exactly the FlashMessages namespaces'
         );
     }
 

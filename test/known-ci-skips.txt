@@ -38,7 +38,7 @@
 SchoenstattTest\Integration\AdminIndexBadgesTest              # counts the admin badges against real rows
 SchoenstattTest\Integration\AssignmentsTableTest              # reads sch_roles / assignments
 SchoenstattTest\Integration\BorrowerSelfServiceTest           # lib_borrower_tokens round trip
-SchoenstattTest\Integration\CacheStatusParityTest             # compares the two cache-status renderings
+SchoenstattTest\Integration\CacheStatusEndpointTest             # compares the two cache-status renderings
 SchoenstattTest\Integration\EntityFormatterTest               # formats real entity rows
 SchoenstattTest\Integration\EventFeatureStateTest             # asserts texts.LegacyEventId is still empty
 SchoenstattTest\Integration\JUserSignInLinkTest               # writes and redeems a verification token

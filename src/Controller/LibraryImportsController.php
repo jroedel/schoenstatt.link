@@ -8,14 +8,14 @@ use App\Books\Import\ImportColumns;
 use App\Books\Import\ImportTemplate;
 use App\Books\Import\SpreadsheetUpload;
 use App\Books\LibraryPage;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\SionResult;
 use Books\Form\ImportForm;
 use Books\Model\LibraryTable;
-use JTranslate\Controller\Plugin\NowMessenger;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -70,7 +70,8 @@ final class LibraryImportsController
         private readonly RouteUrl $urls,
         private readonly LibraryPage $page,
         private readonly SpreadsheetUpload $upload,
-        private readonly ImportTemplate $template
+        private readonly ImportTemplate $template,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -213,9 +214,10 @@ final class LibraryImportsController
             ]));
         }
 
-        (new FlashMessenger())
-            ->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage('File uploaded. Check the columns below, then preview the import.');
+        $this->messages->flash(
+            FlashMessages::NAMESPACE_SUCCESS,
+            'File uploaded. Check the columns below, then preview the import.'
+        );
 
         return new RedirectResponse($this->urls->path(
             'library-imports/library-import/edit',
@@ -375,8 +377,6 @@ final class LibraryImportsController
 
     private function now(string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage($message);
+        $this->messages->now(FlashMessages::NAMESPACE_ERROR, $message);
     }
 }

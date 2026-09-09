@@ -190,7 +190,7 @@ class TwigCacheDegradationTest extends TestCase
 /**
  * Deliberately not a PHPUnit mock: this has to survive being called from inside a
  * Twig render, and the interface is four methods. Precedent for a support class in a
- * test file: ProbeSionModelController in CacheStatusParityTest.
+ * test file: the probe controller CacheStatusEndpointTest used to carry.
  */
 final class ThrowingTwigCache implements CacheInterface
 {

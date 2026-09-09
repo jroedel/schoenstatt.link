@@ -8,11 +8,11 @@ use App\Books\LibraryDelete;
 use App\Books\LibraryDeleteFailed;
 use App\Books\LibraryDeleteForm;
 use App\Books\LibraryPage;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use JTranslate\Controller\Plugin\NowMessenger;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Psr\Log\LoggerInterface;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -104,7 +104,8 @@ final class LibraryDeleteController
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
         private readonly ServiceBridge $laminas,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -126,7 +127,7 @@ final class LibraryDeleteController
             //is "type the name". A library with no name would be deletable by submitting an
             //empty field, which is the one thing the form exists to prevent.
             $this->flash(
-                FlashMessenger::NAMESPACE_ERROR,
+                FlashMessages::NAMESPACE_ERROR,
                 'This library has no name, so it cannot be confirmed for deletion. '
                 . 'Give it a name first.'
             );
@@ -164,14 +165,14 @@ final class LibraryDeleteController
             $tokenFailed = [] !== ($form->get('security')->getMessages());
             if ($tokenFailed) {
                 $this->nowMessage(
-                    NowMessenger::NAMESPACE_ERROR,
+                    FlashMessages::NAMESPACE_ERROR,
                     'This form has expired. Nothing was deleted — please confirm again.'
                 );
                 $status = Response::HTTP_BAD_REQUEST;
             } else {
                 //The name field carries its own message from the Identical validator, so
                 //this is the summary line rather than a repetition of it.
-                $this->nowMessage(NowMessenger::NAMESPACE_ERROR, 'Nothing was deleted.');
+                $this->nowMessage(FlashMessages::NAMESPACE_ERROR, 'Nothing was deleted.');
             }
         }
 
@@ -224,7 +225,7 @@ final class LibraryDeleteController
                 'error'     => $e->getMessage(),
             ]);
             $this->flash(
-                FlashMessenger::NAMESPACE_ERROR,
+                FlashMessages::NAMESPACE_ERROR,
                 'The library could not be deleted, and nothing was changed. ' . $e->getMessage()
             );
 
@@ -235,7 +236,7 @@ final class LibraryDeleteController
 
         $this->logger->info('Library deleted', ['libraryId' => $libraryId, 'name' => $name] + $counts);
 
-        $this->flash(FlashMessenger::NAMESPACE_SUCCESS, sprintf(
+        $this->flash(FlashMessages::NAMESPACE_SUCCESS, sprintf(
             '“%s” was deleted, along with %s books, %s collections and %s checkout records.',
             $name,
             number_format($counts['books']),
@@ -249,7 +250,7 @@ final class LibraryDeleteController
     /** A flash message in the laminas session, where the page redirected *to* looks for it. */
     private function flash(string $namespace, string $message): void
     {
-        (new FlashMessenger())->setNamespace($namespace)->addMessage($message);
+        $this->messages->flash($namespace, $message);
     }
 
     /**
@@ -259,8 +260,6 @@ final class LibraryDeleteController
      */
     private function nowMessage(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 }

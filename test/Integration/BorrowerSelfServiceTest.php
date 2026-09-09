@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\ContainerFactory;
 use Books\Model\BorrowerTokenTable;
 use Books\Model\LibraryTable;
 use DateTimeImmutable;
 use DateTimeZone;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -60,14 +60,8 @@ class BorrowerSelfServiceTest extends TestCase
         }
 
         $appConfig = require __DIR__ . '/../../config/application.config.php';
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $container = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))
-            ->configureServiceManager($container);
-        $container->setService('ApplicationConfig', $appConfig);
-        $container->get('ModuleManager')->loadModules();
+        $container = ContainerFactory::build($appConfig);
         $this->container = $container;
 
         try {

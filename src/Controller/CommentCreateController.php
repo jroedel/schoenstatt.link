@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\ServiceBridge;
 use App\Sion\CommentPredicates;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Form\CommentForm;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -80,7 +81,8 @@ final class CommentCreateController
 
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly CommentPredicates $predicates
+        private readonly CommentPredicates $predicates,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -138,7 +140,7 @@ final class CommentCreateController
             //SionController sets a nowMessenger error and re-renders. Same reasoning as
             //above: there is no page here to re-render, so the visitor returns to the
             //one they came from, and gets a flash instead of a now-message.
-            $this->flash(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+            $this->flash(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
 
             return $this->back($request);
         }
@@ -146,7 +148,7 @@ final class CommentCreateController
         //`ucwords($entity) . ' successfully created.'` is what SionController builds,
         //so the phrase really is per-entity — "Composition successfully created.",
         //"Text successfully created." — and reproducing it means reproducing that.
-        $this->flash(FlashMessenger::NAMESPACE_SUCCESS, ucwords($entity) . ' successfully created.');
+        $this->flash(FlashMessages::NAMESPACE_SUCCESS, ucwords($entity) . ' successfully created.');
 
         return $this->back($request);
     }
@@ -214,8 +216,7 @@ final class CommentCreateController
      */
     private function flash(string $namespace, string $message): void
     {
-        $messenger = new FlashMessenger();
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->flash($namespace, $message);
     }
 
     private function badRequest(): Response

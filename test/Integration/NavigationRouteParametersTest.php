@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\ContainerFactory;
 use Application\Navigation\PageBuilder;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -146,13 +146,8 @@ class NavigationRouteParametersTest extends TestCase
         $appConfig = require __DIR__ . '/../../config/application.config.php';
         //CI has no writable data/config, and a cached merged config would answer for a tree
         //built before the change under test
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $services = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($services);
-        $services->setService('ApplicationConfig', $appConfig);
-        $services->get('ModuleManager')->loadModules();
+        $services = ContainerFactory::build($appConfig);
 
         return self::$services = $services;
     }

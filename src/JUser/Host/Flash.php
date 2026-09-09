@@ -12,15 +12,15 @@ use JUser\Host\Severity;
 /**
  * `JUser\Host\FlashInterface` over this application's two messengers.
  *
- * `Severity` maps to a laminas namespace by value — `Severity::Error->value === 'error'` is
- * `FlashMessenger::NAMESPACE_ERROR` — which is deliberate on JUser's side and is what makes
- * this class a one-liner each way. `test/Integration/JUserHostContractTest` pins the five
- * against the constants, so a laminas rename fails a test rather than silently dropping
- * messages.
+ * `Severity` maps to a message namespace by value — `Severity::Error->value === 'error'` is
+ * `SionModel\Messaging\FlashMessages::NAMESPACE_ERROR` — which is deliberate on JUser's side
+ * and is what makes this class a one-liner each way. `test/Integration/JUserHostContractTest`
+ * pins the five against the constants, so a rename fails a test rather than silently
+ * dropping messages.
  *
  * The messengers themselves are {@see HostMessages}, which App\Kernel builds **once per
  * request** and hands to this adapter and to JTranslate's. That is not tidying: two
- * `FlashMessenger` instances silently lose one of two messages, and until 2026-09-08 the
+ * flash-store instances silently lose one of two messages, and until 2026-09-08 the
  * memo lived in this class — which was one per module and therefore one *too many* the
  * moment a second module started serving pages here. See that class for the measurement.
  */

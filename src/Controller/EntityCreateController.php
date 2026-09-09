@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Acl\IsAllowed;
+use App\Authorization\Denial;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use App\Authorization\Denial;
 use App\Sion\EntityCreate;
 use App\Sion\FormViewVariables;
-use App\Acl\IsAllowed;
 use Laminas\Filter\StripTags;
 use Laminas\Form\Element\Select;
 use Laminas\Form\FormInterface;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Locale;
 use RuntimeException;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -102,7 +103,8 @@ final class EntityCreateController
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
         private readonly FormViewVariables $viewVariables,
-        private readonly ServiceBridge $laminas
+        private readonly ServiceBridge $laminas,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -143,7 +145,7 @@ final class EntityCreateController
 
                 $refusal = $this->validDataRule($request, $data);
                 if (null !== $refusal) {
-                    $this->flash(FlashMessenger::NAMESPACE_ERROR, $refusal);
+                    $this->flash(FlashMessages::NAMESPACE_ERROR, $refusal);
 
                     return $this->render($request, $entity, $form, $laminasRoute, $routeParams, $libraryId);
                 }
@@ -151,7 +153,7 @@ final class EntityCreateController
                 $newId = $this->create->create($entity, $data);
 
                 if (0 !== $newId) {
-                    $this->flash(FlashMessenger::NAMESPACE_SUCCESS, $this->create->createdMessage($entity));
+                    $this->flash(FlashMessages::NAMESPACE_SUCCESS, $this->create->createdMessage($entity));
 
                     return new RedirectResponse(
                         $this->successTarget($request, $entity, $newId, $data),
@@ -161,9 +163,9 @@ final class EntityCreateController
 
                 //`createEntityPostFormValidation()`'s failure branch: the same message the
                 //invalid-form branch shows, and the form is re-rendered with what was typed.
-                $this->flash(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                $this->flash(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
             } else {
-                $this->flash(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                $this->flash(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
             }
         } else {
             $this->prefill($request, $form);
@@ -662,7 +664,7 @@ final class EntityCreateController
     /** As EntityEditController does it: the plugin writes straight into the laminas session. */
     private function flash(string $namespace, string $message): void
     {
-        (new FlashMessenger())->setNamespace($namespace)->addMessage($message);
+        $this->messages->flash($namespace, $message);
     }
 
     /** A route default this controller cannot work without. */

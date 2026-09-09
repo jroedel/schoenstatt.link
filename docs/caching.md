@@ -52,12 +52,10 @@ there is no way to ask a `ServiceManager` whether a service was instantiated, so
 that resolved tables by name would build all of them, each with a database adapter, on
 `/_health`. (Fixed 2026-08-22; before that a Symfony-served route wrote nothing, because the
 only flush point was a laminas `MvcEvent::FINISH` listener, and nobody noticed because
-`has('Application')` answers true and wall time went *down*.)
+wall time went *down*.)
 
-- **A host that registers no queue keeps the `MvcEvent::FINISH` path** —
-  `SionTableWiring::wireFlushPoint()` at priority **-11000**, below
-  `Laminas\Mvc\SendResponseListener`'s -10000. That is patres and any laminas host; anything
-  passing an explicit priority to `wireOnFinishTrigger()` must stay below -10000.
+- **The queue is the only flush point.** A host that registers none has a persistent cache
+  that stores nothing; the laminas `MvcEvent::FINISH` fallback is gone with laminas-mvc.
 - **A process with neither gets no flush point**, which is correct (rule zero).
 - **The queue is drained by the pass that writes it**; a second flush writes nothing.
 - When a queue is present the MVC `Application` service is deliberately not resolved.

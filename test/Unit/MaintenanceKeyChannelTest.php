@@ -5,9 +5,9 @@ namespace SchoenstattTest\Unit;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Structural test: every maintenance-key check goes through
- * SionModel\Controller\MaintenanceKeyTrait (laminas side) or
- * App\Http\MaintenanceKey (Symfony side), and nowhere else.
+ * Structural test: every maintenance-key check goes through App\Http\MaintenanceKey,
+ * and nowhere else. (SionModel's `MaintenanceKeyTrait` was the laminas-side twin until
+ * the laminas controllers were deleted in 2026-09.)
  *
  * This exists because a bespoke one hid in plain sight for years.
  * Books\Controller\LibrariesController::sendBookNoticesAction() read the key
@@ -36,16 +36,15 @@ use PHPUnit\Framework\TestCase;
 class MaintenanceKeyChannelTest extends TestCase
 {
     /**
-     * The two sanctioned implementations.
+     * The sanctioned implementation.
      *
-     * Until 2026-08-17 these were *excluded* from the query-string sweep below,
-     * because both accepted `?key=` as a documented fallback. Neither does now, so
-     * the invariant tightened from "only these two may read the key from a query
-     * string" to "nothing may" — including them. The list survives only to guard
-     * against a rename (see the second test).
+     * Until 2026-08-17 this was *excluded* from the query-string sweep below, because it
+     * accepted `?key=` as a documented fallback. It does not now, so the invariant
+     * tightened from "only the gate may read the key from a query string" to "nothing
+     * may" — including it. The list survives only to guard against a rename (see the
+     * second test).
      */
     private const SANCTIONED = [
-        'module/SionModel/src/Controller/MaintenanceKeyTrait.php',
         'src/Http/MaintenanceKey.php',
     ];
 
@@ -129,7 +128,7 @@ class MaintenanceKeyChannelTest extends TestCase
             . "\n\nA query string is written verbatim to the web server's access log and kept in\n"
             . "the shell history of whatever invoked it, so for a secret that never rotates it\n"
             . "is a leak by default. The X-Api-Key header is the only channel as of 2026-08-17.\n"
-            . 'Use MaintenanceKeyTrait::assertApiKeyIn() or App\Http\MaintenanceKey.'
+            . 'Use App\Http\MaintenanceKey.'
         );
     }
 
@@ -166,9 +165,7 @@ class MaintenanceKeyChannelTest extends TestCase
 
     public function testTheSharedGateComparesInConstantTimeAndRefusesNonStrings(): void
     {
-        $trait = file_get_contents(
-            dirname(__DIR__, 2) . '/module/SionModel/src/Controller/MaintenanceKeyTrait.php'
-        );
+        $trait = file_get_contents(dirname(__DIR__, 2) . '/src/Http/MaintenanceKey.php');
 
         $this->assertStringContainsString(
             'hash_equals(',

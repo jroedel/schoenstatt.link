@@ -274,12 +274,8 @@ return [
             Model\EventTextTable::class         => Service\EventTextTableFactory::class,
             Model\DictionaryTable::class        => Service\DictionaryTableFactory::class,
             Form\SearchForm::class              => Service\SearchFormFactory::class,
-            Form\LibraryForm::class             => Service\LibraryFormFactory::class,
-            Form\CollectionForm::class          => Service\CollectionFormFactory::class,
-            'Books\Form\CreateCheckoutForm'     => Service\CheckoutFormFactory::class,
             Form\PublicationForm::class         => Service\PublicationFormFactory::class,
             Form\PublicationsSearchForm::class  => Service\PublicationsSearchFormFactory::class,
-            Form\BookForm::class                => Service\BookFormFactory::class,
             'Books\FathersObjects'              => Service\FathersObjectsFactory::class,
             'Books\BorrowersValueOptions'       => Service\BorrowersValueOptionsService::class,
             'Books\AuthorsValueOptions'         => Service\AuthorsValueOptionsService::class,
@@ -295,7 +291,6 @@ return [
     'view_helpers' => [
         'factories' => [
             'formatPublication'             => Service\FormatPublicationFactory::class,
-            'libraryInfo'                   => Service\LibraryInfoFactory::class
         ],
         'invokables' => [
             'coins'                         => View\Helper\Coins::class,
@@ -1174,6 +1169,10 @@ return [
         ],
     ],
     'sion_model' => [
+        //the overdue notice's book list, addressed as `@books/mailing/…` by BooksMailer
+        'mail_template_paths' => [
+            'books' => __DIR__ . '/../templates',
+        ],
         'problem_providers' => [
             Model\LibraryTable::class,
         ],
@@ -2555,17 +2554,6 @@ return [
                  */
                 ['route' => 'events', 'roles' => ['user', 'guest']],
             ],
-        ],
-    ],
-    /*
-     * One view script is still rendered: books/libraries/email-book-list, the checkout
-     * list inside the overdue notice that `bin/console books:send-notices` sends through
-     * SionModel\Mailing\Mailer::renderTemplate(). It is resolved off this path stack,
-     * and this key goes when that template is a Twig one (laminas-exit.md §4.2).
-     */
-    'view_manager' => [
-        'template_path_stack' => [
-            __NAMESPACE__ => __DIR__ . '/../view',
         ],
     ],
 ];

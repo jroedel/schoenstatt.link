@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\ServiceBridge;
-use JTranslate\Controller\Plugin\NowMessenger;
 use Laminas\Form\FormInterface;
 use Schoenstatt\Form\AdvancedSearchForm;
 use Schoenstatt\Form\SearchForm;
 use Schoenstatt\Model\SchoenstattTable;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -69,7 +70,8 @@ final class AssignmentSearchController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig
+        private readonly Environment $twig,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -94,7 +96,7 @@ final class AssignmentSearchController
         }
 
         if (is_array($entities) && [] === $entities) {
-            $this->nowMessage(NowMessenger::NAMESPACE_INFO, 'No results found.');
+            $this->nowMessage(FlashMessages::NAMESPACE_INFO, 'No results found.');
         }
 
         return new Response($this->twig->render('schoenstatt/assignments-search.html.twig', [
@@ -156,15 +158,9 @@ final class AssignmentSearchController
         return $table;
     }
 
-    /**
-     * A message for the page being rendered rather than the next one, through the same
-     * shared ControllerPluginManager instance the `nowMessenger` view helper reads —
-     * see LiteratureController, which established this.
-     */
+    /** A message for the page being rendered rather than the next one. */
     private function nowMessage(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 }

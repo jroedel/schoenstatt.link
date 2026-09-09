@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
-use JTranslate\Model\TranslationsTable;
-use Laminas\Mvc\I18n\Translator as MvcI18nTranslator;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use SionModel\Cache\CacheFlushQueue;
 
@@ -93,81 +90,29 @@ final class ServiceBridge implements LaminasServices
         return $this->services()->get($id);
     }
 
-    private function services(): ServiceManager
+    /**
+     * A bridge over a container somebody else built — the fuzz harness, which needs the
+     * raw ServiceManager to swap a session config in and attach a query profiler before
+     * anything resolves.
+     */
+    public static function around(ServiceManager $services): self
     {
-        if (null !== $this->services) {
-            return $this->services;
-        }
+        $bridge           = new self([]);
+        $bridge->services = $services;
 
-        $services = new ServiceManager();
-        (new ServiceManagerConfig($this->serviceManagerConfig()))->configureServiceManager($services);
-        $services->setService('ApplicationConfig', $this->appConfig);
-        $services->get('ModuleManager')->loadModules();
-
-        //After loadModules(), because MvcTranslator is defined by the merged module
-        //config and there is nothing to decorate before that. Before anything asks for
-        //it, which nothing has yet — the delegator would throw if the instance already
-        //existed.
-        //
-        //This is the translator half of JTranslate\Module::onBootstrap(), which a
-        //Symfony-served route never runs: without it the translator has no sources and
-        //every translated string on every ported page falls back to its English source.
-        //Measured on production. See App\Laminas\TranslatorConfigurator.
-        //Keyed on the **canonical** class, not on `MvcTranslator`: that name is an
-        //alias for it, and laminas-servicemanager resolves an alias before it looks for
-        //delegators, so one registered under the alias never runs. Measured — the first
-        //attempt used 'MvcTranslator' and silently did nothing. Registering the class
-        //covers every alias pointing at it, `MvcTranslator` and `jtranslate_translator`
-        //included.
-        //`TranslationsTable` is decorated too, and for a reason the translator delegator
-        //cannot cover: `setUserModules()` decides **where an exported catalog is written**
-        //— `module/<M>/language` for a loaded module, `language/<M>` for anything else —
-        //and until 2026-09-08 the only thing that called it was the delegator above.
-        //
-        //So the map was set exactly when something asked for a *translator*, which is not
-        //the same as when something asks for the *table*. The translation GUI's save is the
-        //case that breaks: a successful write redirects, so nothing renders, nothing builds
-        //a translator, and `writePhpTranslationArrays()` ran with an empty map — putting
-        //every module domain's catalog under `language/<M>/` instead of in the module.
-        //
-        //It reads as harmless because both directories are registered as *read* paths, and
-        //`language/*` is registered last so the misplaced file even wins. The hazard is the
-        //pair: `bin/console jtranslate:export-catalogs` writes the module copy, the GUI
-        //wrote the other, and a phrase deleted through the GUI would go on being served
-        //from whichever copy the console did not rewrite.
-        $services->configure([
-            'delegators' => [
-                MvcI18nTranslator::class => [TranslatorConfigurator::class],
-                TranslationsTable::class => [TranslationsTableConfigurator::class],
-            ],
-        ]);
-
-        //The other half of onBootstrap's translator wiring: laminas writes discovered
-        //phrases on MvcEvent::EVENT_FINISH, which a Symfony-served route never
-        //reaches. Registered as an instance rather than a factory because the object
-        //is the Kernel's — its listener has to flush the same one the delegator armed.
-        if (null !== $this->phraseFlush) {
-            $services->setService(PhraseFlush::class, $this->phraseFlush);
-        }
-
-        //Same problem, same shape of fix, a different subsystem: SionTable also
-        //defers its writes to MvcEvent::EVENT_FINISH. Registered as an instance
-        //because SionTableWiring enrols tables into *this* object as it builds
-        //them, and App\Http\SionCacheFlushListener has to drain the same one.
-        if (null !== $this->cacheFlushQueue) {
-            $services->setService(CacheFlushQueue::class, $this->cacheFlushQueue);
-        }
-
-        return $this->services = $services;
+        return $bridge;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function serviceManagerConfig(): array
+    private function services(): ServiceManager
     {
-        $config = $this->appConfig['service_manager'] ?? [];
-
-        return is_array($config) ? $config : [];
+        //Config caches on: this is the per-request path, and merging every module's
+        //config on every request is what the cache exists to avoid. Console runs and
+        //tests build through ContainerFactory directly, with them off.
+        return $this->services ??= ContainerFactory::build(
+            $this->appConfig,
+            true,
+            $this->phraseFlush,
+            $this->cacheFlushQueue
+        );
     }
 }
