@@ -27,24 +27,32 @@ under `module/*/src` that a Symfony-served request reaches.
   oracle; regenerate with `tools/acl-table.php --format=json` after any change.
 - **Authentication** is JUser's passwordless magic link, over laminas-authentication and
   laminas-session today.
+- **laminas-mvc is gone** (step 0, 2026-09-09), with mvc-i18n, the three mvc plugins,
+  `diablomedia/laminas-twb-bundle` and `slm/locale`. The container is built by
+  `App\Laminas\ContainerFactory`, the view helpers by `App\Laminas\ViewHelperManagerFactory`,
+  `MvcTranslator` by `App\Laminas\TranslatorFactory`; messages live in
+  `SionModel\Messaging` behind `App\Laminas\HostMessages`; mail renders through Twig.
+  `composer.json` has no `repositories` fork entry left but the chordpro one.
 - **What laminas still does**, and therefore what this plan removes: the service
-  container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`),
-  the database layer (`laminas-db`, under `SionModel\Db\Model\SionTable`), forms and
-  validation (`laminas-form`, `inputfilter`, `validator`, `filter`), translation
-  (`laminas-i18n`, under JTranslate), session, cache, the view-helper classes Twig bridges
-  (`laminas-view`), URL generation from the laminas router config, and laminas-mvc itself,
-  which nothing dispatches through but which still provides the container bootstrap.
+  container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`,
+  `laminas-eventmanager` — direct requirements since step 0), the database layer
+  (`laminas-db`, under `SionModel\Db\Model\SionTable`), forms and validation
+  (`laminas-form`, `inputfilter`, `validator`, `filter`), translation (`laminas-i18n`,
+  under JTranslate), session, cache, the view-helper classes Twig bridges (`laminas-view`),
+  and URL generation from the laminas router config.
 - `App\Laminas\ServiceBridge` is the seam: a lazily built laminas `ServiceManager` a
   Symfony controller asks for laminas-side services. It disappears at step 7.
 
-## 2. The dependency picture (measured 2026-09-09)
+## 2. The dependency picture (measured 2026-09-09, after step 0)
 
-37 `laminas/*` packages are installed. The two facts that shape the order:
+**32** `laminas/*` packages are installed, down from 37. The two facts that shape the
+order, and step 0 confirmed both:
 
-**Removing laminas-mvc is necessary, not sufficient, for anything but the PHP pin.**
-`php composer.phar why-not laminas/laminas-servicemanager 4.0.0` names fourteen cappers.
-Five leave with step 0. The other ten are current laminas components **at their latest
-releases**, each requiring `laminas-servicemanager ^3.x` only:
+**Removing laminas-mvc was necessary, not sufficient, for anything but the PHP pin.**
+`php composer.phar why-not laminas/laminas-servicemanager 4.0.0` named fourteen cappers
+before step 0 and names ten after it, plus our own direct `^3.24` line. They are current
+laminas components **at their latest releases**, each requiring `laminas-servicemanager
+^3.x` only:
 
 | package | latest | servicemanager constraint |
 |---|---|---|
@@ -61,9 +69,9 @@ releases**, each requiring `laminas-servicemanager ^3.x` only:
 
 So servicemanager 4, laminas-cache 4 (and with it `psr/cache` 2/3 and FrameworkBundle)
 are unreachable by upgrading. They become reachable only by **removing** the packages,
-which is this plan. The PHP 8.5 pin (`config.platform.php` 8.4.24) has eleven blockers;
-step 0 removes six, step 1 and step 2 the rest (`laminas-math`, `laminas-serializer`, the
-three cache adapters, `slm/locale`).
+which is this plan. The PHP 8.5 pin (`config.platform.php` 8.4.24) had eleven blockers;
+step 0 removed six and **five remain** — `laminas-math`, `laminas-serializer` and the
+three cache adapters — so the platform stays 8.4.24 until steps 1 and 2.
 
 **Measure, never assume.** Before and after every step: `why-not php 8.5.0`,
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
@@ -77,7 +85,7 @@ deletes.
 
 | step | removes | footprint | replacement |
 |---|---|---|---|
-| 0 | laminas-mvc, mvc-i18n, mvc-plugin-{identity,flashmessenger,prg}, diablomedia/laminas-twb-bundle, slm/locale | see §4 | own container bootstrap; own view-helper manager; `Laminas\Validator\Translator\Translator`; session-backed flash store; Twig mail templates |
+| 0 ✅ | laminas-mvc, mvc-i18n, mvc-plugin-{identity,flashmessenger,prg}, diablomedia/laminas-twb-bundle, slm/locale | see §4 | **done 2026-09-09.** Own container bootstrap; own view-helper manager; `Laminas\Validator\Translator\Translator`; session-backed flash store; Twig mail templates |
 | 1 | laminas-captcha, recaptcha, text (**0 uses**, directly required); json (11 `Json::encode`), math (7 `Rand`), serializer (1), uri (18 `Uri\Http`), http (`Request` 9, `Client` 5), navigation (page classes used as data) | ~50 files | `json_encode`, `random_bytes`/`random_int`, HttpFoundation, `symfony/http-client`, an `App\View` page tree |
 | 2 | laminas-session (15), laminas-authentication (13, all JUser), laminas-cache + 3 adapters (20, behind `SionModel`'s persistent cache and the navigation cache) | ~48 files | HttpFoundation `Session`; JUser's own identity storage (the `Host` contract already abstracts it); `symfony/cache` APCu + filesystem. **Lifts the `psr/cache` 1 pin** |
 | 3 | laminas-i18n (23) | JTranslate is the layer | `symfony/translation` (6.4 already installed transitively); the precompiled PHP-array catalog format stays |
@@ -185,12 +193,16 @@ JTranslate); see §6 before starting any of them.
    (`--dry-run` returns before rendering, so the comparison drove
    `Mailer::renderTemplate()` directly). Deploy.
 3. **Submodule PRs** (JTranslate, SionModel, JUser): done with batch 2.
-4. **Composer**: remove the seven packages and the two `repositories` fork entries; add the
-   now-direct requirements (`laminas-servicemanager`, `laminas-modulemanager`,
-   `laminas-eventmanager`, `laminas-http` — `App\JUser\Host\RouteResolver` matches a
-   `Laminas\Http\Request` — and `laminas-view`). `composer update --lock` in the capsule,
-   `--no-dev` rehearsal, `composer audit --locked`. Deploy.
-5. **Docs**: update this file's §1 and §3.
+4. **Composer**: done. The seven packages and the two `repositories` fork entries are out,
+   and the five that stop being transitive are direct: `laminas-servicemanager`,
+   `laminas-modulemanager`, `laminas-eventmanager`, `laminas-http` (`App\JUser\Host\RouteResolver`
+   matches a `Laminas\Http\Request`) and `laminas-view`. Re-locked with a **partial**
+   update naming exactly those twelve — `composer update --lock` only rewrites the hash and
+   would not have re-resolved — which reported *7 removals, 0 installs, 0 updates*, so
+   nothing else moved. The four `Laminas\Mvc*` module entries, `SlmLocale` and `TwbBundle`
+   left `config/modules.config.php`; the `formElement` alias left Application's config.
+   `--no-dev` rehearsal and `composer audit --locked` clean. Deploy.
+5. **Docs**: this file, `docs/BACKLOG.md`'s fork item, and the two autoload probes.
 
 ### 4.4 Verification specific to step 0
 
@@ -202,7 +214,13 @@ JTranslate); see §6 before starting any of them.
   `data/config/*` file may appear owned by the deploy user after a console run.
 - PHPStan level 0 gains no `class.notFound`; level 8 on the Symfony-side paths stays clean.
 - `why-not php 8.5.0` lists five packages afterwards; `why-not laminas-servicemanager 4.0.0`
-  lists ten.
+  lists ten. **Both confirmed.**
+- **Two hardcoded probes name a class from a removed package and fail loudly only when it
+  goes**: `public/index.php`'s install check and the autoload sanity check in
+  `.github/workflows/ci.yml` *and* `tools/ci-local.sh`. All three named
+  `Laminas\Mvc\Application` and now name `App\Kernel`. The index.php one is the dangerous
+  shape: it throws before the kernel is built, which is a fatal under HTTP 200 on every
+  page — a 441-byte 200 is what it looked like.
 
 ## 5. Rules for every step
 

@@ -15,10 +15,6 @@ $modules = [
     'Laminas\I18n',
     'Laminas\Form',
     'Laminas\Navigation',
-    'Laminas\Mvc\Plugin\Identity',
-    'Laminas\Mvc\Plugin\FlashMessenger',
-    'Laminas\Mvc\Plugin\Prg',
-    'Laminas\Mvc\I18n',
     'Laminas\Validator',
     //provides the session factories JUser\Module::onBootstrap starts
     'Laminas\Session',
@@ -28,14 +24,12 @@ $modules = [
     'Laminas\Cache\Storage\Adapter\Apcu',
     'Laminas\Cache\Storage\Adapter\Filesystem',
     'Laminas\Serializer',
-    'SlmLocale',
     'JUser',
     'SionModel',
     'JTranslate',
     'Books',
     'Schoenstatt',
     'Application',
-    'TwbBundle',
 ];
 
 return $modules;
