@@ -45,11 +45,25 @@
 # Everything after the checks is tools/deploy.sh, which has its own confirmation for an
 # unusual run and its own rollback. See docs/DEPLOY.md.
 
+# ## Why the brace around everything below
+#
+# Check 2 runs `git checkout master`, which REWRITES THIS FILE while bash is reading it.
+# Bash reads a script incrementally and seeks by byte offset, so without this it resumes
+# inside whatever master's copy happens to have at that offset: measured 2026-09-09, a
+# script that replaces itself mid-run executes the replacement's remaining lines at every
+# size tried (1 KB to 60 KB, growing or shrinking). Two consequences, both bad — a syntax
+# error mid-deploy, and checks that silently come from the branch you just left rather
+# than the one you are deploying.
+#
+# A brace group is one compound command, so bash parses all of it before running any of
+# it. Nothing may be added after the closing brace.
+{
 set -uo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
 CI="${CI:-0}"
 CHECKS_ONLY="${CHECKS_ONLY:-0}"
+INTEGRATION_BRANCH="${INTEGRATION_BRANCH:-modernization}"
 
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; BOLD=$'\033[1m'; OFF=$'\033[0m'
 ok()   { printf '  %sok%s    %s\n' "$GREEN" "$OFF" "$1"; }
@@ -137,20 +151,45 @@ Then decide which side is right — do not let a script choose:
 fi
 ok "submodule checkouts match the pinned commits"
 
-# --- 4. the pinned commits must exist on their remotes -----------------------------
-# Otherwise master names a commit nobody else can fetch: the deploy would work from this
-# machine and from nowhere else, and a rollback or a rebuild elsewhere would fail.
+# --- 4. the pinned commits must be MERGED, not merely pushed -----------------------
+# The weaker question — "is this commit on some remote branch?" — passes for a commit
+# sitting on a pushed but unmerged feature branch. That would deploy code whose review is
+# still open, from a branch that may yet be rebased or abandoned.
+#
+# The question worth asking is whether the pointer names something on the integration
+# branch, which is the same thing as "has this submodule's PR been pulled". Asking it
+# here matters even though tools/bump-submodules.sh already refuses to pin anything it
+# has not proved is an ancestor of origin/$INTEGRATION_BRANCH: that makes the guarantee
+# true by convention, held in one script, and a deploy should not depend on how a pointer
+# came to be. Two independent checks, one at the pin and one at the deploy.
+#
+# A deliberate exception has a door: ./tools/deploy.sh --ref REF says out loud that it is
+# deploying something other than master.
 while read -r _KEY SUB; do
     [ -d "$SUB" ] || continue
     PINNED="$(git rev-parse "HEAD:$SUB" 2>/dev/null)" || continue
-    git -C "$SUB" fetch -q origin 2>/dev/null || warn "$SUB: could not fetch origin; skipping the remote check"
-    if ! git -C "$SUB" branch -r --contains "$PINNED" >/dev/null 2>&1 \
-       || [ -z "$(git -C "$SUB" branch -r --contains "$PINNED" 2>/dev/null)" ]; then
-        die "$SUB: master pins $PINNED, which is on no remote branch.
-Push that commit, or master names code only this machine has."
+    git -C "$SUB" fetch -q origin 2>/dev/null \
+        || die "$SUB: cannot fetch origin, so whether the pinned commit is merged cannot be
+established. Refusing rather than assuming."
+
+    if ! git -C "$SUB" rev-parse --verify -q "refs/remotes/origin/$INTEGRATION_BRANCH" >/dev/null; then
+        die "$SUB: no origin/$INTEGRATION_BRANCH to check the pinned commit against."
+    fi
+
+    if ! git -C "$SUB" merge-base --is-ancestor "$PINNED" "origin/$INTEGRATION_BRANCH" 2>/dev/null; then
+        WHERE="$(git -C "$SUB" branch -r --contains "$PINNED" 2>/dev/null | tr -d ' ' | paste -sd, - )"
+        die "$SUB: master pins $PINNED, which is NOT on origin/$INTEGRATION_BRANCH.
+
+${WHERE:+It is on: $WHERE
+}
+That is a commit whose PR has not been pulled — unreviewed, and on a branch that may
+still be rebased or abandoned. Merge that submodule's PR, then re-pin with
+'make dev-bump-submodules'.
+
+To deploy something other than master deliberately, ./tools/deploy.sh --ref REF says so."
     fi
 done < <(git config --file .gitmodules --get-regexp '^submodule\..*\.path$')
-ok "every pinned submodule commit is on a remote"
+ok "every pinned submodule commit is merged into origin/$INTEGRATION_BRANCH"
 
 # --- 5. credentials, before anything slow -----------------------------------------
 [ -f .deploy.local ] || die "no .deploy.local. Seed it from .deploy.local.dist with ./config.sh.
@@ -175,3 +214,4 @@ if [ "$DRY_RUN" = "1" ]; then
     exec ./tools/deploy.sh --dry-run
 fi
 exec ./tools/deploy.sh
+}
