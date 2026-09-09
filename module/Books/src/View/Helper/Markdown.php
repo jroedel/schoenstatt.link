@@ -1,9 +1,8 @@
 <?php
 namespace Books\View\Helper;
 
-use Laminas\View\Helper\AbstractHelper;
 
-class Markdown extends AbstractHelper
+class Markdown
 {
     protected $filter;
 

@@ -63,6 +63,19 @@ final class ViewHelpers
 
     private ?IsAllowed $isAllowed = null;
 
+    /*
+     * Ported helpers, constructed here rather than resolved from the plugin manager.
+     * Each is a plain class now — no `Laminas\View\Helper\AbstractHelper` base, nothing
+     * asked of a renderer — so the manager could not build one anyway: it validates every
+     * instance against laminas-view's HelperInterface. Step 4 of the laminas exit empties
+     * the manager this way, one group at a time.
+     */
+    private ?Email $email = null;
+    private ?LanguageName $languageName = null;
+    private ?Markdown $markdown = null;
+    private ?FileSize $fileSize = null;
+    private ?DatePrecisionFormat $datePrecisionFormat = null;
+
     /**
      * @param Closure(): RouteUrl $urls handed to App\Laminas\LocaleUrlSubstitute below.
      *        A closure rather than the object because RouteUrl reads the request's base
@@ -85,10 +98,7 @@ final class ViewHelpers
 
     public function email(): Email
     {
-        /** @var Email $helper */
-        $helper = $this->helpers()->get('email');
-
-        return $helper;
+        return $this->email ??= new Email();
     }
 
     public function telephone(): Telephone
@@ -152,18 +162,14 @@ final class ViewHelpers
 
     public function languageName(): LanguageName
     {
-        /** @var LanguageName $helper */
-        $helper = $this->helpers()->get('languageName');
-
-        return $helper;
+        return $this->languageName ??= new LanguageName();
     }
 
     public function markdown(): Markdown
     {
-        /** @var Markdown $helper */
-        $helper = $this->helpers()->get('markdown');
-
-        return $helper;
+        //memoized because the constructor builds a ParsedownExtra, and a content page
+        //runs this filter once per block
+        return $this->markdown ??= new Markdown();
     }
 
     public function coins(): Coins
@@ -198,10 +204,7 @@ final class ViewHelpers
      */
     public function fileSize(): FileSize
     {
-        /** @var FileSize $helper */
-        $helper = $this->helpers()->get('fileSize');
-
-        return $helper;
+        return $this->fileSize ??= new FileSize();
     }
 
     /**
@@ -261,10 +264,7 @@ final class ViewHelpers
 
     public function datePrecisionFormat(): DatePrecisionFormat
     {
-        /** @var DatePrecisionFormat $helper */
-        $helper = $this->helpers()->get('datePrecisionFormat');
-
-        return $helper;
+        return $this->datePrecisionFormat ??= new DatePrecisionFormat();
     }
 
     /**
