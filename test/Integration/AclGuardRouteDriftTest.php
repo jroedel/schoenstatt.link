@@ -2,6 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
+use App\Http\SymfonyRoutes;
 use App\Laminas\ContainerFactory;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
@@ -109,22 +110,12 @@ class AclGuardRouteDriftTest extends TestCase
      */
     private function routeNames(): array
     {
-        $names = [];
-
-        $walk = static function (array $definitions, string $prefix) use (&$walk, &$names): void {
-            foreach ($definitions as $name => $definition) {
-                $full         = $prefix === '' ? (string) $name : $prefix . '/' . $name;
-                $names[$full] = true;
-
-                if (isset($definition['child_routes']) && is_array($definition['child_routes'])) {
-                    $walk($definition['child_routes'], $full);
-                }
-            }
-        };
-
-        $walk($this->config()['router']['routes'] ?? [], '');
-
-        return $names;
+        //Walked the laminas `router` config's nested child_routes until step 6 removed it.
+        //The names a guard can name are now the Symfony route names, with `.locale` twins
+        //collapsed and the two renamed pages mapped back to what the ACL calls them —
+        //see App\Http\SymfonyRoutes::aclNames(), which tools/acl-table.php also uses so the
+        //table and this test cannot disagree about what exists.
+        return SymfonyRoutes::aclNames();
     }
 
     /**

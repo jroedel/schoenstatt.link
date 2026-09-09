@@ -19,20 +19,20 @@
     "counts": {
         "controller_guard_entries": 0,
         "guarded_routes_existing": 114,
-        "guarded_routes_total": 116,
+        "guarded_routes_total": 114,
         "non_route_resources": 14,
-        "phantom_guard_entries": 2,
+        "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 117,
+        "route_guard_entries": 115,
         "routes_declared_twice": 1,
         "rules_from_rule_config": 34,
         "symfony_routes_acl_checked": 224,
         "symfony_routes_open": 31,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 255,
-        "total_routes": 139,
-        "unguarded_routes": 25,
-        "unguarded_routes_matchable": 25
+        "total_routes": 140,
+        "unguarded_routes": 26,
+        "unguarded_routes_matchable": 26
     },
     "dynamic_providers": {
         "resource": [
@@ -180,37 +180,6 @@
             "matchable": true,
             "public": false,
             "route": "assignments/advanced-search"
-        },
-        "assignments/assignment": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "sch_basic",
-                        "sch_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "sch_basic",
-                "sch_user"
-            ],
-            "effective_roles": [
-                "sch_administrator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user"
-            ],
-            "exists_in_router": false,
-            "matchable": false,
-            "public": false,
-            "route": "assignments/assignment"
         },
         "assignments/assignment/delete": {
             "anonymous_allowed": false,
@@ -3132,31 +3101,6 @@
             "public": false,
             "route": "roles/create"
         },
-        "roles/role": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "sch_moderator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "sch_moderator"
-            ],
-            "effective_roles": [
-                "sch_administrator",
-                "sch_general_moderator",
-                "sch_moderator"
-            ],
-            "exists_in_router": false,
-            "matchable": false,
-            "public": false,
-            "route": "roles/role"
-        },
         "roles/role/delete": {
             "anonymous_allowed": false,
             "assertion": null,
@@ -4620,10 +4564,7 @@
         "unguarded_routes": "The Route guard is default-deny: a route with no guard entry is reachable by nobody. unguarded_routes_matchable is the subset that is a real endpoint; the rest are Part-route parents with may_terminate false, which can never be matched.",
         "symfony_routes": "Paths the Symfony kernel serves itself (config/symfony/routes.php, live only where SYMFONY_KERNEL=1 \u2014 the capsule, not production yet). BjyAuthorize's own guard cannot run for them, because a Symfony-served request never boots laminas-mvc; App\\Authorization\\RouteGuard runs on kernel.request instead and asks the ACL about the resource each route declares in access.resource. That resource is one of THIS file's \u2014 route/<laminas-route-name> \u2014 so a single guard entry governs both front controllers. access.kind is \"acl\" when the route is checked, \"open\" when it deliberately is not (access.reason says why), and \"undeclared\" when nobody decided, which is a bug and is warned about. access.denial_style is how a refusal is shaped: html means 302 to the sign-in page for an anonymous visitor and 403 with the error page for a signed-in one, json means 401/403 with a JSON body and no redirect."
     },
-    "phantom_guard_entries": [
-        "assignments/assignment",
-        "roles/role"
-    ],
+    "phantom_guard_entries": [],
     "roles": {
         "administrator": {
             "ancestors": [
@@ -8137,7 +8078,8 @@
         "api-v3/schema-entity-method",
         "api-v3/schema-method",
         "health",
-        "library/my-books"
+        "library/my-books",
+        "not-found"
     ],
     "unguarded_routes_matchable": [
         "api-not-found",
@@ -8164,11 +8106,9 @@
         "api-v3/schema-entity-method",
         "api-v3/schema-method",
         "health",
-        "library/my-books"
+        "library/my-books",
+        "not-found"
     ],
     "unknown_roles_named_in_config": [],
-    "warnings": [
-        "The guard on \"assignments/assignment\" restricts it to sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, but no Symfony route declares RouteAccess::guardedBy('route/assignments/assignment'). Every request is Symfony-served, so this guard enforces nothing \u2014 and there are two very different reasons for that. Either the page is gone and the entry is dead config, or a route does serve it without checking the resource, which is a restriction silently lifted. Request the path to tell them apart: a 404 is the first, a 200 is the second.",
-        "The guard on \"roles/role\" restricts it to sch_administrator, sch_general_moderator, sch_moderator, but no Symfony route declares RouteAccess::guardedBy('route/roles/role'). Every request is Symfony-served, so this guard enforces nothing \u2014 and there are two very different reasons for that. Either the page is gone and the entry is dead config, or a route does serve it without checking the resource, which is a restriction silently lifted. Request the path to tell them apart: a 404 is the first, a 200 is the second."
-    ]
+    "warnings": []
 }
