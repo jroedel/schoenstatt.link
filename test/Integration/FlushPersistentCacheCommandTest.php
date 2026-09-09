@@ -2,8 +2,9 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Http\Client;
-use Laminas\Http\Client\Adapter\Test as TestAdapter;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use PHPUnit\Framework\TestCase;
 use SionModel\Console\Command\FlushPersistentCacheCommand;
 use Symfony\Component\Console\Command\Command;
@@ -27,7 +28,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * migration the same command talks to hosts of both kinds.
  *
  * Needs vendor/ (laminas-http, symfony/console) but no running app: the HTTP
- * exchange is stubbed through laminas-http's Test adapter.
+ * exchange is stubbed through Symfony's MockHttpClient.
  * php composer.phar integration
  */
 class FlushPersistentCacheCommandTest extends TestCase
@@ -63,12 +64,12 @@ class FlushPersistentCacheCommandTest extends TestCase
         $tester = new CommandTester($this->command($client));
         $tester->execute([]);
 
-        $rawRequest = (string) $client->getLastRawRequest();
-
-        $this->assertStringContainsString('X-Api-Key: ' . self::CONFIGURED_KEY, $rawRequest);
-        //the request line must carry no query string at all
-        $this->assertStringNotContainsString('?', explode("\r\n", $rawRequest)[0]);
-        $this->assertStringContainsString(FlushPersistentCacheCommand::DEFAULT_PATH, $rawRequest);
+        $this->assertContains('X-Api-Key: ' . self::CONFIGURED_KEY, $this->sentHeaders());
+        //the URL must carry no query string at all — the key belongs in a header, and a
+        //key in a URL ends up in access logs and Referer headers
+        $url = (string) $this->lastResponse?->getRequestUrl();
+        $this->assertStringNotContainsString('?', $url);
+        $this->assertStringContainsString(FlushPersistentCacheCommand::DEFAULT_PATH, $url);
     }
 
     /**
@@ -132,7 +133,9 @@ class FlushPersistentCacheCommandTest extends TestCase
         $tester = new CommandTester($this->command($client, []));
 
         $this->assertSame(Command::INVALID, $tester->execute([]));
-        $this->assertNull($client->getLastRawRequest(), 'no request should be attempted without a key');
+        //MockHttpClient counts what it was actually asked for; laminas-http reported this
+        //as a null raw request. Either way the property is "nothing was sent".
+        $this->assertSame(0, $client->getRequestsCount(), 'no request should be attempted without a key');
     }
 
     public function testRefusesToRunWithNoBaseUrl(): void
@@ -152,7 +155,7 @@ class FlushPersistentCacheCommandTest extends TestCase
         $tester = new CommandTester($this->command($client));
         $tester->execute([]);
 
-        $this->assertStringContainsString('X-Api-Key: env-key', (string) $client->getLastRawRequest());
+        $this->assertContains('X-Api-Key: env-key', $this->sentHeaders());
     }
 
     /**
@@ -166,7 +169,7 @@ class FlushPersistentCacheCommandTest extends TestCase
         $tester->execute(['--key' => 'super-secret-value']);
 
         $this->assertStringNotContainsString('super-secret-value', $this->display($tester));
-        $this->assertStringContainsString('X-Api-Key: super-secret-value', (string) $client->getLastRawRequest());
+        $this->assertContains('X-Api-Key: super-secret-value', $this->sentHeaders());
     }
 
     public function testHonoursAnExplicitUrl(): void
@@ -185,7 +188,10 @@ class FlushPersistentCacheCommandTest extends TestCase
     /**
      * @param list<string> $apiKeys
      */
-    private function command(Client $client, array $apiKeys = [self::CONFIGURED_KEY]): FlushPersistentCacheCommand
+    private function command(
+        HttpClientInterface $client,
+        array $apiKeys = [self::CONFIGURED_KEY]
+    ): FlushPersistentCacheCommand
     {
         return new FlushPersistentCacheCommand($client, self::BASE_URL, $apiKeys);
     }
@@ -199,13 +205,57 @@ class FlushPersistentCacheCommandTest extends TestCase
         return trim(preg_replace('/\s+/', ' ', $tester->getDisplay()) ?? '');
     }
 
-    private function clientReturning(string $rawResponse): Client
-    {
-        $adapter = new TestAdapter();
-        $adapter->setResponse($rawResponse);
-        $client = new Client();
-        $client->setAdapter($adapter);
+    /**
+     * A client answering with one stubbed exchange.
+     *
+     * The fixtures are kept as **raw HTTP** rather than as (body, status) pairs, which is
+     * what laminas-http's Test adapter took: a test that says
+     * `HTTP/1.1 302 Found\r\nLocation: /en/user/login` shows the shape being reproduced,
+     * and the 302 is the case this command exists to explain. Parsing them here keeps every
+     * call site and its literal unchanged across the move off laminas-http.
+     */
+    private ?MockResponse $lastResponse = null;
 
-        return $client;
+    private function clientReturning(string $rawResponse): HttpClientInterface
+    {
+        [$head, $body] = array_pad(explode("\r\n\r\n", $rawResponse, 2), 2, '');
+        $status        = 200;
+        $headers       = [];
+        foreach (explode("\r\n", $head) as $i => $line) {
+            if (0 === $i) {
+                if (1 === preg_match('#^HTTP/\d(?:\.\d)?\s+(\d{3})#', $line, $m)) {
+                    $status = (int) $m[1];
+                }
+                continue;
+            }
+            if ('' !== trim($line) && str_contains($line, ':')) {
+                [$name, $value]        = explode(':', $line, 2);
+                $headers[trim($name)] = trim($value);
+            }
+        }
+
+        $this->lastResponse = new MockResponse($body, [
+            'http_code'        => $status,
+            'response_headers' => $headers,
+        ]);
+
+        return new MockHttpClient($this->lastResponse);
+    }
+
+    /**
+     * The headers actually sent, which laminas-http exposed as `getLastRawRequest()`.
+     *
+     * MockResponse records the options the client was called with, so the assertion stays
+     * about the outgoing request rather than being weakened to "the command did not crash"
+     * — these two tests are what keep the API key in a header and out of the deploy log.
+     *
+     * @return list<string>
+     */
+    private function sentHeaders(): array
+    {
+        /** @var list<string> $headers */
+        $headers = $this->lastResponse?->getRequestOptions()['headers'] ?? [];
+
+        return $headers;
     }
 }
