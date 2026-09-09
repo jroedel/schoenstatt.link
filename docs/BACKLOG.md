@@ -124,6 +124,14 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
 - **`TitleNoAccents`, `SubtitleNoAccents`, `AuthorsNoAccents`, `EditorNoAccents` are dead
   columns** on `sch_publications` (two mapped in the spec, nothing consumes any). Drop them
   in a `ddl` migration with the `.deploy.local` credentials.
+- **Two bjyauthorize guard entries name pages that no longer exist**: `assignments/assignment`
+  (`sch_user`, `sch_basic`) and `roles/role` (`sch_moderator`). `tools/acl-table.php` warns
+  about both since step 6, because no Symfony route declares either resource. Measured
+  2026-09-09: `/assignments/1` and `/roles/1` both reach the catch-all and 404, and only the
+  `/edit` routes survive — so these are dead config, not restrictions that were lifted.
+  Removing the two entries clears the warnings and shrinks `guarded_routes`; left in place
+  because doing it inside a laminas-removal batch would mix an ACL change into a
+  dependency change.
 - **Three template permission checks name a resource that does not exist**
   (`AclGuardRouteDriftTest::KNOWN_DEAD_PERMISSION_CHECKS`): `route/publications/
   advanced-search` (`search-bar.phtml`; `LiteratureController::advancedSearchUrl()` catches
