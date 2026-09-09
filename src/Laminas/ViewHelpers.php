@@ -16,7 +16,6 @@ use Books\View\Helper\Markdown;
 use JTranslate\View\Helper\CountryName;
 use JTranslate\View\Helper\Flag;
 use JTranslate\View\Helper\LanguageName;
-use JUser\Bridge\Laminas\ZfcUserDisplayName;
 use Laminas\I18n\View\Helper\DateFormat;
 use Laminas\I18n\View\Helper\Translate;
 use Laminas\View\HelperPluginManager;
@@ -304,14 +303,6 @@ final class ViewHelpers
     public function isAllowed(): IsAllowed
     {
         return $this->isAllowed ??= new IsAllowed(new AclProvider($this->laminas));
-    }
-
-    public function displayName(): ZfcUserDisplayName
-    {
-        /** @var ZfcUserDisplayName $helper */
-        $helper = $this->helpers()->get('zfcUserDisplayName');
-
-        return $helper;
     }
 
     /**

@@ -14,10 +14,6 @@ if ($inDevelopment) {
 return [
     'sion_model' => [
         /**
-         * An AuthenticationServiceInterface instance to be fetched from service manager
-         */
-        'default_authentication_service' => 'zfcuser_auth_service',
-        /**
          * Public base URL, no trailing slash. Only bin/console reads this: a CLI
          * process has no request to infer the host from, and
          * cache:flush-persistent has to reach the web SAPI over HTTP because an

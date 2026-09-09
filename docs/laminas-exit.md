@@ -25,8 +25,9 @@ under `module/*/src` that a Symfony-served request reaches.
   config keys (`config/autoload/acl.global.php`, module configs). bjy-authorize and
   laminas-permissions-acl were removed 2026-09-08. `docs/acl-baseline.json` is the diff
   oracle; regenerate with `tools/acl-table.php --format=json` after any change.
-- **Authentication** is JUser's passwordless magic link, over laminas-authentication and
-  laminas-session today.
+- **Authentication** is JUser's passwordless magic link over
+  `JUser\Authentication\SessionIdentity`, which keeps the user id in the session and
+  re-reads the account every request. laminas-authentication was removed 2026-09-09.
 - **laminas-mvc is gone** (step 0, 2026-09-09), with mvc-i18n, the three mvc plugins,
   `diablomedia/laminas-twb-bundle` and `slm/locale`. The container is built by
   `App\Laminas\ContainerFactory`, the view helpers by `App\Laminas\ViewHelperManagerFactory`,
@@ -106,13 +107,20 @@ deletes.
 | 1a ✅ | laminas-captcha, recaptcha, text (**0 uses**), math (6 `Rand`); our direct `laminas-json` line (8 call sites → `App\Json`) | 12 files | **done 2026-09-09.** `random_int`/`random_bytes`; `App\Json` reproduces the two behaviours that were load-bearing |
 | 1b ✅ | navigation (config-only: nothing resolved the service) | 3 config files | **done 2026-09-09.** `App\View\NavigationTree` already built the tree from the `navigation` config key, which stays |
 | 1c | json (the package itself — laminas-view and laminas-serializer still pull it), serializer (it is the laminas-cache serializer), uri (7 files, but laminas-http **and laminas-router** require it), http (`Client` in two gateways and a console command; `Request` only to feed the laminas router) | ~15 files | `symfony/http-client` or ~20 lines of our own; the rest unblock at steps 2 and 6 |
-| 2 | laminas-session (15), laminas-authentication (13, all JUser), laminas-cache + 3 adapters (20, behind `SionModel`'s persistent cache and the navigation cache) | ~48 files | HttpFoundation `Session`; JUser's own identity storage (the `Host` contract already abstracts it); `symfony/cache` APCu + filesystem. **Lifts the `psr/cache` 1 pin** |
+| 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
 | 3 | laminas-i18n (23) | JTranslate is the layer | `symfony/translation` (6.4 already installed transitively); the precompiled PHP-array catalog format stays |
 | 4 | laminas-view (32 `AbstractHelper` subclasses), laminas-escaper | ~46 files | Twig extensions; `App\Laminas\EntityFormatter` already wraps the biggest helper |
 | 5 | laminas-form, inputfilter, validator, filter | 36 forms, ~170 files | Symfony Form + Validator. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 | laminas-router (27) | every route is declared twice today | Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names |
 | 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
 | 8 | laminas-db (96 files; `SionTable` is 2,413 lines over `TableGateway`/`Sql`) | the largest | Doctrine DBAL (decision pending, §6) |
+
+**laminas-session does not leave at step 2.** `Laminas\Validator\Csrf` reads a
+`Laminas\Session\Container`, and every form here carries a CSRF element, so the session
+package is held by the forms and leaves with them at step 5. What step 2 removed is the
+*authentication* use of it: the identity no longer goes through a laminas storage adapter,
+only through `JUser\Host\SessionInterface`, whose one implementation is the host's.
+Measured 2026-09-09, the same way step 1's blockers were.
 
 `laminas-hydrator`, `config`, `loader`, `translator` are transitive glue and leave with
 their parents. Steps 2 to 8 rewrite code in the **shared submodules** (SionModel, JUser,
