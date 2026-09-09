@@ -137,8 +137,8 @@ class MessengerDataIsNotTranslatedTest extends TestCase
 
         return (new TwigFactory())->create(
             $bridge,
-            new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, '')),
-            new RouteUrl($bridge, ''),
+            new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl('')),
+            new RouteUrl(''),
             $requests,
             new CspNonce(),
             $messages

@@ -21,7 +21,6 @@ use JTranslate\View\Helper\LanguageName;
 use App\View\Helper\DateFormat;
 use App\View\Helper\Translate;
 use App\View\Label;
-use Laminas\Router\Http\TreeRouteStack;
 use Laminas\Translator\TranslatorInterface;
 use Schoenstatt\Service\AssociationKindsService;
 use Schoenstatt\View\Helper\FormatAssociation;
@@ -419,25 +418,20 @@ final class ViewHelpers
     /**
      * Route assembly as a closure, for the entity-markup cluster.
      *
-     * This was `Laminas\View\Helper\Url` until laminas-view was removed, and it is the
-     * same call: that helper's `__invoke($name, $params)` is
-     * `$router->assemble($params, ['name' => $name])` and nothing else. Its other two
-     * arguments — `$options` and `$reuseMatchedParams` — are what needed a RouteMatch, and
-     * no caller here has ever passed either; every call names a route and its parameters.
-     *
-     * `HttpRouter` is the same shared TreeRouteStack as `Router`, which is what
-     * App\Laminas\RouteUrl assembles against, so the locale prefix RouteUrl sets on the
-     * base URL applies here exactly as it did through the helper.
+     * `Laminas\View\Helper\Url` until laminas-view went, then the laminas router directly,
+     * and now {@see RouteUrl::path()} — the one seam every other link on the site already
+     * comes through, so these helpers cannot drift from the rest of the application's URLs.
+     * The signature is what the cluster has always passed: a route name and its parameters,
+     * never "the current route", which is the only thing that needed a RouteMatch.
      *
      * @return Closure(string, array<string, mixed>): string
      */
     private function url(): Closure
     {
-        /** @var TreeRouteStack<mixed> $router */
-        $router = $this->laminas->get('HttpRouter');
+        $urls = $this->urls;
 
         return static fn (string $route, array $params = []): string
-            => (string) $router->assemble($params, ['name' => $route]);
+            => ($urls)()->path($route, $params);
     }
 
     /** The Bootstrap label markup, translating through the same page-aware helper. */

@@ -238,7 +238,7 @@ class PortedRouteTranslationTest extends TestCase
             $extension = new LaminasExtension(
                 $this->bridge(),
                 new ViewHelpers($this->bridge(), static fn (): string => ''),
-                new RouteUrl($this->bridge(), ''),
+                new RouteUrl(''),
                 $this->requestsForTextDomain('Schoenstatt'),
                 new HostMessages()
             );
@@ -296,7 +296,7 @@ class PortedRouteTranslationTest extends TestCase
             $extension = new LaminasExtension(
                 $this->bridge(),
                 new ViewHelpers($this->bridge(), static fn (): string => ''),
-                new RouteUrl($this->bridge(), ''),
+                new RouteUrl(''),
                 $this->requestsForTextDomain('Schoenstatt'),
                 $messages
             );
