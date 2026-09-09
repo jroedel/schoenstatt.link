@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Http\CspNonce;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
@@ -236,7 +237,8 @@ final class TemplatesCompileTest extends TestCase
             new ViewHelpers($bridge, fn (): RouteUrl => new RouteUrl($bridge, '')),
             new RouteUrl($bridge, ''),
             $requests,
-            new CspNonce()
+            new CspNonce(),
+            new HostMessages()
         );
     }
 

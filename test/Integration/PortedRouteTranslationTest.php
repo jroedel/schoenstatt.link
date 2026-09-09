@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\TranslatorConfigurator;
@@ -12,7 +13,7 @@ use App\Twig\LaminasExtension;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\EventManager\EventInterface;
 use Laminas\I18n\Translator\Translator;
-use Laminas\Mvc\I18n\Translator as MvcTranslator;
+use Laminas\I18n\Translator\TranslatorInterface;
 use Locale;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -141,14 +142,14 @@ class PortedRouteTranslationTest extends TestCase
     {
         $this->requireDatabase();
 
-        $translator = $this->bridge()->get('MvcTranslator');
-        self::assertInstanceOf(MvcTranslator::class, $translator);
+        $translator = $this->bridge()->get(TranslatorInterface::class);
+        self::assertInstanceOf(Translator::class, $translator);
 
         self::assertSame(
             TranslatorConfigurator::FALLBACK_LOCALE,
             $translator->getFallbackLocale(),
             'no fallback locale: the delegator did not run. It must be keyed on the canonical '
-            . 'Laminas\Mvc\I18n\Translator, not on the MvcTranslator alias — an alias is resolved '
+            . 'Laminas\I18n\Translator\TranslatorInterface, not on an alias — an alias is resolved '
             . 'before delegators are looked up, so one registered under it never fires.'
         );
         self::assertTrue(
@@ -177,8 +178,8 @@ class PortedRouteTranslationTest extends TestCase
 
         $phrase = $this->aModuleOnlyPhrase();
 
-        $translator = $this->bridge()->get('MvcTranslator');
-        self::assertInstanceOf(MvcTranslator::class, $translator);
+        $translator = $this->bridge()->get(TranslatorInterface::class);
+        self::assertInstanceOf(Translator::class, $translator);
 
         $inModuleDomain = $translator->translate($phrase, 'Schoenstatt');
         self::assertNotSame(
@@ -219,8 +220,8 @@ class PortedRouteTranslationTest extends TestCase
     {
         $this->requireDatabase();
 
-        /** @var MvcTranslator $translator */
-        $translator = $this->bridge()->get('MvcTranslator');
+        /** @var Translator $translator */
+        $translator = $this->bridge()->get(TranslatorInterface::class);
 
         $domains = [];
         $spy     = $translator->getEventManager()->attach(
@@ -239,7 +240,8 @@ class PortedRouteTranslationTest extends TestCase
                 $this->bridge(),
                 new ViewHelpers($this->bridge(), static fn (): string => ''),
                 new RouteUrl($this->bridge(), ''),
-                $this->requestsForTextDomain('Schoenstatt')
+                $this->requestsForTextDomain('Schoenstatt'),
+                new HostMessages()
             );
 
             $phrase = 'A phrase no catalog holds, filed by nothing: ' . self::class;
@@ -262,55 +264,53 @@ class PortedRouteTranslationTest extends TestCase
     }
 
     /**
-     * The flash messenger renders in the page's text domain, not in `default`.
+     * The message blocks render in the page's text domain, not in `default`.
      *
-     * The second door out of the same room as the test above. `JTranslate\Module` sets a
-     * per-request text domain on twelve view helpers from a listener attached to
-     * `AbstractActionController::dispatch`, and a Symfony-served request dispatches no
-     * laminas controller, so none of the twelve is set. Ten do not matter — Twig writes its
-     * own `<title>`, the layout passes the navigation domain explicitly, and
-     * SionModel\Form\BootstrapFormRenderer routes every form string through
-     * LaminasExtension::translate(). `translate` is handled by ViewHelpers::useTextDomain().
-     * `flashMessenger` was the twelfth and was handled by nothing, so a flash set by a
-     * laminas action and rendered on a ported page was looked up in `default`: rendered as
-     * its English source in every locale, and **filed a duplicate phrase row on the way
-     * past**, which is what database/db7.8.sql cleans up.
+     * The second door out of the same room as the test above. The laminas flash helper
+     * translated every message against whatever domain it held, and on a Symfony request
+     * nothing set one — so a flash rendered on a ported page was looked up in `default`:
+     * rendered as its English source in every locale, and **filed a duplicate phrase row
+     * on the way past**, which is what database/db7.8.sql cleans up. The renderer behind
+     * `flash_messages()` and `now_messages()` takes the page's domain from the route instead.
      *
-     * Asserted on the helper's domain rather than on a rendered message, because rendering
-     * one means a session, and an integration test that has no MVC request has no session
-     * either. The domain is the whole mechanism: the helper translates every message it is
-     * handed against whatever it holds when `render()` is called.
+     * Driven through the "now" store, because a flash needs the session container and an
+     * integration test with no request has no session; both functions share one renderer.
      */
-    public function testTheFlashMessengerRendersInThePagesTextDomain(): void
+    public function testTheMessageBlocksRenderInThePagesTextDomain(): void
     {
         $this->requireDatabase();
-
-        $helpers   = new ViewHelpers($this->bridge(), static fn (): string => '');
-        $extension = new LaminasExtension(
-            $this->bridge(),
-            $helpers,
-            new RouteUrl($this->bridge(), ''),
-            $this->requestsForTextDomain('Schoenstatt')
+        /** @var Translator $translator */
+        $translator = $this->bridge()->get(TranslatorInterface::class);
+        $domains    = [];
+        $spy        = $translator->getEventManager()->attach(
+            Translator::EVENT_MISSING_TRANSLATION,
+            static function (EventInterface $e) use (&$domains): void {
+                $domains[] = $e->getParam('text_domain');
+                $e->stopPropagation(true);
+            },
+            1000
         );
-
-        //the baseline is the defect: left alone, the helper holds laminas' construction
-        //default. If this ever starts failing because something else sets it, the
-        //assertion below is measuring that something else and should be re-read.
+        try {
+            $messages = new HostMessages();
+            $messages->now('error', 'A message no catalog holds, filed by nothing: ' . self::class);
+            $extension = new LaminasExtension(
+                $this->bridge(),
+                new ViewHelpers($this->bridge(), static fn (): string => ''),
+                new RouteUrl($this->bridge(), ''),
+                $this->requestsForTextDomain('Schoenstatt'),
+                $messages
+            );
+            $rendered = $extension->nowMessages();
+        } finally {
+            $translator->getEventManager()->detach($spy, Translator::EVENT_MISSING_TRANSLATION);
+        }
+        self::assertStringContainsString('A message no catalog holds', $rendered);
         self::assertSame(
-            'default',
-            $helpers->flashMessenger()->getTranslatorTextDomain(),
-            'nothing on the Symfony side sets this before the page asks for it'
-        );
-
-        $extension->flashMessages();
-
-        self::assertSame(
-            'Schoenstatt',
-            $helpers->flashMessenger()->getTranslatorTextDomain(),
-            'a flash message must be looked up in the page\'s own text domain, as '
-            . 'JTranslate\Module\'s dispatch listener does for a laminas request. Left at '
-            . '`default` it renders in English in every locale and files a duplicate phrase '
-            . 'row for every message the module domain owns.'
+            ['Schoenstatt'],
+            array_values(array_unique($domains)),
+            'a message must be looked up in the page\'s own text domain. Left at `default` it renders '
+            . 'in English in every locale and files a duplicate phrase row for every message the '
+            . 'module domain owns.'
         );
     }
 

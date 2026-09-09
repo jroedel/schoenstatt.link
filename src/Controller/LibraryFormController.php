@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Books\LibraryPage;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Form\CheckinForm;
 use Books\Form\InactivationForm;
 use Books\Model\LibraryTable;
 use Exception;
-use JTranslate\Controller\Plugin\NowMessenger;
 use Laminas\Form\FormInterface;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use RuntimeException;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -76,7 +76,8 @@ final class LibraryFormController
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
-        private readonly LibraryPage $page
+        private readonly LibraryPage $page,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -124,7 +125,7 @@ final class LibraryFormController
         $form->setData($posted);
 
         if (! $form->isValid()) {
-            $this->now(NowMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+            $this->now(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
 
             return null;
         }
@@ -140,12 +141,12 @@ final class LibraryFormController
                 //does for an invalid form, which is misleading — the form was fine and a
                 //book id was not. Reproduced: changing it is a message change on a page
                 //whose diff should be readable, and it is filed rather than fixed.
-                $this->now(NowMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                $this->now(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
 
                 return null;
             }
 
-            $this->flash(FlashMessenger::NAMESPACE_SUCCESS, 'Books successfully checked in.');
+            $this->flash(FlashMessages::NAMESPACE_SUCCESS, 'Books successfully checked in.');
 
             return new RedirectResponse($this->urls->path('checkouts/library', ['library_id' => $libraryId]));
         }
@@ -153,13 +154,13 @@ final class LibraryFormController
         try {
             $bad = $table->inactivateWithinLibraryBooks($libraryId, $data);
         } catch (Exception $e) {
-            $this->now(NowMessenger::NAMESPACE_ERROR, $e->getMessage());
+            $this->now(FlashMessages::NAMESPACE_ERROR, $e->getMessage());
 
             return null;
         }
 
         if (is_array($bad)) {
-            $this->now(NowMessenger::NAMESPACE_ERROR, sprintf(
+            $this->now(FlashMessages::NAMESPACE_ERROR, sprintf(
                 'There was a problem with one or more of the books: (%s) Please try again.',
                 implode(', ', $bad)
             ));
@@ -167,7 +168,7 @@ final class LibraryFormController
             return null;
         }
 
-        $this->flash(FlashMessenger::NAMESPACE_SUCCESS, 'Books successfully inactivated.');
+        $this->flash(FlashMessages::NAMESPACE_SUCCESS, 'Books successfully inactivated.');
 
         return new RedirectResponse($this->urls->path('libraries/library/admin', ['library_id' => $libraryId]));
     }
@@ -175,14 +176,12 @@ final class LibraryFormController
     /** Survives a redirect; read by the next page. */
     private function flash(string $namespace, string $message): void
     {
-        (new FlashMessenger())->setNamespace($namespace)->addMessage($message);
+        $this->messages->flash($namespace, $message);
     }
 
     /** Rendered by the response being returned now — see the class docblock. */
     private function now(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 }

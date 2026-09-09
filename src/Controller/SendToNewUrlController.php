@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Locale;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier as IdentifierFilter;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
 use SionModel\Db\Model\SionTable;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,7 +61,8 @@ final class SendToNewUrlController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -181,9 +183,7 @@ final class SendToNewUrlController
      */
     private function notFound(string $entity, string $indexRoute): Response
     {
-        (new FlashMessenger())
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage(ucwords($entity) . ' not found.');
+        $this->messages->flash(FlashMessages::NAMESPACE_ERROR, ucwords($entity) . ' not found.');
 
         return new RedirectResponse($this->urls->path($indexRoute), Response::HTTP_FOUND);
     }

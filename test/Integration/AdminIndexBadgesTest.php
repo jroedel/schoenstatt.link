@@ -84,7 +84,7 @@ class AdminIndexBadgesTest extends TestCase
         }
     }
 
-    /** Config caches off, for the reason CacheStatusParityTest states: no test may write data/config/. */
+    /** Config caches off, for the reason CacheStatusEndpointTest states: no test may write data/config/. */
     private function bridge(): ServiceBridge
     {
         if (null !== self::$bridge) {

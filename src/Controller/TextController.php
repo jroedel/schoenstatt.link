@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Sion\EntityShow;
 use App\Sion\SiteWideIdentifier;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -51,7 +52,8 @@ final class TextController
     public function __construct(
         private readonly EntityShow $show,
         private readonly \Twig\Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -113,7 +115,7 @@ final class TextController
 
     private function flash(string $message): void
     {
-        (new FlashMessenger())->setNamespace(FlashMessenger::NAMESPACE_ERROR)->addMessage($message);
+        $this->messages->flash(FlashMessages::NAMESPACE_ERROR, $message);
     }
 
     private function notFound(): Response

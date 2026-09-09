@@ -4,14 +4,24 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Http\CspNonce;
+use App\Laminas\HostMessages;
+use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
+use App\Laminas\ViewHelpers;
+use App\Twig\TwigFactory;
 use JTranslate\I18n\TranslatableMessage;
-use JTranslate\View\Helper\FlashMessenger as JTranslateFlashMessenger;
-use JTranslate\View\Helper\NowMessenger as JTranslateNowMessenger;
+use Laminas\Db\Adapter\Adapter;
+use Laminas\EventManager\EventInterface;
+use Laminas\I18n\Translator\Translator;
 use Laminas\I18n\Translator\TranslatorInterface;
-use Laminas\View\Renderer\PhpRenderer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use SionModel\Messaging\FlashMessages;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Throwable;
+use Twig\Environment;
 
 use function is_readable;
 use function str_contains;
@@ -19,23 +29,26 @@ use function str_contains;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
- * The two messengers render a TranslatableMessage without ever showing its data to
- * the translator.
+ * The layout's message blocks render a TranslatableMessage without ever showing its data
+ * to the translator.
  *
  * ## Why this is worth an integration test and not just a unit test
  *
- * TranslatableMessageTest already pins the value object. What it cannot pin is the
- * wiring, and the wiring is the part that silently reverts: the flash-messenger view
- * helper is registered by `Laminas\Mvc\Plugin\FlashMessenger`'s own module, and
- * JTranslate replaces it by overriding the *factory* for that module's service id.
- * Drop that config entry, or move JTranslate above the flash-messenger module in
- * `config/modules.config.php`, and the helper reverts to the laminas one — which
- * translates the finished message, i.e. files the JWT as a phrase again. Nothing
- * would fail; the message would still render.
+ * TranslatableMessageTest pins the value object and JTranslate's MessageRenderer does the
+ * rendering. What neither can pin is the wiring, and the wiring is the part that silently
+ * reverts: `now_messages()` and `flash_messages()` in App\Twig\LaminasExtension hand each
+ * message to the renderer with the page's translator, and a rewrite that translated the
+ * *finished* message instead — as the laminas helpers did before JTranslate replaced them
+ * — would file a JWT as a phrase again. Nothing would fail; the message would still render.
  *
- * Both front controllers resolve the helper through this same plugin manager (the
- * laminas layout directly, `App\Twig\LaminasExtension::flashMessages()` on the
- * Symfony side), so one assertion covers both.
+ * Measured through the translator itself: `EVENT_MISSING_TRANSLATION` fires for every
+ * string looked up that no catalog knows, which is exactly the path by which a phrase
+ * enters the table. The spy stops propagation so JTranslate's own listener never runs and
+ * the test writes nothing.
+ *
+ * The "now" path is what is driven, because a flash needs the session container, which a
+ * CLI test cannot open; both Twig functions share one renderer and one code path per
+ * message, so the property carries over.
  */
 class MessengerDataIsNotTranslatedTest extends TestCase
 {
@@ -47,91 +60,55 @@ class MessengerDataIsNotTranslatedTest extends TestCase
     private const SECRET = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.body.signature';
 
     /**
-     * Building a view helper pulls the merged module config and, through the
-     * persistent cache, APCu — neither of which a bare CI runner has. Same guard as
-     * every other integration test here, and for the same reason: without it this
-     * fails on the runner for a reason that has nothing to do with what it asserts.
+     * The translator delegator builds JTranslate's table, which needs the database, and the
+     * view helpers reach APCu through the persistent cache — neither of which a bare CI
+     * runner has.
      */
     protected function setUp(): void
     {
         if (! is_readable(__DIR__ . '/../../config/autoload/local.php')) {
             self::markTestSkipped('no config/autoload/local.php, so no service configuration');
         }
-    }
-
-    public function testTheFlashMessengerHelperIsJTranslates(): void
-    {
-        $this->requireApcu();
-
-        self::assertInstanceOf(
-            JTranslateFlashMessenger::class,
-            $this->helpers()->get('flashMessenger'),
-            'the laminas helper translates the finished message, which is how data becomes a phrase'
-        );
-    }
-
-    /** Every alias the flash-messenger module registers must reach the same override. */
-    public function testEveryAliasResolvesToTheOverride(): void
-    {
-        $this->requireApcu();
-
-        foreach (['flashmessenger', 'flashMessenger', 'FlashMessenger'] as $alias) {
-            self::assertInstanceOf(
-                JTranslateFlashMessenger::class,
-                $this->helpers()->get($alias),
-                $alias . ' resolves to the laminas helper'
-            );
+        try {
+            /** @var Adapter $adapter */
+            $adapter = $this->bridge()->get(Adapter::class);
+            $adapter->getDriver()->getConnection()->connect();
+        } catch (Throwable $e) {
+            self::markTestSkipped('no reachable database: ' . $e->getMessage());
         }
     }
 
-    /** @return iterable<string, array{class-string}> */
-    public static function messengerProvider(): iterable
+    /** @return iterable<string, array{string}> */
+    public static function namespaceProvider(): iterable
     {
-        yield 'flashMessenger' => ['flashMessenger'];
-        yield 'nowMessenger'   => ['nowMessenger'];
+        yield 'success' => [FlashMessages::NAMESPACE_SUCCESS];
+        yield 'error'   => [FlashMessages::NAMESPACE_ERROR];
     }
 
-    #[DataProvider('messengerProvider')]
-    public function testTheTemplateIsTranslatedAndTheDataIsNot(string $helperName): void
+    #[DataProvider('namespaceProvider')]
+    public function testTheTemplateIsTranslatedAndTheDataIsNot(string $namespace): void
     {
         $this->requireApcu();
 
-        $helper = $this->helpers()->get($helperName);
-        self::assertTrue(
-            $helper instanceof JTranslateFlashMessenger || $helper instanceof JTranslateNowMessenger,
-            $helperName . ' is not a JTranslate messenger'
+        /** @var Translator $translator */
+        $translator = $this->bridge()->get(TranslatorInterface::class);
+        $asked      = [];
+        $spy        = $translator->getEventManager()->attach(
+            Translator::EVENT_MISSING_TRANSLATION,
+            static function (EventInterface $e) use (&$asked): void {
+                $asked[] = (string) $e->getParam('message');
+                $e->stopPropagation(true);
+            },
+            1000
         );
 
-        $asked      = [];
-        $translator = new class ($asked) implements TranslatorInterface {
-            /** @param list<string> $asked */
-            public function __construct(private array &$asked)
-            {
-            }
-
-            public function translate($message, $textDomain = 'default', $locale = null): string
-            {
-                $this->asked[] = (string) $message;
-                return (string) $message;
-            }
-
-            public function translatePlural(
-                $singular,
-                $plural,
-                $number,
-                $textDomain = 'default',
-                $locale = null
-            ): string {
-                return (string) $singular;
-            }
-        };
-        $helper->setTranslator($translator);
-        //Both helpers reach the escapeHtml helper through the view; outside a render
-        //there is none, and NowMessenger dereferences it without a guard.
-        $helper->setView(new PhpRenderer());
-
-        $message  = new TranslatableMessage('Token issued, copy it now: %s', [self::SECRET]);
-        $rendered = $this->render($helper, $message);
+        try {
+            $messages = new HostMessages();
+            $messages->now($namespace, new TranslatableMessage('Token issued, copy it now: %s', [self::SECRET]));
+            $rendered = $this->twig($messages)->createTemplate('{{ now_messages() }}')->render();
+        } finally {
+            $translator->getEventManager()->detach($spy);
+        }
 
         self::assertContains(
             'Token issued, copy it now: %s',
@@ -145,38 +122,32 @@ class MessengerDataIsNotTranslatedTest extends TestCase
                 'the data reached the translator, which is what files it as a phrase'
             );
         }
-        self::assertTrue(
-            str_contains($rendered, self::SECRET),
-            'the data must still reach the page: ' . $rendered
+        self::assertTrue(str_contains($rendered, self::SECRET), 'the data must still reach the page: ' . $rendered);
+        self::assertStringContainsString('class="alert alert-dismissable alert-', $rendered);
+    }
+
+    private function twig(HostMessages $messages): Environment
+    {
+        $bridge   = $this->bridge();
+        $requests = new RequestStack();
+        $requests->push(Request::create('/en/shrines'));
+
+        return (new TwigFactory())->create(
+            $bridge,
+            new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, '')),
+            new RouteUrl($bridge, ''),
+            $requests,
+            new CspNonce(),
+            $messages
         );
     }
 
-    /**
-     * Both helpers read their messages from a controller plugin, so the message is
-     * pushed through the plugin rather than passed to the helper directly.
-     */
-    private function render(object $helper, TranslatableMessage $message): string
-    {
-        if ($helper instanceof JTranslateNowMessenger) {
-            $helper->getPluginNowMessenger()->setNamespace('success')->addMessage($message);
-            return (string) $helper();
-        }
-
-        $helper->getPluginFlashMessenger()->setNamespace('success')->addMessage($message);
-        return (string) $helper->renderCurrent('success', ['alert']);
-    }
-
-    private function helpers(): mixed
-    {
-        return $this->bridge()->get('ViewHelperManager');
-    }
-
+    /** Config caches off, for the reason CacheStatusEndpointTest states: no test may write data/config/. */
     private function bridge(): ServiceBridge
     {
         if (null !== self::$bridge) {
             return self::$bridge;
         }
-
         $appConfig = require __DIR__ . '/../../config/application.config.php';
         $appConfig['module_listener_options']['config_cache_enabled']     = false;
         $appConfig['module_listener_options']['module_map_cache_enabled'] = false;

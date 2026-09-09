@@ -6,11 +6,12 @@ namespace App\Controller;
 
 use App\Books\LibraryPage;
 use App\Books\RefreshSortForm;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
-use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
+use App\Laminas\SionResult;
 use Books\Model\LibraryTable;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use SionModel\Messaging\FlashMessages;
 use SionModel\Validator\RegularExpression;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -71,7 +72,8 @@ final class LibrarySortController
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
-        private readonly LibraryPage $page
+        private readonly LibraryPage $page,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -116,9 +118,7 @@ final class LibrarySortController
                     'done'       => true,
                 ]));
             }
-            (new FlashMessenger())
-                ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-                ->addMessage('Error in form submission, please review.');
+            $this->messages->flash(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
         }
 
         return new Response($this->twig->render('books/library-refresh-sort.html.twig', [

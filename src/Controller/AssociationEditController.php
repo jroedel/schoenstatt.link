@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Laminas\Form\FormInterface;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use RuntimeException;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier as IdentifierFilter;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
 use Schoenstatt\Validator\TimeZone;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -69,7 +70,8 @@ final class AssociationEditController
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -106,7 +108,7 @@ final class AssociationEditController
                 $updated = $table->updateEntity('association', $id, $data);
 
                 $this->flash(
-                    FlashMessenger::NAMESPACE_SUCCESS,
+                    FlashMessages::NAMESPACE_SUCCESS,
                     'Association successfully updated.'
                 );
 
@@ -222,8 +224,7 @@ final class AssociationEditController
      */
     private function flash(string $namespace, string $message): void
     {
-        $messenger = new FlashMessenger();
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->flash($namespace, $message);
     }
 
     private function notFound(): Response

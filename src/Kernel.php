@@ -528,7 +528,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             AssociationEditController::class => fn (): AssociationEditController => new AssociationEditController(
                 $this->laminas(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                $this->hostMessages()
             ),
             RolesController::class => fn (): RolesController => new RolesController(
                 $this->laminas(),
@@ -540,7 +541,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             AssignmentSearchController::class
                 => fn (): AssignmentSearchController => new AssignmentSearchController(
                     $this->laminas(),
-                    $this->twig()
+                    $this->twig(),
+                    $this->hostMessages()
                 ),
             MovementController::class => fn (): MovementController => new MovementController(
                 $this->laminas(),
@@ -550,16 +552,19 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             PersonsController::class => fn (): PersonsController => new PersonsController(
                 $this->laminas(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                $this->hostMessages()
             ),
             PersonController::class => fn (): PersonController => new PersonController(
                 $this->laminas(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                $this->hostMessages()
             ),
             TextsController::class => fn (): TextsController => new TextsController(
                 $this->laminas(),
-                $this->twig()
+                $this->twig(),
+                $this->hostMessages()
             ),
             LibrariesController::class => fn (): LibrariesController => new LibrariesController(
                 $this->laminas(),
@@ -605,7 +610,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl(),
                 $this->libraryPage(),
-                new CheckoutForms($this->laminas())
+                new CheckoutForms($this->laminas()),
+                $this->hostMessages()
             ),
             LibraryMassCheckoutController::class
                 => fn (): LibraryMassCheckoutController => new LibraryMassCheckoutController(
@@ -613,7 +619,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     $this->twig(),
                     $this->routeUrl(),
                     $this->libraryPage(),
-                    new CheckoutForms($this->laminas())
+                    new CheckoutForms($this->laminas()),
+                    $this->hostMessages()
                 ),
             LibraryDeleteController::class => fn (): LibraryDeleteController => new LibraryDeleteController(
                 $this->libraryPage(),
@@ -627,19 +634,22 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 //for a case that only arises when the application has no logger at all.
                 $this->laminas()->has(LoggerInterface::class)
                     ? $this->laminas()->get(LoggerInterface::class)
-                    : new NullLogger()
+                    : new NullLogger(),
+                $this->hostMessages()
             ),
             LibraryFormController::class => fn (): LibraryFormController => new LibraryFormController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl(),
-                $this->libraryPage()
+                $this->libraryPage(),
+                $this->hostMessages()
             ),
             LibrarySortController::class => fn (): LibrarySortController => new LibrarySortController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl(),
-                $this->libraryPage()
+                $this->libraryPage(),
+                $this->hostMessages()
             ),
             LibraryImportsController::class => fn (): LibraryImportsController => new LibraryImportsController(
                 $this->laminas(),
@@ -649,7 +659,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 new SpreadsheetUpload(new ImportStorage(), $this->laminas()->get(SpreadsheetReader::class)),
                 //The template's prose is translated; its column headings are not. See
                 //App\Books\Import\ImportColumns for why a heading is a data key.
-                new ImportTemplate($this->twigTranslate())
+                new ImportTemplate($this->twigTranslate()),
+                $this->hostMessages()
             ),
             LibraryImportConfigureController::class
                 => fn (): LibraryImportConfigureController => new LibraryImportConfigureController(
@@ -657,7 +668,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     $this->twig(),
                     $this->routeUrl(),
                     $this->libraryPage(),
-                    new ImportStorage()
+                    new ImportStorage(),
+                    $this->hostMessages()
                 ),
             LibraryNoticesController::class => fn (): LibraryNoticesController => new LibraryNoticesController(
                 $this->laminas(),
@@ -700,14 +712,16 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->routeUrl(),
                 //per-locale slugs make this record's canonical URL ambiguous — see
                 //App\View\PreferredUrls
-                $this->preferredUrls()
+                $this->preferredUrls(),
+                $this->hostMessages()
             ),
             CompositionController::class => fn (): CompositionController => new CompositionController(
                 $this->laminas(),
                 $this->entityShow(),
                 $this->twig(),
                 $this->routeUrl(),
-                $this->preferredUrls()
+                $this->preferredUrls(),
+                $this->hostMessages()
             ),
             // The only one of the four needing no ServiceBridge of its own: a text page
             // is SionController::showAction() and nothing else, so everything it reads
@@ -715,7 +729,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             TextController::class => fn (): TextController => new TextController(
                 $this->entityShow(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                $this->hostMessages()
             ),
             PublicationController::class => fn (): PublicationController => new PublicationController(
                 $this->laminas(),
@@ -724,11 +739,12 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->routeUrl(),
                 //for `languageName`, which names the language catalogue in its breadcrumb
                 $this->viewHelpers(),
-                $this->preferredUrls()
+                $this->preferredUrls(),
+                $this->hostMessages()
             ),
             // Batch 16, the last four publication routes. The two per-row actions share
-            // EntityShow for the row and HostMessages for the flash — the one messenger
-            // per request that a raw `new FlashMessenger()` would steal from.
+            // EntityShow for the row and HostMessages for the flash — the one message store
+            // per request.
             PublicationDuplicateController::class => fn (): PublicationDuplicateController
                 => new PublicationDuplicateController(
                     $this->laminas(),
@@ -752,7 +768,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl(),
                 $this->entities(),
-                $this->formViewVariables()
+                $this->formViewVariables(),
+                $this->hostMessages()
             ),
             // Batch 9, the create surface. Nine routes over App\Sion\EntityCreate, the
             // counterpart of entityEdit() — see config/symfony/routes.php.
@@ -766,7 +783,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl(),
                 $this->formViewVariables(),
-                $this->laminas()
+                $this->laminas(),
+                $this->hostMessages()
             ),
             // Batch 8's seven delete confirmations, over App\Sion\EntityDelete. Three route
             // defaults rather than the edit controller's nine, because the laminas page is
@@ -774,13 +792,13 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             //
             // The ServiceBridge is here for `nowMessenger`: the invalid-CSRF branch has to
             // put its message on the response it is rendering, not on the next one, so it
-            // pushes into the shared ControllerPluginManager plugin the layout's helper
-            // reads from rather than into the flash messenger.
+            // pushes it into HostMessages as a "now" message rather than a flash.
             EntityDeleteController::class => fn (): EntityDeleteController => new EntityDeleteController(
                 $this->entityDelete(),
                 $this->twig(),
                 $this->routeUrl(),
-                $this->laminas()
+                $this->laminas(),
+                $this->hostMessages()
             ),
             // No Twig: it writes and redirects, and the form it validates lives on
             // whichever show page rendered it.
@@ -793,7 +811,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             ),
             CommentCreateController::class => fn (): CommentCreateController => new CommentCreateController(
                 $this->laminas(),
-                $this->commentPredicates()
+                $this->commentPredicates(),
+                $this->hostMessages()
             ),
             // The three literature routes behind one controller — they are one page in
             // three states. ViewHelpers as well as the bridge, because the index heading
@@ -802,12 +821,14 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->viewHelpers(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                $this->hostMessages()
             ),
             // The three pre-2020 redirects. No Twig at all: every branch is a redirect.
             SendToNewUrlController::class => fn (): SendToNewUrlController => new SendToNewUrlController(
                 $this->laminas(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                $this->hostMessages()
             ),
             // The pre-April-2020 identifier redirect — a 301 to the current URL, no Twig.
             // RouteUrl only: it needs no laminas service, just the router to build the target.
@@ -1000,7 +1021,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             $this->viewHelpers(),
             $this->routeUrl(),
             $this->requests(),
-            $this->cspNonce()
+            $this->cspNonce(),
+            $this->hostMessages()
         );
     }
 
@@ -1112,13 +1134,15 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
      * The two shared implementations behind every module's host contract.
      *
      * `hostMessages()` **must** be one object for the request and not one per module: a
-     * second `FlashMessenger` moves the first's message out of the session and drops it, so
+     * second flash store moves the first's message out of the session and drops it, so
      * with one per module a page that speaks through both loses one of two messages. Both
-     * JUser's and JTranslate's `Flash` adapters take this one. See `App\Laminas\HostMessages`.
+     * JUser's and JTranslate's `Flash` adapters take this one, and so does every ported
+     * controller that reports something and the Twig layer that renders it. See
+     * `App\Laminas\HostMessages`.
      */
     private function hostMessages(): HostMessages
     {
-        return $this->hostMessages ??= new HostMessages($this->laminas());
+        return $this->hostMessages ??= new HostMessages();
     }
 
     private function hostUrls(): HostUrls

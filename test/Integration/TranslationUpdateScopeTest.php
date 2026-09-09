@@ -2,10 +2,10 @@
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\ContainerFactory;
 use JTranslate\Model\TranslationsTable;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Adapter\Driver\ConnectionInterface;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 
@@ -106,14 +106,8 @@ class TranslationUpdateScopeTest extends TestCase
         $appConfig = require __DIR__ . '/../../config/application.config.php';
         //writing the config cache from a test process would leave a cache file
         //owned by the wrong user next to a real deployment
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $container = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))
-            ->configureServiceManager($container);
-        $container->setService('ApplicationConfig', $appConfig);
-        $container->get('ModuleManager')->loadModules();
+        $container = ContainerFactory::build($appConfig);
         $this->container = $container;
 
         try {

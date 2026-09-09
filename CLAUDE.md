@@ -70,7 +70,8 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   `SionModel\Form\BootstrapFormRenderer`.
 - `App\Laminas\ServiceBridge` lazily builds the laminas `ServiceManager` for the laminas-side
   services ported code still needs (config, tables, translator). Nothing must build it on
-  `/_health`.
+  `/_health`. Every container is built by `App\Laminas\ContainerFactory` (bridge, console,
+  tools, tests); it defines `ViewHelperManager` and `MvcTranslator` itself.
 - **Modules** in `module/` (PSR-4 via `composer.json`): `Application`, `Books`,
   `JTranslate`, `JUser`, `Schoenstatt`, `SionModel`. `SionModel` and `J*` are the user's
   shared libraries (git submodules).
@@ -91,8 +92,9 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   has proved they read mail. New accounts are created **active and unverified**. Route
   names `zfcuser/*` and `ZfcUser*` class names are historical; ZfcUser is not installed.
   Host adapters for JUser/JTranslate live in `src/JUser/Host`, `src/JTranslate/Host`,
-  sharing `App\Laminas\HostMessages` (one `FlashMessenger` per request — a second instance
-  drains the first) and `App\Laminas\HostUrls` (primes the router's request URI for
+  sharing `App\Laminas\HostMessages` (one flash store per request — a second instance
+  drains the first; `SionModel\Messaging\FlashMessages` under the session key
+  `FlashMessenger`) and `App\Laminas\HostUrls` (primes the router's request URI for
   absolute URLs; matches `?redirect=` on a router clone with an empty base URL).
 - **Translation**: JTranslate; the translator is configured by `App\Laminas\TranslatorConfigurator`
   (a delegator on the canonical translator class, never an alias); missing phrases are

@@ -71,15 +71,8 @@ function loadMergedConfig(): array
 
     require_once __DIR__ . '/../vendor/autoload.php';
 
-    $appConfig = require __DIR__ . '/../config/application.config.php';
-    $appConfig['module_listener_options']['config_cache_enabled']     = false;
-    $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
-
-    $serviceManager = new Laminas\ServiceManager\ServiceManager();
-    (new Laminas\Mvc\Service\ServiceManagerConfig($appConfig['service_manager'] ?? []))
-        ->configureServiceManager($serviceManager);
-    $serviceManager->setService('ApplicationConfig', $appConfig);
-    $serviceManager->get('ModuleManager')->loadModules();
+    $appConfig      = require __DIR__ . '/../config/application.config.php';
+    $serviceManager = App\Laminas\ContainerFactory::build($appConfig);
 
     /** @var array<string, mixed> $merged */
     $merged = $serviceManager->get('config');

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityDelete;
 use App\Sion\SiteWideIdentifier;
-use JTranslate\Controller\Plugin\NowMessenger;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use RuntimeException;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -73,7 +73,8 @@ final class EntityDeleteController
         private readonly EntityDelete $delete,
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
-        private readonly ServiceBridge $laminas
+        private readonly ServiceBridge $laminas,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -132,7 +133,7 @@ final class EntityDeleteController
 
             if ($form->isValid()) {
                 $this->delete->delete($entity, $id);
-                $this->flash(FlashMessenger::NAMESPACE_SUCCESS, $this->delete->deletedMessage());
+                $this->flash(FlashMessages::NAMESPACE_SUCCESS, $this->delete->deletedMessage());
 
                 return new RedirectResponse($this->redirectTarget($entity), Response::HTTP_FOUND);
             }
@@ -142,7 +143,7 @@ final class EntityDeleteController
             //reads from — the arrangement PersonsController and LiteratureController use.
             //Not the flash messenger: the laminas action puts the message on the page it is
             //re-rendering, and a flash would surface it on some later page instead.
-            $this->nowMessage(NowMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+            $this->nowMessage(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
             //401 is the wrong code for a failed CSRF and it is reproduced anyway. Unlike the
             //not-found 401 above, this branch renders rather than redirects, so the status
             //does reach the client and changing it would be a behaviour change on a route
@@ -183,7 +184,7 @@ final class EntityDeleteController
     /** A refusal branch: the flash laminas sets, then its redirect. */
     private function refuse(string $entity, string $message): RedirectResponse
     {
-        $this->flash(FlashMessenger::NAMESPACE_ERROR, $message);
+        $this->flash(FlashMessages::NAMESPACE_ERROR, $message);
 
         return new RedirectResponse($this->redirectTarget($entity), Response::HTTP_FOUND);
     }
@@ -212,15 +213,13 @@ final class EntityDeleteController
     /** A flash message in the laminas session, where the page redirected *to* looks for it. */
     private function flash(string $namespace, string $message): void
     {
-        (new FlashMessenger())->setNamespace($namespace)->addMessage($message);
+        $this->messages->flash($namespace, $message);
     }
 
     /** @see PersonsController::nowMessage() — the same shared plugin the layout renders from. */
     private function nowMessage(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 
     private function attribute(Request $request, string $name): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use App\View\Label;
 use Closure;
 use DateTimeInterface;
 use IntlDateFormatter;
@@ -107,6 +108,8 @@ final class EntityFormatter
      * @param Closure(string, int|string|null): string    $pencilRenderer      the editRouteKeyField form
      * @param Closure(string, array<string, mixed>): string $routePencilRenderer the editRoute+params form
      * @param Closure(string): string                     $translator
+     * @param Label $label the Bootstrap label markup, translating through the same
+     *        page-aware translate() as everything else
      */
     public function __construct(
         private readonly ServiceBridge $laminas,
@@ -114,7 +117,8 @@ final class EntityFormatter
         private readonly RouteUrl $urls,
         private readonly Closure $pencilRenderer,
         private readonly Closure $routePencilRenderer,
-        private readonly Closure $translator
+        private readonly Closure $translator,
+        private readonly Label $label
     ) {
     }
 
@@ -336,17 +340,14 @@ final class EntityFormatter
 
         //The corpus label — "Institute" or "Patres" beside a restricted publication's
         //title. Off by default and switched on by the literature list, which is how a
-        //browsing moderator can tell at a glance which rows the public cannot see. The
-        //label helper is put into the `Books` text domain first, exactly as the original
-        //does, because that is where the two words are translated.
+        //browsing moderator can tell at a glance which rows the public cannot see.
+        //Translated in the `Books` domain, exactly as the original, because that is where
+        //the two words live.
         if (! empty($options['displayResourceLabel'])) {
             $resource = $data['resourceId'] ?? null;
             $label    = is_string($resource) ? (self::PUBLICATION_RESOURCE_LABELS[$resource] ?? null) : null;
             if (null !== $label) {
-                $markup .= ' ' . $this->helpers->label()->setTranslatorTextDomain('Books')->render(
-                    $label,
-                    'label-info'
-                );
+                $markup .= ' ' . $this->label->render($label, 'label-info', 'Books');
             }
         }
 
@@ -492,17 +493,12 @@ final class EntityFormatter
     }
 
     /**
-     * TwbBundle's label helper, which escapes both the text and the class attribute —
-     * hence the `&#x20;` between the two class names in its output.
-     *
-     * `render()` rather than `__invoke()`: the latter returns **the helper itself** when
-     * handed an empty message, so its return type is `string|TwbBundleAlert` and casting
-     * it would hide that. Every call here passes a literal, so render() is both the
-     * honest entry point and the correctly typed one.
+     * A Bootstrap label in the page's text domain. App\View\Label reproduces TwbBundle's
+     * helper — hence the `&#x20;` between the two class names in its output.
      */
     private function label(string $text, string $class): string
     {
-        return $this->helpers->label()->render($text, $class);
+        return $this->label->render($text, $class);
     }
 
     /**

@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Acl\IsAllowed;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
-use App\Laminas\ViewHelpers;
 use App\Laminas\ServiceBridge;
+use App\Laminas\ViewHelpers;
 use App\Sion\EntityShow;
-use App\View\PreferredUrls;
 use App\Sion\SiteWideIdentifier;
+use App\View\PreferredUrls;
 use Books\Model\LibraryTable;
 use Books\Service\DriveGateway;
-use App\Acl\IsAllowed;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
 use SionModel\Db\Model\FilesTable;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -72,7 +73,8 @@ final class PublicationController
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
         private readonly ViewHelpers $helpers,
-        private readonly PreferredUrls $preferredUrls
+        private readonly PreferredUrls $preferredUrls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -489,7 +491,7 @@ final class PublicationController
 
     private function flash(string $message): void
     {
-        (new FlashMessenger())->setNamespace(FlashMessenger::NAMESPACE_ERROR)->addMessage($message);
+        $this->messages->flash(FlashMessages::NAMESPACE_ERROR, $message);
     }
 
     private function notFound(): Response

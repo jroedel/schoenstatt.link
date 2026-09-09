@@ -1,0 +1,21 @@
+{#-
+  The checkout list inside an overdue notice, one block per book. Ported from
+  view/books/libraries/email-book-list.phtml byte for byte: title, author, call number, due
+  date in the process locale, and "(Overdue)" where it applies. Rendered by
+  SionModel\Mailing\Mailer through the `partial` paragraph type — see
+  Books\Mailing\BooksMailer::sendBookNotices().
+-#}
+{%- for object in checkouts -%}
+    {%- if object.book is defined and object.book is not null -%}
+        {%- set book = object.book -%}
+        {{- book.title -}}
+        {%- if book.authorPrettyText is defined and book.authorPrettyText is not null %} - {{ book.authorPrettyText }}{% endif -%}
+        <br>
+        {%- if book.callNumber is defined and book.callNumber is not null -%}
+            {{- translate('Call number') }}: {{ book.callNumber }}<br>
+        {%- endif -%}
+        {{- translate('Due on') }}: {{ format_date(object.dueOn, 'medium', 'none') -}}
+        {%- if object.status == constant('Books\\Model\\LibraryTable::CHECKOUT_STATUS_OVERDUE') %} ({{ translate('Overdue') }}){% endif -%}
+        <br><br>
+    {%- endif -%}
+{%- endfor -%}

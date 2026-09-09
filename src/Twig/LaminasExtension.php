@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Laminas\EntityFormatter;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
+use App\View\Label;
+use Closure;
+use JTranslate\I18n\MessageRenderer;
 use DateTime;
 use DateTimeInterface;
 use Laminas\I18n\Translator\Translator as I18nTranslator;
 use Laminas\I18n\Translator\TranslatorInterface;
-use Laminas\Mvc\I18n\Translator as MvcTranslator;
 use IntlDateFormatter;
 use Symfony\Component\HttpFoundation\RequestStack;
 use SionModel\Entity\Entity;
+use SionModel\Messaging\FlashMessages;
 use SionModel\Text\Text;
 use SionModel\Service\EntitiesService;
 use Throwable;
@@ -62,14 +66,52 @@ final class LaminasExtension extends AbstractExtension
     public const DEFAULT_TEXT_DOMAIN = 'default';
 
     /** @var array<string, Entity>|null */
+    /**
+     * The markup around a block of messages, as the laminas layout set it on the flash
+     * helper and as JTranslate's now-messenger helper shipped it. They differ by four
+     * spaces of indentation, and a page diffed across the port wants each as it was.
+     */
+    private const FLASH_OPEN = '<div%s>
+         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+             &times;
+         </button>
+         ';
+    private const NOW_OPEN = '<div%s>
+     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+         &times;
+     </button>
+     ';
+    private const MESSAGE_SEPARATOR = '</br>';
+    private const MESSAGE_CLOSE = '</div>';
+
+    /**
+     * Which namespaces each block renders, in the laminas layout's order, and the alert
+     * class each one gets. The flash block never rendered `warning`; the now block never
+     * rendered `default`. Reproduced.
+     */
+    private const FLASH_BLOCKS = [
+        FlashMessages::NAMESPACE_ERROR   => 'alert-danger',
+        FlashMessages::NAMESPACE_INFO    => 'alert-info',
+        FlashMessages::NAMESPACE_DEFAULT => 'alert-warning',
+        FlashMessages::NAMESPACE_SUCCESS => 'alert-success',
+    ];
+    private const NOW_BLOCKS = [
+        FlashMessages::NAMESPACE_ERROR   => 'alert-danger',
+        FlashMessages::NAMESPACE_WARNING => 'alert-warning',
+        FlashMessages::NAMESPACE_INFO    => 'alert-info',
+        FlashMessages::NAMESPACE_SUCCESS => 'alert-success',
+    ];
+
     private ?array $entities = null;
     private ?EntityFormatter $entityFormatter = null;
+    private ?Label $label = null;
 
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly ViewHelpers $helpers,
         private readonly RouteUrl $urls,
-        private readonly RequestStack $requests
+        private readonly RequestStack $requests,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -221,13 +263,9 @@ final class LaminasExtension extends AbstractExtension
      */
     private function catalogValue(string $domain, string $message): ?string
     {
-        $translator = $this->laminas->get('MvcTranslator');
-        //MvcTranslator decorates the laminas-i18n one and proxies the rest through
-        //__call(); getAllMessages() is not on TranslatorInterface, so reach the decorated
-        //instance where there is one rather than relying on the proxy.
-        if ($translator instanceof MvcTranslator) {
-            $translator = $translator->getTranslator();
-        }
+        //the canonical laminas-i18n translator, the instance `MvcTranslator` wraps:
+        //getAllMessages() is not on TranslatorInterface
+        $translator = $this->laminas->get(TranslatorInterface::class);
         if (! $translator instanceof I18nTranslator) {
             return null;
         }
@@ -704,37 +742,41 @@ final class LaminasExtension extends AbstractExtension
 
     /**
      * The within-request messages, in the four namespaces and the order the laminas
-     * layout renders them: error, warning, info, success. Empty on every page that
-     * added none, which is all of them but the literature search.
+     * layout rendered them: error, warning, info, success. Empty on every page that
+     * added none.
      *
-     * Markup, and the helper escapes each message itself — `autoEscape` is on.
+     * Markup; the renderer escapes each message itself. Translated in the page's text
+     * domain, like everything else on the page — the laminas helper translated these in
+     * `default`, which on a Symfony request was the construction default nobody set.
      */
     public function nowMessages(): string
     {
-        //`JTranslate\View\Helper\NowMessenger::__invoke()` builds and returns the markup
-        //string, but carries the copied docblock of the flash messenger it was adapted
-        //from — `@return FlashMessenger|PluginNowMessenger`. Held as mixed so the cast is
-        //the code's claim rather than the annotation's.
-        /** @var mixed $markup */
-        $markup = $this->helpers->nowMessenger()->__invoke();
-
-        return is_string($markup) ? $markup : '';
+        return $this->messageBlocks(self::NOW_OPEN, self::NOW_BLOCKS, $this->messages->current(...));
     }
 
     /**
-     * TwbBundle's Bootstrap label. Markup, and it escapes both the text and the class
+     * A Bootstrap label. Markup, and App\View\Label escapes both the text and the class
      * attribute itself — which is why the space inside `class="label-info label"`
      * arrives as `&#x20;` and why this is `is_safe: html` rather than escaped again.
      */
-    public function label(string $text, string $class = ''): string
+    public function label(string $text, string $class = 'label-default'): string
     {
-        //TwbBundleLabel::__invoke() returns the helper itself when called with no
-        //arguments, which is the fluent form nothing here uses; with a $text it always
-        //returns the rendered markup. Narrowed rather than cast, so that the fluent
-        //return can never be stringified into "the object" on a page.
-        $markup = $this->helpers->label()->__invoke($text, $class);
+        return $this->labelRenderer()->render($text, $class);
+    }
 
-        return is_string($markup) ? $markup : '';
+    private function labelRenderer(): Label
+    {
+        return $this->label ??= new Label($this->translate(...));
+    }
+
+    private function messageRenderer(string $openFormat): MessageRenderer
+    {
+        return new MessageRenderer(
+            fn (string $message, string $domain): string => $this->translate($message, $domain),
+            $openFormat,
+            self::MESSAGE_SEPARATOR,
+            self::MESSAGE_CLOSE
+        );
     }
 
     /**
@@ -771,7 +813,8 @@ final class LaminasExtension extends AbstractExtension
             //translator lookup exist once; see EntityFormatter's constructor docblock
             $this->editPencil(...),
             $this->editPencilForRoute(...),
-            $this->translate(...)
+            $this->translate(...),
+            $this->labelRenderer()
         );
     }
 
@@ -784,32 +827,33 @@ final class LaminasExtension extends AbstractExtension
      * ports: `App\Sion\EntityShow` and `App\Controller\SendToNewUrlController` both set
      * one before redirecting.
      *
-     * **The domain is set here and that is not cosmetic.** The helper translates each
-     * message against whatever text domain it holds, and on a Symfony request nothing
-     * else sets one — see App\Laminas\ViewHelpers::useFlashMessengerTextDomain() for what
-     * that cost. The page's own domain is what the laminas listener would have set:
-     * it uses the *rendering* controller's module namespace, not the one that set the
-     * message, and a ported route's `_text_domain` is exactly that module.
+     * **The domain is the page's, and that is not cosmetic.** A message is translated
+     * where it is rendered, and the page's own domain is what the laminas listener set:
+     * the *rendering* controller's module namespace, not the one that set the message.
+     * Left at `default` it renders as its English source in every locale and files a
+     * duplicate phrase row in `default` on the way — measured 2026-08-13.
+     *
+     * The `warning` namespace is not rendered, as the laminas layout did not render it.
      */
     public function flashMessages(): string
     {
-        $this->helpers->useFlashMessengerTextDomain($this->textDomain() ?? self::DEFAULT_TEXT_DOMAIN);
+        return $this->messageBlocks(self::FLASH_OPEN, self::FLASH_BLOCKS, $this->messages->flashed(...));
+    }
 
-        $flash = $this->helpers->flashMessenger();
-        $flash->setMessageOpenFormat(
-            '<div%s>
-         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
-             &times;
-         </button>
-         '
-        )
-            ->setMessageSeparatorString('</br>')
-            ->setMessageCloseString('</div>');
+    /**
+     * @param array<string, string> $blocks namespace => alert class, in rendering order
+     * @param Closure(string): list<mixed> $messages the store to read each namespace from
+     */
+    private function messageBlocks(string $openFormat, array $blocks, Closure $messages): string
+    {
+        $renderer = $this->messageRenderer($openFormat);
+        $domain   = $this->textDomain() ?? self::DEFAULT_TEXT_DOMAIN;
+        $markup   = '';
+        foreach ($blocks as $namespace => $class) {
+            $markup .= $renderer->render($messages($namespace), ['alert', 'alert-dismissable', $class], $domain);
+        }
 
-        return (string) $flash->render('error', ['alert', 'alert-dismissable', 'alert-danger'])
-            . (string) $flash->render('info', ['alert', 'alert-dismissable', 'alert-info'])
-            . (string) $flash->render('default', ['alert', 'alert-dismissable', 'alert-warning'])
-            . (string) $flash->render('success', ['alert', 'alert-dismissable', 'alert-success']);
+        return $markup;
     }
 
     /** @return array<string, Entity> */

@@ -110,7 +110,7 @@ class ShrineIndexInvariantsTest extends TestCase
     /**
      * The laminas services the way bin/console builds them: no bootstrap(), so no
      * MVC listeners and no dispatch. Config caches off for the reason
-     * CacheStatusParityTest states — a test run must not write data/config/.
+     * CacheStatusEndpointTest states — a test run must not write data/config/.
      */
     private function bridge(): ServiceBridge
     {

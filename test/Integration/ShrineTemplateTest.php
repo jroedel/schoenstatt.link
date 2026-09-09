@@ -8,6 +8,7 @@ use App\Http\CspNonce;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
+use App\Laminas\HostMessages;
 use App\Twig\TwigFactory;
 use Laminas\Db\Adapter\Adapter;
 use Locale;
@@ -207,11 +208,12 @@ class ShrineTemplateTest extends TestCase
             new ViewHelpers($this->bridge(), fn (): RouteUrl => new RouteUrl($this->bridge(), '')),
             new RouteUrl($this->bridge(), ''),
             $requests,
-            new CspNonce()
+            new CspNonce(),
+            new HostMessages()
         );
     }
 
-    /** Config caches off, for the reason CacheStatusParityTest states: no test may write data/config/. */
+    /** Config caches off, for the reason CacheStatusEndpointTest states: no test may write data/config/. */
     private function bridge(): ServiceBridge
     {
         if (null !== self::$bridge) {

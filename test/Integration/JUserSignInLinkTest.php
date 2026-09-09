@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\ContainerFactory;
 use JTranslate\I18n\TranslatableMessage;
 use JUser\Host\FlashInterface;
 use JUser\Host\SessionInterface;
@@ -14,7 +15,6 @@ use JUser\Model\UserTable;
 use JUser\Page\SignIn;
 use JUser\Service\LoginTokenService;
 use JUser\Service\Mailer;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -255,13 +255,8 @@ final class JUserSignInLinkTest extends TestCase
         }
 
         $appConfig = require __DIR__ . '/../../config/application.config.php';
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $services = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($services);
-        $services->setService('ApplicationConfig', $appConfig);
-        $services->get('ModuleManager')->loadModules();
+        $services = ContainerFactory::build($appConfig);
 
         return self::$services = $services;
     }
