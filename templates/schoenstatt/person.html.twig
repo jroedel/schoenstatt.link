@@ -7,9 +7,10 @@
   **The fifth panel of the original — assignments — is deliberately absent.** Its
   condition can never be true: `SchoenstattTable::getPersons()` initialises the
   `assignments` key and the line that would fill it is commented out, measured empty on
-  all 325 rows. That is also why nobody has noticed that the helper it calls,
-  `formatPersonAssignment()`, reaches an unregistered `formatScope()` in every branch but
-  one. See App\Controller\PersonController.
+  all 325 rows. That is also why nobody noticed that the helper it called,
+  `formatPersonAssignment()`, reached an unregistered `formatScope()` in every branch but
+  one — it was deleted in 2026-09, registered nowhere and called by nothing. See
+  App\Controller\PersonController.
 
   Two `<h1>` details that look like noise and are the original: the dagger for a deceased
   person, and `class="text-center"` plus a `col-md-offset-5` on the photo column, which

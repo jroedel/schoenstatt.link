@@ -1,11 +1,9 @@
 <?php
 namespace Books\View\Helper;
 
-use Laminas\View\Helper\AbstractHelper;
-use Spatie\SchemaOrg\Schema;
 use Books\OpenUrl\ContextObject;
 
-class Coins extends AbstractHelper
+class Coins
 {
     const RFR_ID           = 'info:sid/zotero.org:2';
 
