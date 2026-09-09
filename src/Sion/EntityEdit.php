@@ -25,7 +25,7 @@ use function ucfirst;
  *
  * ## Why a copy, and what actually pins it
  *
- * docs/strangler.md's rule: share where sharing does not mean *editing* a laminas action,
+ * docs/laminas-exit.md's rule: share where sharing does not mean *editing* a laminas action,
  * copy where it would, and pin the copy. `editAction()` is a 100-line method reaching
  * four plugins — `params`, `flashMessenger`, `nowMessenger`, `redirect` — none of which
  * resolve without an MvcEvent, and it is inherited by a dozen controllers this batch does

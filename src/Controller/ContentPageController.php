@@ -25,7 +25,7 @@ use function sprintf;
  * `submittingPhotosAction()` are each literally `return new ViewModel()`, and
  * `indexAction()` is the same thing with an empty variable. Reproducing
  * that as five identical Symfony controllers would port the duplication along with
- * the pages, which is the mistake docs/strangler.md records from the wayside-shrine
+ * the pages, which is the mistake docs/laminas-exit.md records from the wayside-shrine
  * port: between two *ported* routes, share.
  *
  * What differs per page therefore lives in the route declaration, not in a subclass:

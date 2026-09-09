@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../src/Routing/RegexSampler.php';
  * `tools/acl-table.php` decides whether a Symfony route has taken over a laminas
  * route's URLs by instantiating the laminas pattern into a concrete URL and
  * matching it. Every such URL comes from here, so a wrong sample is a wrong row
- * in `docs/acl-rules.md` — and the tool's whole purpose is to be believed when it
+ * in `docs/acl-baseline.json` — and the tool's whole purpose is to be believed when it
  * says who can reach what.
  *
  * The property that matters is not "the sample looks right" but **"the sample

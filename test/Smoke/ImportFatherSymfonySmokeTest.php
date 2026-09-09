@@ -7,7 +7,7 @@ namespace SchoenstattTest\Smoke;
 /**
  * Batch 17: `admin/import-father`, the last HTML page laminas served, on Symfony.
  *
- * The three access outcomes docs/strangler.md asks of a restricted port, then the form
+ * The three access outcomes docs/laminas-exit.md asks of a restricted port, then the form
  * itself. What this file cannot do is import anybody: a valid submission is a call to the
  * Patres API, and the capsule's key is a dummy (`docker/local.docker.php`), so the option
  * list is empty here and any real import would answer 401 upstream. The outcome messages

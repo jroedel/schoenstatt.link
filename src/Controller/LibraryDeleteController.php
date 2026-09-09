@@ -64,7 +64,7 @@ use function sprintf;
  * administrators that would make it selective does not exist. So `lib_administrator`
  * administers all six libraries and the per-row check currently distinguishes nobody.
  *
- * Both are kept, for different reasons. The route guard is what `docs/acl-rules.md` shows,
+ * Both are kept, for different reasons. The route guard is what `docs/acl-baseline.json` shows,
  * so naming the strong role there is what makes the ACL table readable. The per-row check
  * is the shape the whole surface uses, and it is the gate that *becomes* meaningful the day
  * that administrator table lands — at which point a delete route carrying only the route

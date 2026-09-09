@@ -22,7 +22,7 @@ use Symfony\Component\HttpKernel\Event\TerminateEvent;
  * The measurement that found it (2026-08-22, 49 requests over nine pages, live
  * front controller): 348 reads of data keys, **0 hits, 0 writes**; the same pages
  * under `SYMFONY_KERNEL=0` gave 419 reads, 349 hits and 35 writes, and 6.6
- * statements per request against 11.2. See docs/caching-performance.md.
+ * statements per request against 11.2. See docs/caching.md.
  *
  * On `terminate` rather than `response` for the same reason as the phrase flush —
  * the write is bookkeeping and the visitor has no reason to wait for it — and

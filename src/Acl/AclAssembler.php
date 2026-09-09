@@ -25,7 +25,7 @@ use function is_string;
  *  2. **Route guards** — `bjyauthorize.guards['BjyAuthorize\Guard\Route']`, entries
  *     `{route, roles}`, each an all-privileges grant on the resource `route/<route>`. A
  *     route declared twice takes its **last** entry, which is how BjyAuthorize's guard
- *     behaves (it assigns, it does not merge — see docs/acl-rules.md).
+ *     behaves (it assigns, it does not merge — see docs/acl-baseline.json).
  *  3. **Dynamic providers** — every other key under `rule_providers` is a service id
  *     implementing `getRules()` (today `Books\Model\LibraryTable`, which emits the
  *     per-library `library_<id>` rules). Called the same way BjyAuthorize calls them.

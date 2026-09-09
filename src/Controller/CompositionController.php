@@ -26,7 +26,7 @@ use function is_string;
 /**
  * GET /{sw_id}[/{slug}] for a composition — an individual song.
  *
- * docs/strangler.md listed this route as blocked: "`composition` has a comment
+ * docs/laminas-exit.md listed this route as blocked: "`composition` has a comment
  * predicate, so `SionController::showAction()` builds a `CommentForm` and the
  * template renders it". That was accurate, and App\Controller\CommentCreateController
  * plus App\Sion\EntityShow are what unblock it.

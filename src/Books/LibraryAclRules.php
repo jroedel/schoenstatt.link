@@ -13,7 +13,7 @@ namespace App\Books;
  * `checkout` is what `CheckoutsController::createAction()` asks about before showing the
  * lending form, `show` is what `LibrariesController::showAction()` asks about — and they
  * live in database rows, so `tools/acl-table.php` could not list them. The ACL baseline
- * was therefore silently incomplete: `docs/acl-rules.md` said in so many words that no
+ * was therefore silently incomplete: `docs/acl-baseline.json` said in so many words that no
  * config-derived table could show them, and nothing else was looking. Three libraries
  * granted `checkout` to every signed-in account for years without that ever appearing in
  * a diff. Reproducing the mapping here is what lets the baseline cover them.

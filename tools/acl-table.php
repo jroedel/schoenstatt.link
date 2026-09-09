@@ -1677,7 +1677,7 @@ $o('- **undeclared** — nothing at all. `RouteGuard` throws `UndeclaredRouteAcc
 $o('  is reached, and it is warned about at the top of this file. This is the silent-bypass shape the');
 $o('  tool exists to catch: a route that lost its guard keeps working and simply admits everyone.');
 $o();
-$o('Live only where `SYMFONY_KERNEL=1`: the capsule today, production not yet (docs/strangler.md).');
+$o('Symfony-served (docs/laminas-exit.md).');
 $o('`App\Controller\NotFoundController`, the catch-all 404 (formerly App\Http\LegacyBridge), is excluded —');
 $o('it matches every path by design, and laminas-mvc runs its own guard behind it.');
 $o();

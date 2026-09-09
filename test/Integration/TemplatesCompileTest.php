@@ -35,7 +35,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * A Twig template that does not compile produces an **HTTP 200 with an empty body**. The
  * error is raised while the template is rendering, which is after the response headers
  * have gone out, so the visitor gets a blank page and the status line says everything is
- * fine. `docs/strangler.md` calls this the fatal-200 wedge and records it from a Twig
+ * fine. `docs/laminas-exit.md` calls this the fatal-200 wedge and records it from a Twig
  * syntax error in an earlier batch and from `CollectionFormFactory` reaching for the route
  * match in batch 7. This test is the check for the first of those. Measured against
  * deliberate breakage rather than assumed, because two of the four things one would expect

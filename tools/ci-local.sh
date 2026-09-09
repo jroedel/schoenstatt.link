@@ -52,7 +52,7 @@ warn() { printf '  \033[33mSKIP\033[0m  %s\n' "$1"; WARNINGS=$((WARNINGS + 1)); 
 in_capsule() { docker compose exec -T app "$@"; }
 
 # Deprecation notices from laminas-cache under PHP 8.5 flood every PHP run here and are
-# tracked separately (docs/php-85.md). Filtering them keeps a real failure visible.
+# tracked separately (docs/DEPLOY.md). Filtering them keeps a real failure visible.
 quiet() { grep -Ev '^Deprecated:|^$'; }
 
 # Capture-then-match, never `cmd | grep -q`. With `set -o pipefail`, grep -q exits on the

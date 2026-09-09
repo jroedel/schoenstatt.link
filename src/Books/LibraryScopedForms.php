@@ -34,7 +34,7 @@ use function is_array;
  * getRouteMatch() on null` — *after* the response has been assembled, which makes it the
  * fatal-200 wedge: HTTP 200, zero bytes, nothing logged where a visitor would see it.
  *
- * This is the MvcEvent limitation docs/strangler.md records for **view helpers**, reaching
+ * This is the MvcEvent limitation docs/laminas-exit.md records for **view helpers**, reaching
  * a **form factory** instead. Nothing in that document anticipated it, and it is worth
  * expecting again: any laminas factory may read the route match, and the failure it
  * produces names a helper rather than the route.

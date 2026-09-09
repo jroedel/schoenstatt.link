@@ -20,7 +20,7 @@ use function trim;
  * a breadcrumb label until 2026-08-10; once something did, every one of those labels became
  * a translator miss, and a miss is exactly how a phrase is filed. Within a day 3,071
  * publication titles were 61% of the whole phrase table, each filed twice because the
- * partial falls back to the `default` domain (`docs/api-change-requests-response.md` §12).
+ * partial falls back to the `default` domain (`docs/api-v3.md` §12).
  *
  * The failure is invisible from a rendered page: the crumb reads correctly either way, and
  * the cost lands in a table nobody looks at until an agent asks what is left to translate.

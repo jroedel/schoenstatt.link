@@ -61,7 +61,7 @@ use function trim;
  *    any of its sub-editions does" — a nested loop per row, reduced to a set.
  * 3. **The advanced-search link.** The .phtml asks
  *    `isAllowed('route/publications/advanced-search')`, and that resource appears nowhere
- *    in `docs/acl-rules.md`: there is no such route and no guard entry defining it.
+ *    in `docs/acl-baseline.json`: there is no such route and no guard entry defining it.
  *    Asking the ACL about an unregistered resource is how you get an exception on a
  *    public page, so the question is asked once, here, and defensively.
  */
@@ -256,7 +256,7 @@ final class LiteratureController
      * The advanced-search link, or null.
      *
      * `route/publications/advanced-search` is not a resource this application defines —
-     * it appears in no guard entry and `docs/acl-rules.md` has no row for it — and
+     * it appears in no guard entry and `docs/acl-baseline.json` has no row for it — and
      * `Laminas\Permissions\Acl::isAllowed()` throws on an unregistered resource. The
      * laminas page gets away with asking because BjyAuthorize's `Config` resource
      * provider registers whatever the guards name and the ACL happens to tolerate the

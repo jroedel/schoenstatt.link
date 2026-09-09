@@ -26,7 +26,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * /shrines and /wayside-shrines are each answered by two front controllers, and this
  * pins that they assemble the same data.
  *
- * docs/strangler.md asks a route answering from two places to share the code that
+ * docs/laminas-exit.md asks a route answering from two places to share the code that
  * builds the response. Here it deliberately does not: the laminas actions were left
  * byte-for-byte untouched so production — which still serves them, SYMFONY_KERNEL
  * being unset there — cannot be affected by the port at all. That leaves two copies

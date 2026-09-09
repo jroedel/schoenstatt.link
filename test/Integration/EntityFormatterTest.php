@@ -132,7 +132,7 @@ class EntityFormatterTest extends TestCase
      *
      * **Both directions, because the link is ACL-dependent** and this test runs with no
      * identity. `route/text` and `route/composition` admit an anonymous visitor;
-     * `route/text` does not (measured in docs/acl-rules.md). So the expected outcome is
+     * `route/text` does not (measured in docs/acl-baseline.json). So the expected outcome is
      * read from the ACL rather than assumed — which makes this a test of isActionAllowed()
      * as well: a formatter that ignored permissions would link `text` and fail here.
      */

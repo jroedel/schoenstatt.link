@@ -10,7 +10,7 @@
  * compared as a set, and every line removed is a bug fixed.
  *
  * The wedge is described in `SmokeTestCase::assertNotWedged()` and in
- * `docs/strangler.md`: a throw *after* the response was assembled, with `display_errors`
+ * `docs/laminas-exit.md`: a throw *after* the response was assembled, with `display_errors`
  * off, so the status is 200 and the body simply stops. Nothing about it is visible to a
  * status assertion, which is why these went unnoticed.
  *

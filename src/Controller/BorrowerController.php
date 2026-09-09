@@ -42,7 +42,7 @@ use function is_string;
  *
  * The parent route declared an `index` action that `BorrowersController` does not have,
  * rendering a template that does not exist; it answered 500 for every request. Retired
- * in this batch rather than ported — see docs/strangler.md.
+ * in this batch rather than ported — see docs/laminas-exit.md.
  */
 final class BorrowerController
 {

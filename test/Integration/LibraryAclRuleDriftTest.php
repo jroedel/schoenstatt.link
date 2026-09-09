@@ -116,7 +116,7 @@ class LibraryAclRuleDriftTest extends TestCase
             $fromCopy,
             'App\Books\LibraryAclRules has drifted from Books\Model\LibraryTable::getRules(). '
             . 'They are two copies of one mapping on purpose (see the class docblock); update both, '
-            . 'then regenerate docs/acl-rules.md and docs/acl-baseline.json.'
+            . 'then regenerate docs/acl-baseline.json.'
         );
     }
 

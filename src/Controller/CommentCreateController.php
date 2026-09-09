@@ -27,7 +27,7 @@ use function ucwords;
  * not config — `SELECT PredicateKind FROM predicates WHERE SubjectEntityKind='comment'`
  * answers `comment-comments-composition`, `comment-comments-event`,
  * `comment-comments-file`, `comment-comments-text` and `comment-reviews-publication` —
- * which is why docs/strangler.md's claim that only composition and text were blocked
+ * which is why docs/laminas-exit.md's claim that only composition and text were blocked
  * was one entity short.
  *
  * ## POST only, and why that is a reproduction rather than a narrowing

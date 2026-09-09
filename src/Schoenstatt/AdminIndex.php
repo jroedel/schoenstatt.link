@@ -14,7 +14,7 @@ use function count;
  * counters it puts a badge on.
  *
  * A copy of `Schoenstatt\Controller\AdminController::indexAction()`, and copied for
- * the reason docs/strangler.md gives: sharing would mean *rewriting* the laminas
+ * the reason docs/laminas-exit.md gives: sharing would mean *rewriting* the laminas
  * action, which is still live behind the canary. Adding a row to its literal array,
  * as the kernel-switch move did, is not that — it is the one edit shape the
  * duplication tolerates, because the parity test catches a half-done one.

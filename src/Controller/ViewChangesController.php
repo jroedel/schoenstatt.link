@@ -26,7 +26,7 @@ use function is_string;
  *
  * **The page had to work.** It exhausted a 512 MB limit before rendering anything, so
  * there was no laminas rendering to compare a port against — and a port is verified by
- * that comparison. Fixed first, in SionModel; see docs/strangler.md.
+ * that comparison. Fixed first, in SionModel; see docs/laminas-exit.md.
  *
  * **`formatEntity` had to cover the types this page actually meets.** Its entity column
  * formats whatever type each change row names, and `sch_changes` holds 18,243

@@ -16,7 +16,7 @@ use function str_replace;
  * Sends the same Content-Security-Policy on a Symfony-served HTML page that
  * SionModel\Mvc\CspListener sends on a laminas-served one.
  *
- * docs/strangler.md records the CSP as one of the things a ported route loses,
+ * docs/laminas-exit.md records the CSP as one of the things a ported route loses,
  * and for the two maintenance endpoints that was true and harmless — they answer
  * JSON. It stops being harmless the moment an HTML page moves: the shrines page
  * carries an inline <script> that sizes the progress bars, so the policy and the
