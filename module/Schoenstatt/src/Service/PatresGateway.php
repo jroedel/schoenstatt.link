@@ -3,7 +3,7 @@ namespace Schoenstatt\Service;
 
 use Schoenstatt\Model\SchoenstattTable;
 use Laminas\InputFilter\InputFilterInterface;
-use Laminas\Http\Client;
+use Symfony\Component\HttpClient\HttpClient;
 use App\Json;
 use Psr\Log\LoggerInterface;
 
@@ -100,13 +100,12 @@ class PatresGateway
         }
         $key = $this->getApiKey();
         $listUrl = $this->getPersonListUri();
-        $client = new Client();
-        $client->setMethod('get');
-        $client->setUri($listUrl);
-        $client->setParameterGet(['key' => $key]);
         try {
-            $response = $client->send();
-        } catch (\ErrorException $e) {
+            $response = HttpClient::create()->request('GET', $listUrl, ['query' => ['key' => $key]]);
+            //Symfony's client is lazy — nothing is sent until the response is read — so the
+            //status is asked for here, inside the catch that logs a failed request.
+            $status   = $response->getStatusCode();
+        } catch (\Throwable $e) {
             $logger = $this->getLogger();
             if (isset($logger)) {
                 $logger->error("Error requesting the person list from schoenstatt-fathers.link. Reason: "
@@ -115,11 +114,13 @@ class PatresGateway
             throw $e;
         }
 
-        if (200 != $response->getStatusCode()) {
+        if (200 != $status) {
             throw new \Exception('Failed to retrieve list of fathers from Patres. Status code: '
-                . $response->getStatusCode());
+                . $status);
         }
-        $data = Json::decodeToArray($response->getBody());
+        //`false`: the status is checked above, and letting the client throw on a non-2xx
+        //would replace that explicit message with a transport exception.
+        $data = Json::decodeToArray($response->getContent(false));
         if (! isset($data['data'])) {
             throw new \Exception('Failed to retrieve list of fathers from Patres. No data returned');
         }
@@ -218,17 +219,16 @@ class PatresGateway
     {
         $key = $this->getApiKey();
         $getPersonUrl = $this->getPersonUri($personId);
-        $client = new Client();
-        $client->setMethod('get');
-        $client->setUri($getPersonUrl);
-        $client->setParameterGet(['key' => $key]);
-        $response = $client->send();
+        $response = HttpClient::create()->request('GET', $getPersonUrl, ['query' => ['key' => $key]]);
+        $status   = $response->getStatusCode();
 
-        if (200 != $response->getStatusCode()) {
+        if (200 != $status) {
             throw new \Exception('Request for information on father \'' . $personId . '\' failed. Status code: '
-                . $response->getStatusCode());
+                . $status);
         }
-        $data = Json::decodeToArray($response->getBody());
+        //`false`: the status is checked above, so the client must not throw over it and
+        //replace that message with a transport exception.
+        $data = Json::decodeToArray($response->getContent(false));
         if (! isset($data['data'])) {
             throw new \Exception('Request for information on father \'' . $personId
                 . '\' failed. No information returned.');
