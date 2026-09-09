@@ -8,7 +8,14 @@ return [
             'it_IT',
         ],
 
-        // cache options have to be compatible with Laminas\Cache\StorageFactory::factory
+        /**
+         * The PSR-16 cache JTranslate's PhraseCache uses. The module builds none of its
+         * own since 2026-09 — the host provides one and names it here — so this is the
+         * service registered in Application's module config from `cache_options` below.
+         */
+        'cache_service' => 'JTranslate\Cache',
+
+        //read by that service's factory; the shape SionModel\Cache\StorageFactory takes
         'cache_options' => [
             'adapter' => [
                 'name'    => 'apcu',

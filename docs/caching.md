@@ -41,6 +41,26 @@ Two wiring facts pinned by `test/Integration/SionCacheWiringTest`: `setPersisten
 discards the map read from a previous storage (JUser's factory swaps `PersistentCache` for
 `JUser\Cache`, a different namespace), and `wireOnFinishTrigger()` is idempotent.
 
+## The storage
+
+`SionModel\Cache\Storage` is the cache surface, `ApcuStorage` and `FilesystemStorage` the
+two implementations, and `StorageFactory` builds one from the configuration files already on
+each deployment target. The interface is ours rather than PSR-16 for two reasons the trait
+depends on: `getItem()` reports the hit through a by-reference flag, so a cached `null` is a
+hit and not a miss, and `incrementItem()` is atomic, which is what makes the generation
+counter above worth having. Both implementations also implement
+`Psr\SimpleCache\CacheInterface`, which is how JTranslate takes one without depending on
+this package.
+
+Two consequences of dropping laminas-cache, both intended:
+
+- **A write that fails is `false`, not an exception.** The laminas adapter threw from
+  `internalSetItem()`; a cache is an optimisation and must not be able to take a page down.
+- **Keys carry no `laminascache:` prefix any more.** That was laminas's default namespace,
+  applied to every cache configuring none — the persistent cache, the application-wide one,
+  Books'. Only the name changed; the first post-swap `cache:flush-persistent` clears the
+  orphans, since it empties the whole segment.
+
 ## The flush point
 
 Nothing is written to APCu at the moment it is cached. `cacheEntityObjects()` puts the item
@@ -86,11 +106,10 @@ APCu 5.1.27, in `/home/httpd/php85-ini/ourlink/php.ini` (root-owned; the path ca
 PHP version, so every konsoleH version flip reverts it — diff after any switch).
 
 With `apc.ttl = 0`, a failed allocation does not evict selectively:
-`apc_cache_default_expunge()` **clears the entire cache**, site-wide, for every user. On top
-of that `Laminas\Cache\Storage\Adapter\Apcu::internalSetItem()` throws when `apcu_store()`
-returns false. Unbounded, that is self-sustaining: the wipe leaves the navigation cold, the
-next request rebuilds it and queues the same oversized write, which wipes again. It shows up
-as APCu `expunges` and slow pages, never as an error.
+`apc_cache_default_expunge()` **clears the entire cache**, site-wide, for every user.
+Unbounded, that is self-sustaining: the wipe leaves the navigation cold, the next request
+rebuilds it and queues the same oversized write, which wipes again. It shows up as APCu
+`expunges` and slow pages, never as an error.
 
 **`sion_model.max_cached_item_size`** (bytes, default **4 MiB** = 4194304, `0` disables) is
 the one bound on a persistent cache write. `onFinishWriteCache()` measures
