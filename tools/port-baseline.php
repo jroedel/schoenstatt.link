@@ -9,7 +9,7 @@
  * left to diff anyway. Kept for its normalization rules and as the record of how the port
  * was verified; a laminas capture is no longer obtainable.
  *
- * This is the procedure docs/strangler.md calls "Verifying a port against
+ * This is the procedure docs/laminas-exit.md calls "Verifying a port against
  * production, across every locale", turned into a tool. Batch 3 ran it by hand and
  * it is what found the translation defect: the ported pages were diffed
  * byte-for-byte on `/en/…` and passed, while all four other languages rendered
@@ -100,7 +100,7 @@
  * for the chrome, on any ported route. Measured on 2026-08-08, before this batch
  * touched anything: /en/developers, /en/privacy and /en/shrines all differed from their
  * laminas renderings, and *only* in the ways rules 5, 6 and 7 name. **That corrects
- * docs/strangler.md**, which claims batch 3 came to "65 of 65 responses identical" —
+ * docs/laminas-exit.md**, which claims batch 3 came to "65 of 65 responses identical" —
  * as whole documents they were not, and no later batch can make them so.
  *
  * So the comparison is deliberately scoped to what porting a page actually owns:
@@ -512,7 +512,7 @@ const PATHS = [
     // the `nameDay` selects rendered as hidden inputs, and the four patres date fields that
     // no laminas partial renders at all — and there **the Symfony side is the correct one**:
     // without those hidden inputs a save writes NULL to two NOT NULL columns. Both are
-    // recorded in docs/strangler.md's known-differences table.
+    // recorded in docs/laminas-exit.md's known-differences table.
     '/persons/create',
     '/texts/create',
 

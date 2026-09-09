@@ -33,7 +33,7 @@ $navigationTextDomain = $this->navigation()->getTranslatorTextDomain();
  * phrase, so it put one row per record into trans_phrases, and two rows because of the
  * domain fallback below. It reached 3,071 publication titles, 61% of the whole table, in
  * the day after breadcrumbs began being translated at all. See
- * docs/api-change-requests-response.md §12.
+ * docs/api-v3.md §12.
  */
 $translateLabel = function (\Laminas\Navigation\Page\AbstractPage $page) use ($navigationTextDomain) {
     $label = (string) $page->getLabel();

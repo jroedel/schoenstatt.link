@@ -28,7 +28,7 @@ use Twig\Environment;
  * It could be ported at all only because it is public: a Symfony-served route gets
  * no BjyAuthorize route guard, so a route whose protection lives in the guard would
  * simply lose it. `shrines` is guarded `['null', 'guest', 'user']`, and a null role
- * means everyone. See docs/strangler.md before porting anything that is not.
+ * means everyone. See docs/laminas-exit.md before porting anything that is not.
  *
  * What it does *not* lose, contrary to what one would assume from "a ported route
  * has no session": the identity. Asking isAllowed() makes BjyAuthorize ask JUser,

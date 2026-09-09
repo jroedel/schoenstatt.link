@@ -20,7 +20,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *
  * When a Symfony route takes over a URL, the bjyauthorize guard on whatever
  * laminas route used to answer it **stops running entirely** — a Symfony-served
- * request never boots laminas-mvc. `docs/acl-rules.md` records those takeovers
+ * request never boots laminas-mvc. `docs/acl-baseline.json` records those takeovers
  * so a reviewer can check that the ported route re-declares the same restriction.
  *
  * Until 2026-08-14 that record was silently incomplete. `tools/acl-table.php`

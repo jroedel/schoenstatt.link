@@ -59,14 +59,9 @@ ini_set('memory_limit', '512M');
 
 // Run the application!
 //
-// One front controller: App\Kernel (symfony/http-kernel). A catch-all route
-// (App\Http\LegacyBridge) still boots a per-request Laminas\Mvc\Application for the
-// handful of unported laminas routes, but the SYMFONY_KERNEL canary — the branch that
-// let production revert to the *laminas front controller* a cookie away — was retired on
-// 2026-09-08, once the Symfony kernel had been the site-wide default and green for a
-// month (docs/strangler.md, "The endgame"). Rolling back is a redeploy now, not an
-// .htaccess edit. The `SYMFONY_KERNEL` environment variable is no longer read here or
-// set anywhere; `App\Kernel` is unconditional.
+// One front controller: App\Kernel (symfony/http-kernel). Nothing dispatches through
+// laminas-mvc; LegacyBridge and the SYMFONY_KERNEL canary were deleted 2026-09-08 and
+// there is no laminas front controller to roll back to (docs/laminas-exit.md).
 $kernel   = new Kernel($appConfig);
 $request  = Request::createFromGlobals();
 $response = $kernel->handle($request);

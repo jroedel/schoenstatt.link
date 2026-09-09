@@ -5,751 +5,199 @@
 ```
 
 That is the whole thing: preflight, build, migrate, warm, swap, verify. It runs
-`rsync` over your own shell account on port 222 and needs no PHP locally.
+`rsync` over your own shell account on **port 222** and needs no local PHP — only
+`git`, `rsync`, `ssh`, `curl` and (strongly recommended) `timeout`/`gtimeout`.
 
 **Deployment is atomic.** A release is built, composer-installed and warmed in a
 directory nothing is serving, and goes live when one symlink is replaced by a
-single `rename(2)`. There is no window in which a visitor meets a half-deployed
-tree — which there was, on every deploy, until 2026-08-15: 17 of the 21 real
-exception fingerprints measured on 2026-08-14 were deploy artifacts, arriving in
-nine bursts, one per deployed revision (see docs/BACKLOG.md "Deploy ops" for the
-evidence, kept because the measurement is what justified the redesign).
-
-**phploy is retired.** It wrote file-by-file over SFTP straight into the live
-docroot, which is what made the window unavoidable; nothing about that transport
-was atomic and no amount of care in the application prevented it. Its
-`--submodules` mode also had a directory-purge bug that recursively deleted
-freshly-uploaded trees (it took out `module/JUser/src` on 2026-08-02). The
-restricted SFTP account on port 22 that phploy used is now unused by anything.
+single `rename(2)`. No visitor ever meets a half-deployed tree. **phploy was
+deleted 2026-08-16; do not reintroduce it or reason from it.**
 
 Configuration lives in **`.deploy.local`** (gitignored, mode 0600), seeded from
-`.deploy.local.dist` by `config.sh`. It replaces both `phploy.ini` and
-`.phploy`. Nothing in it is ever written to the server.
+`.deploy.local.dist` by `./config.sh`: the SSH target, `DEPLOY_API_KEY` (any
+`sion_model.api_keys` value — sent as an `X-Api-Key` header, never a query string)
+and the full-DDL database credentials. **Nothing in it is ever written to the
+server, committed, printed or copied.** An unreplaced `TODO` aborts the preflight —
+a bogus API key would fail the smoke run and roll back a release that was fine.
 
-## Before the next deploy: the sitemap needs a cron entry
+## Flags
 
-The sitemap became a set of static files in the docroot
-([docs/sitemap.md](sitemap.md)). Two things have to happen on the server, and
-until they do the sitemap works but never refreshes on its own.
-
-1. **Add the cron entry** — in konsoleH, or `crontab -e` on the port-222 shell
-   account. The path has to resolve *through* the `public/` symlink so the run
-   always lands in whichever release is live — hence `cd -P` and then `cd ..`,
-   rather than the tempting `public/..`, which the shell collapses logically
-   back to the application directory without ever following the link.
-
-   ```cron
-   */15 * * * * cd -P ~/public_html/schoenstatt.link/public && cd .. && php bin/console sitemap:build >/dev/null
-   ```
-
-   A run with nothing to do costs ~0.11 s: one `MAX()` over an indexed column,
-   then it exits. Only a run that finds new data walks the navigation (~1.2 s).
-
-2. ~~**Mirror the build into `phploy.ini`'s `post-deploy[]`**~~ — **done, and no
-   longer a manual step.** `tools/deploy.sh` runs `sitemap:build --force` as part
-   of warming, *before* the swap, so a release goes live with a sitemap that
-   already matches it. `--force` because a deploy can change which pages exist
-   without changing a single database row — the ACL, a route, or the filtering
-   rules — and none of that moves `MAX(sch_changes.UpdatedOn)`.
-
-**Delete the old files after the first deploy.** They are outside the docroot,
-and no deploy will remove them:
-
-```bash
-ssh -p 222 <admin>@dedi2934.your-server.de \
-  'cd public_html/schoenstatt.link && rm -rf data/sitemap'
+```
+./tools/deploy.sh                 # the whole thing
+./tools/deploy.sh --dry-run       # preflight + plan, server untouched
+./tools/deploy.sh --rollback      # re-point the symlink at the previous release
+./tools/deploy.sh --rollback --to <release> [--allow-incompatible]
+./tools/deploy.sh --releases      # what is on the server, and what is live
+./tools/deploy.sh --reset-caches  # force every opcode-cache segment onto the live release, prove it; no swap
+./tools/deploy.sh --migrations    # = tools/migrate.sh status
+  --stash        deploy HEAD with local changes stashed, restored afterwards
+  --skip-tests   skip tools/ci-local.sh --ci in the preflight
+  --ref REF      deploy something other than master (says so, loudly)
+  --bootstrap    first swap only: convert a flat tree to the release layout (done 2026-08-16; never again)
+  -y, --yes      force past the prompt an unusual run raises
 ```
 
-**Then resubmit in Search Console.** The advertised URL changed from
-`/en/sitemap.xml` to `/sitemap.xml`, and the old one is what Search Console has
-on file. The prefixed URL still answers, so nothing breaks if this is forgotten —
-it just goes on reporting the old file's errors.
-
-**Expect the index to grow, slowly.** This deploy also stops every non-English
-page from declaring the English URL as its canonical, so the four other languages
-become indexable for the first time — up to ~28,000 URLs that Google has been
-told to ignore. Two things follow:
-
-- **It is gradual.** Google re-crawls and re-evaluates each page's canonical on
-  its own schedule; a jump in "Indexed" pages over weeks is the expected shape,
-  not days. The `<lastmod>` values now in the sitemap are what should make it
-  faster than it otherwise would be.
-- **Watch two Search Console reports** rather than the sitemap one. Under Pages,
-  "Alternate page with proper canonical tag" should *fall* sharply — that bucket
-  was holding the non-English copies. Under Experience → International
-  Targeting, hreflang errors should stay at zero; if "no return tags" appears,
-  the two layouts have drifted apart and `test/Smoke/CanonicalLinkSmokeTest` is
-  the thing that should have caught it.
-
-Spot-check after the deploy that a non-English page points at itself:
+**A routine deploy asks nothing** — the preflight, the revision gate and the smoke
+rollback protect it, not a `y`. It prompts only for an unusual run (`--ref`,
+`--skip-tests`, `--stash`, a first swap, `.deploy.local` not mode 600/400). It pulls
+master itself, so the unattended form is:
 
 ```bash
-curl -sS https://schoenstatt.link/de/SL100319A | grep -oE '<link[^>]*canonical[^>]*>'
+gh pr merge <n> --merge && git checkout master && git pull --ff-only && ./tools/deploy.sh
 ```
 
-It must name a `/de/` URL. If it says `/en/`, the deploy did not take.
+## The steps
 
-Verify, once deployed:
+| # | step | where | notes |
+|---|---|---|---|
+| 1 | Preflight | local | on `master`; tree clean; `pull --ff-only`; local master not ahead of origin; the three submodules clean, **at the commit the superproject pins, and pushed** |
+| 2 | Verification | local | `tools/ci-local.sh --ci` (lint, `composer --no-dev` rehearsal, PHPStan, PSR-12, unit, integration, `test/Deploy/*`) |
+| 3 | Back up `public/.htaccess` | server | to `shared/data/htaccess-backups/` |
+| 4 | Build | server | `rsync` into `releases/<ts>-<sha>/`, `--link-dest` hardlinked against the previous release; `.revision` written; `public/index.php` broken out of its hardlink (`cp -p` + `mv -f`) |
+| 5 | Link shared | server | `shared/data/*`, `shared/public/*`, `shared/config-autoload/*` symlinked in; `data/config` and `data/cache` created empty, per-release |
+| 6 | composer install | server | `--no-dev --optimize-autoloader`, vendor seeded from the previous release |
+| 7 | Pre-migrations | local → tunnel | `@phase: pre` while the OLD code still serves; a failure aborts before the swap |
+| 8 | Warm | server | `jtranslate:export-catalogs`, `sitemap:build --force` — in a tree nothing serves |
+| 9 | Census | local | count OPcache segments before the swap (lower bound for step 12) |
+| 10 | Swap | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
+| 11 | Post-swap | server | `cache:flush-persistent` (APCu, over HTTP — see below) |
+| 12 | Make the swap visible | local | reset **every** opcode-cache segment; not optional |
+| 13 | Confirm the live release | local | `/_health` polled 12×; any disagreement **aborts before any migration runs** |
+| 13b | Sustained check | local | only when a `@destructive` migration is pending: three rounds, 45 s apart |
+| 14 | Post-migrations | local → tunnel | `@phase: post`, now that the new code is provably running |
+| 15 | Smoke | local | `tools/smoke-prod.sh`; a failure rolls back automatically unless that would be worse |
+| 16 | Housekeeping | local / server | tag `deploy/<ts>` locally (never pushed; `git tag -l 'deploy/*'` answers "what shipped?"); prune to `DEPLOY_KEEP_RELEASES` (5), never the live release or its predecessor |
 
-```bash
-curl -sSI https://schoenstatt.link/sitemap.xml | grep -iE 'accept-ranges|set-cookie'
-curl -sS https://schoenstatt.link/sitemap.xml | grep -o '<loc>[^<]*</loc>'
-```
+Any failure before the swap leaves production untouched; nothing irreversible
+happens before step 13 passes.
 
-`Accept-Ranges: bytes` with **no** `Set-Cookie` means Apache is serving the file
-rather than PHP. Do not look for an `ETag`: this hoster sends none on any static
-file, which is what made the first version of this check fail on a deploy that
-had worked. Every `<loc>` must be
-`https://schoenstatt.link/sitemap-*.xml` — one under a subdirectory again means
-Google discards the whole sitemap.
+**The release is exactly `git ls-files --recurse-submodules`.** The transfer list
+comes from git, not the working directory, so local cruft cannot reach production,
+and untracked files on the server inside `public/` are **deleted by a swap** —
+search-engine verification files live in `shared/public/` (see The layout).
 
-## Before the next deploy: check the API signing key
+**Warming does not include `data/config`.** `bin/console` runs with
+`config_cache_enabled = false`, so no console command can populate the merged-config
+cache; the deploy's own probes and smoke run write it within ~30 s of the swap. An
+empty `data/config` in a release means **nothing has executed that release yet** —
+a diagnostic, not a fault.
 
-One-time prerequisite for the firebase/php-jwt 7 upgrade (2026-08-03). v7
-rejects HMAC keys shorter than the digest size, so an
-`ApiRequest.jwtAuth.cypherKey` under **32 bytes** breaks every authenticated API
-request. The key lives in untracked server-side config, so nothing in the repo
-can tell us how long production's is. It does not fail at boot — the site looks
-fine and only the API dies — so check it first, over the port-222 shell account:
+**The APCu flush must stay an HTTP request.** An APCu segment belongs to the SAPI
+that created it; a CLI `apcu_clear_cache()` flushes a segment nobody reads.
+`cache:flush-persistent` makes the request; it takes `--url` when
+`sion_model.canonical_base_url` is not the host you mean and reads the key from
+`SCH_MAINTENANCE_KEY` — prefer that to `--key`, which lands in shell history.
 
-```bash
-ssh -p 222 <admin>@dedi2934.your-server.de \
-  'php -r "\$c = include \"public_html/schoenstatt.link/config/autoload/local.php\";
-   printf(\"%d bytes\n\", strlen(\$c[\"ApiRequest\"][\"jwtAuth\"][\"cypherKey\"] ?? \"\"));"'
-```
+## When a step stops answering
 
-Prints byte count only, never the key. If it is under 32, lengthen it *before*
-deploying — note that replacing the key invalidates every JWT already issued
-(they last six months), so API clients would have to sign in again.
+Every remote call is bounded; a slow step and a wedged one no longer look alike.
 
-## ~~Before the next deploy: two API endpoints start requiring a token~~ — moot 2026-08-14
-
-~~The authorization-bypass fix (2026-08-03) makes `GET /api/v1/libraries/:id` and
-`GET /api/v1/libraries/:id/pending-labels` enforce the JWT their route config
-always asked for.~~
-
-Both endpoints, and the other 24 in `/api/v1` and `/api/v2`, were **deleted** on
-2026-08-14. The deploy note is kept rather than removed because it names the one
-workflow that would have noticed — label printing — and the same question applies to
-the deletion: nothing has called it since 2022, so nothing should break, but that is
-the thing to check if a report arrives. Every former v1/v2 URL now answers a JSON
-**410 Gone** with a `Link: </api/v3/schema>; rel="successor-version"` header.
-
-~~**This deploy also removes files, not only changes them.**~~ **Landed — verified
-against production 2026-08-14.** `public/api/` (the OpenAPI document and the 2020
-Swagger UI bundle, ~6.7 MB) is gone from the server: `/api/v1.yaml` and `/api/v2.yaml`
-now reach PHP and answer the 410, which they could not do while Apache was still
-serving the files. `tools/smoke-prod.sh` keeps checking those two URLs, because a
-future deploy that skips deletions is the same hazard.
-
-**Correction shipped the same day: the successor Link pointed at a 404.** The header
-said `</api/v3>`, and `/api/v3` is not a route — it 302s to `/en/api/v3` and lands on
-the very 404 handler that emits the 410. So a caller doing exactly the right thing with
-an RFC 5829 header arrived nowhere, and every string assertion on the header passed
-regardless. It now names `/api/v3/schema`, the public discovery document, and both
-`smoke-prod.sh` and `ApplicationSmokeTest` **fetch the advertised target** rather than
-pattern-matching the header — the only check that can tell a live successor from a dead
-one.
-
-## Before the next deploy: phrase-table hygiene (schoenstatt.link#59)
-
-The branch answering the translation agent's ten change requests. Two library
-migrations, one data file, one retirement pass, and one production task that is not a
-deploy step at all.
-
-**The code is order-forgiving on purpose.** Unlike the 2026-08-10 run below, nothing here
-selects a column the old schema lacks: every read *and* write of
-`trans_translations_history` is behind a `SHOW TABLES` check, verified by hiding the table
-and driving both paths. So a deploy that lands before the schema degrades to "no history
-shown, none recorded" rather than 500ing the translation admin area. Run it in the order
-below anyway — the point of the guard is that a mistake is survivable, not that the order
-does not matter.
-
-### The order
-
-1. **Merge the two submodule PRs first** (`jroedel/laminas-jtranslate#19`,
-   `jroedel/laminas-juser#11`), then the superproject PR. Already done for the first two;
-   the pointers on the branch reference their merge commits on `modernization`.
-
-2. **JTranslate migrations 005 and 006.** 005 rewrites four CRLF phrases to LF and merges
-   what that collapses; 006 creates `trans_translations_history`. 006 is DDL, so it needs
-   the credentials the 003/004 run used — see the two-pass note below. Preview from the
-   capsule, where the code already exists:
-
-   ```bash
-   docker compose exec -T app php bin/console jtranslate:migrate --status
-   docker compose exec -T app php bin/console jtranslate:migrate --pretend
-   ```
-
-   **005's SQL is exact from the capsule** — it touches no new column and depends only on
-   the data, so what `--pretend` prints is what production will run. Both are re-runnable:
-   005 selects on `phrase LIKE '%\r%'` and 006 is a `CREATE TABLE IF NOT EXISTS` behind a
-   `hasTable()` check.
-
-   005 covers **every project in the shared table**, which is deliberate and argued in its
-   docblock. Two `patres` rows have their line endings rewritten, and `patres` runs
-   JTranslate 1.0.x with no normalization — if one of its templates emits CRLF it will
-   re-insert its own row until that installation moves to this line. Two rows, one
-   sentence each.
-
-3. **The code deploy.** `php phploy.phar` as it then was (phploy was retired 2026-08-16). The `post-deploy[]` hooks already
-   clear the config cache, flush APCu and run `jtranslate:export-catalogs`, so the
-   catalogs rebuild without being asked.
-
-4. **`database/db7.3.sql`.** Ordinary app credentials — it is four `UPDATE`s. It renames
-   three corrected source strings *in place* so their translations follow them (correcting
-   a typo otherwise abandons the phrase, since the text is the identity) and retires four
-   dead ones. It must run **after** step 2: the renames compute hashes the way
-   `PhraseIdentity` now does, over normalized line endings.
-
-   ```bash
-   ssh -p 222 <admin>@dedi2934.your-server.de \
-     'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.3.sql'
-   ```
-
-5. **Rebuild the catalogs again**, because step 4 changed three catalog *keys*:
-
-   ```bash
-   ssh -p 222 <admin>@dedi2934.your-server.de \
-     'cd public_html/schoenstatt.link && php bin/console jtranslate:export-catalogs \
-      && php bin/console cache:flush-persistent'
-   ```
-
-6. **Retire the text corpus**, and only now — the code fix in step 3 is what stops the
-   rows coming back on the next page view of a text. Dry-run first; the counts are 219
-   and 90 in the capsule and production is within a few rows.
-
-   ```bash
-   ssh -p 222 <admin>@dedi2934.your-server.de \
-     'cd public_html/schoenstatt.link && php bin/console jtranslate:retire --origin-route=text --dry-run'
-   ```
-
-   then the same without `--dry-run`, and again for `--origin-route=texts`. Reversible with
-   `--undo`.
-
-### Not a deploy step: the four leaked API tokens
-
-`juser/user/api-tokens` used to append the freshly minted JWT to its success message, and
-the messengers translate the finished message — so real tokens became phrase rows,
-readable by any account holding `sch_api_translator`, and were copied into the English row
-and the exported catalogs on disk. The code path is fixed in step 3; **the rows are not**,
-and retiring is not enough, because the requirement is that the strings cease to exist.
-
-After the deploy: find them (`phrase LIKE '%eyJ%'` on route `juser/user/api-tokens`),
-**revoke the `jti` each one contains** in `user_api_token`, delete the phrase rows, and
-rebuild the catalogs so the files on disk lose them too. The four known ids are capsule
-ones and that database is disposable; production has its own or none.
-
-### What changes for anyone watching the site
-
-- **Breadcrumbs are translated.** `/it/shrines` reads "Santuari" where it read "Shrines".
-- **Validator messages are translated as templates**, so the phrase table now holds
-  `'%hostname%' is not a valid hostname for the email address` with the placeholder
-  intact, in the `default` text domain rather than scattered across four. The ~19 rows
-  keyed by an *interpolated* message are orphaned and worth retiring; nobody has.
-- **Phrase discovery starts working on Symfony-served routes**, which is every route from
-  the `.htaccess` flip onward. It was queueing misses and throwing them away. Expect a
-  step change in new phrases — one smoke run records 170 — and roughly double the rate on
-  ported pages, because the Twig layer looks a miss up in the page's domain and then in
-  `default` and both are now recorded. The second row arrives pre-translated.
-- **`/admin/translations`** marks phrases with history, and the edit screen shows the
-  thread.
-
-## Done 2026-08-11: breadcrumb data labels and `database/db7.4.sql`
-
-Answered change requests §11–§13 (PR #62, jtranslate#21). **Applied to production
-2026-08-11**, in the order below, and verified live. Kept rather than deleted because the
-ordering constraint is the reusable part and it is the opposite of what it looks like.
-
-**Deploy the code *first*, then run the migration.** The migration retires phrase rows that
-the code fix stops arriving; run it first and the next crawl of a publication page files
-them again and clears `retired_on` doing it — discovery un-retires whatever the site still
-looks up, which is the property that makes retirement safe and here makes the order matter.
-
-### What it actually retired
-
-| statement | what | rows |
+| defence | catches | budget |
 |---|---|---|
-| 1 | publication titles | **3,698** (14.4 s) |
-| 2 | composition names | 302 |
-| 3 | library names | not captured |
-| 4 | association names in `Application`/`default` | 108 |
-| 5 | the composed labels above them | 24 |
-| 6 and 7 | db7.3's three `en_US` rows | **0** |
-
-Two of those are worth reading. **3,698 is larger than the 3,086 the reporting agent
-counted** the day before, and larger again than the 436 it counted a few hours before that —
-the corpus was still capturing the catalogue as crawlers walked it, which is what the
-"essentially at its ceiling" reading of those two counts underestimated. And **6 and 7
-touching nothing is the expected result**, not a failure: the reporter had already corrected
-those three rows through the v3 API. They exist for every other environment.
-
-1. **The code deploy.** `php phploy.phar` as it then was (phploy was retired 2026-08-16). The `post-deploy[]` hooks clear the
-   config cache, flush APCu and rebuild the catalogs. **The APCu flush is load-bearing this
-   time**: the navigation branches are cached there, `apc.ttl` is 0 so they never expire on
-   their own, and the fix reads them back out of the cache before flagging — a stale branch
-   is *harmless* by design, but the flush is what makes the new labels appear at once.
-
-2. **`database/db7.4.sql`.** Ordinary app credentials — five `UPDATE`s, one `INSERT` into
-   the history table, one more `UPDATE`. Re-runnable; every statement is guarded on the
-   state it changes.
-
-   ```bash
-   ssh -p 222 <admin>@dedi2934.your-server.de \
-     'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.4.sql'
-   ```
-
-   Statements 1–5 retire record names the breadcrumb filed as phrases (§12). Statements 6
-   and 7 set three `en_US` rows to the text db7.3 renamed the key to (§13) — the reporting
-   agent already did this on production through the API, so expect them to change nothing
-   there and everything on a restored dump.
-
-3. **Rebuild the catalogs**, because step 2 changed English text:
-
-   ```bash
-   ssh -p 222 <admin>@dedi2934.your-server.de \
-     'cd public_html/schoenstatt.link && php bin/console jtranslate:export-catalogs \
-      && php bin/console cache:flush-persistent'
-   ```
-
-4. **Tell the translation agent that `null` no longer deletes.** `PATCH /api/v3/phrases`
-   answers 422 to `{"de": null}` and takes `{"_retract": ["de"]}` instead (§11.3, adopted
-   at the consumer's own request). It is published as `writable.retract` in
-   `GET /api/v3/schema/phrase`, so a client that reads the schema at request time finds it;
-   one that hardcoded `null` gets a 422 and no data loss, which is the point.
-
-### Verified live, 2026-08-11
-
-Fetched over plain HTTPS after the migration, no credentials involved:
-
-- `/it/literature/de` and `/it/SL202012L/eine-schule-der-kindlichkeit` — 200, and the
-  publication's crumb reads `Letteratura / German Schoenstatt Literature / Eine Schule der
-  Kindlichkeit`: the interface label translated, the title untouched.
-- `/it/SL100458A/schoenstatt-shrine-mont-sion-gikungu` — 200, crumb
-  `Santuari / Africa / Santuario di Schoenstatt Mont Sion Gikungu`. The third one is the
-  `nameByLocale` change: that name used to render in English *and* be filed as a phrase.
-
-Worth knowing what this does **not** prove: that no new title rows are arriving. Nothing
-observable from a rendered page distinguishes a phrase that was filed from one that was not,
-which is the whole reason §12 went unnoticed for a day. Confirming it takes a query, and it
-is **statement 2 of `database/db7.5.sql`** — use that rather than writing one, for two
-reasons learned by getting both wrong on 2026-08-11:
-
-- **Count phrases, not join rows.** `JOIN sch_publications ON Title = phrase` multiplies one
-  phrase by every edition sharing that title — nine of them are called *150 preguntas sobre
-  Schoenstatt* — so a naive `COUNT(*)` reported 51 where the answer was about a dozen. Use
-  `EXISTS`.
-- **Zero is the wrong expectation.** A few live rows are *collisions*: interface strings that
-  happen to equal some book's title, on routes that have nothing to do with publications.
-  Five survive in the capsule, all pre-2020 and all translated into other languages.
-- **Read the route and the text domain, not the translation count.** "Untranslated" is not a
-  reliable marker of a filed title: discovery *copies* translations onto a new phrase from
-  any row of the same project holding the same text in another domain, so a colliding title
-  arrives pre-translated in four languages within seconds. What the breadcrumb determines and
-  a translation cannot forge is where the row came from — route `publication` in
-  `Application` or `default` is the breadcrumb's own two-step lookup and nothing else. That
-  is how the last six rows were identified after db7.4 had spared them; see `db7.6.sql`.
-
-That query found the one instance db7.4 could not, described below.
-
-### What changes for anyone watching the site
-
-- **A shrine's breadcrumb reads in the visitor's language.** `/it/…/mont-sion-gikungu` says
-  *Santuario di Schoenstatt Mont Sion Gikungu* rather than the English name — the label is
-  `nameByLocale` now, honouring `IsNameTranslateable` like every other screen.
-- **A publication's, composition's and library's breadcrumb stops being translated at all**,
-  which is what it looked like before 2026-08-10 anyway. Those labels are the record's own
-  title.
-- **Breadcrumb labels are HTML-escaped.** They can now be a moderator's free text, and were
-  emitted raw.
-- **The translator's worklist loses about 3,000 rows**, and any count of "how much is left
-  to translate" taken from the v3 API drops with it.
-
-## Done 2026-08-11: `database/db7.5.sql`, one crumb db7.4 could not see
-
-**Deployed and applied 2026-08-11.** Statement 1 reported **0 rows** on production, which was
-not the expected outcome and is explained under db7.6 below: it required the crumb's text to
-equal some `sch_publications.Title`, and production's row for that book does not carry the
-same string. The code fix landed and is verified live — `/it/literature/150-preguntas-sobre-schoenstatt`
-renders the crumb untranslated — so nothing further is being filed; only the existing rows
-remained, and db7.6 retires them.
-
-Running the standing check above on production the same day turned up **one surviving
-instance** of §12, on a route db7.4 had no reason to look at.
-
-`/literature/150-preguntas-sobre-schoenstatt` is Symfony-served, and its breadcrumb does not
-come from the navigation at all — `App\Controller\OneFiftyPreguntasController` hands the
-trail to the Twig layout, which translates a crumb unless the controller passes
-`'translate' => false`. The label is a book's title, so the page filed it in `Books` and in
-`default` on 2026-08-10: the day discovery started working on ported routes, i.e. the same
-repair that made §12 visible in the first place.
-
-So the lesson db7.4 taught about the laminas partial has an exact counterpart on the Symfony
-side, and it is worth stating as a rule: **a crumb whose label is data needs
-`'translate' => false`, in both layouts.** Every other ported controller was checked and is
-clean — their labels are `Literature`, `Libraries`, `Admin`, `Shrines`, `World`, `Wayside
-shrines`, `Music`, and `AssociationEditController` already passes `false` for the record's
-name.
-
-Same order as before, and for the same reason — discovery clears `retired_on`, so a render
-between the retirement and the fix undoes it:
-
-1. **The code deploy** (the `'translate' => false`).
-2. **`database/db7.5.sql`.** Statement 1 retires the rows; statement 2 prints the standing
-   check, so the run leaves the current picture on screen.
-
-   ```bash
-   ssh -p 222 <admin>@dedi2934.your-server.de \
-     'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.5.sql'
-   ```
-
-3. **Rebuild the catalogs** as in step 3 above.
-
-## Done 2026-08-11: `database/db7.6.sql`, six rows and a corrected guard
-
-**Applied to production 2026-08-11.** Statement 2 retired **6 rows** and the standing check
-came back to the three pre-2020 rows alone. Data only, no code change.
-
-The six were three phrases filed twice each under route `publication` in `Application` and
-`default`, between 02:41 and 03:19 UTC that morning: §12 rows that db7.4 had spared.
-
-It spared them because its third condition — *nothing has ever translated this beyond
-English* — is weaker than it reads. `TranslationsTable::writeMissingPhrasesToDb()` **copies
-translations onto a newly discovered phrase** from any row of the same project holding the
-same text in another text domain. So a title that collides with an already-translated
-string arrives pre-translated in four languages seconds after it is filed, and then looks
-exactly like the interface strings the condition exists to protect. The agent's §12 uses the
-same test and describes it as exact; it is not, and that is worth knowing before trusting it
-again.
-
-**The durable signal is the route and the text domain.** Nothing but the breadcrumb's own
-two-step lookup files a phrase under route `publication` into `Application` or `default` —
-the page's real interface strings live in `Books` and `Schoenstatt` — and a translation
-cannot forge either field.
-
-db7.6 also retires the crumb db7.5 reported **0 rows** for: db7.5 required the text to equal
-some `sch_publications.Title`, but that label is a literal in the controller and production's
-row for the book carries different text, so the title test was the wrong test for it.
-
-Statement 1 prints what statements 2 and 3 will retire, and statement 4 prints the standing
-check afterwards, so one run leaves both the evidence and the current picture on screen.
-
-### What the six turned out to be, and why the remaining three must stay
-
-The three phrases were `Santuario del Padre`, `Schoenstatt` and `Heiligtum der Berufung`,
-each carrying translations in **all five languages**. The rows they inherited those from are
-the three the check still shows, and they are not "interface strings that collide with a
-title" as this file previously guessed. They are **shrine names**:
-
-| id | phrase | de | en | es |
-|---|---|---|---|---|
-| 6785 | `Santuario del Padre` | Heiligtum des Vaters | Santuario del Padre | Santuario del Padre |
-| 6815 | `Heiligtum der Berufung` | Heiligtum der Berufung | Vocation Shrine | Santuario de la Vocación |
-
-Their text domain is `Schoenstatt`, which is `SchoenstattTable::TRANSLATOR_DOMAIN` — the
-domain the association-name feature translates in (see the reply's §6). Their
-`origin_route` of `publications/publication` only records where the string was *first seen*
-in 2019, on a book named after the shrine.
-
-So **do not retire the rows the check keeps showing.** They are the §6 feature, and the
-steady state of this check is "the shrine names that double as book titles", plus
-`Schoenstatt` on `libraries/library`. What is *not* that steady state is a row under route
-`publication` in `Application` or `default`.
-
-It also tells us what the site did before the fix, which nobody had noticed: a publication
-whose title equalled a shrine's name got the **shrine's translation** as its breadcrumb,
-because the lookup hit. On an Italian page the book `Heiligtum der Berufung` was labelled
-*Santuario della Vocazione* — a confidently wrong title, which is §12's own argument for why
-titles must not pass through `translate()` at all.
-
-### The ported crumb: resolved, and it was already done
-
-Statement 3 reported **0 rows**, as db7.5's had, and two explanations offered here for that
-zero were both wrong — first that production's title text differs, then that the page had
-never been rendered with a miss. The row's own `retired_on` settled it:
-
-```
-translation_phrase_id  text_domain  origin_route  added_on             retired_on
-13417                  Application  publication   2026-08-11 01:13:10  2026-08-11 09:17:31
-13418                  default      publication   2026-08-11 01:13:10  2026-08-11 09:17:31
-```
-
-Its `origin_route` is **`publication`**, not the ported page's route. Nine editions in
-`sch_publications` are titled *150 preguntas sobre Schoenstatt*, so an ordinary publication
-show page filed the text hours earlier, and **db7.4 retired it at 09:17** — twenty minutes
-before db7.5 went looking. The ported page has never filed a phrase on production at all; the
-capsule's rows came from rendering it locally.
-
-Nothing is outstanding, and the code fix still earns its place: it is what stops that page
-filing one the first time somebody visits it in a language with a gap.
-
-The reusable part is the trap. **`origin_route` records where a phrase was first *seen*, and
-that is frequently not the page you are reasoning about** — the same string reached the table
-by a route nobody was looking at, and both wrong explanations came from assuming the route
-would name the page whose bug it was. When a targeted search comes back empty, look the row up
-by *text* alone before theorising; `retired_on` and `origin_route` then answer the question
-directly.
-
-## Done 2026-08-11: `database/db7.7.sql`, the §2/§3 residue
-
-**Applied to production 2026-08-11: 18 rows retired**, and the closing check left exactly the
-two live literals — `Error in form submission, please review.` in `JTranslate` and in
-`Application`. Data only, no code change, no ordering constraint: the code fixes it depends on
-had been live since 2026-08-10.
-
-Reported from the translation GUI on 2026-08-11: rows like `Error in form submission, please
-review: security, mainShowDisplay, viewRole, checkoutPersonListKind` on the library routes,
-with the reasonable question of whether the code was still broken. It is not. Every call site
-now passes either a fixed literal — `'Error in form submission, please review.'`, with a full
-stop where the old rows have a colon and a field list — or a `TranslatableMessage` whose
-template is what reaches `translate()`. What the fixes could not do is remove the rows already
-written, and nobody had.
-
-28 rows in the capsule, none of them translatable and none of them reachable (nothing
-translates a finished message any more, so the interpolated form can never be a lookup key
-again):
-
-| shape | rows | routes |
-|---|---|---|
-| `Error in form submission, please review: <fields>` | 6 | `libraries/create`, `libraries/library/checkout`, `publications/create`, `associations/create` |
-| `The following book id's are invalid: <ids> Please try again.` | 10 | `libraries/library/checkout` |
-| `File not imported due to duplicate withinLibraryIds: <ids>.` | 1 | `library-imports/library-import/edit` |
-| `Assignment Id: <n>` | 4 | `sion-model/view-changes` |
-| `'<host> ' is not a valid hostname for the email address` | 6 | `zfcuser/register` |
-
-The last group is §2's privacy smell — six strangers' mistyped mail domains. Only a domain
-name, no local part, so retiring is enough; if they should cease to exist, that is a `DELETE`
-and a decision, not this file.
-
-**Production had neither of the last two groups.** It retired 18 rows where the capsule
-retired 28: the six hostnames and the four `Assignment Id:` rows are capsule-only, and the six
-hostnames are the same six the change-request report named — `gmail.com`, `hotmail.com`,
-`miuandes.cl`, `uc.cl`, `yahoo.com.br`, `yahoo.de`. So that report was reading the capsule for
-§2, exactly as it was for §1's four JWTs, and **no live registration data was ever in the
-production phrase table.** Worth knowing before anyone treats §2 as a production privacy
-incident; the code defect behind it was real either way.
-
-`Assignment Id:` has **no call site left in any module**: that code is gone, so those four are
-residue of a removed feature rather than of a fixed one.
-
-Every statement excludes phrases containing a literal `%`, which is the template guard — it is
-what keeps the live `'…withinLibraryIds: %s.'` out of a pattern that would otherwise match it.
-Statement 1 prints what will be retired and statement 3 prints what remains of the same
-shapes, which should be the fixed literal and nothing carrying a value.
-
-```bash
-ssh -p 222 <admin>@dedi2934.your-server.de \
-  'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.7.sql'
-```
-
-Then rebuild the catalogs, as after any phrase change.
-
-## Done 2026-08-10: JTranslate's phrase-table migrations
-
-Applied to production and deployed. Recorded here rather than deleted, because the
-sequence is the template for the next library migration and two of its constraints are
-not obvious.
-
-**What ran, in this order:**
-
-1. **JTranslate migrations 001, 003, 004.** Widened `trans_phrases.phrase` and
-   `trans_translations.translation` to `TEXT`, added `phrase_hash BINARY(32)` under
-   `UNIQUE (project, text_domain, phrase_hash)`, added `retired_on`, converted
-   `modified_by` to `INT UNSIGNED`, and merged every duplicate phrase — keeping the
-   lowest id and **moving translations across** rather than cascading them away.
-   001 was a `CREATE TABLE IF NOT EXISTS` no-op; it appeared pending only because
-   production had no `jtranslate_migration` table.
-2. **The code deploy.** Never before step 1 — see the ordering note below.
-3. `jtranslate:migrate` for **002** (the GUI phrase seed, pure `INSERT`s, ordinary app
-   credentials), then `jtranslate:export-catalogs`, then a cache clear.
-4. **`database/db7.2.sql`**, removing the blog's phrases, then another catalog rebuild
-   and cache clear.
-
-**The numbers.** 7,801 phrase rows → 2,693 (`Schoenstatt` 6,895 → 1,787); 12,957
-translation rows → 7,846. The backfill hashed all 7,801 rows; 5,108 duplicate phrases and
-5,111 redundant translations were deleted, and **7 translations were repointed** onto
-surviving rows — those 7 existed only on duplicates and a dedup-by-deletion would have
-destroyed them silently. Total statement time about 1.2 seconds.
-
-**Two constraints worth reusing.**
-
-- **The schema has to move before the code.** The new code selects `phrase_hash` and
-  `retired_on`, so against the old schema every request hitting a missing translation,
-  plus the admin listing and the v3 API, throws `Unknown column`. Deploying first breaks
-  the site.
-- **Which means `--pretend` cannot be run on production to get the SQL**, because that
-  needs the new code deployed. Take a schema-only dump of the affected tables
-  (`mysqldump --no-data`), load it into a scratch database in the capsule, point the
-  console at it with a `config/autoload/zz-scratch.local.php` overriding the `db` key
-  (`*.local.php` merges after `local.php`, so `zz-` wins), and generate the SQL there.
-  Delete that override afterwards. The output of a schema migration depends only on the
-  schema, so it is exact.
-
-  A data migration is different: **002 could not be previewed at all** until 003 had
-  actually run, because it reads `phrase_hash` to decide what is missing and previewing
-  executes nothing. `jtranslate:migrate --pretend` reports that and prints everything
-  else rather than aborting, so it is a two-pass procedure by design. 002 was applied
-  after the deploy with ordinary credentials instead.
-
-**Migrations are not applied in numeric order.** 002 seeds data and runs last;
-`MigrationRunner::MIGRATIONS` is the sequence and the numbers only identify.
-
-**Two phpMyAdmin traps**, both hit during this run. A multi-statement batch containing a
-`FROM information_schema.TABLES` query switches phpMyAdmin's tracked "current database"
-for every statement after it — so unqualified names then resolve inside
-`information_schema` and fail with `#1109`. Schema-qualify every table
-(`ourlink_db1.trans_phrases`) and avoid `DATABASE()`. And a `mysqldump` taken without
-`--databases` carries no `USE` statement but does carry `DROP TABLE IF EXISTS`, so it
-applies to whatever database the client is connected to — never load one without naming
-the target database explicitly.
-
-Keep `trans_phrases_blog_backup` / `trans_translations_blog_backup` until the site has
-been browsed in all four locales; then drop them. They hold the 39 phrases and 78
-translations `db7.2.sql` deleted, including the 39 non-English translations that were
-knowingly given up.
-
-## Before the v3 API can be used: one migration and one account per agent
-
-The code shipped 2026-08-09; the phrase endpoints followed. Four things it
-deliberately does **not** do for you, because none of them should happen without
-someone deciding it:
-
-1. ~~**Run `database/db6.6.sql`** on production.~~ **Done 2026-08-09.** It creates the
-   `sch_api_bot` role, and nothing else on the site names that role — so until it existed,
-   every agent request was a 401. The script is idempotent (`INSERT … WHERE NOT EXISTS`),
-   so re-running it on any environment that lags is safe.
-
-   If the role was inserted by raw SQL rather than through the create-role screen, flush
-   the persistent cache: `UserTable::getRolesValueOptions()` is APCu-cached under
-   `roles-value-options` and invalidated by the `user-role` entity, which a direct
-   `INSERT` does not touch — so the role stays missing from the users screen's Roles
-   multiselect until `php bin/console cache:flush-persistent` runs. The role itself works
-   regardless; `BotIdentity` reads `user_role` directly.
-2. **Run `database/db6.7.sql`** on production, and run it *before* deploying the code
-   that reads it. It creates `user_api_token`, the registry that makes an issued token
-   revocable, and `App\Api\BotIdentity` refuses any token whose `jti` has no row there
-   — so a deploy that lands ahead of the table turns every v3 request into a 401. The
-   table is empty and harmless on a server running the old code, which is why this
-   order is the safe one. `CREATE TABLE IF NOT EXISTS`, so re-running it is safe.
-
-   Nothing breaks for the mobile apps: the v1 API does not consult the registry, and
-   the tokens already in the field keep working.
-
-3. **Run `database/db6.8.sql`** on production, before deploying the phrase endpoints.
-   It creates `sch_api_translator`, the role `/api/v3/phrases` is gated on, and nothing
-   else on the site names it — so until it exists every translation-agent request is a
-   401. Idempotent, like db6.6.
-
-   Same cache note as db6.6: a raw `INSERT` leaves `roles-value-options` stale, so run
-   `php bin/console cache:flush-persistent` or the role will not appear in the users
-   screen's Roles multiselect.
-
-   **Why a second role rather than reusing `sch_api_bot`.** A translation agent can
-   rewrite every string the site renders in five languages; a shrine agent can rewrite
-   the shrine database. Neither is a reason to be able to do the other, and while
-   `BotIdentity` named one role in a constant the question could not even be asked —
-   the reach of every credential would have widened silently each time v3 grew an
-   endpoint. See [api-v3.md](api-v3.md) and the header of the migration itself.
-
-4. **Create each bot account and grant it the role it needs.** Register the address
-   like any other account, then grant the role through the users screen or:
-
-   ```sql
-   -- shrines
-   INSERT INTO user_role_linker (user_id, role_id)
-   SELECT <user_id>, id FROM user_role WHERE role_id = 'sch_api_bot';
-
-   -- translations
-   INSERT INTO user_role_linker (user_id, role_id)
-   SELECT <user_id>, id FROM user_role WHERE role_id = 'sch_api_translator';
-   ```
-
-   One role per agent unless one agent genuinely does both jobs.
-
-   Deleting that row cuts the account off from the API immediately — the role is checked
-   on every request, not baked into the token. It is the blunt instrument, though: it
-   revokes *every* token the account holds. For one token, use the revoke button on
-   `/en/users/:id/api-tokens`.
-
-Tokens are issued from that same screen; see [api-v3.md](api-v3.md) for the whole
-flow, including why the button only appears for accounts holding one of the roles named
-in `juser.api_token_roles` — which is `sch_api_bot` and `sch_api_translator`, and which
-**must be extended whenever a new API role is introduced**, or the account is refused
-everywhere and no screen will issue it a token.
-
-**v3 is reachable to agents directly** — the global flip landed on 2026-08-11 and the
-`SYMFONY_KERNEL` canary was retired on 2026-09-08, so there is no cookie to send and one
-front controller serves everyone.
-
-## Before deploying a PHP-version rung
-
-**Flip the konsoleH PHP version first, then deploy — never the other way
-round.** Composer writes `vendor/composer/platform_check.php` from the
-`require.php` constraint and PHP evaluates it on *every* request, so a release
-whose lock requires 8.4 will hard-fatal every page on an 8.3 server. There is no
-graceful degradation and no partial outage: it is the whole site. The reverse
-order is safe, because the new PHP running the previous release is a combination
-the capsule verifies before the rung lands.
-
-Also copy the per-version `php.ini` across (see Server facts below) — the new
-version reads a different file.
-
-## The front controller, and rolling back
-
-`public/index.php` runs `App\Kernel` (symfony/http-kernel) unconditionally. There is one
-front controller. A catch-all route, `App\Http\LegacyBridge`, still boots a per-request
-`Laminas\Mvc\Application` for the handful of unported laminas routes, but they all 404 and
-no laminas *view* reaches a visitor.
-
-**The `SYMFONY_KERNEL` canary was retired 2026-09-08 (Phase B of the laminas-mvc removal).**
-Until then `public/.htaccess` chose a front controller per request — a site-wide default
-plus `sl_symfony_canary` cookie overrides — and reverting production was an `.htaccess`
-edit. All of that is gone: the flip line, both cookie overrides, the `kernel-switch` toggle
-and `App\Http\KernelCanary`. Nothing reads the variable. See docs/strangler.md, "The
-endgame", for what the flip and the canary were.
-
-**Rolling back is a redeploy now.** The Symfony kernel has been the site-wide default and
-green since the 2026-08-11 deploy, which is the confidence the retirement rests on; if a
-release misbehaves, roll it back the ordinary way (`tools/deploy.sh` from the previous
-release's checkout, or the atomic-deploy symlink swap back — see the layout section). There
-is no per-visitor or per-request escape hatch any more.
-
-### The production front-controller smoke checks
-
-`tools/smoke-prod.sh` checks the Symfony front controller against production on every deploy
-now — the block used to be gated on a `SMOKE_PROD_CANARY_COOKIE` that carried the canary
-cookie, and since there is one front controller it just runs. It renders every public
-ported route against production's own data, ICU and translations, checks the three
-`LaminasResponseConverter` rules on a bridged page behind the real TLS proxy (the one thing
-the capsule cannot reproduce), and verifies the v3 API answers and refuses correctly. No
-`.deploy.local` variable is needed for it.
-
-Two v3 endpoints worth a manual look after a deploy that touches ported routes, both public
-and side-effect-free — no cookie needed, because an agent sends none and there is one front
-controller:
-
-```bash
-curl https://schoenstatt.link/api/v3/schema        # 200 JSON
-curl https://schoenstatt.link/api/v3/associations  # 401 JSON (the token gate is on)
-```
-
-The first proves the whole ServiceBridge path works in production — the schema is generated
-from live config and a live database query — and the second proves the token gate is on.
+| ssh keepalives (`ServerAliveInterval=15` × `CountMax=4`) | a dead network path the local end still believes in | ~60 s |
+| `timeout` around every call | a healthy connection whose remote command is stuck | **180 s** default (`RSH_DEFAULT_TIMEOUT`) |
+| heartbeat on stderr | nothing — it makes a slow step visible | first beat at 15 s, then every 15 s |
+
+Per-call budgets (`RSH_TIMEOUT=<s> RSH_LABEL=… rsh …`): composer install 1800 s,
+vendor copies 600 s, the two warming commands 300 s, `cache:flush-persistent` 120 s,
+the symlink swap **30 s**, exit-trap cleanup 20 s. rsync uses `--timeout=120`, an
+I/O-stall timeout, so a large transfer that is still moving is never killed.
+
+`timeout` exit **124** is reported separately from a remote command's own failure:
+a normal failure is the server telling you something, a 124 is it telling you
+nothing, and only the second implicates the deploy rather than the release.
+
+Rules held in place by `test/Deploy/rsh-behaviour-test.sh`: ssh is never
+backgrounded (it could not prompt for the key passphrase and would stop receiving
+Ctrl-C), and never `ssh -n` or `< /dev/null` — two call sites pipe into `rsh` (the
+`.revision` write and the reset-helper distribution). Without `timeout`/`gtimeout`
+(macOS: `brew install coreutils`) the preflight warns and continues unbounded.
+
+## Why a symlink swap is not enough: OPcache
+
+**Repointing the release symlink does not change what PHP executes.** The previous
+release keeps serving and nothing in any response says so. OPcache files script
+entries under the *resolved* path; `opcache.revalidate_path=1` does **not** fix it
+(measured), and production has stayed stale for 12–20 minutes against a
+`realpath_cache_ttl` of 120, so do not plan around it clearing. What *is* measured
+is that **`opcache_reset()` clears a stale resolution** — the lever;
+`test/Deploy/opcache-swap-test.sh` is the capsule repro (warm workers required).
+
+**This host runs at least three PHP pools, each with its own OPcache segment.** A
+reset request clears only the segment that served it, so a partial reset looks like
+"some pages work and some don't". The capsule has one segment and cannot show this.
+
+### The incident that bought all of this (2026-08-17)
+
+`db8.1` dropped five columns as a `@phase: post` migration. The swap had not taken
+effect — a pool still executing the previous release selected the dropped columns —
+and the smoke failures triggered the automatic rollback **to the release that could
+not run against the new schema**. ~40 minutes of empty HTTP 200s on every
+navigation-building page (a fatal with `display_errors=Off` *is* a zero-byte 200),
+449 fatals, no data lost. The signature is **a live process reporting an older
+`.revision` than the live symlink**. Four protections came out of it: (1) the
+per-segment opcode-cache reset after every swap, rollbacks included; (2) the
+`/_health` revision poll, which stops the deploy before any post-deploy migration;
+(3) `@destructive: yes`, which both rollback paths refuse to cross; (4)
+`tools/smoke-prod.sh` names a zero-byte 200 as a fatal. `migrate.sh reseal` exists
+so `@destructive` could be added to an already applied file.
+
+### Step 12: the reset
+
+The deploy writes a single-use, randomly-named PHP helper into **every** release
+directory, waits up to **60 s** for Apache to see it (a fresh file is not instantly
+visible here), then requests it until **every segment that has answered is provably
+serving the new release** — born after the swap or restarted after it — and at least
+as many distinct segments answered as the pre-swap census counted. The reset is
+conditional on that same test, so healthy segments are not wiped under live traffic.
+Capped at 80 polls. The helper is deleted afterwards, including on failure — a stray
+one is a publicly reachable cache flush. It cannot be an application endpoint: a
+pool serving the previous release resolves routes against that release's code.
+
+The census is a **lower bound** (segments churn every 5–15 minutes); only the count
+is used, never the ids. "N consecutive `/_health` probes agree" is not an exit
+condition: probes need not land on the same pool, and it let two deploys through
+with `manualRestarts: 0` on every segment.
+
+The helper also prints each pool's **interned-strings usage** the instant before
+resetting it — the only warm reading that ever exists, since the buffer is
+append-only and every reset zeroes it (segments under five minutes old are
+skipped). `./tools/opcache-sample.sh` answers the same question on demand.
+
+### Step 13: the revision gate
+
+`/_health` reports the release's `.revision` when given `DEPLOY_API_KEY`. Twelve
+probes, because one samples one pool. Any disagreement aborts with no migration run.
+With an empty `DEPLOY_API_KEY` the gate proceeds blind and says so — set the key. If
+the reset misses and the gate refuses, re-running the deploy hits the same wall: run
+`./tools/deploy.sh --reset-caches`, then re-run.
+
+### Step 13b: `@destructive` waits longer
+
+Pools the reset never reached have served old code for ~4 minutes *after* a 12/12
+gate before recycling — harmless when both releases share a schema, the incident
+again when a migration DROPs something. A pending `-- @destructive: yes` migration
+therefore needs three consecutive rounds, 45 s apart, all 12/12. A disagreeing round
+aborts having changed nothing; wait a few minutes and run
+`bash tools/migrate.sh apply --phase=post`. Deliberately not applied to every
+deploy: a tax people route around protects nothing.
 
 ## Database migrations
 
-`tools/deploy.sh` applies them; `tools/migrate.sh` is the same runner standalone.
+`tools/deploy.sh` applies them at both phases; `tools/migrate.sh` is the same runner
+standalone. **Every `database/*.sql` is tracked in the `sch_migration` ledger**
+(filename, sha256, phase, kind, when, by what, duration, rows per statement).
 
 ```bash
-./tools/deploy.sh --migrations                    # applied vs pending
-./tools/migrate.sh plan                           # just the pending, with headers
-./tools/migrate.sh apply --phase=post --env=capsule   # rehearse before production
+./tools/migrate.sh status                      # applied vs pending (= deploy.sh --migrations)
+./tools/migrate.sh plan                        # the pending files, with headers
+./tools/migrate.sh apply --phase=pre|post [--env=capsule] [--dry-run] [-y]
+./tools/migrate.sh backfill --through=db7.7    # mark historical files applied, run nothing
+./tools/migrate.sh reseal db8.1.sql            # re-record an applied file whose COMMENTS changed
 ```
 
-**Every `database/*.sql` is tracked in a `sch_migration` ledger** — filename,
-sha256, phase, kind, when, by what, how long, and the rows each statement
-affected. Before this existed, "what is applied?" was answered by reading prose
-across four documents, and `db7.8`/`db7.9` could not be answered at all.
+**Rehearse against the capsule first** (`--env=capsule`) and read the counts: the
+ledger proves a migration ran, not that it was correct.
 
 ### Headers a new migration must carry
 
@@ -757,599 +205,261 @@ across four documents, and `db7.8`/`db7.9` could not be answered at all.
 -- @phase: post
 -- @kind: dml
 -- @tables: trans_phrases
+-- @idempotent: yes          -- ddl only
+-- @destructive: yes|no      -- when older code cannot run once this is applied
 -- @verify: SELECT id FROM t WHERE <still wrong>
 ```
 
 | header | required | meaning |
 |---|---|---|
-| `@phase` | yes | `pre` runs before the swap, `post` after. **No default** |
+| `@phase` | yes | `pre` runs before the swap (old code serving), `post` after the gate. **No default** |
 | `@kind` | yes | `dml` is wrapped in a transaction; `ddl` cannot be |
 | `@tables` | yes | dumped to `data/deploy/backups/` before it runs; `none` is allowed and is a claim |
 | `@idempotent` | `ddl` only | `yes` — your assertion that re-running is a no-op |
-| `@verify` | no | must return **zero rows** afterwards, or the migration fails |
-
-**`@phase` has no default because both orders are real here and guessing wrong
-is silent.** JTranslate 003/004 were `pre`: the new code selects columns the old
-schema lacks, so deploying first breaks the site. Every `db7.x` retirement is
-`post`: run it before the code fix and the next page view re-files the rows and
-clears `retired_on`, because phrase discovery un-retires whatever the site still
-looks up.
-
-### What makes a migration safe, in the order the guarantees matter
-
-1. **For `dml`, the ledger row commits inside the same transaction as the
-   change.** Applied-but-unrecorded and recorded-but-unapplied are both
-   impossible, and a failure part-way rolls the whole file back. Every table
-   this application touches has been InnoDB since `db7.0`/`db7.1`.
-2. **`ddl` cannot have that.** MariaDB commits implicitly on DDL, so `ddl`
-   migrations must declare `@idempotent: yes`. That is a forcing function, not
-   a proof — write the guards.
-3. **`@tables` are dumped before anything runs**, to `data/deploy/backups/` on
-   your machine (gitignored — it is production data). See Retention below.
-4. **`mysql` aborts on the first error**; `--force` is never used.
-5. **Row counts are recorded per statement**, so the numbers this document used
-   to carry by hand are recorded by the thing that did the work.
-6. **`@verify` must return zero rows.** Write it as "select what is still
-   wrong". A migration that runs but does not achieve what it claimed fails.
-7. **An applied migration whose bytes changed aborts the deploy.** Editing one
-   makes the ledger a liar: the same filename then means two different things
-   across environments.
-
-None of that says a migration is *correct*. Rehearse against the capsule, whose
-data is days old and representative, and read the counts.
-
-### Refusals, all verified against throwaway migrations
-
-| situation | what happens |
-|---|---|
-| a statement fails half way through a `dml` file | transaction rolls back; **no** ledger row; earlier statements in the same file undone |
-| an applied file's bytes changed | abort before anything runs |
-| `@verify` still returns rows | fail, naming them; the change stays applied |
-| no `@phase` | refuse, with the pre-vs-post explanation |
-| `dml` containing DDL | refuse — the implicit commit would break the wrapper |
-| `ddl` without `@idempotent: yes` | refuse |
-
-### Retention of the snapshots
-
-`data/deploy/backups/` grows fast — `db7.9` names `sch_changes` in `@tables` and
-that one dump is 74 MB. Pruning runs after a successful apply, for the
-environment that was applied to.
-
-```sh
-DEPLOY_KEEP_BACKUP_RUNS=2      # per environment
-DEPLOY_KEEP_BACKUP_DAYS=30
-```
-
-**Both are floors, and a snapshot survives if it clears either.** It is removed
-only when it is *both* outside the last N runs *and* older than the day limit.
-So a quiet month cannot leave you with nothing to restore from, and a busy
-afternoon of migrations cannot age out yesterday's. A run is one `apply`
-invocation: all its snapshots share one timestamp prefix and are kept or dropped
-together.
-
-**Runs are counted per environment.** Otherwise a couple of capsule rehearsals
-would push the last production snapshot out of the window — which is the one
-that actually matters.
-
-Every deletion is named on screen. A retention policy that prunes silently
-reads, a year later, as "we never had a backup of that".
-
-### Credentials
-
-Full-DDL credentials live in `.deploy.local` on the developer machine and are
-used through an **SSH tunnel** to the server's own `127.0.0.1:3306`. They are
-never written to the server, never passed in `argv` (where `ps` would expose
-them on a shared host) — a `--defaults-extra-file` at mode 600 carries them —
-and a compromise of the web application cannot reach a password it has never
-seen. The account must be granted for `127.0.0.1`, because through a tunnel that
-is where the connection appears to come from.
-
-### The backfill, and the capsule
-
-The 75 files that predate the ledger are recorded as applied **without being
-run**:
-
-```bash
-./tools/migrate.sh backfill --through=db7.7
-```
-
-Everything after `--through` stays pending and *will be run* by the next apply.
-`db7.8` and `db7.9` were deliberately left pending rather than backfilled,
-because both are idempotent and running them settles the question of whether
-they were ever applied to production — a question no document could answer. If
-they were, every statement reports 0 rows and nothing changes.
-
-`db7.9` had one unguarded statement, an `INSERT` into `sch_changes`; the capsule
-had accumulated **three** copies of that audit row before anyone looked. It is
-now guarded, which matters more than a stray duplicate normally would:
-`sch_changes` is the only accurate modification time this application keeps, and
-the sitemap reads it for `<lastmod>`.
-
-Once production has the ledger, a fresh `database/dumps/` export carries it, and
-the capsule stops drifting.
-
-## The deploy
-
-```bash
-./tools/deploy.sh
-```
-
-It pulls master itself, so there is nothing to do first. Each step prints, and any
-failure before the swap leaves production untouched.
-
-**A routine deploy does not ask for confirmation.** It proceeds as soon as the
-preflight passes, which makes this a single unattended command:
-
-```bash
-gh pr merge <n> --merge && git checkout master && git pull --ff-only && ./tools/deploy.sh
-```
-
-The prompt is kept for runs where a human has something to decide, and the list is
-deliberately conservative — anything that makes this differ from *current master,
-verified, onto the usual server*:
-
-- `--ref` — deploying something other than master
-- `--skip-tests` — nothing verified this build, and CI cannot run until 2026-09-01
-- `--stash` — what ships is HEAD, not what you are looking at
-- the **first swap** on a server (`mv` + `ln`, the one non-atomic moment)
-- `.deploy.local` not mode 600, since it holds the full-DDL password
-
-The prompt was dropped because on 2026-08-17 it prevented none of three failed
-deploys: the preflight, the revision gate and the smoke rollback caught all of
-them, and every abort happened before anything irreversible. Those checks are what
-protect a deploy; a `y` before the work starts never did. `--dry-run` still shows
-exactly what would transfer, and `-y` still forces past an unusual-run prompt.
-
-| # | step | where | notes |
-|---|---|---|---|
-| 1 | **Preflight** | local | on `master`; working tree clean; `pull --ff-only`; the three submodules clean *and pushed*; local master not ahead of origin |
-| 2 | **Verification** | local | `tools/ci-local.sh --ci` — lint, `composer --no-dev` rehearsal, PHPStan 0, unit, integration. `--skip-tests` to skip |
-| 3 | **Build** | server | `rsync` into `releases/<ts>-<sha>/`, hardlinked against the previous release; `.revision` written |
-| 4 | **Link shared** | server | `shared/data`, `shared/public`, `shared/config-autoload` symlinked in; `data/config` and `data/cache` created empty, per-release |
-| 5 | **composer install** | server | `--no-dev --optimize-autoloader`, vendor seeded from the previous release |
-| 6 | **Pre-migrations** | local→tunnel | `@phase: pre` against the live database while the OLD code still serves; a failure aborts before the swap |
-| 7 | **Warm** | server | `jtranslate:export-catalogs`, `sitemap:build --force` — in a tree nothing is serving. **Not** the merged-config cache; see below |
-| 8 | **Swap** | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
-| 9 | **Post-swap** | server | `cache:flush-persistent` (APCu) |
-| 10 | **Make the swap visible** | server / local | reset every opcode cache — see below, this is not optional |
-| 11 | **Confirm the live release** | local | `/_health` polled 12×; a disagreement **aborts before any migration runs** |
-| 11b | **Sustained check** | local | only when a `@destructive` migration is pending: three rounds, 45 s apart |
-| 12 | **Post-migrations** | local→tunnel | `@phase: post`, now that the new code is provably the code running |
-| 13 | **Verify** | local | `tools/smoke-prod.sh`; a failure rolls back automatically *unless* a destructive migration makes that worse |
-
-### What "warm" does not include: the merged-config cache
-
-Step 7 warms the translation catalogs and the sitemap. It does **not** warm
-`data/config`, and until 2026-08-17 it printed a line claiming it did.
-
-It cannot. `bin/console` sets `config_cache_enabled = false` deliberately — a test
-run must not write `data/config`, and a CI runner has no writable one — so no
-console command can ever populate it. Measured: clear `data/config`, run a console
-command, still empty; one web request, both files written.
-
-That is fine in practice, and the evidence is on the server. `data/config` is
-per-release, so a stale cache from another release is impossible by construction,
-and the cache appears about 30 seconds after the swap on every completed deploy —
-written by the deploy's own opcode-cache reset, `/_health` probes and smoke run,
-all of which execute the new release before the deploy finishes. No visitor pays
-for it.
-
-The two deploys that aborted at the revision gate are the control group: their
-config cache was written **7–8 minutes** later, at exactly the moment the caches
-were reset by hand and the release first executed anything at all. An empty
-`data/config` is therefore not a fault — it is a reliable sign that **nothing has
-executed that release yet**, which during the 2026-08-17 outage was precisely the
-problem worth noticing.
-
-### When a step stops answering: timeouts, keepalives and the heartbeat
-
-Added 2026-08-18, after a deploy hung on **step 9, "Warming the release"**, and sat
-there. Until then there was no timeout of any kind on any of the ~40 remote calls,
-no keepalive, and no output at all while one was in flight — so a stalled step and a
-slow step looked identical, and the only signal was a cursor that had stopped moving.
-
-The circumstances are worth keeping, because they are what ruled the code out. It
-was a redeploy of the **same commit** that had warmed fine nine minutes earlier, and
-step 9 runs exactly two commands, measured against comparable data at **1.28s**
-(`sitemap:build --force`, 35,444 URLs) and **0.36s** (`jtranslate:export-catalogs`).
-Neither reads stdin or prompts. So it was never the work; it was the channel or the
-far end, and nothing in the deploy could tell you which.
-
-Three defences now, because they catch different failures and none subsumes the
-others:
-
-| defence | catches | budget |
-|---|---|---|
-| ssh keepalives (`ServerAliveInterval` × `CountMax`) | a dead network path the local end still believes in | ~60s |
-| `timeout` around every call | a healthy connection whose remote command is stuck — lock wait, full disk, a process nothing will wake | 180s default |
-| a heartbeat on stderr | nothing; it makes a slow step *visible* rather than indistinguishable from a wedged one | first beat at 15s, then every 15s |
-
-Only the heartbeat would have answered the question on the day, which is why it is
-there even though it prevents nothing.
-
-**Per-call budgets.** The 180s default bounds a stall, not a slow server. The calls
-that legitimately take longer set their own with `RSH_TIMEOUT=<seconds> RSH_LABEL=…
-rsh …`: composer install 1800s, the vendor copies 600s, the two warming commands and
-`cache:flush-persistent` 300s/120s, and the symlink swap **30s** — two renames that
-have no business taking longer, and waiting three minutes to learn otherwise helps
-nobody. The exit trap's own cleanup gets 20s, because a cleanup that hangs is how a
-hang gets blamed on the wrong step.
-
-`timeout` exit **124** is reported separately from the remote command's own non-zero
-exit. The two need opposite responses: a normal failure is the server telling you
-something, a 124 is the server telling you nothing, and only the second implicates
-the deploy rather than the release.
-
-**rsync gets `--timeout=120` instead**, which is an I/O-stall timeout rather than a
-wall-clock one — a large transfer that is still moving must not be killed for being
-large, but one that has not moved in two minutes has stalled.
-
-**`timeout` is not on stock macOS** (it is `gtimeout`, from coreutils). Preflight
-warns when neither is present and the deploy continues without that defence, because
-"remote calls are unbounded" is exactly the condition this section exists to make
-visible rather than discover.
-
-**Why ssh is not backgrounded**, since the heartbeat obviously is: a backgrounded ssh
-cannot prompt for the key passphrase — it is stopped on `SIGTTIN`, which looks exactly
-like the hang being prevented — and it stops receiving Ctrl-C, so an interrupted
-deploy would leave the remote command running. A third reason was believed and is
-false, recorded because everyone reaches for it: *"a background command in a
-non-interactive shell gets stdin from /dev/null"*. Measured on bash 5.2,
-`printf x | { cat > f & wait $!; }` writes `x` — the POSIX rule does not bite when
-stdin is an explicit redirection. What **does** break the two call sites that pipe
-into `rsh` (the `.revision` write and the opcache-helper distribution) is `ssh -n` or
-a `< /dev/null`, and an empty `.revision` would then be blamed on the server by the
-revision gate downstream.
-
-`test/Deploy/rsh-behaviour-test.sh` holds all of this in place — seven checks,
-mutation-verified against `ssh -n`, a stdin redirect and a removed `timeout`. It runs
-in `tools/ci-local.sh` (plain bash, no server, ~10s).
-
-### Steps 10 and 11: why a symlink swap is not enough
-
-**Repointing the release symlink does not change what PHP executes.** The previous
-release keeps serving and nothing in any response says so.
-
-This paragraph used to attribute that to `opcache.revalidate_path` defaulting to 0.
-Measured 2026-08-18 and false: setting it to 1 changes nothing, and OPcache files
-its entries under the resolved path. In the capsule the staleness clears on its own
-after ~122s, matching `realpath_cache_ttl=120` — but production stayed stale for 12
-and 20 minutes, so do not plan around it clearing. `test/Deploy/opcache-swap-test.sh`
-is the reproduction, and it also holds the load-bearing fact in place: an
-`opcache_reset()` does clear a stale resolution, which is what step 10 below relies
-on.
-
-Worse, **this host runs at least three PHP pools, each with its own OPcache
-segment** — measured by polling `/en/sm/cache-status` and getting three different
-uptimes. A reset request only clears the segment that served it, so a partial reset
-looks like "some pages work and some don't".
-
-Step 10 therefore writes a single-use, randomly-named PHP file into **every**
-release directory and requests it until **every segment that answers is provably
-serving the new release**. A new path has no cache entry anywhere, so it always
-compiles from disk. It cannot be an ordinary application endpoint: a pool serving
-the *previous* release resolves routes against that release's code, which need not
-have the endpoint at all. The file is deleted afterwards, including on failure,
-because a stray one is a publicly-reachable cache flush.
-
-**How a segment is judged**, and why it is judged one at a time. The helper reports
-`start_time` — the only per-segment identity OPcache exposes, and one that does
-**not** move when `opcache_reset()` runs — alongside `last_restart_time`, which
-does. A segment passes if it was born after the swap (it compiled through the
-current symlink, so it is correct by construction) or restarted after it. The reset
-is conditional on that same test, because wiping a healthy segment costs every
-script in it a recompile under live traffic.
-
-This replaced an exit condition of "eight consecutive `/_health` probes agree",
-which let two deploys through on 2026-08-18 and 2026-08-19. `/_health` and the
-helper are separate requests that need not land on the same pool, so eight
-agreements can be one lucky pool answering while another has never been reset —
-and afterwards every production segment reported `manualRestarts: 0`. Agreement
-between probes was never evidence about coverage. Both conditions are now required,
-which is strictly stronger than either.
-
-The step before the swap counts the segments, so the loop knows how many pools it
-has to reach; without a floor, "every segment I saw is current" is satisfied by
-seeing one. It is a **lower bound** — a quiet pool can miss the census, and segments
-churn every 5–15 minutes here, so only the count is used and never the ids. When it
-finds nothing (an older release with no `startTimeUnix` in its cache-status payload)
-the floor stays at 1 and the gate is exactly as strong as it was before.
-
-Two details there were bought with failed deploys, and both look like
-over-engineering until you have watched them fail:
-
-- **It writes into every release, not just the new one.** Which directory the web
-  resolves is not something a deploy script should have to be right about, and one
-  400-byte file per release removes the question.
-- **It waits, up to 60 s, for the helper to become reachable before treating a 404
-  as failure.** A freshly created file is not instantly visible to the web server
-  here. On 2026-08-17 the helper was written and requested inside four seconds,
-  answered `No input file specified`, and three retries two seconds apart were
-  still too eager — while six minutes later the identical file at the identical
-  path served 25 out of 25 requests.
-
-**Step 10 also prints something on its way past, and it is the only chance to.**
-The reset helper has to read `opcache_get_status()` anyway to report the segment's
-age, so it now also reports the interned-strings buffer — used, size and string
-count — and the deploy prints one line per pool that had been alive at least five
-minutes. That buffer is append-only: nothing is ever evicted, so its usage only
-climbs within a segment's life and the `opcache_reset()` on the very next line of
-that helper puts it back to zero. The moment before a reset is therefore the only
-time a *warm* reading exists, and a deploy is the one occasion something reaches
-every pool. Afterwards, nothing on the site can report it for hours. Readings from
-segments younger than five minutes are deliberately dropped — a young segment
-always looks healthy, which is the exact misreading the line exists to prevent.
-`./tools/opcache-sample.sh` answers the same question on demand, and should be run
-*before* a deploy for the same reason. The parsing is covered by
-`test/Deploy/interned-sampling-test.sh`, which `tools/ci-local.sh` runs.
-
-The build step also breaks `public/index.php` out of its hardlink (`cp -p` then
-`mv -f`). rsync `--link-dest` hardlinks unchanged files across releases, and that
-file had eight links to one inode with one shared mtime — so if OPcache caches it
-under the unchanging docroot path, `validate_timestamps` compares an mtime that is
-identical in every release and can never fire. Note a plain `touch` would be
-*wrong*: it moves the mtime on the shared inode, i.e. on every release at once.
-
-Step 11 is the check that makes step 10 honest. `/_health` reports the release's
-`.revision` when given `DEPLOY_API_KEY`, and it is served by the Symfony kernel
-without booting laminas — so it answers even while the legacy bootstrap is
-fatalling, which is exactly the state worth detecting. Twelve probes, because one
-would only ever sample one pool.
-
-Step 10 stops on that same signal rather than on OPcache segment ages: it keeps
-resetting until **eight consecutive probes** report the new release. Segment age
-was only ever a proxy, and a poor one — the 2026-08-17 15:03 deploy never saw six
-consecutive fresh segments in forty hits and warned about it, while step 11 then
-passed 12/12. A warning that fires on a successful deploy is worse than none,
-because it teaches everyone to ignore the mechanism guarding the migration.
-
-### Step 11b: why a destructive migration waits longer
-
-**Agreement at one moment is not agreement.** Measured after the 15:03 deploy: the
-gate passed 12/12, two minutes later **6 of 6** probes reported the *previous*
-release, then a mixed 9/11, and only after roughly four minutes did it settle at
-20/20 on the new one. Pools the reset loop never reached kept serving old code
-until they recycled by themselves.
-
-For an ordinary deploy that is harmless: both releases run against the same schema,
-and which one answers is invisible. For a migration that DROPS something it is the
-original incident with a delay on it — the column goes while a pool is still
-executing code that selects it.
-
-So when a pending migration declares `@destructive: yes`, the deploy requires the
-agreement to *hold*: three full rounds, 45 s apart, before it will migrate. If any
-round disagrees it aborts having changed nothing, and drift clears on its own —
-wait a few minutes and run `bash tools/migrate.sh apply --phase=post`.
-
-This is deliberately **not** applied to every deploy. Three extra minutes on every
-release, for a hazard that applies to a handful of them, is a tax people route
-around — and a check people route around protects nothing.
-
-**Nothing irreversible happens before step 11 passes.** That ordering is the whole
-lesson of 2026-08-17: the old ordering ran the post-deploy migration first, against
-code that had already been replaced but was still executing.
-See [incident-2026-08-17-stale-opcache.md](incident-2026-08-17-stale-opcache.md).
-
-Then it tags `deploy/<ts>` locally (never pushed — `git tag -l 'deploy/*'`
-answers "what shipped?") and prunes to `DEPLOY_KEEP_RELEASES`, never removing
-the live release or the one a rollback would reach for.
-
-Three properties are worth stating because each replaces a hazard that used to
-be real:
-
-- **The release is exactly the committed tree.** The transfer list comes from
-  `git ls-files --recurse-submodules`, not from the working directory, so local
-  cruft — a stale `public/sitemap.xml`, a scratch dump, an editor backup —
-  cannot reach production, and the submodules are ordinary directories in that
-  list rather than a separate rsync pass. `tools/deploy-submodules.sh` was deleted
-  with phploy on 2026-08-16; its clean-tree guard moved into
-  preflight and gained the two checks it never had — that each submodule sits at
-  the commit the superproject pins, and that the commit is actually pushed.
-  The first of those is not pedantry: the release is built from the submodule
-  *working trees*, so a submodule at a different commit ships code no commit
-  describes.
-- **Warming happens before the swap.** `jtranslate:export-catalogs` and
-  `sitemap:build` used to run *after* the code went live, so every deploy had a
-  window in which strings rendered in English and the sitemap belonged to the
-  previous release. They now run against a tree no request can reach.
-- **`data/config` is per-release.** A new tree can no longer meet a merged-config
-  cache built from the old one — the pairing behind the `A plugin by the name
-  "requestUri" was not found` burst on every deploy, and behind the
-  `addRuleProvider(): … EventTextTable given` one. The `servingNote` guard in
-  `layout.phtml` is no longer load-bearing, though it costs nothing and stays.
-
-### What is not automatic
-
-- The APCu flush **must** stay an HTTP request. An APCu segment belongs to the
-  SAPI that created it, so a CLI `apcu_clear_cache()` flushes a segment nobody
-  reads — measured 2026-08-04, all 21 web-segment entries survived it.
-  `cache:flush-persistent` makes the request for us.
-- A sign-in round trip with a real email.
-
-### What the deploy no longer does
-
-Until 2026-08-17 the post-swap step also sent a `curl` to
-`/en/associations/do-work`, the last HTTP callback in the pipeline. It was not
-ported to a console command; it was **deleted**, because measuring it showed both
-halves were dead work:
-
-- `autoFillTimeZones()` fills a time zone only for a country that has exactly one.
-  Of the 54 associations with a country and no time zone, **0** qualify — 28 are in
-  multi-zone countries and 26 in countries the validator lists no zone for. It also
-  returned `void`, so the `timeZones` key in its response was always `null`, and it
-  printed three `var_dump()`s into the HTTP response on every deploy.
-- `updateAssociationMd5s()` recomputed five `SchemaOrgJsonMd5V1*` columns that
-  nothing read. It existed to repair a write-path bug: the association save path
-  computed the digest without a locale, writing five identical values, while the
-  sweep wrote five locale-specific ones. Of 498 associations, 490 held the sweep's
-  values and 8 held the save path's — the 8 edited since the previous deploy.
-
-The columns went with it in `database/db8.1.sql`, along with the three orphaned
-list-schema methods that returned the digests to the retired v1/v2 APIs. If you
-are reading this because a deploy no longer runs some maintenance you remember:
-it never did any.
+| `@destructive` | no | `yes` means older code cannot survive it: triggers step 13b and blocks rollback across it |
+| `@verify` | no | must return **zero rows** afterwards — "select what is still wrong", never the end state |
+
+`@phase` has no default because both orders are real and guessing wrong is silent:
+`pre` when new code selects columns the old schema lacks; `post` for every phrase
+retirement, because phrase discovery un-retires whatever the old code still looks up.
+
+### Guarantees and refusals
+
+- For `dml`, the ledger row commits **inside the same transaction** as the change:
+  applied-but-unrecorded and recorded-but-unapplied are both impossible, and a
+  statement failing part-way rolls the whole file back with no ledger row (every
+  table is InnoDB). `mysql` aborts on the first error; `--force` is never used.
+- `ddl` cannot have that — MariaDB commits implicitly — so it must declare
+  `@idempotent: yes` (refused without it), and a `dml` file containing DDL is
+  refused. A forcing function, not a proof: write the guards.
+- `@tables` are dumped first, to `data/deploy/backups/` on **your** machine
+  (gitignored — production data). Row counts are recorded per statement.
+- `@verify` returning rows fails the migration, naming them; the change stays applied.
+- No `@phase`, or `@destructive` other than `yes`/`no`: refused.
+- An applied migration whose bytes changed aborts before anything runs. `reseal` is
+  the only way past it, for comment-only edits, after proving via git history that
+  no statement moved.
+
+### Snapshot retention and credentials
+
+`DEPLOY_KEEP_BACKUP_RUNS=2` (per environment) and `DEPLOY_KEEP_BACKUP_DAYS=30` are
+both floors: a snapshot is deleted only when it is *both* outside the last N runs
+for its environment *and* older than the day limit, so capsule rehearsals cannot
+push out the last production snapshot. Every deletion is named on screen. A single
+`sch_changes` dump is ~74 MB.
+
+Full-DDL credentials live only in `.deploy.local` and are used through an **SSH
+tunnel** to the server's own `127.0.0.1:3306` (`DEPLOY_DB_TUNNEL_PORT` locally; if
+taken, the runner moves to the next free port and says so, and it asserts
+`sch_changes` + `trans_phrases` exist before touching anything). Never written to
+the server, never in `argv` — a mode-600 `--defaults-extra-file` carries them. The
+account must be granted for `127.0.0.1`. The production ledger is complete: 75 files
+backfilled through `db7.7`, everything after applied through the runner.
 
 ## The layout on the server
 
 ```
 public_html/schoenstatt.link/
-  public -> releases/20260815-2207-956aabd/public   the swap; the only symlink
-  releases/<ts>-<sha>/                              five kept; vendor hardlinked
+  public -> releases/<ts>-<sha>/public               the swap; the only symlink
+  releases/<ts>-<sha>/                               five kept; vendor hardlinked across releases
   shared/data/{logs,exceptions,htaccess-backups,fonts,musicas,texts,scans,import}
-  shared/public/{covers,associations,dh, …server-only docroot files}
+  shared/public/{covers,associations,dh,BingSiteAuth.xml,google0e1110cae0fbf177.html}
   shared/config-autoload/{local.php,*.local.php}
 ```
 
-`public/index.php` resolves `__DIR__/../vendor` through the symlink into **its
-own** release, so replacing that one link swaps the entire tree — code, vendor,
-config and compiled catalogs together. A request in flight when the swap happens
-keeps serving from the old release directory, which still exists; that is why
-old releases are pruned by count and not immediately.
-
-**Shared versus per-release is a real distinction, not a tidiness one.**
+`public/index.php` resolves `__DIR__/../vendor` through the symlink into its own
+release, so one link swaps code, vendor, config and compiled catalogs together. A
+request in flight keeps serving from the old directory, which still exists — which
+is why releases are pruned by count, not immediately.
 
 | shared | per-release |
 |---|---|
 | `data/logs`, `data/exceptions`, `data/htaccess-backups` | `vendor/` |
 | `data/fonts`, `data/musicas`, `data/texts`, `data/scans`, `data/import` | `data/config` (merged config + module map) |
 | `public/covers`, `public/associations`, `public/dh` — 1.2 GB of uploads | `data/cache/twig` |
-| `config/autoload/local.php` and `*.local.php` | the compiled `*.lang.php` catalogs |
-| server-only docroot files (below) | `public/sitemap*.xml` |
+| `config/autoload/local.php` and `*.local.php` | compiled `*.lang.php` catalogs |
+| server-only docroot files | `public/sitemap*.xml` |
 
-Two traps here, both silent:
+Rules, each of which fails silently if broken:
 
-- **`data/publications` is tracked repo content**, not state — the
-  150-preguntas source. Listing it as shared would not error: `ln -sfn` onto an
-  existing directory creates the link *inside* it, so the release would get
-  `data/publications/publications` and go on using the real directory.
-  `tools/deploy.sh` refuses a shared entry that collides with tracked content
-  rather than linking it.
-- **`*.local.php` does not match `local.php`.** laminas' own autoload glob is
-  `{,*.}local.php`, and the file holding the database credentials is the one
-  without a prefix. A single-pattern loop skips it in silence and the swap takes
-  the site down. Both scripts use both patterns.
+- **`data/config` and `data/cache` are per-release.** A new tree meeting an old
+  merged-config cache is what produced a fatal burst on every deploy.
+- **`data/publications` is tracked repo content, not shared state.** `ln -sfn` onto
+  an existing directory creates the link *inside* it; `tools/deploy.sh` refuses a
+  shared entry that collides with tracked content.
+- **`*.local.php` does not match `local.php`**, and the file without a prefix is the
+  one holding the database credentials. Both scripts use both patterns.
+- **`data/import` is the one shared directory the application writes to** (library
+  spreadsheet uploads); `tools/deploy.sh` does `mkdir -p shared/data/import` first,
+  since an absent shared directory would land uploads inside the release and lose
+  them at the next swap. Nothing prunes it (docs/BACKLOG.md).
+- **Anything dropped into `shared/public/` is symlinked into every future release.**
+  Losing `BingSiteAuth.xml` or the Google file de-verifies the site. After any
+  manual server work, before the next swap:
 
-**`data/import` is the one shared directory the application writes to itself.**
-Everything else on the shared side is populated by an operator or by a log
-writer that has been running for years; since 2026-08-18 the library import
-stores uploaded spreadsheets there. The link loop iterates `shared/data/*`, so an
-absent `shared/data/import` links nothing, the upload lands in
-`releases/<current>/data/import/`, and every uploaded file disappears at the next
-swap — surfacing weeks later as imports whose file "went missing".
-`tools/deploy.sh` therefore `mkdir -p shared/data/import` before the loop rather
-than leaving it to a bootstrap that ran once. Nothing prunes the directory; see
-[BACKLOG.md](BACKLOG.md).
+  ```bash
+  ./tools/deploy-bootstrap.sh --check     # report only; lists server-only docroot files NOT claimed
+  ```
 
-### Server-only files in the docroot
+  Whatever that list holds is what the next swap deletes. Keep a file by adding it
+  to `SHARED_PUBLIC` in `tools/deploy-bootstrap.sh`; inspect random-hex `.php`
+  files first — that is also what a webshell looks like.
 
-phploy left unknown files in `public/` alone. **A release swap deletes them**,
-because the new docroot is only what is in git. As of 2026-08-15 the server held
-six such files:
+The shell account (`ourlink`, uid 1023) **is the web-server user**, so nothing
+chmods anything. Apache follows the symlinked docroot and honours `.htaccess` at
+the target. A release costs ~36 MB of code plus ~128 MB of vendor, mostly hardlinked.
 
-| file | disposition |
-|---|---|
-| `BingSiteAuth.xml` | `shared/public/` — losing it de-verifies Bing Webmaster Tools |
-| `google0e1110cae0fbf177.html` | `shared/public/` — same for Search Console |
-| `pi-462149043bd9.php`, `pi-e0d4d959748e.php` | **inspect before deciding.** Two PHP files with random-hex names in the docroot is also what a webshell looks like |
-| `test.png`, `Y0wb7nkgZN5J9YM0n.jpg`, `eDBH8Kmf8DL8` | junk; let the swap remove them |
+Cutover leftovers still on the server *(verify with `ls -A`)*: the old flat tree as
+`_flat_old/` and the old docroot as `public.pre-atomic`. Delete them by name, never
+by wildcard — `shared/` sits beside them with 1.2 GB of uploads and every `*.local.php`.
 
-Anything dropped into `shared/public/` is symlinked into every future release
-automatically, so keeping a new one takes no code change. `tools/deploy-bootstrap.sh
---check` lists what is *not* claimed, which is exactly what the next swap would
-delete; read that list before the first swap and after any manual server work.
+## Server facts
 
-## Cutover — converting the server to the release layout
+- **Production runs PHP 8.5.9, CGI/FastCGI**, MariaDB 10.11, on Hetzner
+  `dedi2934.your-server.de`. OPcache on (`validate_timestamps=1`,
+  `revalidate_freq=2`, 128 MB, 10000 files), APCu 5.1.27 (`apc.shm_size=256M`,
+  `apc.ttl=0`, `apc.entries_hint=4096`), `memory_limit=512M`,
+  `max_execution_time=240`, `display_errors=Off`. ICU 72.1 (the capsule has 76.1).
+- Port **222** is the shell account and the only identity a deploy uses. Port 22
+  is a restricted SFTP jail (no exec) and nothing uses it.
+- **php.ini changes are the one case that needs `pkill -u ourlink -f php`**
+  (workers re-read ini on respawn; cost is a cold OPcache, no downtime). Deploys
+  never need it while `validate_timestamps=1`; at 0, every deploy would.
+- `.htaccess` cannot set PHP directives here (`php_value` is mod_php); a tracked
+  `public/.user.ini` could set `PHP_INI_ALL` ones, but none exists or is needed.
 
-One time, ever. Staged so each step is independently verifiable, and so the
-risky part is last and reversible.
+### The per-account `php.ini`
 
-```bash
-./tools/deploy-bootstrap.sh --check    # report only; nothing is modified
+```
+/home/httpd/php85-ini/ourlink/php.ini      # root-owned; every change is a konsoleH ticket
 ```
 
-Read the "server-only docroot files NOT claimed" list. Add anything worth
-keeping to `SHARED_PUBLIC` at the top of the script and re-run `--check` until
-the list holds only things you are content to lose. Then:
+**One directory per PHP version** (`php53-ini` … `php85-ini`): flipping the version
+in konsoleH silently reinstates that version's defaults and every tuned value is
+gone — it has happened. After any version switch, diff the live values against this
+table, from the web SAPI (`/en/sm/phpinfo` reloaded several times, or
+`./tools/opcache-sample.sh`, which groups `/sm/cache-status` polls by segment) —
+**never from CLI `php -i`**, which reads a different ini.
+
+| setting | current | wanted | changeable | why |
+|---|---|---|---|---|
+| `opcache.interned_strings_buffer` | `32` | `32` | SYSTEM | landed 2026-08-21; at the old 8 MB it sat at 89–100% and stopped interning. Usage is append-only, so a post-deploy reading always looks healthy |
+| `apc.ttl` | `0` | **non-zero** | SYSTEM | with 0 a failed allocation expunges the whole segment instead of evicting. Asked for with the `shm_size` raise; **did not land** |
+| `apc.shm_size` | `256M` | keep | SYSTEM | raised from 32M; both historical oversized items now fit |
+| `opcache.validate_timestamps` | `1` | keep | ALL | **load-bearing** for deploys, see above |
+| `opcache.revalidate_freq` | `2` | keep | ALL | changed files picked up within seconds |
+| `opcache.revalidate_path` | `0` | keep | ALL | measured not to affect the symlink-swap staleness; do not spend a ticket on it |
+| `opcache.memory_consumption` | `128` | keep | SYSTEM | ~25% used, no OOM restarts |
+| `opcache.max_accelerated_files` | `10000` | keep | SYSTEM | ~14% of slots used |
+| `opcache.use_cwd` | `1` | keep | SYSTEM | same-named files in different releases must not collide |
+| `realpath_cache_ttl` | `120` | keep | — | same as the capsule; cannot explain the 12–20 min staleness, not a lever |
+| `memory_limit` | `512M` | keep | ALL | `public/index.php` also sets it, so a reverted ini does not show immediately |
+
+`/en/sm/cache-status` (maintenance key) reports both caches live —
+`internedPercentUsed`, `internedBufferConfiguredMb`, `memoryPercentUsed`,
+`keysPercentUsed`, `startTimeUnix`, `validateTimestamps`, `revalidateFreq` — so a
+change can be confirmed without SSH. A low `uptimeSeconds` means the cache was
+reset, not that a process is new with a new ini.
+
+### Deploying a PHP-version rung
+
+**Flip the konsoleH PHP version first, then deploy — never the other way round.**
+Composer writes `vendor/composer/platform_check.php` from `require.php` and PHP
+evaluates it on every request, so a release whose lock requires the newer PHP
+hard-fatals every page on the older server. The reverse (new PHP running the
+previous release) is a combination the capsule verifies before the rung lands.
+Then copy the tuned `php.ini` values across — the new version reads a different
+file — and confirm from `/en/sm/phpinfo`. `config.platform.php` stays at 8.4.24: it
+is the ceiling the locked packages impose, not a claim about any runtime.
+
+## The front controller
+
+`public/index.php` runs `App\Kernel` (symfony/http-kernel) unconditionally. **There
+is one front controller and no laminas one to fall back to** — nothing has
+dispatched through laminas-mvc since 2026-09-08, the `SYMFONY_KERNEL` canary and
+`LegacyBridge` are deleted, and `DEPLOY_CANARY_COOKIE` in `.deploy.local` is
+ignored. Rolling back to laminas is not possible; `--rollback` reaches only earlier
+Symfony-served releases. See [laminas-exit.md](laminas-exit.md).
 
 ```bash
-./tools/deploy-bootstrap.sh --yes
+curl https://schoenstatt.link/_health              # {"status":"ok","kernel":"symfony"} — the site booted
+curl https://schoenstatt.link/api/v3/schema        # 200 JSON — the whole ServiceBridge path works
+curl https://schoenstatt.link/api/v3/associations  # 401 JSON — the token gate is on
 ```
 
-This moves shared state into `shared/` and symlinks it back where it was. **The
-site is still served from the flat tree and should behave exactly as before** —
-verify that now, because every move is visible if it went wrong:
+## Smoke checks
+
+`bash tools/smoke-prod.sh` is the deploy's last step and runnable any time. It
+covers the homepage, both 404 flavours, the 410s for retired `/api/v1|v2` URLs
+(fetching the advertised `/api/v3/schema` successor, not pattern-matching the
+header), the sitemap (Apache-served: `Accept-Ranges: bytes`, no `Set-Cookie`; this
+host sends no `ETag`), every public route, the v3 API, response compression and the
+static-asset `Cache-Control` policies from the tracked `public/.htaccess` (HTTP/2
+only warns), and `SMOKE_PROD_COLD_SAMPLES` random *cold* sitemap pages — the
+fatal-200 class, which fixed URLs cannot catch. A **zero-byte HTTP 200 is a fatal**,
+reported once per URL. Non-zero exit on any failure. With `SMOKE_PROD_CACHE_KEY` set
+it polls `/en/sm/cache-status` and **warns**, without failing, when APCu is ≥80%
+full or has ever expunged, or OPcache has restarted — a real signal since the 256M
+raise, not the known condition.
+
+It also runs against the capsule in `tools/ci-local.sh`, the only thing besides a
+deploy that ever executes it:
 
 ```bash
-curl -sI https://schoenstatt.link/ | head -1
-curl -s -o /dev/null -w '%{http_code}\n' https://schoenstatt.link/covers/
+docker compose exec -T app php bin/console sitemap:build --force --url=http://localhost:8080
+SMOKE_PROD_BASE_URL=http://localhost:8080 SMOKE_PROD_CACHE_KEY=local-dev-api-key bash tools/smoke-prod.sh
 ```
 
-Open an association page and confirm its images load. Then:
+The sitemap rebuild comes first because the script filters the sitemap index by
+base URL, deliberately (a foreign `<loc>` in production is a real fault).
+**Still manual after a deploy:** a sign-in round trip with a real email.
 
-Before swapping, **inventory anything scheduled**, because a cron entry that
-`cd`s into the application directory will keep running the *old* flat tree after
-the swap — see below:
+## Reading production exceptions
 
 ```bash
-ssh -p 222 ourlink@dedi2934.your-server.de 'crontab -l'
+bash tools/fetch-exceptions.sh              # mirror data/exceptions/ + summary table
+less data/exceptions-prod/<fp>/first.txt    # the write-up; each carries the release's .revision
+bash tools/clear-exceptions.sh --yes <fp>   # fixed it? clearing re-arms notification
 ```
 
-Also check konsoleH's own scheduler; entries added there do not appear in
-`crontab -l`. Then:
+The first occurrence of each fingerprint is emailed to `webmaster@schoenstatt.link`.
+Failures **before the container exists** are recorded but cannot be emailed — check
+the store and `shared/data/logs/bootstrap-fatal.log` when a deploy goes quiet.
+Full reference: [exception-reporting.md](exception-reporting.md).
+
+## Rollback
 
 ```bash
-./tools/deploy.sh --bootstrap
+./tools/deploy.sh --rollback              # the previous release
+./tools/deploy.sh --rollback --to <rel>   # a specific one
+./tools/deploy.sh --releases              # what is on the server, and what is live
 ```
 
-which builds the first release and performs the initial swap. That swap is a
-`mv` plus a `ln`, not a `rename(2)` — a real directory cannot be atomically
-replaced by a symlink — so it has a sub-second window. It is the only one, and
-it never recurs. The old docroot is kept as `public.pre-atomic`; the way back is
+One symlink, one `rename(2)`, then the opcode-cache reset, the revision gate against
+the target's own `.revision`, an APCu flush and a smoke run. It reinstates code,
+`vendor/`, compiled catalogs and `.htaccess` together, because all four live inside
+the release directory. A failed smoke run in a deploy rolls back on its own and
+keeps the failed release for inspection.
 
-```bash
-cd ~/public_html/schoenstatt.link && rm public && mv public.pre-atomic public
-```
+What it does not do:
 
-### After the first swap: two things the swap does not do
+- **Undo a database migration.** A `pre` migration is compatible with the previous
+  code, so rolling code back alone is safe. A `@destructive: yes` migration is the
+  opposite: **both rollback paths refuse a target release that does not ship that
+  file** — the automatic one declines to roll back at all and leaves the site on
+  the release that matches the schema. `--allow-incompatible` overrides once you
+  have decided the breakage is acceptable; the table snapshots are in
+  `data/deploy/backups/`.
+- **Survive the next deploy.** To undo a commit, revert it and deploy.
+- **Reach a pruned release** (five kept; the live one and its predecessor never
+  pruned) **or laminas** (see The front controller).
 
-**1. Re-point every scheduled job.** Only `public/` became a symlink. The
-application directory still holds a complete copy of the old flat tree — `bin/`,
-`config/`, `module/`, `src/`, `vendor/` — so anything that does
-`cd ~/public_html/schoenstatt.link && php bin/console …` still runs, and runs the
-**old code**, while writing through `public/` into the *live* release. That is a
-worse failure than an outright break, because it works. The sitemap cron is the
-known one; re-point it as in "Before the next deploy: the sitemap needs a cron
-entry" above, using the `cd -P` form.
-
-**2. Remove the old flat tree, once a deploy has succeeded.** Until it is gone
-every path that used to work still works, against stale code. Preview first —
-the four names to keep are the only four that matter:
-
-```bash
-ssh -p 222 ourlink@dedi2934.your-server.de \
-  'cd public_html/schoenstatt.link && ls -A | grep -vE "^(releases|shared|public|public\.pre-atomic)$"'
-```
-
-That list is what the old layout left behind. Delete it only after
-`./tools/deploy.sh` has run cleanly at least once and `public.pre-atomic` is no
-longer wanted as an escape hatch, and delete it by name rather than with a
-wildcard — `releases/` and `shared/` live in the same directory, and losing
-`shared/` means losing 1.2 GB of uploaded media and every `*.local.php`.
-
-**Why this works on this hoster, verified 2026-08-15.** Apache follows the
-symlinked docroot *and* honours `.htaccess` at the symlink target — probed with
-a symlink pointing outside the docroot, carrying an `.htaccess` that set a
-header, and the header came back. That is the whole feasibility question: had
-`<Directory>` been scoped to the literal docroot path, `.htaccess` would have
-stopped applying, mod_rewrite with it, and nothing in the response would have
-said so. The shell account is `ourlink:ourlink` (uid 1023) — **the same user web
-PHP runs as** — so a release tree it writes is writable by the web server and
-nothing needs to chmod anything.
+A clobbered `.htaccess` can be restored from `shared/data/htaccess-backups/`.
 
 ## Running the server-side steps by hand
 
-If a step fails mid-run, the release directory is still there and finishing it
-by hand is safe — nothing is live until the swap. In an SSH session on port 222:
+If a step fails mid-run the release directory is still there and nothing is live
+until the swap. On the port-222 account:
 
 ```bash
 cd ~/public_html/schoenstatt.link/releases/<the-release>
@@ -1360,166 +470,28 @@ cd ~/public_html/schoenstatt.link && ln -sfn releases/<the-release>/public publi
 cd releases/<the-release> && php bin/console cache:flush-persistent
 ```
 
-then run `bash tools/smoke-prod.sh` locally. `bin/console list` shows everything
-available. `cache:flush-persistent` takes `--url` when the configured
-`sion_model.canonical_base_url` is not the host you mean, and reads the key from
-`SCH_MAINTENANCE_KEY` when the local config has none — prefer that over `--key`,
-which lands in shell history.
+Then, locally, `./tools/deploy.sh --reset-caches` (the swap is invisible to OPcache
+until you do) and `bash tools/smoke-prod.sh`. `cache:clear-config` is not a deploy
+step (each release starts with an empty `data/config`); it is the fix after editing
+config *on* the server.
 
-`cache:clear-config` is no longer part of a deploy: each release starts with an
-empty `data/config`, so there is nothing stale to clear. It remains useful after
-editing config *on* the server.
+## Scheduled jobs
 
-## Server facts worth remembering
+Every cron entry must resolve *through* the `public/` symlink so it runs the live
+release — `cd -P` into `public`, then `cd ..`; the application directory itself
+holds no code.
 
-- SSH port **222** is the shell account and the only identity a deploy uses.
-  Port **22 is a restricted SFTP jail** (no exec — rsync/scp fail with "exec
-  request failed on channel 0"); it existed for phploy and nothing uses it now.
-  The two-identity split was there so a phploy compromise could move files but
-  never run anything; with phploy gone the threat it addressed is gone too, and
-  every server-side step already ran under the shell account anyway.
-- **The shell account is the web-server user** (`ourlink`, uid 1023, verified
-  2026-08-15). An earlier note here said catalog writes happen "as the ssh
-  account, not as the web-server user" — that was about the *SFTP deploy*
-  account. `TranslationsTable::writeCatalogAtomically()` writes to a temp file
-  and `rename()`s it anyway, which is correct for other reasons; do not
-  "simplify" it.
-- **No local PHP is needed.** phploy required `php8.0` because newer CLIs here
-  lack mbstring; `tools/deploy.sh` uses only git, rsync, ssh and curl. `php8.0`
-  is still needed for the migration runner, which uses pdo_mysql.
-- Web PHP is FastCGI with a per-account php.ini at
-  `/home/httpd/php85-ini/ourlink/php.ini` (**per PHP version**: the 8.4-era file
-  was under `php84-ini/`, the 8.3-era one under `php83-ini/`, the 7.4-era one
-  under `php74-ini/`). This is the trap when flipping the konsoleH PHP version:
-  the new version reads a *different* file, so anything tuned in the old one
-  silently reverts to defaults — copy it across as part of the flip. php.ini
-  changes are the ONE case that needs `pkill -u ourlink -f php` (workers re-read
-  ini on respawn); deploys never do.
-- Disk: 269 GB free as of 2026-08-15. A release costs ~36 MB of code plus
-  ~128 MB of vendor, and unchanged files hardlink to the previous release, so
-  five releases cost far less than five times that.
-
-## Smoke checks after deploying
-
-- `bash tools/smoke-prod.sh` (the last post-deploy hook, also runnable any
-  time) covers everything scriptable: homepage, both 404 flavors, the
-  sitemap, and a random sample of *cold* sitemap pages (the fatal-200
-  regression class — fixed URLs can't catch it). It also guards the
-  transport layer: response compression (br/gzip) and the static-asset
-  Cache-Control policies from the now-tracked `public/.htaccess` fail the
-  deploy on regression; HTTP/2 only WARNs (hoster-provided, not ours to
-  fix). Non-zero exit on any failure.
-- **It also runs against the capsule**, as part of `tools/ci-local.sh`:
-
-      SMOKE_PROD_BASE_URL=http://localhost:8080 \
-      SMOKE_PROD_CACHE_KEY=local-dev-api-key bash tools/smoke-prod.sh
-
-  Rebuild the capsule's sitemap first — `php bin/console sitemap:build --force
-  --url=http://localhost:8080`, 2.4s — because the script filters the sitemap
-  index by base URL and one generated for another host lists nothing it will
-  match. That strictness is deliberate: in production a `<loc>` that does not
-  start with the canonical base is a real fault, so the sitemap is rebuilt to
-  suit the check rather than the check taught to accept a foreign host.
-
-  This closes a real gap. Until 2026-08-19 **nothing but a deploy had ever
-  executed this script**, so a bug in it could only be found by shipping —
-  which is exactly what happened: an unqualified grep for `uptimeSeconds`, a
-  key present in *both* the APCu and OPcache sections of one JSON document,
-  returned two lines and killed a run with `77\n838 / 60: syntax error` after
-  an otherwise successful deploy. 38 of its checks pass against the capsule;
-  on the first attempt, with nothing changed but the URL, 28 of 30 already
-  passed and both failures were the sitemap host. The canary-cookie checks stay skipped there and only
-  there: the capsule's vhost `SetEnv` masks the `.htaccess` kernel lines, so
-  neither cookie can work locally.
-- With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value), it also polls
-  `/en/sm/cache-status` (both APCu **and** OPcache), passing the key as an `X-Api-Key` header rather
-  than in the URL, and WARNs — without failing — when the APCu
-  segment is ≥80% full or has ever expunged. The `apc.shm_size` raise has since
-  landed (32M → **256M**, verified 2026-08-11), so a saturation warning now
-  means something genuinely new rather than the old default filling up — treat
-  one as a real signal, not as the known condition it used to be. (First live
-  reading 2026-08-03, before the raise: 2 expunges within hours of the PHP 8.3
-  flip.)
-- Still manual: a sign-in round trip with a real email.
-
-## Reading production exceptions
-
-Failures are recorded per distinct exception under `data/exceptions/` on the
-server, and the first occurrence of each is emailed to
-`webmaster@schoenstatt.link`. Pull them down and clear them with:
-
-```bash
-bash tools/fetch-exceptions.sh              # mirror + summary table
-less data/exceptions-prod/<fp>/first.txt    # the write-up
-bash tools/clear-exceptions.sh --yes <fp>   # fixed it? clearing re-arms notification
+```cron
+*/15 * * * * cd -P ~/public_html/schoenstatt.link/public && cd .. && php bin/console sitemap:build >/dev/null
 ```
 
-Both scripts use the shell account on port 222 (port 22 is the SFTP jail, no
-exec). **[exception-reporting.md](exception-reporting.md) is the full reference** —
-what counts as one failure, the capture/privacy profile, the configuration keys,
-troubleshooting, and the limitations.
+A run with nothing to do costs ~0.11 s; a rebuild ~1.2 s. konsoleH's scheduler
+reads the same crontab, so `crontab -l` on the port-222 account is the full
+inventory. Overdue-book notices are `php bin/console books:send-notices
+--library=N [--dry-run]`, needing no API key; whether the monthly entry is enabled
+is a server fact — check `crontab -l` *(verify)*. `15 11 1 * *` in German server
+time lands at 05:15–07:15 in Santiago depending on month.
 
-Two things about it that bear on deploying specifically:
-
-- **A deploy must clear `data/config/`** for newly registered services to be
-  seen. The existing post-deploy hooks already do this twice; it is called out
-  because the symptom is confusing — `Module.php` picks up changes immediately
-  (it is a class file) while the merged service map stays stale, so you get
-  `Unable to resolve service ...` for a service that is plainly registered in
-  the config you are looking at.
-  - Step 3 is what clears it, and it runs *after* the upload in step 2, so
-    between them the new files meet the old service map. That window is the
-    reason `layout.phtml` asks whether the `servingNote` helper is registered
-    before calling it: an unresolved view helper inside a layout throws after
-    the response is assembled, which is a blank HTTP 200 on every
-    laminas-rendered page rather than one missing footer line. Any future
-    layout-level helper wants the same guard.
-- **Failures before the container exists** — a broken merged config, a module
-  that will not load — are recorded but *cannot* be emailed: the recipients live
-  in the very configuration that failed to build. They land in the store and in
-  `data/logs/bootstrap-fatal.log`, so check there when a deploy goes quiet.
-
-## Rollback
-
-```bash
-./tools/deploy.sh --rollback              # the previous release
-./tools/deploy.sh --rollback --to <rel>   # a specific one
-./tools/deploy.sh --releases              # what is on the server, and what is live
-```
-
-One symlink, one `rename(2)`, then an APCu flush and a smoke run. It reinstates
-the previous release's code, `vendor/`, compiled catalogs and `.htaccess`
-together, because all four live inside the release directory — the by-hand
-checklist this section used to hold (re-check out the older superproject commit
-so the submodule pointers roll back too, re-sync the submodule trees, re-run
-`composer install --no-dev` to reinstate the older lock) is no longer needed.
-
-A failed smoke run **rolls back on its own** — unless rolling back would be worse
-than not, see below; the failed release is kept for inspection rather than pruned.
-
-Three things it does not do:
-
-- **It does not undo a database migration**, and for a *destructive* one that is
-  not a caveat but a hard block. Code and schema roll back independently, which is
-  why migration phase matters: a `pre` migration is written to be compatible with
-  the code that was live before it, so rolling the code back alone is safe. A
-  migration that DROPS something is the opposite — the older release cannot run at
-  all once it has been applied. On 2026-08-17 the automatic rollback did exactly
-  that and turned a recoverable deploy into a 40-minute outage
-  ([incident-2026-08-17-stale-opcache.md](incident-2026-08-17-stale-opcache.md)).
-
-  Such a migration must declare `-- @destructive: yes`. Both rollback paths then
-  refuse a target release that does not ship the file, the automatic one declining
-  to roll back at all and leaving the site on the release that at least matches the
-  schema. `--allow-incompatible` overrides it if you have decided the breakage is
-  acceptable. The table snapshots the runner takes before each migration are in
-  `data/deploy/backups/`.
-- **It does not survive the next deploy** if what you actually want is to undo a
-  commit. Revert it and deploy; that is the durable form.
-- **It cannot reach a pruned release.** `DEPLOY_KEEP_RELEASES` is five, and the
-  live release and its predecessor are never pruned regardless.
-
-A clobbered `.htaccess` can still be restored from
-`shared/data/htaccess-backups/` — the deploy copies the live one there before
-every release goes out, which matters because the file is tracked and therefore
-replaced by each swap.
+Creating API bot accounts and granting their roles is a manual step too — see
+[api-v3.md](api-v3.md); a role inserted by raw SQL needs
+`php bin/console cache:flush-persistent` before the users screen shows it.

@@ -22,7 +22,7 @@ use function is_string;
  *
  * ## Why a copy, and what pins it
  *
- * docs/strangler.md's rule: share where sharing does not mean *editing* a laminas
+ * docs/laminas-exit.md's rule: share where sharing does not mean *editing* a laminas
  * action, copy where it would, and pin the copy. `showAction()` is a 90-line method on a
  * controller that reaches four plugins — `flashMessenger`, `isAllowed`, `url`, `redirect`
  * — none of which resolve without an MvcEvent, and it is inherited by twelve controllers
@@ -37,7 +37,7 @@ use function is_string;
  * on. A parity test is not available at all here, for the same reason it is not available
  * for `formatEntity`: the laminas action cannot be driven without an MvcEvent, so there is
  * nothing to compare against in-process. The real guarantee is the baseline capture, which
- * is what found six defects in this batch — see docs/strangler.md, "What the baseline diff
+ * is what found six defects in this batch — see docs/laminas-exit.md, "What the baseline diff
  * catches that nothing else does".
  *
  * ## What it reproduces, in order
@@ -302,7 +302,7 @@ final class EntityShow
     /**
      * Both of these used to be private methods here, with bodies identical to
      * `App\Sion\Entities`'. They moved there in batch 7, when `App\Sion\EntityEdit` would
-     * otherwise have been a third copy — docs/strangler.md's rule is that the licence to
+     * otherwise have been a third copy — docs/laminas-exit.md's rule is that the licence to
      * copy stops at the laminas boundary, and two answers to "which table holds this
      * entity" is the divergence that rule exists to prevent.
      *

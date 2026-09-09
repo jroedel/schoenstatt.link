@@ -113,7 +113,7 @@ abstract class SmokeTestCase extends TestCase
      *
      * Both halves have been measured on this application:
      *
-     * - **~800 bytes**, laminas side: the wedge docs/strangler.md records, where the
+     * - **~800 bytes**, laminas side: the wedge docs/laminas-exit.md records, where the
      *   layout begins to render and dies partway.
      * - **0 bytes**, Symfony side: measured 2026-08-13, a Twig comment inside a hash
      *   literal in `movement.html.twig`. `testAModeratorReachesTheModeratorPages`

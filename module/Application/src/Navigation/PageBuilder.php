@@ -170,7 +170,7 @@ final class PageBuilder
          * is precisely how a phrase is filed. From 2026-08-10, when breadcrumb labels started
          * being translated at all, that filed one row per record — twice over, because the
          * partial falls back to the `default` domain — and within a day publication titles
-         * were 61% of the whole phrase table (`docs/api-change-requests-response.md` §12).
+         * were 61% of the whole phrase table (`docs/api-v3.md` §12).
          *
          * Applied to the arrays *after* they come out of the cache rather than written into
          * them where they are built: `apc.ttl` is 0 on this host, so a branch cached before

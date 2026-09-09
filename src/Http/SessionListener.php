@@ -45,7 +45,7 @@ use const PHP_SESSION_ACTIVE;
  * **It only acts when the request already carries a session cookie.** No cookie means
  * no stored session, so there is nothing to prune and nothing to validate — and
  * starting one anyway would put a session, a Set-Cookie and the laminas module load
- * on /_health and the two maintenance endpoints, which docs/strangler.md is explicit
+ * on /_health and the two maintenance endpoints, which docs/laminas-exit.md is explicit
  * about not doing. An HTML page pays nothing extra either way: its layout already
  * reaches laminas for translate(), is_allowed() and the navbar.
  *

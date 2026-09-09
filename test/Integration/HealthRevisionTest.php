@@ -20,7 +20,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * and "the new release is executing" were different facts for 40 minutes, across
  * three independent OPcache segments, while a destructive migration ran against
  * code that had already been replaced. See
- * docs/incident-2026-08-17-stale-opcache.md.
+ * docs/DEPLOY.md.
  *
  * What is pinned here is the contract the deploy depends on:
  *

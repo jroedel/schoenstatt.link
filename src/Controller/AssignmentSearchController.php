@@ -32,7 +32,7 @@ use function is_array;
  * Neither writes anything and neither has a CSRF token: `SearchForm` and
  * `AdvancedSearchForm` are `method="GET"` forms whose data is `?search=…`. That is why
  * this pair could move ahead of the create/edit forms — the static-adapter obstacle
- * docs/strangler.md recorded applied to `CreateRoleForm`, `EditUserForm`,
+ * docs/laminas-exit.md recorded applied to `CreateRoleForm`, `EditUserForm`,
  * `DeleteUserForm` and `EditPhraseForm` through a `NoRecordExists` validator, and
  * neither form here has one. (That obstacle was removed on 2026-08-14: the four take
  * the adapter as a constructor argument now.)
@@ -63,7 +63,7 @@ use function is_array;
  * not found." and 302 back to `assignments/search`. Measured for an account holding
  * every role, on a row `getAssignment()` returns perfectly well. The route survives as
  * the parent of `/edit` and `/delete`; porting it would mean porting an unconditional
- * redirect. See docs/strangler.md.
+ * redirect. See docs/laminas-exit.md.
  */
 final class AssignmentSearchController
 {

@@ -26,7 +26,7 @@ use function sprintf;
  * It should never reach production, and two things beyond this class make sure of
  * it: `test/Integration/SymfonyRouteAuthorizationTest` walks every route in the
  * collection and fails on an undeclared one, and `tools/acl-table.php` reports it
- * as a warning in `docs/acl-rules.md`.
+ * as a warning in `docs/acl-baseline.json`.
  */
 final class UndeclaredRouteAccess extends LogicException
 {
@@ -37,7 +37,7 @@ final class UndeclaredRouteAccess extends LogicException
             . 'config/symfony/routes.php must pass an App\Authorization\RouteAccess: either '
             . 'RouteAccess::guardedBy(\'route/<laminas-route-name>\') to check the same ACL resource the '
             . 'laminas guard uses, or RouteAccess::openToEveryone(\'<why>\') to state deliberately that '
-            . 'anyone may reach it. Defaulting either way would be wrong — see docs/strangler.md.',
+            . 'anyone may reach it. Defaulting either way would be wrong — see docs/laminas-exit.md.',
             $route,
             $path
         ));

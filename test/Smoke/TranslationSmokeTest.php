@@ -41,7 +41,7 @@ class TranslationSmokeTest extends SmokeTestCase
 
     private const EMAIL_PREFIX = 'translation-smoke-';
 
-    /** What `route/jtranslate` wants; see docs/acl-rules.md. */
+    /** What `route/jtranslate` wants; see docs/acl-baseline.json. */
     private const TRANSLATOR_ROLE = 'sch_general_moderator';
 
     /** @var list<int> history rows this test appended, removed again in teardown. */

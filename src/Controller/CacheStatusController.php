@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\Request;
  *
  * SionModelController::cacheStatusAction() still answers the same URL under the
  * laminas front controller, which nothing serves today but which is one
- * `SYMFONY_KERNEL=0` away from serving everything (see docs/strangler.md). Both
+ * `SYMFONY_KERNEL=0` away from serving everything (see docs/laminas-exit.md). Both
  * therefore have to emit the same document, and neither builds it:
  * SionModel\Cache\CacheStatusPayload does.
  *

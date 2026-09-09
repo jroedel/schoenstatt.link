@@ -207,7 +207,7 @@ $ported = static function (
 // SionModel's maintenance endpoints, ported 2026-08-05. Both are machine
 // endpoints gated by a maintenance key the controller checks itself, so they need
 // nothing the laminas MVC listeners provide — no session, no ACL guard, no view
-// layer. See docs/strangler.md.
+// layer. See docs/laminas-exit.md.
 //
 // Declared open, and the reason is worth stating precisely because `guardedBy` would
 // also have "worked": the laminas guards they shadow
@@ -487,7 +487,7 @@ $ported(
 // index pages. Everything here is a read-only GET whose laminas action is a query
 // and a template — no form is ported, because there is no form layer on the
 // Symfony side and JUser's static table adapter (see the onBootstrap table in
-// docs/strangler.md) is still unreproduced.
+// docs/laminas-exit.md) is still unreproduced.
 // ---------------------------------------------------------------------------
 
 // The Fr. Kentenich timeline. Route name `events`, path /timeline — they disagree
@@ -567,7 +567,7 @@ $ported(
 // The first *form* route, ported 2026-08-09, and the reason src/Form/ exists.
 // ---------------------------------------------------------------------------
 //
-// docs/strangler.md called the form routes the largest single thing left, blocked on
+// docs/laminas-exit.md called the form routes the largest single thing left, blocked on
 // two things: no form layer, and JUser's unreproduced static table adapter. The first
 // was true and SionModel\Form\BootstrapFormRenderer answers it. The second turned out not to
 // apply here — only CreateRoleForm, EditUserForm, DeleteUserForm and EditPhraseForm
@@ -921,7 +921,7 @@ $edit(
 // - `publication-create-new-edition` is its own action, not `createAction()`.
 // - `events/create` is **unportable**: its spec's `create_action_form` is commented out, its
 //   `create_action_valid_data_handler` names a method that exists nowhere in the repository,
-//   it has no template, and docs/acl-rules.md lists it under "no guard entry", i.e. default
+//   it has no template, and docs/acl-baseline.json lists it under "no guard entry", i.e. default
 //   deny. Three independent reasons, same conclusion as batch 8's unreachable deletes.
 //
 // **Order does not matter for these nine**, unusually. Every route that could swallow a
@@ -1033,7 +1033,7 @@ $create(
 // A new library. Library-scoped like the two above and yet carries **no** library — the
 // record being created is the library — so it declares neither LIBRARY_PARAM nor a
 // permission, and LibraryScopedForms::formForLibrary() takes null. Its laminas guard admits
-// `guest`, which docs/acl-rules.md flags: `guest` is not a default role, so this page really
+// `guest`, which docs/acl-baseline.json flags: `guest` is not a default role, so this page really
 // is reachable signed-out. Unchanged by the port, and filed rather than fixed here.
 $create(
     'libraries/create',
@@ -1367,7 +1367,7 @@ $ported(
 // long, so `{inLanguage}`'s two-letter constraint already keeps them apart — declared
 // before it all the same, with `search`, so that the three literals under /literature
 // read together. `publications/export` is an HTML table of the whole corpus, not a
-// file: docs/strangler.md said "spreadsheet" until this port, and that was inferred from
+// file: docs/laminas-exit.md said "spreadsheet" until this port, and that was inferred from
 // the name. See App\Controller\PublicationReportsController.
 $ported(
     'publications/export',
@@ -1441,7 +1441,7 @@ $ported(
 );
 
 // An individual song. Public, and the first of the three pages that render a comment
-// list and a CommentForm — the thing docs/strangler.md recorded this route as blocked on.
+// list and a CommentForm — the thing docs/laminas-exit.md recorded this route as blocked on.
 $ported(
     'composition',
     '/{sw_id}/{slug}',
@@ -1528,7 +1528,7 @@ $routes->add('comments/create.locale', new Route(
 // ---------------------------------------------------------------------------
 //
 // Every route here is a GET whose input is the query string, which is what let them
-// move ahead of the create/edit forms: the static-adapter obstacle docs/strangler.md
+// move ahead of the create/edit forms: the static-adapter obstacle docs/laminas-exit.md
 // recorded belonged to `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and
 // `EditPhraseForm` through a `NoRecordExists` validator, and none of these four forms
 // has one. (Removed 2026-08-14; the four take the adapter as a constructor argument.)
@@ -1843,7 +1843,7 @@ $routes->add('api-v3/phrase-unretire-method', new Route('/api/v3/phrases/{phrase
 // template that does not exist), `/library-imports/{id}/cancel` answered 404 (no
 // `cancelAction` anywhere in the chain), and `/libraries/{id}/batch-operations`
 // rendered a blank page (its .phtml was the four characters `<?php`). See
-// docs/strangler.md for the probe that measured each one.
+// docs/laminas-exit.md for the probe that measured each one.
 //
 // Every route here is library-scoped, and the per-library ACL is the real
 // authorization: the route guards all name `lib_user`, which is `is_default = 1`
@@ -2187,7 +2187,7 @@ $ported(
 // either** — it was deleted on 2026-08-21, the day after this batch shipped.
 //
 // It had **no guard entry**, so BjyAuthorize's default deny made the URL unreachable from
-// the day it was written; `docs/acl-rules.md` listed it under "routes with no guard entry
+// the day it was written; `docs/acl-baseline.json` listed it under "routes with no guard entry
 // (nobody can reach these)" as a real endpoint for as long as that table existed. Batch 13
 // wrote a Symfony declaration for it and withdrew it rather than commit a route that denies
 // everyone, which `tools/acl-table.php` reports as a standing warning. The question that

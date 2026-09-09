@@ -194,7 +194,7 @@ class SymfonyRouteAuthorizationTest extends TestCase
             if (! isset($guards[$laminas])) {
                 continue;
             }
-            //a null role is bjyauthorize's "everyone"; see docs/acl-rules.md
+            //a null role is bjyauthorize's "everyone"; see docs/acl-baseline.json
             if (! in_array(null, $guards[$laminas], true)) {
                 $holes[] = $name . ' is open but route/' . $laminas . ' is not public';
             }

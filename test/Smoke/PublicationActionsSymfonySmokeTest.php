@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * `CopyToMainCorpusSmokeTest` already drives the copy action end to end (GET writes
  * nothing, POST with the token copies, POST without does not) and runs unchanged against
  * the ported route; this file does not repeat it. What it adds is the other three routes
- * and, for all four, the three outcomes docs/strangler.md asks of a restricted port:
+ * and, for all four, the three outcomes docs/laminas-exit.md asks of a restricted port:
  * anonymous, signed in without the role, signed in with it. A status-code-only test would
  * pass against a guard that never ran, so each 200 also reads the serving note to prove
  * the page came from a Twig template and not from the bridge.

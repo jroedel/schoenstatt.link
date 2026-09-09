@@ -25,7 +25,7 @@ use function is_string;
 /**
  * GET|POST /{sw_id}/edit — the shrine (and association) edit form.
  *
- * **The first form route on the Symfony kernel**, and the one `docs/strangler.md`
+ * **The first form route on the Symfony kernel**, and the one `docs/laminas-exit.md`
  * called the largest single thing standing between here and the end of the
  * migration. Two claims in that document turned out to be one claim too many:
  *

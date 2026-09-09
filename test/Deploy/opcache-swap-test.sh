@@ -2,7 +2,7 @@
 #
 # Does a release symlink swap take effect, and does opcache_reset() force it?
 #
-# `docs/incident-2026-08-17-stale-opcache.md` said this could not be tested here —
+# `docs/DEPLOY.md` said this could not be tested here —
 # "the capsule cannot reproduce any of it: one pool, no release symlink". That was
 # wrong, and it mattered: four protections in tools/deploy.sh were built on an
 # unverified mechanism, one of which (breaking the index.php hardlink) is described

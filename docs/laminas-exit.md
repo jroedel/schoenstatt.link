@@ -1,0 +1,319 @@
+# The laminas exit
+
+The plan, and the rules, for taking schoenstatt.link from "laminas modules under a Symfony
+kernel" to an application with **no `laminas/*` package at all**. Decided 2026-09-09: the
+goal is to minimise dependencies; laminas's team is dwindling; there are **no exceptions**
+for individual laminas packages. This document replaces `strangler.md` (the first
+strangler, laminas-mvc → Symfony kernel, finished 2026-09-08) and the Phase C spec.
+
+Read this before touching `src/`, `config/symfony/routes.php`, `App\Kernel`, or anything
+under `module/*/src` that a Symfony-served request reaches.
+
+## 1. Where we are
+
+- **One front controller.** `public/index.php` runs `App\Kernel` (symfony/http-kernel,
+  hand-wired, no FrameworkBundle) unconditionally. Every page, form, API endpoint and the
+  404 is Symfony-served. `LegacyBridge`, the `SYMFONY_KERNEL` canary and laminas-mvc's
+  dispatch are gone; rolling back to a laminas front controller is not possible.
+  `curl https://schoenstatt.link/_health` → `{"status":"ok","kernel":"symfony"}`.
+- **Routes** are declared in `config/symfony/routes.php` (106 declarations through the
+  `$ported`/`$edit`/`$create`/`$delete`/`$libraryPage` helpers, plus JUser's and
+  JTranslate's route closures). HTML renders with **Twig** from `templates/` and
+  `module/{JUser,JTranslate}/templates/`.
+- **Authorization** is `symfony/security-core` (`App\Acl\AclVoter`, `Authorizer`,
+  `AclAssembler`) reading the roles, guards and rules still declared in `bjyauthorize`
+  config keys (`config/autoload/acl.global.php`, module configs). bjy-authorize and
+  laminas-permissions-acl were removed 2026-09-08. `docs/acl-baseline.json` is the diff
+  oracle; regenerate with `tools/acl-table.php --format=json` after any change.
+- **Authentication** is JUser's passwordless magic link, over laminas-authentication and
+  laminas-session today.
+- **What laminas still does**, and therefore what this plan removes: the service
+  container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`),
+  the database layer (`laminas-db`, under `SionModel\Db\Model\SionTable`), forms and
+  validation (`laminas-form`, `inputfilter`, `validator`, `filter`), translation
+  (`laminas-i18n`, under JTranslate), session, cache, the view-helper classes Twig bridges
+  (`laminas-view`), URL generation from the laminas router config, and laminas-mvc itself,
+  which nothing dispatches through but which still provides the container bootstrap.
+- `App\Laminas\ServiceBridge` is the seam: a lazily built laminas `ServiceManager` a
+  Symfony controller asks for laminas-side services. It disappears at step 7.
+
+## 2. The dependency picture (measured 2026-09-09)
+
+37 `laminas/*` packages are installed. The two facts that shape the order:
+
+**Removing laminas-mvc is necessary, not sufficient, for anything but the PHP pin.**
+`php composer.phar why-not laminas/laminas-servicemanager 4.0.0` names fourteen cappers.
+Five leave with step 0. The other ten are current laminas components **at their latest
+releases**, each requiring `laminas-servicemanager ^3.x` only:
+
+| package | latest | servicemanager constraint |
+|---|---|---|
+| laminas-cache 3.x | 3.14 (4.3 needs SM ^4.1) | `^3.21` |
+| laminas-filter | 3.4.0 | `^3.21` |
+| laminas-form | 3.24.2 | `^3.22.1` |
+| laminas-i18n | 2.33.0 | `^3.21`, **and `laminas-cache ^3.13`** |
+| laminas-inputfilter | 2.35.0 | `^3.21` |
+| laminas-router | 3.19.0 | `^3.14` |
+| laminas-session | 2.27.0 | `^3.23.1`, **and `laminas-cache ^3.13`** |
+| laminas-text | 2.13.0 | `^3.22` |
+| laminas-validator | 3.18.0 | `^3.21` |
+| laminas-view | 3.1.0 | `^3.21` |
+
+So servicemanager 4, laminas-cache 4 (and with it `psr/cache` 2/3 and FrameworkBundle)
+are unreachable by upgrading. They become reachable only by **removing** the packages,
+which is this plan. The PHP 8.5 pin (`config.platform.php` 8.4.24) has eleven blockers;
+step 0 removes six, step 1 and step 2 the rest (`laminas-math`, `laminas-serializer`, the
+three cache adapters, `slm/locale`).
+
+**Measure, never assume.** Before and after every step: `why-not php 8.5.0`,
+`why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
+— the count of the last is the progress metric.
+
+## 3. The order
+
+Steps are ordered so each is deployable alone and the least-coupled packages go first.
+Footprints are file counts outside `.phtml` and outside the laminas controllers step 0
+deletes.
+
+| step | removes | footprint | replacement |
+|---|---|---|---|
+| 0 | laminas-mvc, mvc-i18n, mvc-plugin-{identity,flashmessenger,prg}, diablomedia/laminas-twb-bundle, slm/locale | see §4 | own container bootstrap; own view-helper manager; `Laminas\Validator\Translator\Translator`; session-backed flash store; Twig mail templates |
+| 1 | laminas-captcha, recaptcha, text (**0 uses**, directly required); json (11 `Json::encode`), math (7 `Rand`), serializer (1), uri (18 `Uri\Http`), http (`Request` 9, `Client` 5), navigation (page classes used as data) | ~50 files | `json_encode`, `random_bytes`/`random_int`, HttpFoundation, `symfony/http-client`, an `App\View` page tree |
+| 2 | laminas-session (15), laminas-authentication (13, all JUser), laminas-cache + 3 adapters (20, behind `SionModel`'s persistent cache and the navigation cache) | ~48 files | HttpFoundation `Session`; JUser's own identity storage (the `Host` contract already abstracts it); `symfony/cache` APCu + filesystem. **Lifts the `psr/cache` 1 pin** |
+| 3 | laminas-i18n (23) | JTranslate is the layer | `symfony/translation` (6.4 already installed transitively); the precompiled PHP-array catalog format stays |
+| 4 | laminas-view (32 `AbstractHelper` subclasses), laminas-escaper | ~46 files | Twig extensions; `App\Laminas\EntityFormatter` already wraps the biggest helper |
+| 5 | laminas-form, inputfilter, validator, filter | 36 forms, ~170 files | Symfony Form + Validator. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
+| 6 | laminas-router (27) | every route is declared twice today | Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names |
+| 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
+| 8 | laminas-db (96 files; `SionTable` is 2,413 lines over `TableGateway`/`Sql`) | the largest | Doctrine DBAL (decision pending, §6) |
+
+`laminas-hydrator`, `config`, `loader`, `translator` are transitive glue and leave with
+their parents. Steps 2 to 8 rewrite code in the **shared submodules** (SionModel, JUser,
+JTranslate); see §6 before starting any of them.
+
+## 4. Step 0 in detail: removing laminas-mvc
+
+### 4.1 What laminas-mvc still provides
+
+- **The container bootstrap.** `Laminas\Mvc\Service\ServiceManagerConfig`,
+  `ModuleManagerFactory` and `ServiceListenerFactory` are laminas-mvc classes. They are
+  copied at 22 call sites: `bin/console`, `App\Laminas\ServiceBridge`,
+  `tools/acl-table.php`, `test/Fuzz/FormRepository`, 18 integration tests.
+- **Service ids the Symfony side still asks the bridge for**: `ViewHelperManager` (13:
+  `App\Laminas\ViewHelpers`, the `isAllowed` helper from `EntityCreate/Show/Edit/Delete`
+  and `LiteratureController`, `translate`/`countryName` in three Schoenstatt factories),
+  `ControllerPluginManager` (15, the `nowMessenger` plugin), `MvcTranslator` (11),
+  `Application` (13, all guarded by `has()` or already shadowed by
+  `App\Books\{LibraryScopedForms,CheckoutForms,CurrentLibrary}` and `App\View\NavigationTree`),
+  `ViewRenderer` (4). `Router` survives — laminas-router's own ConfigProvider provides it.
+- **Two `.phtml` are still rendered**: `sion-model/mailing/action-email` and the
+  `books/libraries/email-book-list` partial, by `SionModel\Mailing\Mailer::renderTemplate()`
+  for `bin/console books:send-notices`. The other 116 are dead.
+- **Four dead `onBootstrap()` hooks** (Application, Books, Schoenstatt, SionModel,
+  JTranslate's dispatch listener) and `Application\Session\SessionBootstrap`; every one has
+  a Symfony-side replacement already (`GdprCookieListener`, `NavigationTree`/`SiteChrome`,
+  `LibraryPage`, `App\Http\CspListener`, `Kernel::upgrade()`, `TranslatorConfigurator`,
+  `PhraseFlushListener`, `SessionListener`).
+- **21 laminas controllers** (4,456 lines; 18 in the app modules, 3 in SionModel), five
+  `LazyControllerFactory` copies and their factories.
+- **The flash/now layer**: `Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger` instantiated
+  at 10 `src/` sites and in `App\Laminas\HostMessages`; 65 references to its namespace
+  constants; JTranslate's `NowMessenger` plugin and the two rendering helpers, reached from
+  Twig only via `flash_messages()`/`now_messages()` in `layout.html.twig`.
+- **The translator decorator** `Laminas\Mvc\I18n\Translator`. No route has a translatable
+  segment, so mvc-i18n's router delegator is unused; `laminas-validator` already ships the
+  equivalent adapter (`Laminas\Validator\Translator\Translator`).
+- **TwbBundle** is reached from live code in two places: `ViewHelpers::label()` (one Twig
+  call site and `EntityFormatter`) and `SionModel\Form\View\Helper\SionFormRow`, which
+  nothing uses since `BootstrapFormRenderer`. **SlmLocale**: no Symfony-side code reads its
+  config; `App\Http\LocaleListener` reproduces it and keeps the cookie *name* `slm_locale`.
+- `laminas-mvc-plugin-prg` has zero call sites; `identity()` only in dead controllers.
+
+### 4.2 Design
+
+- `App\Laminas\ContainerFactory::build(array $appConfig, ContainerOptions)` — registers
+  `EventManager`, `SharedEventManager`, `ModuleManager` (DefaultListenerAggregate +
+  ServiceListener, as laminas-mvc's factory does minus the MVC services), loads modules.
+  Options: config caches on/off; pre-built `PhraseFlush`/`CacheFlushQueue` instances.
+  Used by `ServiceBridge`, `bin/console`, `tools/acl-table.php`, `FormRepository` and a
+  `test/Integration/LaminasContainer.php` helper.
+- `App\Laminas\ViewHelperManagerFactory` under the id `ViewHelperManager`: builds
+  `HelperPluginManager` from `view_helpers` config, wires the router into the `url` helper
+  (`FormatEntity`, `EditPencil`, `EditPencilNew` call `$this->view->url()`), attaches a
+  bare `PhpRenderer` so `$this->view` exists. Translator injection is automatic while the
+  `MvcTranslator` id exists — keep that id through step 0.
+- `Laminas\Validator\Translator\Translator` registered as `MvcTranslator` (and as
+  `Laminas\Mvc\I18n\Translator` for SionModel's factory map) around the container's
+  `Laminas\I18n\Translator\TranslatorInterface`. `TranslatorConfigurator`'s delegator moves
+  to that canonical interface — delegate the canonical id, never an alias (aliases resolve
+  before delegators are looked up; a delegator on an alias silently never runs).
+- `SionModel\Messaging\FlashMessages`: a `laminas-session` `Container` under the **same**
+  key `FlashMessenger`, the same five namespace strings, so a flash written by the release
+  being replaced renders in the release that replaces it. One instance per request
+  (`HostMessages` memoises; a second instance drains the first's messages). `NowMessenger`
+  becomes a plain per-request service. Rendering moves into `JTranslate\Twig\JTranslateExtension`.
+  `JUser\Host\Severity` and `JTranslate\Host\Severity` keep the strings; the two
+  host-contract tests pin them as literals.
+- Mail templates: port the two `.phtml` to Twig behind a two-method
+  `TemplateRendererInterface` on `SionModel\Mailing\Mailer` (recommended; JUser's mailer is
+  Twig already), byte-compared with `books:send-notices --dry-run`. Fallback: a 40-line
+  PhpRenderer factory.
+- `App\View\Label` replaces `TwbBundleLabel`; `SionFormRow` is deleted.
+- Delete: the 18 app-module controllers, factories, `onBootstrap()` hooks,
+  `SessionBootstrap`, `GdprStrategy`, `FixNavigationPages`, `RequestUri`, the four
+  route-aware form factories and `LibraryInfoFactory`, 116 `.phtml`, the whole `RestApi`
+  module (its one route is shadowed), the `controllers`/`controller_plugins`/`view_manager`
+  config keys, `sionmodel.global.php`'s `inject_headers_event`, the `listeners` key.
+  **Keep `router` config** until step 6.
+- `public/index.php`: the install check becomes `class_exists(App\Kernel::class)`.
+- Shared libraries: JTranslate drops `laminas-mvc` and `laminas-mvc-plugin-flashmessenger`
+  from `require`, deletes its plugin, rendering helpers, `LazyControllerFactory` and
+  `wireEndOfRequestFlush()`, keeps the translator half of `onBootstrap()`. JUser drops
+  `laminas-mvc` from `require-dev`. SionModel: `SionCacheTrait` attaches to the literal
+  `'finish'`; `MailerFactory` takes the renderer interface; `SionFormRow` and the
+  `neilime/zf2-twb-bundle` requirement go; its three controllers, `ErrorListener`,
+  `RequestContext::attributesFor()`, `Mvc\CspListener`, `RouteNameFactory` and
+  `Module::onBootstrap()` are deleted **or** moved to a `SionModel\Bridge\Laminas\`
+  namespace excluded from PHPStan — depends on §6 Q1.
+
+### 4.3 Batches
+
+1. **Delete what nothing dispatches** (app modules only, no dependency change): ~9,000
+   lines, zero new code. ACL diff must show exactly one change (the `api-route-not-found`
+   guard). Deploy.
+2. **Replace the runtime uses** in `src/` and tests (everything in §4.2 that is new code).
+   Our factories shadow laminas-mvc's under the same ids, so this deploys with the package
+   still installed. Deploy; send one notice with `--dry-run` before and after and diff.
+3. **Submodule PRs** (JTranslate, SionModel, JUser), then pointer bumps.
+4. **Composer**: remove the seven packages and the two `repositories` fork entries; add the
+   now-direct requirements (`laminas-servicemanager`, `laminas-modulemanager`,
+   `laminas-eventmanager`, `laminas-http` — `App\JUser\Host\RouteResolver` matches a
+   `Laminas\Http\Request` — and `laminas-view`). `composer update --lock` in the capsule,
+   `--no-dev` rehearsal, `composer audit --locked`. Deploy.
+5. **Docs**: update this file's §1 and §3.
+
+### 4.4 Verification specific to step 0
+
+- Grep `has('Application')` and `getMvcEvent` to zero after batch 2; the failure mode of
+  everything here is silence, not an error.
+- Flash continuity across the batch-2 deploy: write a flash on the old release, deploy,
+  see it render.
+- `bin/console` builds its container through `ContainerFactory` with caches **off**; no
+  `data/config/*` file may appear owned by the deploy user after a console run.
+- PHPStan level 0 gains no `class.notFound`; level 8 on the Symfony-side paths stays clean.
+- `why-not php 8.5.0` lists five packages afterwards; `why-not laminas-servicemanager 4.0.0`
+  lists ten.
+
+## 5. Rules for every step
+
+- **Bootable at every commit; deployable at every batch.** Production has no test suite
+  of its own; `./tools/ci-local.sh` is the stricter check (it runs smoke, fuzz and the
+  smoke-prod script, which CI cannot), and the PR body says so.
+- **Replace behind the same id first, remove the package last.** A new implementation
+  shadows the laminas one for at least one deploy before the package leaves
+  `composer.json`.
+- **One PR per repository**, submodules first, base `modernization`, superproject last
+  with the pointer bumps (workflow in `CLAUDE.md`).
+- **Parity before deletion.** Where a replacement must produce the same bytes (rendered
+  HTML, a mail body, a URL, an ACL answer), pin it with a parity test that drives both,
+  delete the old side, and then delete the parity test's old half.
+- **Authorization changes are diffed, not just tested**: `tools/acl-table.php --format=json`
+  against `docs/acl-baseline.json`. A rule that quietly stops matching lets *more* people
+  in and nothing fails.
+- **Forms**: `php composer.phar fuzz` — contract "no new gaps"; regenerate the baseline
+  only with the diff read line by line.
+- **The failure mode is silence.** Every laminas-shaped fallback (`has('Application')`,
+  an MvcEvent read, a helper's early return) fails by doing nothing. Grep for the shape,
+  and measure with the general log or a rendered page in a non-English locale, signed in.
+- **Docs**: a doc states what is true now and the rules. Dated narrative goes to git.
+
+## 6. Open decisions
+
+1. **The shared libraries and patres.** Steps 2 to 8 rewrite SionModel, JUser and
+   JTranslate. patres consumes them on laminas. Either patres follows (the libraries drop
+   laminas in place, patres upgrades at its own pace against tagged releases) or the
+   libraries fork here. Unanswered; blocks step 0's SionModel decision (Bridge namespace
+   vs delete) and everything after.
+2. **Database layer**: Doctrine DBAL (recommended) or a thin PDO wrapper of our own.
+3. **Forms**: Symfony Form + Validator (recommended) or an own minimal layer.
+4. **Mail templates in step 0**: Twig (recommended) or a PhpRenderer factory.
+
+## 7. How the Symfony side is built (reference)
+
+### Adding a route
+
+1. Controller under `src/`, namespace `App\`, `declare(strict_types=1)`, PHPStan **level 8**,
+   PSR-12 (`tools/phpcs-clean-paths.txt`). Factory in `App\Kernel::container()`. Inject
+   `App\Laminas\ServiceBridge` only if it needs a laminas-side service or the merged
+   config; `/_health` must keep paying nothing.
+2. Declare it in `config/symfony/routes.php` through `$ported()` (or `$edit`/`$create`/
+   `$delete`/`$libraryPage`). The **name is load-bearing**: `App\Http\SymfonyRoute::routeName()`
+   strips the `.locale` suffix and the layout compares it with the `navigation` config to
+   mark the active item. Pass an `App\Authorization\RouteAccess` — required:
+   `RouteAccess::guardedBy('route/<name>')` names a guard resource in the ACL config;
+   `openToEveryone('<why>')` only when there is nothing to consult. JSON routes pass
+   `DenialStyle::Json`. Declare `_text_domain` if the page's phrases live in a module
+   domain. `App\Http\LocalePrefix` decides whether the unprefixed twin 302s (default yes;
+   the opt-out set is pinned by name).
+3. A route that declares no `RouteAccess` raises `UndeclaredRouteAccess`;
+   `test/Integration/SymfonyRouteAuthorizationTest` walks the whole collection and
+   `tools/acl-table.php` reports `SILENT BYPASS RISK`.
+4. Smoke test the three outcomes of a restricted route (anonymous, signed in without the
+   role, with it) — `test/Smoke/MagicLinkSignIn` gives a real session; a status-code-only
+   test passes against a guard that never ran.
+5. Regenerate `docs/acl-baseline.json` and read the diff.
+
+### Authorization at request time
+
+`App\Http\AuthorizationListener` on `kernel.request` at priority **-16**: below
+`RouterListener` (32), below `LocaleListener` (0, so the 403 renders in the negotiated
+locale), and below `App\Http\LocalePrefixListener` (-8, so the unprefixed form redirects
+to `/en/...` *before* the denial records the return path). The listener resolves its guard
+through a closure because `App\Kernel::routeUrl()` reads the request's base URL. Denial
+(`App\Authorization\Denial`): anonymous → `302 /en/user/login?redirect=<path incl. query>`;
+signed in without the role → `403` from `templates/error/403.html.twig`. The **identity**
+picks the branch, never the failed check. The redirect carries the query string
+percent-encoded and the path literal; JUser's `RouteResolver` accepts only what the
+laminas router matches (locale prefix stripped, matched on a **clone** with an empty base
+URL — `RouteUrl` mutates the shared router's base). Default roles `lib_user`, `pub_user`,
+`sch_user`, `bib_user` are `is_default = 1`: a guard naming one means "signed in", and the
+per-row check (`show`/`checkout` on libraries) is the real protection; `administrate` is
+granted on every library. The identity's roles are read from `linkUser()` (names), not
+`rolesList` (ids).
+
+### Twig
+
+- `templates/layout.html.twig` is the chrome: extend it, define `page_title`,
+  `breadcrumbs`, `block content`, `block inline_scripts`. **Every top-level `{% set %}` in
+  the layout is prefixed `chrome_`** — an unprefixed one shadows the controller's variable
+  in every page (it happened: `languages`).
+- `strict_variables` is on: a reproduced helper must reproduce its **guards**, not only its
+  output (deleted-entity placeholders carry only `{isDeleted, key, name}`). `autoescape` is
+  on; markup-returning functions are `is_safe: html`. Compile cache only when
+  `data/cache/twig` is writable, `auto_reload` on.
+- `translate()` (`App\Twig\LaminasExtension`): asks the page's `_text_domain` with
+  `translate()` — the call that **files** an unknown phrase — then reads `default` from the
+  compiled catalog (`catalogValue()`, fires no event). Discovery is single-domain on
+  purpose; a second `translate()` call is a second write. `<title>` is translated by the
+  layout (`page_title_translate = false` opts out); navigation labels use `default`;
+  breadcrumb labels are translated unless `'translate': false` (record data). A bridged
+  laminas helper that translates needs its domain set in the same commit
+  (`ViewHelpers::useTextDomain()`).
+- Extensions: `LaminasExtension` (`laminas_path`, `translate`, `is_allowed`, formatting
+  functions, `flash_messages`, `now_messages`), `ChromeExtension` (`current_route`,
+  `navigation_items`, `language_options`, `canonical_links`, `search_box`, `display_name`,
+  `csp_nonce`, `json_ld`). `App\View\SiteChrome` makes the chrome's decisions;
+  `App\View\PreferredUrls` answers a record's canonical URL; `App\Laminas\RouteUrl`
+  assembles laminas URLs with the locale prefix.
+- Forms render through `SionModel\Form\BootstrapFormRenderer` (`form_row`, `form_open`…
+  via `SionModel\Twig\FormExtension`), byte-compatible with the old TwbBundle markup.
+
+### Per-request laminas bridging (until step 7)
+
+`ServiceBridge` builds the laminas container lazily and never bootstraps it. Two things
+that used to happen on `MvcEvent::EVENT_FINISH` are Symfony listeners on
+`kernel.terminate`: `App\Http\PhraseFlushListener` (missing phrases → `trans_phrases`,
+armed by `TranslatorConfigurator`) and `App\Http\SionCacheFlushListener` (draining
+`SionModel\Cache\CacheFlushQueue`). `App\Laminas\TranslationsTableConfigurator` sets the
+module → catalog-directory map on the table itself, because a successful write redirects
+and never builds a translator. The session starts in `App\Http\SessionListener`.

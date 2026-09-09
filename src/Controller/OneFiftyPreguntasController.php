@@ -72,7 +72,7 @@ final class OneFiftyPreguntasController
                     //`default` on 2026-08-10, the day phrase discovery started working on
                     //Symfony-served routes. Same defect as the laminas breadcrumb's
                     //publication titles, one crumb wide; see
-                    //docs/api-change-requests-response.md §12 and Application\Module's
+                    //docs/api-v3.md §12 and Application\Module's
                     //LABEL_IS_DATA, which covers this page's *laminas* navigation entry.
                     'label'     => '150 preguntas sobre Schoenstatt',
                     'href'      => $this->urls->path('publications/one-fifty-preguntas'),
