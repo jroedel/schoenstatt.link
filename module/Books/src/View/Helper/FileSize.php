@@ -1,7 +1,6 @@
 <?php
 namespace Books\View\Helper;
 
-use Laminas\View\Helper\AbstractHelper;
 
 /**
  * File Size View Helper
@@ -9,7 +8,7 @@ use Laminas\View\Helper\AbstractHelper;
  * @category Helper
  * @author   Chuck "MANCHUCK" Reeves <chuck@manchuck.com>
  */
-class FileSize extends AbstractHelper
+class FileSize
 {
     protected $count = 0;
     public function __invoke($value)
