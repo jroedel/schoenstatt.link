@@ -1373,14 +1373,13 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     }
 
     /**
-     * The laminas router, base URL already pointed at the request's locale prefix.
-     * Shared, because setting that base URL twice on the same router service would
-     * double the prefix.
+     * The application's URL generator. Shared so that one RequestContext — carrying the
+     * request's base URL, and its scheme and host once HostUrls has asked for an absolute
+     * URL — answers every link on the page.
      */
     private function routeUrl(): RouteUrl
     {
         return $this->routeUrl ??= new RouteUrl(
-            $this->laminas(),
             $this->requests()->getMainRequest()?->getBaseUrl() ?? ''
         );
     }

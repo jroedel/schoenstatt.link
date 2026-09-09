@@ -234,8 +234,8 @@ final class TemplatesCompileTest extends TestCase
 
         return (new TwigFactory())->create(
             $bridge,
-            new ViewHelpers($bridge, fn (): RouteUrl => new RouteUrl($bridge, '')),
-            new RouteUrl($bridge, ''),
+            new ViewHelpers($bridge, fn (): RouteUrl => new RouteUrl('')),
+            new RouteUrl(''),
             $requests,
             new CspNonce(),
             new HostMessages()

@@ -6,7 +6,7 @@ use Laminas\Db\Adapter\AdapterInterface;
 use Cocur\Slugify\Slugify;
 use Laminas\Db\ResultSet\ResultSetInterface;
 use Books\Exception\DuplicateKeyException;
-use Laminas\Router\RouteStackInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Expression;
 use SionModel\Service\ActingUserProviderInterface;
@@ -18,15 +18,15 @@ class DictionaryTable extends SionTable
     const DICTIONARY_TITLE_FORMAT = "Fr. Kentenich dictionary German to %s";
 
     /**
-     * @var RouteStackInterface $router
+     * @var UrlGeneratorInterface $urls
      */
-    protected $router;
+    protected $urls;
 
     /** Scheme and host for the absolute URLs the schema.org projection carries. */
     protected string $canonicalBaseUrl;
 
     /**
-     * The router arrives as an argument. It used to be pulled out of the container this
+     * The URL generator arrives as an argument. It used to be pulled out of the container this
      * constructor was handed, which is the pattern SionTable stopped supporting when it
      * stopped taking one: a data class asking a container for a router is a factory's job
      * done in the wrong place.
@@ -38,10 +38,10 @@ class DictionaryTable extends SionTable
         EntitiesService $entities,
         array $config,
         ?ActingUserProviderInterface $actingUserProvider,
-        RouteStackInterface $router,
+        UrlGeneratorInterface $urls,
         string $canonicalBaseUrl = ''
     ) {
-        $this->router           = $router;
+        $this->urls             = $urls;
         $this->canonicalBaseUrl = rtrim($canonicalBaseUrl, '/');
         parent::__construct($dbAdapter, $entities, $config, $actingUserProvider);
     }
@@ -124,21 +124,18 @@ class DictionaryTable extends SionTable
             return null;
         }
 
-        //`Laminas\View\Helper\Url` until laminas-view was removed; its `__invoke($name,
-        //$params)` is exactly this assemble() call and nothing else.
+        //The **unprefixed** route deliberately: `dictionary/inLanguage` serves
+        //`/dictionary/{inLanguage}`, its `.locale` twin serves `/{_locale}/dictionary/…`,
+        //and this URL has never carried a locale segment. It is a schema.org
+        //`inDefinedTermSet` — one public identifier for the term set, not one per language
+        //the site is read in — so generating the twin here would silently split it five ways.
         //
-        //The host used to come from `Laminas\View\Helper\ServerUrl`, which reads the
-        //request's own scheme and host out of $_SERVER. This is the canonical host instead:
-        //the value goes into a schema.org `inDefinedTermSet`, which is a public identifier
-        //for the term set and must not vary with the host that happened to serve the page.
-        //In production the two are the same string; they differ only where the site answers
-        //on another name, which is exactly the case worth pinning.
+        //The host is the canonical one rather than the request's, which is what
+        //`Laminas\View\Helper\ServerUrl` used to supply: the identifier must not vary with
+        //the host that happened to serve the page. In production the two are the same string.
         if (! isset($this->inLanguageUrls[$inLanguage])) {
             $this->inLanguageUrls[$inLanguage] = $this->canonicalBaseUrl
-                . $this->router->assemble(
-                    ['inLanguage' => $inLanguage],
-                    ['name' => 'dictionary/inLanguage']
-                );
+                . $this->urls->generate('dictionary/inLanguage', ['inLanguage' => $inLanguage]);
         }
         return $this->inLanguageUrls[$inLanguage];
     }

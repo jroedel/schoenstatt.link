@@ -246,8 +246,8 @@ class AssignmentsTableTest extends TestCase
 
         return (new TwigFactory())->create(
             $this->bridge(),
-            new ViewHelpers($this->bridge(), fn (): RouteUrl => new RouteUrl($this->bridge(), '')),
-            new RouteUrl($this->bridge(), ''),
+            new ViewHelpers($this->bridge(), fn (): RouteUrl => new RouteUrl('')),
+            new RouteUrl(''),
             $requests,
             new CspNonce(),
             new HostMessages()
