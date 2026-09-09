@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Acl\AclProvider;
+use App\Http\SymfonyRoutes;
 use App\JUser\Host\RouteResolver;
 use App\Laminas\ContainerFactory;
 use App\Laminas\ContainerServices;
@@ -58,10 +59,7 @@ class RouteMatchParityTest extends TestCase
      * ACL knows, so parity below is exact; this list exists to assert *why* that mapping is
      * required — see {@see testTheRenamedRoutesAreOnlyAclAddressableUnderTheLaminasName}.
      */
-    private const KNOWN_RENAMES = [
-        'sm-cache-status'            => 'sion-model/cache-status',
-        'sm-clear-persistent-cache'  => 'sion-model/clear-persistent-cache',
-    ];
+    private const KNOWN_RENAMES = SymfonyRoutes::ACL_NAME;
 
     /** Matched by laminas, deliberately not a destination here. */
     private const KNOWN_REFUSALS = ['comments/create'];
@@ -100,7 +98,7 @@ class RouteMatchParityTest extends TestCase
     }
 
     /**
-     * The reason RouteResolver::ACL_NAME has to exist: for these two pages the ACL knows the
+     * The reason SymfonyRoutes::ACL_NAME has to exist: for these two pages the ACL knows the
      * laminas name and not the Symfony one, so returning Symfony's would deny a user a page
      * they can reach. If that ever stops being true the mapping is dead weight and should go.
      */
@@ -117,7 +115,7 @@ class RouteMatchParityTest extends TestCase
                 $authorizer->hasResource('route/' . $symfonyName),
                 sprintf(
                     'route/%s is now an ACL resource too, so RouteResolver no longer needs to '
-                    . 'rewrite it; drop the entry from ACL_NAME.',
+                    . 'rewrite it; drop the entry from SymfonyRoutes::ACL_NAME.',
                     $symfonyName
                 )
             );

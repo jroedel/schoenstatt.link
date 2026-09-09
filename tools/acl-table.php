@@ -81,36 +81,41 @@ function loadMergedConfig(): array
 }
 
 /**
- * Every route name the router knows, including nested children, keyed by the
- * `parent/child` name bjyauthorize matches on. Guards name routes, not paths.
+ * Every route name a guard can name, from the **Symfony** route collection.
  *
- * The value records whether the name can actually be *matched*. A route with
- * `child_routes` becomes a Part route, and TreeRouteStack::routeFromArray sets
- * `may_terminate` to false unless the config says otherwise, so such a parent
- * name is never the matched route name — it is a namespace, not an endpoint.
- * Reporting one as "guarded by nobody" would be noise, so they are separated.
+ * Guards name routes, not paths, and until step 6 this walked the laminas `router` config
+ * to learn which names existed — nested `child_routes` and all. That config is on its way
+ * out and nothing else reads it, so the question is asked of the routes the application
+ * actually serves.
  *
- * @param array<string, mixed> $config
+ * Two adjustments make the two vocabularies line up:
+ *
+ *  - a `.locale` twin is the same page as its bare form, so the suffix is stripped and the
+ *    two collapse onto one name;
+ *  - two pages were renamed when they were ported and the ACL still keys on the laminas
+ *    name — {@see App\Http\SymfonyRoutes::ACL_NAME}. Without that map their guards would
+ *    read as naming routes that do not exist.
+ *
+ * Measured 2026-09-09 before the switch: of 116 guard entries, 112 name a Symfony route
+ * directly, 2 are the renames above, and 2 name pages that no longer exist at all
+ * (`assignments/assignment`, `roles/role` — both 404, filed in docs/BACKLOG.md).
+ *
+ * The value used to record whether a name was a *matchable* endpoint rather than a Part
+ * route acting as a namespace. Symfony has no such distinction — every route in the
+ * collection is an endpoint — so every value here is true, and the field is kept only
+ * because the table and the guard rows still read it.
+ *
  * @return array<string, bool> route name => is a matchable endpoint
  */
-function routeNames(array $config): array
+function routeNames(): array
 {
-    $names = [];
-
-    $walk = static function (array $definitions, string $prefix) use (&$walk, &$names): void {
-        foreach ($definitions as $name => $definition) {
-            $full     = $prefix === '' ? (string) $name : $prefix . '/' . $name;
-            $hasChild = isset($definition['child_routes']) && is_array($definition['child_routes']);
-
-            $names[$full] = ! $hasChild || ($definition['may_terminate'] ?? false) === true;
-
-            if ($hasChild) {
-                $walk($definition['child_routes'], $full);
-            }
-        }
-    };
-
-    $walk($config['router']['routes'] ?? [], '');
+    $symfony = symfonyRoutes();
+    $names   = [];
+    foreach (array_keys($symfony['routes']) as $name) {
+        $bare = preg_replace('/\.locale$/', '', (string) $name) ?? (string) $name;
+        $names[App\Http\SymfonyRoutes::ACL_NAME[$bare] ?? $bare] = true;
+    }
+    ksort($names);
 
     return $names;
 }
@@ -846,7 +851,7 @@ function sortRoleList(array $roles): array
 $config = loadMergedConfig();
 $bjy    = $config['bjyauthorize'] ?? [];
 
-$routes       = routeNames($config);
+$routes       = routeNames();
 $guards       = routeGuards($config);
 $hierarchy    = readRoleHierarchy($config, $warnings);
 $parents      = $hierarchy['roles'];
