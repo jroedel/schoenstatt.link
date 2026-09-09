@@ -24,7 +24,7 @@ use function is_string;
  *     comment-comments-text        → text
  *     comment-reviews-publication  → publication
  *
- * — and the fifth is why this class exists rather than a constant. docs/strangler.md
+ * — and the fifth is why this class exists rather than a constant. docs/laminas-exit.md
  * recorded composition and text as the entities blocked on the comment form, because
  * those are the two whose `.phtml` most obviously renders one; `publication` was
  * missed, and a hardcoded list written from that document would have shipped a

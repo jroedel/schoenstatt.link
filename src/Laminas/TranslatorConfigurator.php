@@ -56,7 +56,7 @@ use function str_replace;
  * one reason: **it is lazy**. Building this needs TranslationsTable (a database
  * query for the locale list) and the module manager, and a listener would spend that
  * on every ported request including `/_health` and the two maintenance endpoints —
- * exactly the cost docs/strangler.md says those must not pay. A delegator runs when
+ * exactly the cost docs/laminas-exit.md says those must not pay. A delegator runs when
  * something first asks for the translator, which is precisely when it is needed.
  *
  * It also cannot be forgotten. Templates reach the translator through

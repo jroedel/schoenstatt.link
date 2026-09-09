@@ -51,7 +51,7 @@ use function stripos;
  * Every badge is a count. A fourth used to call `ProblemService::autoFixProblems()` for
  * the auto-fix entry — a dry run, not a write, verified at the time — but that entry had
  * been commented out of the `pages` config for years, so the branch never ran, and the
- * route itself was retired on 2026-09-08 (docs/strangler.md).
+ * route itself was retired on 2026-09-08 (docs/laminas-exit.md).
  */
 final class LibraryController
 {

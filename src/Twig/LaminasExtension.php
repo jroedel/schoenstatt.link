@@ -144,7 +144,7 @@ final class LaminasExtension extends AbstractExtension
      * phrase lives in one domain or agrees across several — the case for every phrase
      * on every ported page, asserted across all five locales by
      * test/Integration/PortedRouteTranslationTest and by the both-front-controllers
-     * diff in docs/strangler.md.
+     * diff in docs/laminas-exit.md.
      *
      * This is a *superset* of what laminas does internally rather than a mirror of it,
      * and that is the one deliberate divergence in the Twig layer. It cannot lose a
@@ -506,7 +506,7 @@ final class LaminasExtension extends AbstractExtension
         //helper looks in `default`, finds nothing, and returns the English source. On
         ///en/SL202186L that is indistinguishable from working; on /es/SL202186L the whole
         //bibliographic panel came out as "Number of pages" where laminas says "Número de
-        //páginas". Exactly the trap docs/strangler.md records from batch 3, caught the
+        //páginas". Exactly the trap docs/laminas-exit.md records from batch 3, caught the
         //same way — by diffing all five locales rather than English.
         $this->helpers->useTextDomain($this->textDomain() ?? self::DEFAULT_TEXT_DOMAIN);
 

@@ -622,7 +622,7 @@ PHPEOF
         printf '%s' "$WARM_INTERNED" | while IFS= read -r line; do dim "  $line"; done
         dim "  Append-only buffer, so these are high-water marks and the warmest"
         dim "  readings that exist. 90%+ means it filled and silently stopped interning;"
-        dim "  see docs/php-85.md and tools/opcache-sample.sh."
+        dim "  see docs/DEPLOY.md and tools/opcache-sample.sh."
     fi
 
     dim "segments seen: ${#seg_state[@]} (census expected ${EXPECTED_SEGMENTS:-1})"
@@ -810,7 +810,7 @@ if [ "$ACTION" = reset ]; then
     if [ -n "$CURRENT_SHA" ]; then
         step "Confirming the live site is running $CURRENT"
         assert_live_revision "$CURRENT_SHA" \
-            || fail "segments were reset but /_health still disagrees. A pool is not being reached; read docs/incident-2026-08-17-stale-opcache.md."
+            || fail "segments were reset but /_health still disagrees. A pool is not being reached; read docs/DEPLOY.md."
     fi
     exit 0
 fi
@@ -1126,7 +1126,7 @@ dim "exception names the release that produced it (immutable now, unlike phploy'
 # the case this comment already said "changes nothing at all". Kept because it costs
 # one copy of a 3 KB file per deploy and removing it would be a change to the swap
 # made on the strength of one measurement. Delete it once the open question in
-# docs/incident-2026-08-17-stale-opcache.md is closed.
+# docs/DEPLOY.md is closed.
 rsh "cd $NEW_ABS/public && cp -p index.php index.php.tmp && mv -f index.php.tmp index.php && touch index.php" \
     || warn "could not break the index.php hardlink; a stale opcode cache is likelier."
 dim "public/index.php unlinked from the previous release and re-stamped"
@@ -1323,7 +1323,7 @@ if ! assert_live_revision "$SHA"; then
   production docroot at the worst possible moment — which on 2026-08-17 shipped a
   parse error that 30 requests then mistook for 30 successful resets.
 
-  Read docs/incident-2026-08-17-stale-opcache.md if it does not converge.
+  Read docs/DEPLOY.md if it does not converge.
   Do NOT run migrations until /_health reports $SHA."
 fi
 
@@ -1373,7 +1373,7 @@ if [ -n "$PENDING_DESTRUCTIVE" ]; then
       ./tools/deploy.sh --migrations     # confirm what is still pending
       bash tools/migrate.sh apply --phase=post
 
-  Do not force it. Read docs/incident-2026-08-17-stale-opcache.md for what
+  Do not force it. Read docs/DEPLOY.md for what
   happens when a DROP meets code that has not caught up."
         fi
         [ "$round" -lt 3 ] && sleep 45
@@ -1413,7 +1413,7 @@ else
         warn "The site stays on $REL, which at least matches the database."
         info ""
         info "Diagnose before acting. If smoke reported zero-byte 200s, read"
-        info "docs/incident-2026-08-17-stale-opcache.md first — a stale opcode cache"
+        info "docs/DEPLOY.md first — a stale opcode cache"
         info "looks exactly like broken code and is fixed by re-running the deploy."
         info "To override once you have decided: ./tools/deploy.sh --rollback --to $PREV --allow-incompatible"
     elif [ -n "$PREV" ]; then

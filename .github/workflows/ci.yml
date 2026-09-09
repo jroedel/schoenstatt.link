@@ -8,7 +8,7 @@
 # ceiling composer must resolve *against*, while the runtime underneath is
 # free to be newer. `composer install` verifies the lock against that recorded
 # override, which is exactly why the install below still passes here and on the
-# server. docs/php-85.md has the ceiling in full.
+# server. docs/DEPLOY.md has the ceiling in full.
 #
 # The consequence for these jobs is the point: linting and testing on 8.5 is
 # now the only thing standing between an 8.5-only fatal and production, because

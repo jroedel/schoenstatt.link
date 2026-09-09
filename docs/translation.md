@@ -1,406 +1,221 @@
 # Translation
 
-How the site gets translated, what JTranslate is doing underneath, and what to
-check before you write a Twig template that shows text to a human.
-
-**Supersedes [translation-migration.md](translation-migration.md)**, which is now
-history: it argued about JTranslate's *future scope* — what 3.0 removes, whether
-`symfony/translation` takes the rest — at a moment when the mechanism itself was
-changing weekly. The mechanism has settled. This file describes it as it is.
-
-The library's own [README](../module/JTranslate/README.md) and
-[UPGRADE.md](../module/JTranslate/UPGRADE.md) remain the reference for JTranslate
-as a *library*: its configuration keys, its commands, its 3.0 removal list. This
-file is about the application — how these five locales actually reach a page, and
-which of the ways to break that have already been found the hard way.
-
-Related: [strangler.md](strangler.md) for the two front controllers,
-[view-scripts.md](view-scripts.md) for `.phtml` → Twig mechanics,
-[caching.md](caching.md) for the APCu layer, [api-v3.md](api-v3.md) for the phrase
-API that automated translators use.
+How five locales reach a page, what JTranslate does underneath, and what to check before a
+Twig template shows text to a human. JTranslate's own
+[README](../module/JTranslate/README.md) and [UPGRADE.md](../module/JTranslate/UPGRADE.md)
+describe it as a *library*; this file is about the application. Related:
+[caching.md](caching.md) for the APCu layer, [api-v3.md](api-v3.md) for the phrase API
+automated translators use, [laminas-exit.md](laminas-exit.md) for where the translator is
+going.
 
 ## What JTranslate is for
 
-Five locales, and **the source text is the key**. There is no `home.title` style
-message id anywhere: the English sentence in the template *is* the lookup key, and
-a translation is a row keyed by its hash.
+**The source text is the key.** There is no `home.title` message id: the English sentence in
+the template is the lookup, and a translation is a row keyed by its hash. That buys two
+things a message-id scheme cannot — **discovery** (a string becomes translatable by being
+rendered once, missing, and written down, including strings that never appear in source such
+as a navigation label assembled from config or a validator message template) and
+**translation without a developer** (a translator signs in, sees the phrases with no
+translation in their language, fills them in; no file, no commit, no deploy).
 
-That choice is what the library exists to support, because it makes two things
-possible that a message-id scheme does not:
+It is not a catalogue format, an ICU implementation or a pluralization engine. Dates, numbers
+and currency go through `intl` (the `short_date`, `long_date`, `day_format` Twig functions);
+no phrase may rely on pluralization.
 
-- **Discovery.** Nobody maintains a list of translatable strings. A string becomes
-  translatable by being rendered once, missing, and getting written down. Strings
-  that never appear in source at all — a navigation label assembled from config, a
-  validator message template — are found the same way as any other.
-- **Translation without a developer.** A translator signs in, sees the phrases with
-  no translation in their language, and fills them in. No file, no commit, no
-  deploy.
-
-What it is *not*: it is not a message catalogue format, not an ICU implementation,
-not a pluralization engine. Dates, numbers and currency go through `intl` (the
-`short_date`, `long_date`, `day_format` Twig functions); pluralization is not
-solved here and no phrase should rely on it.
-
-`trans_phrases` is **shared across four applications**, discriminated by a
-`project` column (`Schoenstatt` here, set by `jtranslate.project_name`). Every
-query in every migration in `database/` is scoped to it. See
-[the note on that table being private per project](#the-table-is-shared-but-not-public)
-below — it is a real constraint, not bookkeeping.
+`trans_phrases` is **shared across four applications**, discriminated by a `project` column
+(`Schoenstatt` here, `jtranslate.project_name`). Every query in every `database/` migration
+is scoped to it — see [the privacy rule](#the-table-is-shared-but-not-public).
 
 ## The loop
 
-A phrase makes one circuit:
-
 ```
-  template renders                   translator fills it in            deploy
+  template renders                   translator fills it in            export
   translate('Wayside shrines')       (GUI, or POST /api/v3/…)          rebuilds
           │                                    │                       catalogs
           ▼                                    ▼                          │
   Translator::translate()  ──miss──▶  trans_phrases row  ──▶  trans_translations  ──┐
           │                           (added_on, origin_route)                      │
-          │                                                                         │
           └──── hit ◀── module/<Domain>/language/<locale>.lang.php ◀─────────────────┘
                         (or language/<Domain>/<locale>.lang.php)
 ```
 
-Four things in that diagram are worth stating outright, because each has been
-misunderstood in a way that cost a day:
-
 **1. `TranslatorEventListener` is the only door into the table.** A miss fires
-`Translator::EVENT_MISSING_TRANSLATION`; the listener catches it and calls
-`TranslationsTable::reportMissingTranslation()`. Nothing else ever inserts a
-phrase. So a lookup that does not happen is a phrase nobody can ever translate,
-and a lookup that happens *by accident* is a junk row — which is the entire theme
-of the failures listed at the bottom of this file.
+`Translator::EVENT_MISSING_TRANSLATION`; the listener calls
+`TranslationsTable::reportMissingTranslation()`. Nothing else ever inserts a phrase. So a
+lookup that does not happen is a phrase nobody can translate, and a lookup that happens by
+accident is a junk row — the theme of every trap below.
 
-**2. The listener filters by locale, and the key locale is in the list.** It is
-built from `TranslationsTable::getLocales(true)` — `es_ES, de_DE, pt_BR, it_IT`
-plus the key locale `en_US`. The `true` is load-bearing: without it an English
-page view discovers nothing, so a string that appears only on English pages stays
-unknown forever, and "a deleted phrase comes back the next time a page renders it"
-holds only for visitors browsing in one of the other four languages. Both wiring
-sites must pass the same list — `JTranslate\Module::onBootstrap()` for laminas and
-`App\Laminas\TranslatorConfigurator` for Symfony — or discovery works under one
-front controller and not the other.
+**2. The key locale must be in the listener's list.** It is built from
+`TranslationsTable::getLocales(true)` — `es_ES, de_DE, pt_BR, it_IT` plus `en_US`. Without
+the `true`, an English page view discovers nothing and a string that appears only on English
+pages stays unknown forever. The wiring is `App\Laminas\TranslatorConfigurator`, which
+reproduces the translator half of `JTranslate\Module::onBootstrap()` — **no module
+`onBootstrap()` runs under `App\Kernel`** (`App\Laminas\ServiceBridge` never calls
+`bootstrap()`), so that method is laminas-host code (patres) and nothing here.
 
-**3. `locales_to_translate` in `config/autoload/jtranslate.global.php` *adds* to
-the module default, it does not replace it.** The app file names only `it_IT`; the
-module names `es_ES, de_DE, pt_BR`. laminas merges numeric-keyed arrays by
-appending, so the effective list is all four. Reading either file alone gives the
-wrong answer; ask the merged config.
+**3. `locales_to_translate` in `config/autoload/jtranslate.global.php` *adds* to the module
+default.** The app file names `it_IT`, the module names the other three; laminas appends
+numeric-keyed arrays, so the effective list is all four. Ask the merged config, not either
+file.
 
-**4. The catalogs are build output.** `.lang.php` files are gitignored in all four
-repos, written by `TranslationsTable::writePhpTranslationArrays()`. A fresh
-checkout renders English until `php bin/console jtranslate:export-catalogs` runs,
-and a deploy rebuilds them as its last warming step. They are plain
-`<?php return [...]` arrays — the format is fast, staying, and is what
-`symfony/translation` independently landed on for its own compiled cache.
+**4. The catalogs are build output.** `.lang.php` files are gitignored in all four repos,
+written by `TranslationsTable::writePhpTranslationArrays()`, regenerated by
+`php bin/console jtranslate:export-catalogs`. A fresh checkout renders English until it runs;
+the deploy runs it as a warming step. They are plain `<?php return [...]` arrays.
 
-**Which of the two directories a domain goes to is decided by
-`setUserModules()`, and getting it wrong is invisible.** A text domain naming a
-loaded module is written into that module; everything else goes to
-`language/<Domain>/`. Both are registered as *read* paths and `language/*` is
-registered **last**, so a catalog in the wrong place is still loaded and the page
-looks right. What breaks is the pair of copies: the console export rewrites one, a
-GUI or API write the other, and a translation edited or deleted through one goes on
-being served from the copy nothing rewrote.
-
-That was live from the day the v3 API shipped until 2026-09-08. The map was set only
-by `App\Laminas\TranslatorConfigurator`, which runs when something asks for a
-*translator* — and every write that succeeds **redirects**, so nothing rendered,
-nothing translated, and the map was empty. `App\Laminas\TranslationsTableConfigurator`
-now sets it as a delegator on the table itself, so no caller has to know.
-
-**A stray `language/<Module>/` directory is therefore a fossil, and should be
-deleted.** One of them was translating `/it/` shrine names out of a snapshot the
-database no longer contains — see docs/BACKLOG.md.
+**5. Where a catalog is written is decided by `setUserModules()`, and getting it wrong is
+invisible.** A text domain naming a loaded module is written to `module/<M>/language/`;
+everything else to `language/<M>/`. Both are registered as *read* paths and `language/*` is
+registered last, so a catalog in the wrong place still loads and the page looks right. What
+breaks is the **pair of copies**: the console export rewrites one, a GUI or API write the
+other, and a translation deleted through one goes on being served from the copy nothing
+rewrote. `App\Laminas\TranslationsTableConfigurator` (a delegator on the table, using
+`App\Laminas\ModuleLanguageDirectories`) sets the map so every caller — including a write
+path that redirects and never builds a translator — gets it. A stray `language/<Module>/`
+directory is a fossil: delete it (one translated `/it/` shrine names out of a snapshot the
+database no longer held).
 
 ## What makes two phrases the same phrase
 
-`(project, text_domain, phrase_hash)`. The hash is `binary(32)` over the phrase
-normalized to LF line endings, so a template saved with CRLF does not fork a
-second row — but the compiled catalog gets **both** spellings as keys, because
-laminas' catalog lookup is byte-exact and the CRLF render has to find something.
+`(project, text_domain, phrase_hash)`, the hash `binary(32)` over the phrase normalized to
+LF, so a CRLF template does not fork a row — but the compiled catalog gets **both** spellings
+as keys, because laminas' lookup is byte-exact.
 
-Two consequences worth holding on to:
-
-- The same English string legitimately exists many times over, once per text
-  domain, and those rows may carry *different* translations. `Association` is
-  `Verband` in one domain and `Gremium / Institution` in another, and both are
-  somebody's deliberate choice. This is why a "deduplicate the phrase table"
-  instinct is wrong, and why cross-domain merges need a human.
-- `TranslationsTable::writeMissingPhrasesToDb()` **copies translations onto a
-  newly discovered phrase** from any row of the same project holding the same text
-  in another domain — author, `modified_by` and all. So a brand new row can appear
-  fully translated in four languages seconds after it was filed, and
-  "somebody translated it, therefore it matters" is not a valid inference. That
-  mistake is what `database/db7.6.sql` exists to correct.
+- The same English string legitimately exists once per text domain with **different**
+  translations (`Association` is `Verband` in one domain and `Gremium / Institution` in
+  another). A "deduplicate the phrase table" instinct is wrong; cross-domain merges need a
+  human.
+- `writeMissingPhrasesToDb()` **copies translations onto a newly discovered phrase** from any
+  row of the same project with the same text in another domain — author and all. A brand-new
+  row can appear translated in four languages seconds after filing; "somebody translated it,
+  therefore it matters" is not a valid inference.
 
 ## Text domains
 
-This is the part that has broken most often, so it gets the most space.
+A text domain is a namespace for phrases, named after the module whose strings they are:
+`Schoenstatt`, `Books`, `JUser`, `SionModel`, `Application`, `JTranslate`, plus `default`.
+**There is no cross-domain fallback in laminas** — `Translator::translate()` falls back by
+locale only — and the phrases really are scattered (`Shrines` lives in `default` only,
+`Wayside shrines` in `Schoenstatt` only, `Fr.` in the module domains only).
 
-A text domain is a namespace for phrases, named after the module whose strings
-they are: `Schoenstatt`, `Books`, `JUser`, `SionModel`, `Application`,
-`JTranslate`, plus `default`. There is **no cross-domain fallback in laminas** —
-`Translator::translate()` falls back by *locale* only. What laminas does instead
-is assign a domain per rendering context, and the phrases really are scattered
-that way. Measured in `es_ES`:
+Every route declares its domain explicitly:
 
-| phrase | lives in | renders as |
-| --- | --- | --- |
-| `Shrines` | `default` only | Santuarios |
-| `Wayside shrines` | `Schoenstatt` only | Hermitas |
-| `Fr.` | the module domains only | P. |
-
-### Under laminas: a dispatch listener
-
-`JTranslate\Module::onBootstrap()` attaches to
-`AbstractActionController::dispatch` and sets the text domain on **twelve** view
-helpers from the dispatched controller's module namespace — `translate`,
-`headTitle`, `flashMessenger`, seven form helpers, `formElementErrors`, and
-`navigation`. `navigation` is the exception that proves the rule: it gets
-`jtranslate.navigation_text_domain` (`Application`), because the menu is one tree
-rendered on every page and its strings belong to whoever owns the menu, not to
-whichever controller happened to answer.
-
-The same listener also calls `formElementErrors()->setTranslateMessages(false)`,
-and that is a data-integrity guard rather than a display choice — see
-[user input](#3-never-let-user-input-reach-translate) below.
-
-### Under Symfony: a route attribute, and only two bridged helpers
-
-**A Symfony-served request never dispatches a laminas controller, so that listener
-never runs.** Nothing sets any of the twelve domains. The Symfony side reproduces
-what it needs, explicitly:
-
-- Each route declares its domain in `config/symfony/routes.php` via
-  `$textDomain('Books')`, which becomes the `_text_domain` request attribute
-  (`LaminasExtension::TEXT_DOMAIN_ATTRIBUTE`).
+- `config/symfony/routes.php`: `$textDomain('Books')` on the `$ported()` call, or the
+  `$domain` argument to `$content()`. It becomes the `_text_domain` request attribute
+  (`LaminasExtension::TEXT_DOMAIN_ATTRIBUTE`). A route that genuinely has no module — the
+  maintenance and JSON endpoints — is exempt, recorded in
+  `PortedRouteTranslationTest::rendersHtml()`.
 - `App\Twig\LaminasExtension::translate()` reads it and passes it per call.
-- `App\Laminas\ViewHelpers::useTextDomain()` points the shared `translate` **view
-  helper** at it, for the helpers that reach translation through
-  `$this->view->translate(...)` and pass no domain of their own —
-  `Books\View\Helper\FormatField` is the one that forced it.
-- `App\Laminas\ViewHelpers::useFlashMessengerTextDomain()` does the same for the
-  flash messenger, called from `LaminasExtension::flashMessages()`.
+- `App\Laminas\ViewHelpers::useTextDomain()` points the shared `translate` **view helper** at
+  it, for helpers that translate through `$this->view->translate(...)` with no domain of
+  their own (`Books\View\Helper\FormatField`). `useFlashMessengerTextDomain()` does the same
+  for the flash messenger, from `LaminasExtension::flashMessages()`.
+- The navigation renders in `jtranslate.navigation_text_domain` (`Application`): the menu is
+  one tree on every page, so its strings belong to whoever owns the menu.
 
-The other ten are unreachable from Twig today — the layout writes its own
-`<title>`, passes the navigation domain explicitly, and `BootstrapFormRenderer`
-routes every form string through `LaminasExtension::translate()`. **That is a fact
-about today's templates, not a guarantee.** If you bridge a helper that translates
-anything, set its domain in the same commit; the flash messenger was missed for
-three days and the symptom was not "untranslated", it was a growing phrase table.
+**If you bridge any further view helper that translates, set its domain in the same commit.**
+The symptom of missing one is not "untranslated"; it is a growing phrase table filing
+duplicates under `default`. `test/Integration/PortedRouteTranslationTest` asserts every
+ported HTML route declares a domain the application uses, that discovery happens in the
+page's domain and nowhere else, and that `flashMessages()` sets the flash messenger's.
 
-`test/Integration/PortedRouteTranslationTest` asserts all of this: that every
-ported HTML route declares a domain, that the domain is one the application
-actually uses, that discovery happens in the page's domain and nowhere else, and
-that `flashMessages()` sets the flash messenger's.
-
-### What `translate()` actually does
+### What `translate()` does
 
 ```php
 LaminasExtension::translate(string $message, ?string $domain = null): string
 ```
 
-- An explicit `$domain` wins, and is what the layout passes for strings whose
-  domain it knows (`translate('Sign in', 'Application')`).
-- Otherwise the page's own domain is asked with `Translator::translate()` — **this
-  call is a write**, in the sense that a miss files the phrase where it belongs.
-- If that misses, `default` is consulted by *reading its compiled catalog*
-  (`catalogValue()`), which fires no event and therefore files nothing. The
-  rendering is the union of both domains, matching laminas' output; the discovery
-  is single-domain, matching laminas' behaviour.
-
-The distinction between those last two is the whole of `database/db7.8.sql`. When
-the `default` consultation was a second `translate()` call, every string the page's
-domain could not translate was *also* filed in `default`, where nobody had asked
-for it — 232 duplicate rows in the capsule before it was caught.
+An explicit `$domain` wins (`translate('Sign in', 'Application')` in the layout). Otherwise
+the page's domain is asked with `Translator::translate()` — **a write**, since a miss files
+the phrase. If that misses, `default` is consulted by *reading its compiled catalog*
+(`catalogValue()`), which fires no event and files nothing. Rendering is the union of both
+domains; discovery is single-domain. When the fallback was a second `translate()` call it
+filed every untranslated string in `default` too (232 duplicate rows).
 
 ## Writing a Twig template
 
-A checklist, in the order it bites.
-
-### 1. Give the route a text domain
-
-In `config/symfony/routes.php`, `$textDomain('Books')` on the `$ported()` call, or
-the `$domain` argument to `$content()`. Without one, `translate()` sees only
-`default`; the page renders in English in all four non-English locales, and the
-failure is invisible in English because a missing translation *is* the source
-string. This shipped to production once and went unnoticed for three days.
-
-A route that genuinely has no module — the maintenance and JSON endpoints — is
-exempt, and `PortedRouteTranslationTest::rendersHtml()` is where the exemption is
-recorded.
-
-### 2. Never translate record data
-
-A publication's title, a shrine's name, a library's name, a person's name. These
-are not language in any language: translating one cannot succeed, and the miss
-files a row. One row **per record**, and twice over when two domains are
-consulted. Within a day of breadcrumb labels starting to be translated, publication
-titles were 61% of the entire phrase table.
-
-- In the navigation tree, mark the branch in
-  `Application\Navigation\PageBuilder::markDataLabels()`.
-- On a breadcrumb the controller passes itself, use `'translate' => false` on the
-  crumb (precedent: `database/db7.5.sql` and the `150-preguntas` page).
-- In a template, just don't: `{{ publication.title }}`, never
-  `{{ translate(publication.title) }}`.
-
-`format_entity` and friends already handle this; the risk is in hand-written
-markup.
-
-### 3. Never let user input reach `translate()`
-
-Same failure, worse: it files a stranger's typo as a phrase. Six mistyped email
-hostnames reached the table this way, through `formElementErrors` translating a
-validation message **after** laminas had interpolated `%hostname%` into it. The
-guard is to translate the *template* and interpolate afterwards, which is what
-`setTranslateMessages(false)` plus `AbstractValidator`'s own translator does — and
-what `SionModel\Form\BootstrapFormRenderer` reproduces on the Symfony side (it does not
-translate validation messages at all; `App\Laminas\TranslatorConfigurator` handles
-the templates).
-
-### 4. Never build a message by concatenation
-
-```php
-$this->flashMessenger()->addMessage(ucwords($entity) . ' not found.');   // no
-```
-
-That files one phrase per entity type, none of which a translator can render into
-a language whose word order differs. Use `JTranslate\I18n\TranslatableMessage`,
-which carries the template and its parameters separately so `translate()` receives
-`'File not imported due to duplicate withinLibraryIds: %s.'` and the substitution
-happens after. `database/db7.7.sql` cleaned up the residue of the last round of
-this; `SionController` and `SendToNewUrlController` still hold a bounded version
-of it (one row per entity name) and it is on the list.
-
-### 5. Prefix every `{% set %}` in the layout with `chrome_`
-
-Not a translation rule, but it lands here because it was found by a translation
-bug. A `set` at the top level of `templates/layout.html.twig` is **not** scoped to
-the layout: `{% block content %}` is called from that point with the context as it
-stands, so any name set above it shadows the identically-named variable the
-controller passed — silently, in every page that extends the file. The literature
-catalogue rendered "Catálogo de livros em fr" in production because the layout set
-`languages` for the locale chooser and `/literature` passes `languages` as the
-ISO-639 map.
-
-### 6. Expect form placeholders and public notes in the table
-
-Two things that look like leaks and are not:
-
-- **Form placeholder attributes are translated** by laminas' form helpers, so
-  `ex. +49 151 55555555` and a JSON opening-hours example are legitimate phrase
-  rows. Ugly, deliberate, load-bearing for translators.
-- **An association's public notes are translated by design** — that free text *is*
-  the per-locale description feature, not a data leak. See
-  [the note in api-change-requests-response.md](api-change-requests-response.md).
+1. **Give the route a text domain.** Without one `translate()` sees only `default`, the page
+   renders English in four locales, and English hides it because a missing translation *is*
+   the source string.
+2. **Never translate record data** — a publication title, a shrine name, a person's name.
+   The miss files one row **per record**. In the navigation tree mark the branch in
+   `Application\Navigation\PageBuilder::markDataLabels()`; on a controller-built breadcrumb
+   use `'translate' => false`; in a template write `{{ publication.title }}`, never
+   `{{ translate(publication.title) }}`. `format_entity` and friends already handle this.
+3. **Never let user input reach `translate()`.** Translate the *template* and interpolate
+   afterwards. `SionModel\Form\BootstrapFormRenderer` does not translate validation messages
+   at all; `App\Laminas\TranslatorConfigurator` translates the templates through
+   `AbstractValidator`'s translator before interpolation. (Strangers' mistyped email
+   hostnames were filed as phrases when a message was translated after `%hostname%` was
+   substituted.)
+4. **Never build a message by concatenation.** `ucwords($entity) . ' not found.'` files one
+   phrase per entity type that no translator can render into a language with different word
+   order. Use `JTranslate\I18n\TranslatableMessage`, which carries template and parameters
+   separately. `SionController` and `SendToNewUrlController` still hold a bounded version
+   (BACKLOG).
+5. **Prefix every top-level `{% set %}` in `templates/layout.html.twig` with `chrome_`.** A
+   layout `set` is not scoped: `{% block content %}` runs with the context as it stands, so
+   any name set above it shadows the controller's variable of the same name in every page
+   that extends the layout (`languages` did this to `/literature`).
+6. **Expect form placeholders and public notes in the table.** Placeholder attributes are
+   translated by laminas' form helpers, so `ex. +49 151 55555555` is a legitimate row; an
+   association's public notes are translated **by design** — that is the per-locale
+   description feature, not a leak.
 
 ## Retirement is not retraction
 
-Two different verbs, and confusing them destroys work:
-
-- **Retire** (`trans_phrases.retired_on`) takes a phrase off the translator's
-  worklist and keeps every translation. Rendering is untouched:
-  `getTranslatedText()`, the query the catalogs are compiled from, filters on
-  `project` and nothing else, so a retired phrase still compiles into `.lang.php`.
-  Reversible by clearing the column.
+- **Retire** (`trans_phrases.retired_on`) takes a phrase off the worklist and keeps every
+  translation. Rendering is untouched: `getTranslatedText()`, which the catalogs compile
+  from, filters on `project` only, so a retired phrase still compiles. Reversible by clearing
+  the column.
 - **Retract** destroys a translation and keeps the phrase.
 
-### Why retired phrases still compile into the catalogs
+Do **not** filter `retired_on IS NULL` in `getTranslatedText()`. It would make retiring a
+phrase instantly revert every page still rendering it to English — and the repair is not
+quick: discovery clears `retired_on` on the first miss, but the request-path catalog rebuild
+fires only when a **newly inserted** row gets translations copied from a sibling, so an
+un-retired existing row triggers no rebuild and the page stays English until the next deploy
+or admin edit. The cost of the current rule is the mirror image: rows retired for leaking
+still sit in the compiled `default` catalog and can reach a ported page through the fallback,
+bounded by `catalogHas()` to phrases the page's domain has nothing for. Undo that by
+**deleting specific rows**, never by changing what the exporter emits.
 
-The obvious-looking change — filter `retired_on IS NULL` in `getTranslatedText()`
-— is wrong, and the reason is written at the method (`TranslationsTable:1609`).
-Excluding them would mean retiring a phrase instantly reverts every page still
-rendering it to English, which is the irreversible damage `retired_on` exists to
-avoid, arriving by a different door.
+Two consequences. **Ordering:** a cleanup migration must run *after* the code fix is live,
+since a render in the gap un-retires the row. **Retirement is not self-monitoring:** a
+retired phrase with a translation never misses, so nothing un-retires it even if the page
+renders it daily; re-run the migration's verification query rather than waiting for an alarm
+that cannot fire.
 
-Measure the repair window before dismissing that. Discovery *would* clear
-`retired_on` on the first miss, but the request-path catalog rebuild at
-`TranslationsTable:2107` fires only when `$weFoundAPreviousMatch` — when a **newly
-inserted** row gets translations copied from a sibling domain. An un-retirement of
-an existing row sets nothing, so no rebuild happens, and the page goes on rendering
-English until the next deploy or admin edit. A wrong retirement would be a
-visitor-visible regression lasting days, on a column whose whole point is that it
-is safe to be wrong with.
-
-### What that costs, and it is not nothing
-
-Retiring cleans the worklist, not the rendering. The leaked rows `db7.8` retired
-are still in the compiled `default` catalog, and `translate()` reads `default` as a
-fallback (`catalogValue()`), so a ported page whose own domain lacks a translation
-can still render a value that exists only because of the leak — copied by
-`writeMissingPhrasesToDb()` from whichever sibling domain it found first.
-`catalogHas()` limits the blast radius to phrases the page's domain has nothing
-for, so the page renders *more* translated rather than wrong, but it is one
-module's word choice crossing a domain boundary.
-
-If that needs undoing, the lever is **deleting those specific rows** — a reviewable
-decision on a known set — not changing what the exporter emits for all 576 retired
-phrases at once.
-
-### Two consequences to hold on to
-
-**Ordering.** Every cleanup migration since `db7.5` carries the same note: the code
-fix has to be live before the migration runs. Discovery clears `retired_on`, so a
-render in the gap undoes the retirement.
-
-**Retirement is not self-monitoring.** A retired phrase that still has a
-translation never misses, so nothing ever un-retires it — the column stays set even
-if the page is still rendering the string every day. "If a retired row comes back,
-the fix regressed" holds only for phrases with a gap in the locale being rendered.
-Re-run the migration's verification query when you want to know; do not wait for an
-alarm that cannot fire.
-
-`php bin/console jtranslate:retire` does both directions from the CLI; the v3 API
-exposes `POST …/retire` with a mandatory `_note`.
-
-One CLI trap: `TranslationsTable::flush()` needs a session and fatals in any
-console process, *partially* — leaving a phrase row no render will ever complete.
-Call `setActingUserId(null)` first.
+`php bin/console jtranslate:retire` does both directions; the v3 API exposes `POST …/retire`
+with a mandatory `_note`. **CLI trap:** `TranslationsTable::flush()` needs a session and
+fatals *partially* in any console process, leaving a phrase row no render will complete —
+call `setActingUserId(null)` first.
 
 ## The table is shared, but not public
 
-Four applications write to `trans_phrases`, and phrases can contain private data:
-an association's internal notes, a moderator's admin annotations. **Never copy
-phrases between projects**, and never seed a shared library's catalog from the
-database — only from its own source literals.
+Phrases can contain private data (an association's internal notes, a moderator's
+annotations). **Never copy phrases between projects**, and never seed a shared library's
+catalog from the database — only from its own source literals.
 
-Reads are the other half of that rule. `TableGateway::select()` takes a
-*predicate*, not a `Laminas\Db\Sql\Select`; handing it the latter silently returns
-the whole table. That is how JTranslate's phrase index read every project's rows
-for years without a single error.
-
-The editing GUI is where that rule is most easily broken, because its whole job is to
-put phrases on a page: `getTranslations()` filters on `project` in PHP, and
-`getPhraseById()` filters in SQL — so another project's phrase is *absent* from the
-worklist and *not found* by id, rather than forbidden. Absent is the right answer:
-refusing it would confirm the row exists.
-`test/Smoke/TranslationSmokeTest::testTheWorklistShowsOnlyThisProjectsPhrases`
-asserts it against a real foreign row, picked by `phrase_hash` so that a UI string
-both projects happen to share cannot make it pass or fail by accident.
+Reads are the other half: `TableGateway::select()` takes a *predicate*, not a
+`Laminas\Db\Sql\Select` — hand it the latter and it silently returns the whole table, every
+project's rows. In the GUI, `getTranslations()` filters on `project` in PHP and
+`getPhraseById()` in SQL, so another project's phrase is *absent*, not forbidden — refusing
+would confirm the row exists.
+`TranslationSmokeTest::testTheWorklistShowsOnlyThisProjectsPhrases` asserts it against a
+real foreign row picked by `phrase_hash`.
 
 ## Caching
 
-Two layers, both APCu, both explained in [caching.md](caching.md):
-
-- the compiled catalogs are read from disk and cached by the translator;
-- JTranslate's own phrase index and `KEY_TRANSLATED_TEXT` are cached under the
-  `jtranslate` namespace, TTL one hour.
-
-The one thing to internalise: **an APCu segment belongs to its SAPI**. A CLI
-process can never flush the web server's cache — proven, 21 entries survived a CLI
-`apcu_clear_cache()`. Cache-clearing after a phrase edit has to be an HTTP request
+Two APCu layers ([caching.md](caching.md)): the translator caches the compiled catalogs it
+reads from disk, and JTranslate's phrase index and `KEY_TRANSLATED_TEXT` sit under the
+`jtranslate` namespace, TTL one hour. **An APCu segment belongs to its SAPI** — a CLI process
+cannot flush the web server's cache; clearing after a phrase edit is an HTTP request
 (`/en/sm/clear-persistent-cache`).
 
 ## Checking your work
 
-Three things, cheapest first.
-
-**Does anything leak?** Run this before and after your change. It is the query that
-found the last two:
+**Does anything leak?** Run before and after a change:
 
 ```sql
 SELECT p.text_domain, p.origin_route, COUNT(*) AS rows, MAX(p.added_on) AS newest
@@ -411,37 +226,56 @@ GROUP BY p.text_domain, p.origin_route
 ORDER BY rows DESC;
 ```
 
-Healthy output is a handful of rows in module domains. A double-digit count in
-`default`, or a route appearing twice under two domains, is the shape of every
-failure below.
+Healthy is a handful of rows in module domains. A double-digit count in `default`, or a route
+under two domains, is a leak. When the table grows unexpectedly the question is never "what
+inserts rows" — it is always the listener — but "which render asks for a string it should
+not, or asks twice."
 
-**Does a ported page still agree with the original?**
-`tools/port-baseline.php capture` / `compare`, which renders every path in five
-locales through both front controllers and diffs. English proves almost nothing —
-in English a missing translation *is* the source string — which is exactly why the
-tool exists.
-
-**Do the invariants still hold?** `php composer.phar integration` runs
+**Do the invariants hold?** `php composer.phar integration` runs
 `PortedRouteTranslationTest`, `PhraseIdentityConstraintTest` and
-`TranslationWriteSemanticsTest`. They need no running app.
+`TranslationWriteSemanticsTest`; none needs a running app. `tools/port-baseline.php
+capture` / `compare` renders every path in five locales and diffs — English proves almost
+nothing, which is why it exists.
 
-## What has gone wrong, and what fixed it
+**Capsule facts.** `log_errors` is `Off`, so every `error_log()` is discarded — log through
+`LoggerInterface`. `docker compose exec` runs as root and leaves root-owned catalog
+directories that make every web-served export fail with `Permission denied`: run console
+exports as `-u www-data`.
 
-Kept because each of these looked like something else at the time.
+## Traps, one line each
 
-| when | symptom | actual cause |
-| --- | --- | --- |
-| 2026-08-08 | every string on every ported page rendered English in four locales | two causes: the Symfony-side translator had no sources registered (`JTranslate\Module::onBootstrap()` never runs), and no route declared a text domain |
-| 2026-08-09 | 7,801 phrases, 74% of them junk; site slow | `phrase` was a truncating `varchar(2000)`, so long strings forked new rows forever. Not the assumed cache race. 7,801 → 2,693 in 1.2s |
-| 2026-08-10 | publication titles became 61% of the table in one day | breadcrumb labels started being translated, and a navigation label is one row *per database record* (`db7.4`, `db7.5`, `db7.6`) |
-| 2026-08-10 | untranslatable rows: field lists, import batches, strangers' email hostnames | messages built by concatenation, and validator messages translated after interpolation (`db7.7`) |
-| 2026-08-12 | 232 duplicate rows in `default` | `LaminasExtension::translate()`'s fallback to `default` was a second `translate()` call, and a miss *writes*. Now reads the compiled catalog instead (`c5ef8f3`) |
-| 2026-08-13 | duplicates in `default` kept arriving after that fix | `flashMessenger` was the one of JTranslate's twelve dispatch-set helpers that the Symfony bridge had not reproduced (`db7.8`, `ViewHelpers::useFlashMessengerTextDomain()`) |
+- A phrase column that truncates (`phrase` was `varchar(2000)`) forks a new row on every
+  render of a long string — 74% of the table, mistaken for a cache race.
+- Translating a navigation or breadcrumb label files one row per database record; titles
+  were 61% of the table within a day.
+- A fallback implemented as a second `translate()` call is a write into a domain nobody asked
+  about.
+- A bridged helper without a domain set files duplicates under `default` while rendering
+  correctly.
+- A Symfony write path that redirects builds no translator, so anything wired as a side
+  effect of building one is absent exactly there (the catalog-location map was, for weeks).
+- A migration that renames a phrase key must update its `en_US` row in the same migration,
+  or the old key is re-filed on the next render and the translations sit under the dead one.
+- A console retirement (`jtranslate:retire`) writes the database but not the web SAPI's APCu;
+  flush the phrase cache over HTTP afterwards.
 
-The common shape: **a lookup nobody intended, in a domain nobody asked about.**
-When the phrase table grows unexpectedly, the question is never "what is inserting
-rows" — it is always the listener — but "which render is asking for a string it
-should not be asking for, or asking for it twice."
+## Where the translator is going
+
+`symfony/translation` **6.4** is already installed, but only as a transitive dependency of
+`nesbot/carbon`; it should become a root require and take over the *translator* — the
+lookup, the catalogue loading and its compiled cache. JTranslate keeps what Symfony does not
+provide: the phrase database, runtime discovery, the editing GUI and the v3 API. The
+precompiled PHP-array catalog format **stays**; Symfony's own compiled cache is the same
+`return [...]` file, so this is the original design with a maintained implementation.
+Three things to preserve deliberately, each silent when wrong: the two-step domain fallback
+(page domain, then `default`) with the database's domain names mapping through unchanged,
+since Symfony defaults to `messages` and has no per-route magic; a miss-recorder that asks
+`MessageCatalogue::has()` rather than comparing strings, because every `en_US` row stores
+the phrase as its own translation; and explicit purge-and-rewarm on a database write, since
+a file-based cache cannot see one. Books is 86% of the corpus and is data — nothing may
+assume phrases come from source (`translation:extract` is wrong here). This is **step 3 of
+the laminas exit** ([laminas-exit.md](laminas-exit.md)); `laminas/laminas-i18n` stays until
+then because `TranslatorConfigurator` wires its interface.
 
 ## Where the code is
 
@@ -451,8 +285,7 @@ should not be asking for, or asking for it twice."
 | everything about the tables | `module/JTranslate/src/Model/TranslationsTable.php` |
 | phrase identity / hashing | `module/JTranslate/src/Model/PhraseIdentity.php` |
 | data-carrying messages | `module/JTranslate/src/I18n/TranslatableMessage.php` |
-| laminas per-request domains | `module/JTranslate/src/Module.php` |
-| Symfony translator wiring | `src/Laminas/TranslatorConfigurator.php` |
+| translator wiring | `src/Laminas/TranslatorConfigurator.php` |
 | catalog write location | `src/Laminas/TranslationsTableConfigurator.php`, `src/Laminas/ModuleLanguageDirectories.php` |
 | the editing GUI | `module/JTranslate/src/{Controller,Page,Host,Routing,Twig}/`, templates in `module/JTranslate/templates/` |
 | its routes | `module/JTranslate/config/symfony-routes.php`, called from `config/symfony/routes.php` |
@@ -461,4 +294,4 @@ should not be asking for, or asking for it twice."
 | route text domains | `config/symfony/routes.php` |
 | navigation data labels | `module/Application/src/Navigation/PageBuilder.php` |
 | commands | `jtranslate:export-catalogs`, `jtranslate:migrate`, `jtranslate:retire` |
-| cleanup migrations | `database/db7.2.sql` … `database/db7.8.sql` (7.0 and 7.1 are charset work, not phrases) |
+| cleanup migrations | `database/db7.2.sql` … `database/db7.8.sql` (7.0 and 7.1 are charset work) |

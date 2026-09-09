@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  *
  * BooksSmokeTest and friends already ask these paths for a 200, and they passed
  * before this port as well: the catch-all would have satisfied them either way, which
- * is exactly the limit docs/strangler.md warns about. What is asserted here is only
+ * is exactly the limit docs/laminas-exit.md warns about. What is asserted here is only
  * what the ported route can get wrong on its own.
  *
  * The mechanism assertions — the GDPR cookie, the invented Cache-Control, the

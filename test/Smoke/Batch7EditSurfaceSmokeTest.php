@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * outcomes matter more than they did for a read-only page: a guard that quietly stopped
  * running would not merely expose a record, it would let the wrong person save one.
  * Every route therefore gets all three — anonymous, signed in without the role, signed in
- * with it — which is step 4 of "Adding a Symfony route" in docs/strangler.md.
+ * with it — which is step 4 of "Adding a Symfony route" in docs/laminas-exit.md.
  *
  * And every rendering assertion reads the **body**, never just the status. Two independent
  * reasons, both recorded in that document: a Twig syntax error is an empty HTTP 200, and
@@ -157,7 +157,7 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
      * which a Symfony route has no MvcEvent to answer, so the page was an **empty HTTP 200**
      * — and the only assertion covering it was the anonymous refusal, which passed happily.
      * `App\Books\LibraryScopedForms` is the fix; this is the assertion that would have
-     * caught it, and the reason docs/strangler.md says to assert something from the body.
+     * caught it, and the reason docs/laminas-exit.md says to assert something from the body.
      *
      * @return array<string, array{string, string}>
      */

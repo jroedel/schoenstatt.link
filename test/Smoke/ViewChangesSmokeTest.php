@@ -41,7 +41,7 @@ use function substr_count;
  * byte for byte against the ported ones: the default all-tables view (500 rows, 13 date
  * groups), and — by pointing `changes_model` at PublicationsTable and then
  * SchoenstattTable — one view dominated by publications and one containing roles,
- * associations and persons. All three identical. See docs/strangler.md.
+ * associations and persons. All three identical. See docs/laminas-exit.md.
  */
 class ViewChangesSmokeTest extends SmokeTestCase
 {

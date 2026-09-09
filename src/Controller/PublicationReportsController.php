@@ -16,7 +16,7 @@ use Twig\Environment;
  *
  * ## `export` is a page, not a spreadsheet
  *
- * docs/strangler.md described this route as "returns a spreadsheet, not HTML" until this
+ * docs/laminas-exit.md described this route as "returns a spreadsheet, not HTML" until this
  * port, and that was inferred from the name. `exportAction()` is `parent::indexAction()`
  * — every publication through `getObjects()` — rendered by `export.phtml`, which is the
  * `publication-list` partial with four columns: id, authors, title, edition. So it is the

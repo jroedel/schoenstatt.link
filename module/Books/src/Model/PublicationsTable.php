@@ -889,7 +889,7 @@ ORDER BY `Publisher`";
      *
      * The links are plain copies. They were PHP references, which saved nothing — an array
      * assignment is copy-on-write — and only aliased rows reachable by two paths. See
-     * `docs/caching-performance.md` § Finding 8.
+     * `docs/caching.md` § Finding 8.
      *
      * @param array $object
      */
@@ -972,7 +972,7 @@ ORDER BY `Publisher`";
      *
      * The links are plain copies into a separate unlinked result set: references saved
      * nothing here — array assignment is copy-on-write — and only aliased rows reachable
-     * by two paths. See `docs/caching-performance.md` § Finding 8.
+     * by two paths. See `docs/caching.md` § Finding 8.
      */
     protected function linkPublications(array &$objects)
     {

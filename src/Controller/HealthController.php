@@ -32,7 +32,7 @@ use function trim;
  * 2026-08-17 they were different for 30 minutes across three independent pools
  * while a destructive migration ran against code that had already been replaced.
  * `tools/deploy.sh` now polls this until every pool agrees, before anything
- * irreversible happens. See docs/incident-2026-08-17-stale-opcache.md.
+ * irreversible happens. See docs/DEPLOY.md.
  *
  * The key is required for that field and only that field. Without one the answer
  * is exactly what it always was — liveness, nothing more. Framework and PHP

@@ -13,7 +13,7 @@ namespace SchoenstattTest\Smoke;
  * also exercised with the capsule's committed dev-only api key.
  *
  * cache-status and clear-persistent-cache are the two routes ported to the
- * Symfony kernel (docs/strangler.md), so in the capsule these tests run against
+ * Symfony kernel (docs/laminas-exit.md), so in the capsule these tests run against
  * App\Controller\*, while production still answers the same URLs from
  * SionModelController. That is deliberate and both must keep working; what the
  * two do *not* share is the refusal, see assertRefusesWithoutKey() below.
@@ -111,7 +111,7 @@ class SionModelSmokeTest extends SmokeTestCase
      * served out of `$memoryCache`, so a queued item and a written one are
      * indistinguishable to the code that queued it. Only the *next* request could
      * tell, and it had no way to say so. Measured over 49 requests: 0 writes, 0
-     * hits (docs/caching-performance.md).
+     * hits (docs/caching.md).
      *
      * Asserted on the **key names**, not on the entry count. Before the fix the
      * count still grew — `*-cachedependencies` was written faithfully all along,

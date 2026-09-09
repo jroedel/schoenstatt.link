@@ -58,7 +58,7 @@ fetch() {
         fail "fatal-200: $url answered 200 with an EMPTY body — a PHP fatal, not a page.
       Look in shared/data/exceptions/ on the server. If the newest report names an
       older .revision than the live release, OPcache is still serving the previous
-      release — see docs/incident-2026-08-17-stale-opcache.md."
+      release — see docs/DEPLOY.md."
         FATAL_200S=$((FATAL_200S + 1))
     fi
 }
@@ -499,7 +499,7 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
             # this run cannot say which one it reached — tools/opcache-sample.sh polls
             # and groups by startTimeUnix when that distinction matters.
             if [ -n "${OC_INTERNED_MB:-}" ] && [ "${OC_INTERNED_MB:-0}" -lt 32 ]; then
-                echo "note  opcache.interned_strings_buffer is ${OC_INTERNED_MB}MB on the pool that answered; 32 is what docs/php-85.md asks for"
+                echo "note  opcache.interned_strings_buffer is ${OC_INTERNED_MB}MB on the pool that answered; 32 is what docs/DEPLOY.md asks for"
             fi
             if [ "${OC_OOM:-0}" -gt 0 ] || [ "${OC_HASH:-0}" -gt 0 ]; then
                 echo "WARN  OPcache restarted (${OC_OOM:-0} out-of-memory, ${OC_HASH:-0} hash) — it has been discarding the whole cache" >&2

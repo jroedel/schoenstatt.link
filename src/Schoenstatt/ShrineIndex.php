@@ -12,7 +12,7 @@ use function floor;
  *
  * A line-for-line port of the body of
  * Schoenstatt\Controller\SchoenstattController::shrinesAction(), which
- * waysideShrinesAction() duplicates verbatim. docs/strangler.md asks a route
+ * waysideShrinesAction() duplicates verbatim. docs/laminas-exit.md asks a route
  * answering from two places to *share* the code that builds the response, and this
  * would be that code — but the laminas action is deliberately left untouched, so
  * that both front controllers keep answering exactly as they do today. What pins

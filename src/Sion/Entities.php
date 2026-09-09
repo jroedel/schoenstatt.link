@@ -17,7 +17,7 @@ use function is_string;
  * The entity specification and table lookups every `App\Sion\*` reproduction needs.
  *
  * Extracted from `App\Sion\EntityShow` when `App\Sion\EntityEdit` arrived and would
- * otherwise have carried a second copy of both methods. docs/strangler.md's rule is
+ * otherwise have carried a second copy of both methods. docs/laminas-exit.md's rule is
  * explicit that the licence to copy stops at the laminas boundary — between two *ported*
  * pieces of code, share — and two answers to "which table holds this entity" is precisely
  * the divergence that rule exists to prevent.

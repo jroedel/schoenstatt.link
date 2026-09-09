@@ -36,7 +36,7 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
  * defaults and there is nothing to read until routing has happened; and below
  * `App\Http\LocaleListener`'s default 0, because the 403 page is rendered through
  * Twig and every translated string in the layout would otherwise come out in
- * `en_US_POSIX` — the locale trap documented in docs/view-scripts.md. Stated as an
+ * `en_US_POSIX`. Stated as an
  * explicit negative number rather than left to registration order, so that adding a
  * listener cannot silently reorder these two.
  */

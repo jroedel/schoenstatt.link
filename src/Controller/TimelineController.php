@@ -37,7 +37,7 @@ use Twig\Environment;
  *
  * That makes it the **first intentional divergence between a ported template and the
  * .phtml it transcribed**, so `tools/port-baseline.php` reports a difference on this page
- * and the report is correct. It is recorded in docs/strangler.md's known-differences
+ * and the report is correct. It is recorded in docs/laminas-exit.md's known-differences
  * table; do not "fix" it back.
  *
  * The introductory paragraph below the heading is a *literal* in both renderings — not
