@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Laminas;
 
 use Closure;
-use Laminas\View\Helper\AbstractHelper;
 use Stringable;
 
 /**
@@ -46,8 +45,12 @@ use Stringable;
  *
  * A `Stringable` is returned rather than a string because callers do
  * `->__toString()` on the result: the original returns a `Laminas\Uri\Uri`.
+ *
+ * It extended `Laminas\View\Helper\AbstractHelper` until 2026-09 and used nothing from
+ * it — the URL comes from RouteUrl, never from `$this->view`. The plugin manager still
+ * accepts it, because it validates a callable as readily as a HelperInterface.
  */
-final class LocaleUrlSubstitute extends AbstractHelper
+final class LocaleUrlSubstitute
 {
     /** @param Closure(): RouteUrl $urls resolved lazily; see App\Kernel::viewHelpers() */
     public function __construct(private readonly Closure $urls)

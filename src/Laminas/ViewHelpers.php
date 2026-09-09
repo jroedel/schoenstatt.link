@@ -13,17 +13,28 @@ use Books\View\Helper\FileSize;
 use Books\View\Helper\FormatField;
 use Books\View\Helper\FormatPublicationUrlObject;
 use Books\View\Helper\Markdown;
+use Books\View\Helper\FormatPublication;
+use JTranslate\Model\CountriesInfo;
 use JTranslate\View\Helper\CountryName;
 use JTranslate\View\Helper\Flag;
 use JTranslate\View\Helper\LanguageName;
 use App\View\Helper\DateFormat;
 use App\View\Helper\Translate;
+use App\View\Label;
 use Laminas\Translator\TranslatorInterface;
+use Laminas\View\Helper\Url;
 use Laminas\View\HelperPluginManager;
+use Schoenstatt\Service\AssociationKindsService;
+use Schoenstatt\View\Helper\FormatAssociation;
+use Schoenstatt\View\Helper\FormatEntity;
+use Schoenstatt\View\Helper\FormatPerson;
 use SionModel\I18n\View\Helper\DatePrecisionFormat;
 use SionModel\I18n\View\Helper\DayFormat;
+use SionModel\Service\EntitiesService;
 use SionModel\View\Helper\Address;
 use SionModel\View\Helper\DiffForHumans;
+use SionModel\View\Helper\EditPencil;
+use SionModel\View\Helper\EditPencilNew;
 use SionModel\View\Helper\Email;
 use SionModel\View\Helper\FormatUrlObject;
 use SionModel\View\Helper\Telephone;
@@ -88,6 +99,15 @@ final class ViewHelpers
     private ?DiffForHumans $diffForHumans = null;
     private ?TranslatorInterface $translator = null;
     private ?Translate $translateHelper = null;
+    private ?Flag $flag = null;
+    private ?CountryName $countryName = null;
+    private ?EditPencil $editPencil = null;
+    private ?EditPencilNew $editPencilNew = null;
+    private ?FormatPerson $formatPerson = null;
+    private ?FormatAssociation $formatAssociation = null;
+    private ?FormatEntity $formatEntity = null;
+    private ?FormatPublication $formatPublication = null;
+    private ?Label $label = null;
 
     /**
      * @param Closure(): RouteUrl $urls handed to App\Laminas\LocaleUrlSubstitute below.
@@ -103,10 +123,9 @@ final class ViewHelpers
 
     public function flag(): Flag
     {
-        /** @var Flag $helper */
-        $helper = $this->helpers()->get('flag');
-
-        return $helper;
+        //memoized: the constructor translates the whole ISO country table, and a shrine
+        //listing renders a flag per row
+        return $this->flag ??= new Flag($this->countriesInfo());
     }
 
     public function email(): Email
@@ -267,10 +286,15 @@ final class ViewHelpers
 
     public function countryName(): CountryName
     {
-        /** @var CountryName $helper */
-        $helper = $this->helpers()->get('countryName');
+        return $this->countryName ??= new CountryName($this->countriesInfo());
+    }
 
-        return $helper;
+    private function countriesInfo(): CountriesInfo
+    {
+        /** @var CountriesInfo $countries */
+        $countries = $this->laminas->get(CountriesInfo::class);
+
+        return $countries;
     }
 
     public function datePrecisionFormat(): DatePrecisionFormat
@@ -296,6 +320,159 @@ final class ViewHelpers
     public function tooltip(): Tooltip
     {
         return $this->tooltip ??= new Tooltip();
+    }
+
+    /**
+     * The entity-markup cluster, ported together on 2026-09 and constructed here because
+     * nothing else can: each of them used to reach its collaborators through the renderer
+     * laminas-view injected into every AbstractHelper, and each takes them as constructor
+     * closures now. This class is where those closures come from — `url` and `isAllowed`
+     * off the plugin manager, `translate` off the shared helper that carries the request's
+     * text domain, the rest off the accessors above.
+     *
+     * **Nothing in this application calls them today.** App\Laminas\EntityFormatter and the
+     * macros in templates/schoenstatt/_entity-format.html.twig reproduce every one of these
+     * against RouteUrl, because the originals could not run without an MvcEvent. They are
+     * wired anyway: the port has to be constructible to be verifiable, and a second host
+     * (patres) still renders through them.
+     */
+    public function editPencil(): EditPencil
+    {
+        return $this->editPencil ??= new EditPencil(
+            $this->entitiesService(),
+            $this->isAllowed()->__invoke(...),
+            $this->url()
+        );
+    }
+
+    public function editPencilNew(): EditPencilNew
+    {
+        return $this->editPencilNew ??= new EditPencilNew(
+            $this->isAllowed()->__invoke(...),
+            $this->url()
+        );
+    }
+
+    public function formatPerson(): FormatPerson
+    {
+        //`translate` is the shared view helper, not the translator: the person's title is
+        //looked up with no text domain, so only the object useTextDomain() set answers in
+        //the right one
+        return $this->formatPerson ??= new FormatPerson(
+            $this->flag()->__invoke(...),
+            $this->translateHelper()->__invoke(...),
+            $this->url(),
+            $this->label()->render(...),
+            $this->editPencil()->__invoke(...)
+        );
+    }
+
+    public function formatAssociation(): FormatAssociation
+    {
+        return $this->formatAssociation ??= new FormatAssociation(
+            $this->associationKindLabels(),
+            $this->flag()->__invoke(...),
+            $this->translateHelper()->__invoke(...),
+            $this->isAllowed()->__invoke(...),
+            $this->url(),
+            $this->label()->render(...),
+            $this->editPencil()->__invoke(...)
+        );
+    }
+
+    /**
+     * `formatEntity` is **Schoenstatt's** subclass, not SionModel's: the Schoenstatt module
+     * registered the same helper name and won the config merge, so that is what the name has
+     * always resolved to here. It takes `person`, `association` and `role` itself and defers
+     * the rest to its parent.
+     */
+    public function formatEntity(): FormatEntity
+    {
+        return $this->formatEntity ??= new FormatEntity(
+            $this->entitiesService(),
+            $this->associationKindLabels(),
+            $this->routePermissionCheckingEnabled(),
+            $this->flag()->__invoke(...),
+            $this->dateFormat()->__invoke(...),
+            $this->translateHelper()->__invoke(...),
+            $this->url(),
+            $this->editPencil()->__invoke(...),
+            $this->editPencilNew()->__invoke(...),
+            $this->isAllowed()->__invoke(...),
+            //the `format_view_helper` deferral, which used to be a helper name looked up on
+            //the renderer at runtime. One entry: publication -> formatPublication
+            ['formatPublication' => $this->formatPublication()->__invoke(...)],
+            $this->formatPerson()->__invoke(...),
+            $this->formatAssociation()->__invoke(...),
+            $this->label()->render(...)
+        );
+    }
+
+    public function formatPublication(): FormatPublication
+    {
+        return $this->formatPublication ??= new FormatPublication(
+            $this->entitiesService(),
+            $this->routePermissionCheckingEnabled(),
+            $this->flag()->__invoke(...),
+            $this->dateFormat()->__invoke(...),
+            $this->translateHelper()->__invoke(...),
+            $this->url(),
+            $this->editPencil()->__invoke(...),
+            $this->editPencilNew()->__invoke(...),
+            $this->isAllowed()->__invoke(...),
+            [],
+            $this->label()->render(...)
+        );
+    }
+
+    /**
+     * The laminas `url` view helper as a closure. Still the laminas one: it is registered
+     * with the router and no route match, which is all the cluster ever needed — every call
+     * names a route and passes its parameters.
+     *
+     * @return Closure(string, array<string, mixed>): string
+     */
+    private function url(): Closure
+    {
+        /** @var Url $url */
+        $url = $this->helpers()->get('url');
+
+        return static fn (string $route, array $params = []): string => (string) $url($route, $params);
+    }
+
+    /** The Bootstrap label markup, translating through the same page-aware helper. */
+    private function label(): Label
+    {
+        return $this->label ??= new Label($this->translateHelper()->__invoke(...));
+    }
+
+    private function entitiesService(): EntitiesService
+    {
+        /** @var EntitiesService $entities */
+        $entities = $this->laminas->get(EntitiesService::class);
+
+        return $entities;
+    }
+
+    /** The association kinds, already translated, keyed by kind. */
+    private function associationKindLabels(): array
+    {
+        /** @var AssociationKindsService $kinds */
+        $kinds = $this->laminas->get(AssociationKindsService::class);
+
+        return $kinds->getValueOptions();
+    }
+
+    /**
+     * `sion_model.route_permission_checking_enabled`, which is `true` here: a link is
+     * suppressed when the viewer may not reach its route.
+     */
+    private function routePermissionCheckingEnabled(): bool
+    {
+        /** @var array<string, mixed> $config */
+        $config = $this->laminas->get('SionModel\\Config');
+
+        return (bool) ($config['route_permission_checking_enabled'] ?? false);
     }
 
     /**

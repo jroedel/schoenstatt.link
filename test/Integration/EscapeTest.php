@@ -6,6 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use JTranslate\View\Escape as JTranslateEscape;
 use SionModel\View\Escape;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -78,6 +79,21 @@ line', 'tab&#x09;new&#x0A;line'],
     public function testHtmlAttrMatchesWhatLaminasProduced(string $raw, string $html, string $attr): void
     {
         self::assertSame($attr, Escape::htmlAttr($raw));
+    }
+
+    /**
+     * JTranslate ships its own copy, and it must not drift.
+     *
+     * That module does not require SionModel and must not start doing so for twelve lines
+     * of escaping, so `JTranslate\View\Escape` is a deliberate duplicate. A duplicate that
+     * is allowed to diverge is worse than a dependency: attribute escaping is where an
+     * injection gets in, and nobody would notice one of the two copies losing the
+     * entity-width normalisation or the invalid-UTF-8 guard.
+     */
+    #[DataProvider('cases')]
+    public function testJTranslatesCopyProducesIdenticalOutput(string $raw, string $html, string $attr): void
+    {
+        self::assertSame($attr, JTranslateEscape::htmlAttr($raw), 'the two escaper copies have drifted');
     }
 
     /**

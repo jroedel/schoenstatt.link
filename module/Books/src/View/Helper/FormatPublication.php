@@ -1,8 +1,24 @@
 <?php
 namespace Books\View\Helper;
 
+use Closure;
+use SionModel\View\Escape;
 use SionModel\View\Helper\FormatEntity;
 
+/**
+ * A publication rendered by title, disambiguating title, authors, edition or translators.
+ *
+ * Ported alongside the batch-4 cluster for the same reason `Schoenstatt\View\Helper\
+ * FormatEntity` was: it *extends* `SionModel\View\Helper\FormatEntity`, so when that class
+ * stopped being a `Laminas\View\Helper\AbstractHelper` this one lost `$this->view` with it.
+ * It reuses the parent's injected `translate`, `url` and `editPencil`; `label` is its own,
+ * because the parent has no use for one.
+ *
+ * The label calls carry an explicit `Books` text domain. That is what the original meant by
+ * `$this->view->label()->setTranslatorTextDomain('Books')` immediately before rendering —
+ * reaching the label helper itself to set state on it, then invoking it — and it is a per
+ * call argument here rather than a mode left switched on.
+ */
 class FormatPublication extends FormatEntity
 {
     const DISPLAY_TITLE = 'title';
@@ -10,6 +26,38 @@ class FormatPublication extends FormatEntity
     const DISPLAY_AUTHORS = 'authors';
     const DISPLAY_EDITION = 'edition';
     const DISPLAY_TRANSLATORS = 'translators';
+
+    /**
+     * @param Closure(string, string, string): string|null $label the `label` helper, whose
+     *        third argument is the text domain. Null renders no label.
+     * @param array<string, Closure> $formatHelpers see the parent
+     */
+    public function __construct(
+        $entityService,
+        $routePermissionCheckingEnabled = false,
+        ?Closure $flag = null,
+        ?Closure $dateFormat = null,
+        ?Closure $translate = null,
+        ?Closure $url = null,
+        ?Closure $editPencil = null,
+        ?Closure $editPencilNew = null,
+        ?Closure $isAllowed = null,
+        array $formatHelpers = [],
+        private readonly ?Closure $label = null
+    ) {
+        parent::__construct(
+            $entityService,
+            $routePermissionCheckingEnabled,
+            $flag,
+            $dateFormat,
+            $translate,
+            $url,
+            $editPencil,
+            $editPencilNew,
+            $isAllowed,
+            $formatHelpers
+        );
+    }
 
     /**
      *
@@ -70,43 +118,22 @@ class FormatPublication extends FormatEntity
             //authors also include editors
             case self::DISPLAY_AUTHORS:
                 $authors = [];
-//                 foreach ($data['authorAssociations'] as $id => $object) {
-//                     $authors[] = $this->view->formatEntity('association', $object);
-//                 }
-//                 foreach ($data['authorPersons'] as $id => $object) {
-//                     $authors[] = $this->view->formatEntity('person', $object);
-//                 }
                 foreach ($data['authorsText'] as $text) {
-                    $authors[] = $this->view->escapeHtml($text);
+                    $authors[] = Escape::html((string) $text);
                 }
-//                 if (isset($data['editorAssociation'])) {
-//                     if (!isset($editorText)) {
-//                         $editorText = sprintf(' (%s)', $this->view->translate('Ed.'));
-//                     }
-//                     $authors[] = $this->view->formatEntity('association', $data['editorAssociation']).$editorText;
-//                 }
-//                 foreach ($data['editorPersons'] as $id => $object) {
-//                     if (!isset($editorText)) {
-//                         $editorText = sprintf(' (%s)', $this->view->translate('Ed.'));
-//                     }
-//                     $authors[] = $this->view->formatEntity('person', $object).$editorText;
-//                 }
                 foreach ($data['editorsText'] as $text) {
                     if (! isset($editorText)) {
-                        $editorText = sprintf(' (%s)', $this->view->translate('Ed.'));
+                        $editorText = sprintf(' (%s)', $this->translate('Ed.'));
                     }
-                    $authors[] = $this->view->escapeHtml($text) . $editorText;
+                    $authors[] = Escape::html((string) $text) . $editorText;
                 }
                 $escapeMainText = false;
                 $mainText = implode('; ', $authors);
                 break;
             case self::DISPLAY_TRANSLATORS:
                 $authors = [];
-//                 foreach ($data['translatorPersons'] as $id => $object) {
-//                     $authors[] = $this->view->formatEntity('person', $object);
-//                 }
                 foreach ($data['translatorsText'] as $text) {
-                    $authors[] = $this->view->escapeHtml($text);
+                    $authors[] = Escape::html((string) $text);
                 }
                 $escapeMainText = false;
                 $mainText = implode('; ', $authors);
@@ -119,44 +146,43 @@ class FormatPublication extends FormatEntity
                 $mainText = '';
                 $escapeMainText = false;
                 if (isset($data['bookEdition'])) {
-                    $mainText .= sprintf("<strong>%s</strong>", $this->view->escapeHtml($data['bookEdition']));
+                    $mainText .= sprintf("<strong>%s</strong>", Escape::html((string) $data['bookEdition']));
                 }
                 //use published date because copyright date should be the same for all editions (first edition)
                 if (isset($data['datePublishedText'])) {
                     if (strlen($mainText) > 0) {
                         $mainText .= ', ';
                     }
-                    $mainText .= $this->view->escapeHtml($data['datePublishedText']);
+                    $mainText .= Escape::html((string) $data['datePublishedText']);
                 }
                 if (isset($data['publishingPlace'])) {
                     if (strlen($mainText) > 0) {
                         $mainText .= ' ';
                     }
-                    $mainText .= $this->view->escapeHtml($data['publishingPlace']);
+                    $mainText .= Escape::html((string) $data['publishingPlace']);
                 }
         }
 
-        if ($linkOption && isset($data['identifier']) && isset($data['slug'])) {
+        if ($linkOption && isset($data['identifier']) && isset($data['slug']) && null !== $this->url) {
             $linkFormat = '<a href="%s">%s</a>';
-            $url = $this->view->url('publication', ['sw_id' => $data['identifier'], 'slug' => $data['slug']]);
+            $url = ($this->url)('publication', ['sw_id' => $data['identifier'], 'slug' => $data['slug']]);
             if ($escapeMainText) {
-                $mainText = $this->view->escapeHtml($mainText);
+                $mainText = Escape::html((string) $mainText);
             }
             $finalMarkup .= sprintf($linkFormat, $url, $mainText);
         } else {
             if ($escapeMainText) {
-                $finalMarkup .= $this->view->escapeHtml($mainText);
+                $finalMarkup .= Escape::html((string) $mainText);
             } else {
                 $finalMarkup .= $mainText;
             }
         }
-        if ($showLanguageLabel) {
+        if ($showLanguageLabel && null !== $this->label) {
             if (! is_null($data['inLanguage'])) {
-                $this->view->label()->setTranslatorTextDomain('Books');
-                $finalMarkup .= ' ' . $this->view->label($data['inLanguage'], 'label-info');
+                $finalMarkup .= ' ' . ($this->label)($data['inLanguage'], 'label-info', 'Books');
             }
         }
-        if ($showResourceLabel) {
+        if ($showResourceLabel && null !== $this->label) {
             static $resourceLabels;
             if (is_null($resourceLabels)) {
                 $resourceLabels = [
@@ -165,36 +191,28 @@ class FormatPublication extends FormatEntity
                 ];
             }
             if (array_key_exists($data['resourceId'], $resourceLabels)) {
-                $this->view->label()->setTranslatorTextDomain('Books');
-                $finalMarkup .= ' ' . $this->view->label($resourceLabels[$data['resourceId']], 'label-info');
+                $finalMarkup .= ' ' . ($this->label)($resourceLabels[$data['resourceId']], 'label-info', 'Books');
             }
         }
-//         if ($showLabels) {
-//             if (isset($person['labels']) && is_array($person['labels'])) {
-//                 foreach ($person['labels'] as $label) {
-//                    $finalMarkup .= ' '. $this->view->label($label, 'label-info');
-//                 }
-//             }
-//         }
         if ($editPencilOption && isset($data['identifier'])) { //permissions are checked in editPencil
-            $finalMarkup .= $this->view->editPencil('publication', $data['identifier']);
+            $finalMarkup .= $this->renderEditPencil('publication', $data['identifier']);
         }
         if ($showHandChecked && $data['isRevisedWithBookInHand']) {
             $finalMarkup .= sprintf(
                 '&nbsp;<span class="fa fa-check-circle-o fa-3 text-success" title="%s"></span>',
-                $this->view->translate('Information has been hand checked')
+                $this->translate('Information has been hand checked')
             );
         }
         if ($showDataSource && isset($data['dataSource'])) {
             $finalMarkup .= sprintf(
                 '&nbsp;<span class="fa fa-database" title="%s"></span>',
-                $this->view->translate('This row comes from an external data source')
+                $this->translate('This row comes from an external data source')
             );
         }
         if ($showMerged && isset($data['mergedIntoPublicationId'])) {
             $finalMarkup .= sprintf(
                 '&nbsp;<span class="fa fa-sign-in" title="%s"></span>',
-                $this->view->translate('This row has been merged into the main corpus')
+                $this->translate('This row has been merged into the main corpus')
             );
         }
 

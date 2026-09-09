@@ -1,6 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
+use JTranslate\Model\CountriesInfo;
+use JTranslate\View\Helper\CountryName;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AdvancedSearchForm;
@@ -30,9 +32,10 @@ class AdvancedSearchFormFactory implements FactoryInterface
         $form->get('roleTitle')->setValueOptions($roleTitles);
         $form->get('associationKind')->setValueOptions($kinds);
 
-        //retrieve country names
-        $viewHelperManager = $container->get('ViewHelperManager');
-        $countryNames = $viewHelperManager->get('countryName');
+        //retrieve country names. Built here rather than fetched from the ViewHelperManager:
+        //`countryName` is a plain class since 2026-09 and left the module's view_helpers
+        //config with the rest of the batch-4 cluster, so there is no name to ask for.
+        $countryNames = new CountryName($container->get(CountriesInfo::class));
         $usedCountries = $table->getCountries();
         $countries = [];
         foreach ($usedCountries as $value) {

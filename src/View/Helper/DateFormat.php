@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\View\Helper;
 
 use IntlDateFormatter;
-use Laminas\View\Helper\AbstractHelper;
 use Locale;
 
 use function date_default_timezone_get;
@@ -24,8 +23,12 @@ use function md5;
  *
  * Formatters are memoized per shape. Constructing an `IntlDateFormatter` loads locale data,
  * and a changes table formats a date per row.
+ *
+ * Not a `Laminas\View\Helper\AbstractHelper` since 2026-09: it asks the renderer for
+ * nothing. It stays registered in App\Laminas\ViewHelperManagerFactory, which still
+ * resolves it — the plugin manager validates callables as well as HelperInterfaces.
  */
-final class DateFormat extends AbstractHelper
+final class DateFormat
 {
     /** @var array<string, IntlDateFormatter> */
     private array $formatters = [];
