@@ -21,7 +21,6 @@
         "phpoffice/phpspreadsheet": "^5.9",
         "matriphe/iso-639": "^1.0",
         "spatie/schema-org": "^4.0",
-        "laminas/laminas-authentication": "^2.6",
         "laminas/laminas-i18n": "^2.33",
         "symfony/mailer": "^7.3",
         "cocur/slugify": "^3.1",

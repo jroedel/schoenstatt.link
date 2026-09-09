@@ -42,9 +42,10 @@ use JTranslate\Page\PhraseAdmin;
 use App\JUser\Host\FormLocator;
 use App\JUser\Host\Access;
 use App\JUser\Host\Flash;
-use App\JUser\Host\Identity;
 use App\JUser\Host\RouteResolver;
 use App\JUser\Host\Session as JUserSession;
+use JUser\Host\IdentityInterface;
+use JUser\Host\SessionInterface as JUserSessionInterface;
 use App\JUser\Host\UrlBuilder as JUserUrlBuilder;
 use App\JUser\MisconfiguredPersonProvider;
 use JUser\Page\CookieExplainer;
@@ -218,7 +219,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private JUserUrlBuilder $juserUrls;
     private Flash $juserFlash;
     private JUserSession $juserSession;
-    private Identity $juserIdentity;
+    private IdentityInterface $juserIdentity;
     private Access $juserAccess;
     private RouteResolver $juserRoutes;
     private PhraseAdmin $phraseAdmin;
@@ -1163,14 +1164,37 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         return $this->juserFlash ??= new Flash($this->hostMessages());
     }
 
+    /**
+     * Both of these come *from* the laminas container rather than being constructed here,
+     * and that is the whole point: the container registers one of each, so the ACL, the
+     * route guard and these controllers all read the same session and the same identity.
+     * Two instances would each memoize their own answer, and a magic-link redemption — a
+     * sign-in that happens mid-request — would leave the other half of the request still
+     * looking at an anonymous visitor.
+     *
+     * Resolving through the bridge keeps it lazy: every caller is inside a controller
+     * closure, so nothing here builds the laminas container on /_health.
+     */
     private function juserSession(): JUserSession
     {
-        return $this->juserSession ??= new JUserSession($this->laminas());
+        if (! isset($this->juserSession)) {
+            /** @var JUserSession $session */
+            $session             = $this->laminas()->get(JUserSessionInterface::class);
+            $this->juserSession = $session;
+        }
+
+        return $this->juserSession;
     }
 
-    private function juserIdentity(): Identity
+    private function juserIdentity(): IdentityInterface
     {
-        return $this->juserIdentity ??= new Identity($this->laminas());
+        if (! isset($this->juserIdentity)) {
+            /** @var IdentityInterface $identity */
+            $identity             = $this->laminas()->get(IdentityInterface::class);
+            $this->juserIdentity = $identity;
+        }
+
+        return $this->juserIdentity;
     }
 
     private function juserAccess(): Access

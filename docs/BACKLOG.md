@@ -344,10 +344,6 @@ Background: [caching.md](caching.md).
   from the two internal linking callers.
 - **`texts (AclResourceId)`** is the one defensible index on the PK-only tables (28x faster,
   but only on an ACL cache miss); take it only if something else touches the table.
-- **`JUser\Model\UserTable` is built on every anonymous request** (1.9 ms of the auth
-  layer's 3.2 ms) by `JUser\Bridge\Laminas\AuthenticationServiceFactory`. A lazy
-  `callable(): UserTable` fixes it but changes a public constructor on the auth path in a
-  shared library; own PR. Step 2 replaces this storage anyway.
 
 ## Testing & CI
 

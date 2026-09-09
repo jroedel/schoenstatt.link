@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3ec5393c88846e2dfbc07d48268ce01d",
+    "content-hash": "4dd9c2f8a8059ecd4f8aee732f054440",
     "packages": [
         {
             "name": "brick/varexporter",
@@ -714,80 +714,6 @@
                 "source": "https://github.com/giggsey/Locale/tree/2.9.0"
             },
             "time": "2026-02-24T15:32:13+00:00"
-        },
-        {
-            "name": "laminas/laminas-authentication",
-            "version": "2.19.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laminas/laminas-authentication.git",
-                "reference": "717b7a26e55f65a7c97325e49fa0b6fa2ea4c79a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-authentication/zipball/717b7a26e55f65a7c97325e49fa0b6fa2ea4c79a",
-                "reference": "717b7a26e55f65a7c97325e49fa0b6fa2ea4c79a",
-                "shasum": ""
-            },
-            "require": {
-                "ext-mbstring": "*",
-                "laminas/laminas-stdlib": "^3.19.0",
-                "php": "~8.2.0 || ~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
-            },
-            "conflict": {
-                "zendframework/zend-authentication": "*"
-            },
-            "require-dev": {
-                "laminas/laminas-coding-standard": "~3.1.0",
-                "laminas/laminas-db": "^2.20.0",
-                "laminas/laminas-http": "^2.19.0",
-                "laminas/laminas-ldap": "^2.18.1",
-                "laminas/laminas-session": "^2.21.0",
-                "laminas/laminas-uri": "^2.12.0",
-                "laminas/laminas-validator": "^2.64.1",
-                "phpunit/phpunit": "^11.5.42",
-                "psalm/plugin-phpunit": "^0.19.5",
-                "vimeo/psalm": "^6.13.1"
-            },
-            "suggest": {
-                "laminas/laminas-db": "Laminas\\Db component",
-                "laminas/laminas-http": "Laminas\\Http component",
-                "laminas/laminas-ldap": "Laminas\\Ldap component",
-                "laminas/laminas-session": "Laminas\\Session component",
-                "laminas/laminas-uri": "Laminas\\Uri component",
-                "laminas/laminas-validator": "Laminas\\Validator component"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Laminas\\Authentication\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "provides an API for authentication and includes concrete authentication adapters for common use case scenarios",
-            "homepage": "https://laminas.dev",
-            "keywords": [
-                "Authentication",
-                "laminas"
-            ],
-            "support": {
-                "chat": "https://laminas.dev/chat",
-                "docs": "https://docs.laminas.dev/laminas-authentication/",
-                "forum": "https://discourse.laminas.dev",
-                "issues": "https://github.com/laminas/laminas-authentication/issues",
-                "rss": "https://github.com/laminas/laminas-authentication/releases.atom",
-                "source": "https://github.com/laminas/laminas-authentication"
-            },
-            "funding": [
-                {
-                    "url": "https://funding.communitybridge.org/projects/laminas-project",
-                    "type": "community_bridge"
-                }
-            ],
-            "time": "2025-10-17T15:08:49+00:00"
         },
         {
             "name": "laminas/laminas-config",

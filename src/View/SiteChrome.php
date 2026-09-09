@@ -7,6 +7,8 @@ namespace App\View;
 use App\Books\CurrentLibrary;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
+use JUser\Host\IdentityInterface;
+use JUser\Model\DisplayName;
 use App\Laminas\ViewHelpers;
 use App\Locale\Locales;
 use Closure;
@@ -281,12 +283,29 @@ final class SiteChrome
     /**
      * The signed-in visitor's display name, or false when anonymous — the layout
      * branches on the truthiness of exactly this and never prints it.
+     *
+     * Asked of JUser directly. Until 2026-09 this went through the `zfcUserDisplayName`
+     * view helper, which existed to give a laminas layout the same three-step fallback
+     * {@see DisplayName} now holds: chosen name, then username, then the local part of the
+     * email address. The last step is why this is not a property read — showing a whole
+     * address where a name belongs publishes it, on every page.
      */
     public function displayName(): string|false
     {
-        $name = $this->helpers->displayName()->__invoke();
+        $name = DisplayName::of($this->identity()?->current());
 
         return is_string($name) && '' !== $name ? $name : false;
+    }
+
+    /** Null when the host has registered no identity, which is a console process. */
+    private function identity(): ?IdentityInterface
+    {
+        if (! $this->laminas->has(IdentityInterface::class)) {
+            return null;
+        }
+        $identity = $this->laminas->get(IdentityInterface::class);
+
+        return $identity instanceof IdentityInterface ? $identity : null;
     }
 
     /**

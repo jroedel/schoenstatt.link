@@ -217,8 +217,9 @@ restart, `cacheFull`, or timestamp validation off.
   source is a whole-table cache (see `SchoenstattTable::linkAssociations()`); and linked
   rows stay a separate snapshot, never PHP references — references save no live memory
   (copy-on-write) and only shrink `serialize()`.
-- **Signed-in identity resolves through the cache.** `SessionUser::read()` keeps only the
-  user id in the session and re-reads the row every request via `UserTable::findById()`,
+- **Signed-in identity resolves through the cache.** `JUser\Authentication\SessionIdentity`
+  keeps only the user id in the session and re-reads the row every request via
+  `UserTable::findById()`,
   which serves from `all-linked-users` when warm. A revocation made in the application
   (unticking Active) invalidates `['user', 'user-role', 'user-role-link']` and takes effect
   next request; a `state` written straight to the database (a migration, a DBA) is

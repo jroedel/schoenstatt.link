@@ -10,7 +10,7 @@ use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
 use App\Sion\SiteWideIdentifier;
 use App\View\PreferredUrls;
-use Laminas\Authentication\AuthenticationService;
+use JUser\Host\IdentityInterface;
 use Locale;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\AssociationKindsService;
@@ -427,10 +427,10 @@ final class AssociationController
      */
     private function hasIdentity(): bool
     {
-        /** @var AuthenticationService $auth */
-        $auth = $this->laminas->get('JUser\AuthService');
+        /** @var IdentityInterface $identity */
+        $identity = $this->laminas->get(IdentityInterface::class);
 
-        return $auth->hasIdentity();
+        return null !== $identity->current();
     }
 
     private function translate(string $message): string
