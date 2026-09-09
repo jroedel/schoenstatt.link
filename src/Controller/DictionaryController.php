@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\DictionaryTable;
-use Laminas\Json\Json;
+use App\Json;
 use Spatie\SchemaOrg\BaseType;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
