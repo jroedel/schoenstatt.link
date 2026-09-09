@@ -33,6 +33,7 @@ module/SionModel/src/Service/TemplateRendererFactory.php
 # JUser's Symfony surface (batch 13). The Controller directory is safe to name
 # as a whole since 2026-08-21, when the legacy LoginController was deleted with
 # the no-deploy rollback — all eight controllers there are new code now.
+module/JUser/src/Authentication
 module/JUser/src/Host
 module/JUser/src/Page
 module/JUser/src/Controller

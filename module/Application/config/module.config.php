@@ -13,6 +13,8 @@ namespace Application;
 use App\Acl\AclProvider;
 use App\Acl\IsAllowed;
 use App\Laminas\ContainerServices;
+use App\JUser\Host\Session as JUserSession;
+use JUser\Host\SessionInterface as JUserSessionInterface;
 use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
 use Laminas\Router\Http\Literal;
@@ -100,6 +102,16 @@ return [
     'service_manager' => [
         'factories' => [
             'translator' => TranslatorServiceFactory::class,
+            /*
+             * The session JUser reads and writes, as its own host contract rather than a
+             * laminas Container. Registered here, in the laminas container, because that is
+             * where JUser's own `Host\IdentityInterface` factory looks for it — and because
+             * one registration is what makes the Symfony kernel and the laminas container
+             * share a single adapter. Two would each memoize their own identity, and a
+             * magic-link redemption through one would leave the other anonymous.
+             */
+            JUserSessionInterface::class => static fn (ContainerInterface $c): JUserSession
+                => new JUserSession(new ContainerServices($c)),
             //default persistent storage, configured in cache.local.php
             CacheStorage::class => Service\CacheFactory::class,
             /*

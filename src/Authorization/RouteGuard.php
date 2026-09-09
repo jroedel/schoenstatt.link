@@ -9,7 +9,7 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Acl\AclProvider;
 use Closure;
-use Laminas\Authentication\AuthenticationService;
+use JUser\Host\IdentityInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -185,10 +185,10 @@ final class RouteGuard
      */
     private function identity(): mixed
     {
-        /** @var AuthenticationService $auth */
-        $auth = $this->laminas->get('JUser\AuthService');
+        /** @var IdentityInterface $identity */
+        $identity = $this->laminas->get(IdentityInterface::class);
 
-        return $auth->getIdentity();
+        return $identity->current();
     }
 
     /**

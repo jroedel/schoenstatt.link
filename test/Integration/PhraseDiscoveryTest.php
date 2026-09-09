@@ -5,7 +5,8 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ContainerFactory;
 use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
-use JUser\Bridge\Laminas\AuthServiceActingUserProvider;
+use JUser\Host\IdentityInterface;
+use JUser\Service\IdentityActingUserProvider;
 use Laminas\EventManager\Event;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
@@ -29,7 +30,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * comes back the next time a page renders it" property silently held only for visitors
  * browsing in Spanish, German, Portuguese or Italian.
  *
- * **An unavailable acting-user service must not stop a write.** `JUser\AuthService` is
+ * **An unavailable acting-user service must not stop a write.** The identity is
  * session-backed and *raises* rather than returning nothing in a console process. That
  * used to escape from a write path that only wanted a nullable `modified_by`, killing the
  * write halfway.
@@ -114,8 +115,8 @@ class PhraseDiscoveryTest extends TestCase
     /**
      * The provider answers null, rather than raising, when the session cannot exist.
      *
-     * Built against a container that throws for `JUser\AuthService`, which is what a
-     * console process produces — there the failure comes out of
+     * Built against a container that throws for the identity, which is what a console
+     * process produces — there the failure comes out of
      * `Laminas\Session\Config\SessionConfig` rejecting `session.cache_expire`.
      */
     public function testTheActingUserProviderAnswersNullWhenTheServiceCannotBeBuilt(): void
@@ -139,11 +140,11 @@ class PhraseDiscoveryTest extends TestCase
             }
         };
 
-        $provider = new AuthServiceActingUserProvider($container);
+        $provider = new IdentityActingUserProvider($container);
 
         self::assertNull(
             $provider->getActingUserId(),
-            'an unavailable authentication service still raises, so a console write that only wants a '
+            'an unavailable identity still raises, so a console write that only wants a '
             . 'nullable modified_by dies halfway through'
         );
         self::assertNull($provider->getActingUserId(), 'the second call behaved differently from the first');
@@ -165,12 +166,12 @@ class PhraseDiscoveryTest extends TestCase
     public function testAnAvailableServiceIsStillConsulted(): void
     {
         try {
-            $this->container->get('JUser\AuthService');
+            $this->container->get(IdentityInterface::class);
         } catch (\Throwable $e) {
-            self::markTestSkipped('JUser\AuthService is not buildable in this process: ' . $e->getMessage());
+            self::markTestSkipped('the identity is not buildable in this process: ' . $e->getMessage());
         }
 
-        $provider = new AuthServiceActingUserProvider($this->container);
+        $provider = new IdentityActingUserProvider($this->container);
 
         self::assertNull($provider->getActingUserId(), 'nobody is signed in, so there is no acting user');
     }

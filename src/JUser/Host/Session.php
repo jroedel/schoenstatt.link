@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\JUser\Host;
 
-use App\Laminas\ServiceBridge;
+use App\Laminas\LaminasServices;
 use JUser\Host\SessionInterface;
 use Laminas\Session\Container;
 use Laminas\Session\ManagerInterface;
@@ -26,6 +26,16 @@ use Laminas\Session\SessionManager;
  * service id with a `SessionManager`, so this is a narrowing of a declared type to the real
  * one rather than a cast and rather than a hope.
  *
+ * ## Built from the laminas container, not only for it
+ *
+ * The constructor takes {@see LaminasServices} rather than the concrete `ServiceBridge`
+ * because this is registered *in* the laminas container as `JUser\Host\SessionInterface`
+ * — {@see \App\Laminas\ContainerServices} adapts the container to that interface, the
+ * same way the `isAllowed` view helper is assembled. One registration is what keeps the
+ * Symfony kernel and the laminas container sharing a single session adapter, and with it a
+ * single identity: two would each memoize their own answer, and a sign-in through one would
+ * leave the other still reporting an anonymous visitor.
+ *
  * ## Containers are cached per namespace
  *
  * Not for speed: `new Container($ns, $manager)` on every read is fine. It is that a
@@ -37,7 +47,7 @@ final class Session implements SessionInterface
     /** @var array<string, Container<string, mixed>> */
     private array $containers = [];
 
-    public function __construct(private readonly ServiceBridge $laminas)
+    public function __construct(private readonly LaminasServices $laminas)
     {
     }
 
