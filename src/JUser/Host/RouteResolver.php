@@ -83,22 +83,9 @@ final class RouteResolver implements RouteResolverInterface
     ];
 
     /**
-     * Symfony route name → the name the **ACL** knows, where the two differ.
-     *
-     * The answer goes to `JUser\Page\RedirectTarget::refusedRoute()`, which hands it to
-     * `Access::userMayReachRoute()` — and that looks up `route/<name>` and **denies when the
-     * resource does not exist**. The ACL is keyed on the laminas route names throughout, so
-     * returning Symfony's name for a page the two spell differently would tell a signed-in
-     * user they may not reach a page they can, with nothing failing anywhere.
-     *
-     * Two routes are affected and both were renamed when they were ported.
-     * test/Integration/RouteMatchParityTest compares every route against the laminas router
-     * and fails if this map is ever incomplete, so a third divergence cannot arrive quietly.
+     * Two routes are spelled differently by the two sides and only the laminas name is an
+     * ACL resource; {@see SymfonyRoutes::ACL_NAME} carries the map and says why.
      */
-    private const ACL_NAME = [
-        'sm-cache-status'           => 'sion-model/cache-status',
-        'sm-clear-persistent-cache' => 'sion-model/clear-persistent-cache',
-    ];
 
     public function routeFor(string $path): ?string
     {
@@ -130,7 +117,7 @@ final class RouteResolver implements RouteResolverInterface
             return null;
         }
 
-        return self::ACL_NAME[$route] ?? $route;
+        return SymfonyRoutes::ACL_NAME[$route] ?? $route;
     }
 
     /**

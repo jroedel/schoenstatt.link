@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Laminas\ContainerFactory;
-use Laminas\Router\RouteStackInterface;
+use App\Http\SymfonyRoutes;
+use App\Laminas\RouteUrl;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 use SionModel\Entity\Entity;
@@ -159,7 +160,7 @@ class EntitySpecRoutesAreAssemblableTest extends TestCase
         $entities = $this->entities();
         self::assertGreaterThan(20, count($entities), 'suspiciously few entity specs');
 
-        $router   = $this->router();
+        $urls     = $this->urls();
         $failures = [];
 
         foreach ($entities as $name => $spec) {
@@ -172,7 +173,7 @@ class EntitySpecRoutesAreAssemblableTest extends TestCase
                 $params = $this->parametersFor($spec, $routeProperty, $keyProperty);
 
                 try {
-                    $router->assemble($params, ['name' => $route]);
+                    $urls->path($route, $this->satisfying($route, $params));
                 } catch (Throwable $e) {
                     $failures[] = sprintf(
                         '%s.%s => %s: %s',
@@ -198,21 +199,66 @@ class EntitySpecRoutesAreAssemblableTest extends TestCase
     }
 
     /**
+     * Placeholders adjusted to what each parameter's own requirement will accept.
+     *
+     * `sw_id` is a different pattern on every entity route — `SL1…A` for an association,
+     * `SL5…C` for a composition — so one value per name cannot work and the route has to be
+     * consulted. A parameter whose route declares no requirement keeps its placeholder.
+     *
+     * @param array<string, string> $params
+     * @return array<string, string>
+     */
+    private function satisfying(string $routeName, array $params): array
+    {
+        $routes = SymfonyRoutes::collection();
+        $route  = $routes->get($routeName . '.locale') ?? $routes->get($routeName);
+        if (null === $route) {
+            return $params;
+        }
+
+        foreach ($params as $name => $value) {
+            $requirement = $route->getRequirement((string) $name);
+            if (null === $requirement || 1 === preg_match('{^(?:' . $requirement . ')$}', $value)) {
+                continue;
+            }
+            foreach (self::CANDIDATES as $candidate) {
+                if (1 === preg_match('{^(?:' . $requirement . ')$}', $candidate)) {
+                    $params[$name] = $candidate;
+                    break;
+                }
+            }
+        }
+
+        return $params;
+    }
+
+    /** Tried in order against a parameter's requirement; see {@see satisfying()}. */
+    private const CANDIDATES = [
+        '1', '42',
+        'SL110000A', 'SL210000L', 'SL410000T', 'SL510000C',
+        'SL100000A', 'SL10000A', 'SL20000L', 'SL40000T', 'SL50000C',
+        'es', 'en', 'comment', 'current',
+    ];
+
+    /**
      * The parameters a reader of this field would have to hand: the declared key, else the
      * first `routeParam => entityField` map that is set, else none.
      *
-     * The values are placeholders — `assemble()` substitutes them without checking a
-     * single constraint, so what is being tested is whether the *names* satisfy the route,
-     * never whether `1` is a plausible id.
+     * The values are placeholders: what is being tested is whether the *names* satisfy the
+     * route, never whether `1` is a plausible id. The laminas router substituted them
+     * without checking a single constraint; Symfony's generator refuses a value its route's
+     * own requirement rejects, so {@see satisfying()} swaps each placeholder for one that
+     * regex accepts. The subject of the test is unchanged — a spec naming a route it cannot
+     * fill still fails, and now so does one naming a route that does not exist.
      *
-     * @return array<string, int>
+     * @return array<string, string>
      */
     private function parametersFor(Entity $spec, string $routeProperty, ?string $keyProperty): array
     {
         if (null !== $keyProperty) {
             $key = self::stringProperty($spec, $keyProperty);
             if (null !== $key) {
-                return [$key => 1];
+                return [$key => '1'];
             }
         }
 
@@ -222,7 +268,7 @@ class EntitySpecRoutesAreAssemblableTest extends TestCase
             if (is_array($map) && [] !== $map) {
                 $params = [];
                 foreach (array_keys($map) as $routeParam) {
-                    $params[(string) $routeParam] = 1;
+                    $params[(string) $routeParam] = '1';
                 }
 
                 return $params;
@@ -250,12 +296,14 @@ class EntitySpecRoutesAreAssemblableTest extends TestCase
         return $service->getEntities();
     }
 
-    private function router(): RouteStackInterface
+    /**
+     * The application's own URL seam, not a bare generator: `FormatEntity`, `EntityEdit`
+     * and `EntityDelete` all reach a spec's route through {@see RouteUrl::path()}, so this
+     * asks the question they ask. Since step 6 that is Symfony's generator underneath.
+     */
+    private function urls(): RouteUrl
     {
-        /** @var RouteStackInterface $router */
-        $router = self::services()->get('Router');
-
-        return $router;
+        return new RouteUrl('');
     }
 
     private static function services(): ServiceManager
