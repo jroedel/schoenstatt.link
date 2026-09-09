@@ -40,7 +40,7 @@ use function substr;
  * way to obtain one. (This used to add "and the mobile apps already use them" of
  * `JUser\Controller\LoginV1ApiController`, which issued them until /api/v1 was retired
  * on 2026-08-14. The access log says no mobile client ever signed in there — see
- * docs/strangler.md. The token *format* is what carried over, not a live caller.)
+ * docs/laminas-exit.md. The token *format* is what carried over, not a live caller.)
  * A bot gets one the same way any other account does, so there is no second
  * credential store to build, leak or forget to rotate. `sub` is a `user.user_id`,
  * which is what makes an agent's edits attributable: it goes straight into

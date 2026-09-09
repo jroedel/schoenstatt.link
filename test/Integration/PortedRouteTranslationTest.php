@@ -67,7 +67,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * - the actual lookup is asserted only when an export exists, and skips loudly otherwise.
  *
  * The exhaustive check is not automatable here at all, and is documented in
- * docs/strangler.md instead: render all five locales through *both* front controllers and
+ * docs/laminas-exit.md instead: render all five locales through *both* front controllers and
  * diff. That is what found this, and what confirmed the fix — 65 of 65 responses
  * identical across 5 locales × 13 routes.
  */

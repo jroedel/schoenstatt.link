@@ -104,7 +104,7 @@ class CreateSurfaceSmokeTest extends SmokeTestCase
     /**
      * Anonymous is refused — **except on `/libraries/create`, which is public**.
      *
-     * That is not a porting decision and not a mistake here: `docs/acl-rules.md` records
+     * That is not a porting decision and not a mistake here: `docs/acl-baseline.json` records
      * `libraries/create` as guarded `guest, lib_user`, and `guest` is *not* one of the four
      * default roles, so unlike most guards on this site it really does admit a signed-out
      * visitor. Measured on the laminas side too — it answers 200 there as well. Asserted

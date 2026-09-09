@@ -80,7 +80,7 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
      * other six name resources no descendant of sch_moderator is allowed
      * (`route/juser` wants `administrator`, `route/jtranslate` wants
      * `sch_general_moderator` or `translator`, `route/kernel-switch` wants
-     * `sch_administrator`, and so on: docs/acl-rules.md).
+     * `sch_administrator`, and so on: docs/acl-baseline.json).
      *
      * Worth its own assertion rather than being a smaller version of the same one.
      * Getting through the route guard and seeing the whole page are two different

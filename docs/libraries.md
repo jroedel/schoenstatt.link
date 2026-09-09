@@ -1,236 +1,172 @@
 # The library feature
 
-How lending works, why the authorization looks too loose, and why it is not.
-
-Read this before changing anything about `lib_libraries`, `CheckoutsController`, or the
-per-library ACL rules. Almost everything surprising here is a deliberate decision that
-looks like an oversight, which is the worst combination for a codebase nobody has touched
-in five years.
+How lending works, why the authorization looks too loose, and why it is not. Almost
+everything surprising here is a deliberate decision that looks like an oversight.
 
 ## One feature, several kinds of library
-
-The system serves libraries with genuinely different audiences, and it was built to be
-configured per library rather than to impose one model:
 
 | library | audience | how that is expressed |
 |---|---|---|
 | Bellavista (1) | Schoenstatt Fathers house | `CheckoutBooksRole = guest`, person list `patres-sion` |
 | Colegio Mayor (3) | study house, its own community | `CheckoutBooksRole = lib_patres`, person list `patres-sion` |
 | PUC (4) | inactive | checkouts off |
-| Vaterhaus Investigation (5) | reference collection | checkouts off |
+| Vaterhaus Investigation (5) | reference collection | `ViewRole = lib_user`, checkouts off |
 | Schoenstatt Fathers Austin (6) | mostly priests, open to anyone who asks | `CheckoutBooksRole = guest`, person list `all-borrowers` |
 | Schoenstatt University Men (7) | any student at UT Austin | `CheckoutBooksRole = guest`, person list `all-borrowers` |
 
-The policy columns on `lib_libraries` are:
+Policy columns on `lib_libraries`:
 
-- **`ViewRole`** — who may see the library. Drives an `allow … show` rule.
-- **`CheckoutBooksRole`** — who may borrow. Drives an `allow … checkout` rule. **NULL emits
-  no rule at all**, which under default-deny means *nobody*, not everybody.
-- **`EnableCheckouts`** — a separate on/off switch, so "no rule" and "switched off" cannot
-  be confused for one another.
+- **`ViewRole`** — who may see the library; drives an `allow … show` rule.
+- **`CheckoutBooksRole`** — who may borrow; drives an `allow … checkout` rule.
+  **NULL emits no rule**, which under default deny means *nobody*.
+- **`EnableCheckouts`** — a separate switch, so "no rule" and "switched off" cannot
+  be confused.
 - **`CheckoutPersonListKind`** — which list of people the checkout form offers.
-- `DefaultCheckoutTimePeriodInDays`, `MaximumBookRenewals`, `DefaultCheckoutPersonId` — loan
-  terms.
+- `DefaultCheckoutTimePeriodInDays`, `MaximumBookRenewals` (default 3),
+  `DefaultCheckoutPersonId` — loan terms. Renewal is `LibraryTable::renewBook()`:
+  it persists, counts, enforces the maximum, and an overdue book renews from *today*.
 
 `Books\Model\LibraryTable::getRules()` turns those columns into ACL rules against a
-`library_<id>` resource, one resource per row, built at request time. `App\Books\
-LibraryAclRules` is a second copy of that mapping so `tools/acl-table.php` can report them;
+`library_<id>` resource, one per row, at request time; `App\Acl\AclAssembler` calls
+it as a dynamic rule provider. `App\Books\LibraryAclRules` is a second copy of the
+mapping so `tools/acl-table.php` can report it, and
 `test/Integration/LibraryAclRuleDriftTest` fails if the two disagree.
 
-The admin option list is `LibraryTable::LIBRARY_GENERAL_ROLE_OPTIONS`: Public (`guest`),
-Authenticated users (`lib_user`), Academic users (`lib_academic`), Institute members
-(`lib_institute`), Patres (`lib_patres`). The roles form a chain —
-`user → lib_user → lib_academic → lib_institute → lib_patres` — each inheriting the last,
-so **naming a role admits it and everything below it**.
+The admin option list is `LibraryTable::LIBRARY_GENERAL_ROLE_OPTIONS`: Public
+(`guest`), Authenticated users (`lib_user`), Academic users (`lib_academic`),
+Institute members (`lib_institute`), Patres (`lib_patres`). The roles chain —
+`user → lib_user → lib_academic → lib_institute → lib_patres` — each inheriting
+the last, so **naming a role admits it and everything below it**.
 
-## `guest` does not mean "anonymous"
+## `guest` means "every account", and that is deliberate
 
-`getRules()` adds `user` alongside `guest`, with the comment *"if it's free to guests, it
-should also be open to users"*. `user` is the root of that chain. So a library set to
-**Public is open to every signed-in account** — 34 effective roles, 3,727 of 3,791 accounts
-— not to anonymous visitors specially.
-
-The route guard on `libraries/library/checkout` is `lib_user`, which is `is_default = 1`,
-so it stops anonymous visitors and nobody else. Between the two gates, a Public library's
+`getRules()` adds `user` alongside `guest` ("if it's free to guests, it should also
+be open to users"), and `user` is the root of the chain. So a library set to
+**Public is open to every signed-in account**. The route guard on
+`libraries/library/checkout` is `lib_user`, which is `is_default = 1`, so it stops
+anonymous visitors and nobody else. Between the two gates a Public library's
 lending form is reachable by anyone with an account.
 
-**This is intended.** In a religious community, a checkout that is not effortless simply
-does not happen — the book goes to someone's room and nothing is recorded. A flexible
-low-friction system was chosen over strict control, with the accepted worst case being
-*a malicious bot marking books checked out that were not*, which is recoverable. Unrecorded
-loans are not. Colegio Mayor (`lib_patres`) is the counter-example that shows restriction
-is used where it is wanted.
-
-`test/Smoke/LibraryCheckoutAuthorizationSmokeTest` pins **both** halves — open where
-intended, closed where intended — because pinning only one invites the other to be
-"corrected" by someone reading the ACL without this context.
+**This is intended.** In a religious community a checkout that is not effortless
+does not happen — the book goes to someone's room and nothing is recorded. Low
+friction was chosen over strict control; the accepted worst case is a bot marking
+books checked out that were not, which is recoverable. Unrecorded loans are not.
+Colegio Mayor (`lib_patres`) shows restriction is used where it is wanted.
+`test/Smoke/LibraryCheckoutAuthorizationSmokeTest` pins **both** halves — open
+where intended, closed where intended.
 
 ## Borrowers are not accounts, and cannot be
 
-There is **no user-to-person link in this database at all**. `sch_persons` was built for the
-`/movement` route, to hold contact information for Schoenstatt leaders; when the library
-feature came along those people and that table already existed, so it was reused rather than
-a separate borrower model being built.
+There is **no user-to-person link in this database**. `sch_persons` was built for
+`/movement` to hold contact data for Schoenstatt leaders and was reused as the
+borrower model. Two consequences:
 
-Two consequences follow, and both look like bugs until you know this:
+1. **The checkout form asks *who* is borrowing** (a `personId` select plus book
+   ids); nothing can infer it from the signed-in account.
+2. **Borrowers reach their own books without an account**, through a scoped link
+   in the overdue notice: `/library/my-books?t=…`. The token
+   (`Books\Model\BorrowerTokenTable`, table `lib_borrower_tokens`) authorises
+   exactly one person at one library, is stored as a **sha256 digest**, expires,
+   and is deliberately **not single-use**. The page
+   (`App\Controller\BorrowerCheckoutsController`) exists so that its authorization
+   is ordinary code rather than a role, and **no `person_id` may ever appear in
+   that URL**.
 
-1. **The checkout form asks *who* is borrowing.** It is not inferred from the signed-in
-   account, because there is nothing to infer it from. `CheckoutsController::createAction()`
-   takes a `personId` from a select and a set of book ids.
-2. **Borrowers reach their own books without an account**, through a scoped token
-   (`/library/my-books?t=…`, `Books\Model\BorrowerTokenTable`). That page is Symfony-side
-   precisely so its authorization is ordinary code rather than a role, and **no `person_id`
-   may ever appear in that URL**.
+Notices go out via `bin/console books:send-notices --library=N [--dry-run]
+[--all-borrowers] [--list]`; no API key or account is needed.
 
-So "who may borrow from this library" is answered by `CheckoutBooksRole` at the level of
-*may this visitor use the lending form*, and by `CheckoutPersonListKind` at the level of
-*whose name may be picked*. There is no per-borrower permission and there is nowhere to put
-one.
+"Who may borrow" is answered by `CheckoutBooksRole` (may this visitor use the
+lending form) and `CheckoutPersonListKind` (whose name may be picked). There is no
+per-borrower permission and nowhere to put one.
 
 ## The person list, and the Patres import
 
-`CheckoutPersonListKind` selects the provider behind the form's person select:
-
 - **`all-borrowers`** — people already marked as borrowers locally.
-- **`patres-sion`** — the roster from the Patres project's API
-  (`schoenstatt-fathers.link/api/persons`), which is the auto-import the internal libraries
-  need. On submit, `createCheckouts()` calls
+- **`patres-sion`** — the roster from the Patres API
+  (`schoenstatt-fathers.link/api/persons`). On submit, `createCheckouts()` calls
   `PatresGateway::getSchoenstattPersonFromPatresPersonId($id, true, ['isBorrower' => true])`,
-  which copies that person into `sch_persons` if they are not here yet.
+  which copies the person into `sch_persons` if not present.
 
-Worth knowing before treating that import as a hazard: **it cannot overwrite an existing
-local record from this path.** `getSchoenstattPersonFromPatresPersonId()` only calls
-`importRemotePerson()` after `getPersonInSchoenstattTable()` missed, and both run the
-*identical* `searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => …])` query — so
-a miss in the first is a miss in the second, and the create branch is the one that runs. The
-overwrite branch belongs to `AdminController::importFatherAction()`, which is
-`sch_administrator` only and where re-importing to refresh a record is the point. Since
-2026-08-17 that action says which of the two happened instead of reporting both as "Person
-successfully imported."
+That path **cannot overwrite an existing local record**: it imports only after the
+local lookup missed, and both run the identical
+`searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => …])` query. The
+overwrite branch is `admin/import-father` (`App\Controller\ImportFatherController`,
+`sch_administrator` only). What a Public `patres-sion` library lets any account do
+is **create** a person from the roster, validated by this application's person
+input filter — bound it there, not in the ACL.
 
-What a Public `patres-sion` library *does* allow any signed-in account to do is cause a
-person to be **created** locally from the Patres roster. The fields that arrive are whatever
-that project's API returns, validated against this application's person input filter. If
-that ever needs bounding, the place to do it is the input filter, not the ACL.
+## Where the checks live
 
-## What is not here
-
-- **There is no individual loan record page.** `checkouts`, `checkouts/checkout` and
-  `checkouts/checkout/edit` were removed on 2026-08-17: they were reachable by nobody
-  (no guard entry, so default-deny) and had nothing behind them either — the `checkout`
-  entity spec has `index_template`, `show_action_template`, `edit_action_form` and
-  `edit_action_template` all commented out. A library's loans are read through
-  `checkouts/library/{current,overdue}` and a person's through `borrowers/borrower`.
-  `/checkouts` is now an unmatchable prefix; `/checkouts/library/:id` still works.
-- **There is no per-library staff list.** `administrate` is granted to `lib_administrator`
-  globally, for every library. `getRules()` carries a `@todo` sketching a table of
-  (resource, permission, rule type, id) that would fix this; nobody has built it, so a
-  library administrator anywhere is a library administrator everywhere.
-- **`libraries/library/delete` is unfinished**, not merely unguarded: `enable_delete_action`
-  is commented out of the `library` entity spec along with its three companions.
-
-## Where the checks actually live
-
-Since strangler batch 11b (2026-08-18) all of these pages are **Symfony-served**, and the
-checks moved with them into `App\Books\LibraryPage` — one implementation of "read
-`library_id`, load the row, ask the ACL" where the laminas controllers had the same nine
-lines four times over, twice returning a redirect object from a method declared to return an
-int. The last of them, `library-imports/library-import/edit`, followed on 2026-08-18 —
-`Books\Controller\LibraryImportsController` and its six view scripts are gone, making
-`/library-imports` the first route tree in the application with no laminas controller
-behind it at all. See [library-imports.md](library-imports.md).
+`App\Books\LibraryPage` is the one implementation of "read `library_id`, load the
+row, ask the ACL"; every page on the surface opens with it.
 
 | what | check |
 |---|---|
 | see a library | `App\Controller\LibraryController` → `LibraryPage::refuse(…, 'show')` |
 | use the lending form | `App\Controller\LibraryCheckoutController` → `LibraryPage::refuse(…, 'checkout')` |
-| check in, mass checkout, library admin, imports | `'administrate'` — `lib_administrator` |
-| borrower sees own loans | scoped token, not a role — `App\Controller\BorrowerCheckoutsController` |
+| check in, mass checkout, admin menu, imports, `refresh-sort` | `'administrate'` — `lib_administrator` |
+| borrower sees own loans | scoped token, not a role |
 
-**A denied `show` redirects; a denied anything-else answers 403**, and that is reproduced
-rather than tidied. The library page's check lives inside
-`SionModel\Controller\SionController::showAction()`, which flashes and redirects to the
-libraries index; every other action calls `isAllowed()` itself and throws
-`UnAuthorizedException`, which BjyAuthorize renders as a 403. Same question, two answers,
-decided by which code asks it — and `BooksSmokeTest` pins the redirect for library 5, whose
-`ViewRole` is `lib_user`.
+**A denied `show` flashes and redirects to `/libraries`; a denied anything-else
+answers 403** — reproduced, not tidied. `BooksSmokeTest` pins the redirect for
+library 5.
 
-Route guards are the outer gate and are listed in [acl-rules.md](acl-rules.md); the
-per-library rules are the inner one and are in that same file under "Per-library rules".
-**Every guard on this surface names `lib_user`, which is `is_default = 1`** — so the outer
-gate means no more than "signed in", and the inner one is the whole of the protection.
+Route guards (`config/autoload/acl.global.php`, `guards`) are the outer gate and
+the per-library rules the inner one. **Every guard on this surface names
+`lib_user` (`is_default = 1`) except `libraries/library/delete`, which names
+`lib_administrator`** — so the outer gate means "signed in" and the inner one is
+the protection. With one qualification: **`administrate` is not per-library.**
+`getRules()` emits `[['lib_administrator'], $resourceId, 'administrate']` for
+*every* row unconditionally (there is no per-library administrator table), so a
+library administrator anywhere is one everywhere. `show` and `checkout` are the
+genuinely per-row ones, because they read `ViewRole` and `CheckoutBooksRole` off
+the row.
 
-Two exceptions to that sentence, and they pull in opposite directions:
-
-- `libraries/library/delete` names `lib_administrator`, the only guard here that is not a
-  default role. See below.
-- **`administrate` is not actually per-library**, which matters because the table above
-  invites the opposite reading. `LibraryTable::getRules()` emits
-  `[['lib_administrator'], $object['resourceId'], 'administrate']` for *every* library row,
-  unconditionally — its own `@todo` wants a table of per-library administrators and there
-  is none. So `lib_administrator` administers all six libraries, and for `administrate` the
-  inner gate currently distinguishes nobody. `show` and `checkout` are the genuinely
-  per-row ones, because they read `ViewRole` and `CheckoutBooksRole` off the row.
+**`refresh-sort` answers GET with a confirmation** and writes only on a
+token-checked POST (`App\Controller\LibrarySortController`), because it rewrites
+every book's sort text in the library.
 
 ## Deleting a library
 
-`/libraries/{id}/delete` — added 2026-09-08, and the first page on this surface that never
-had a laminas rendering. The route name has been in `module/Books/config/module.config.php`
-since 2020 and was reachable by nobody, refused twice over: no guard entry, and the
-`library` entity leaves `enable_delete_action` commented out.
+`/libraries/{id}/delete` is `App\Books\LibraryDelete`, written rather than
+generic because of the cascade: `SionTable::deleteEntity()` is a single-row
+`DELETE`, and of the four tables carrying a library id only `lib_imports` has a
+foreign key (`ON DELETE CASCADE`). `lib_books`, `lib_collections` and
+`lib_borrower_tokens` have none, so a bare delete would leave a catalogue (PUC:
+16,383 books) pointing at a library that no longer exists, with no error.
 
-**The reason it needed writing rather than porting is the cascade.**
-`SionTable::deleteEntity()` is a single-row `DELETE`, and of the four tables carrying a
-library id only `lib_imports` has a foreign key (`ON DELETE CASCADE`). `lib_books`,
-`lib_collections` and `lib_borrower_tokens` have none. So the generic delete would have left
-PUC's **16,383 books** in the table pointing at a library that no longer exists — on no
-page, in no catalogue, and reachable by no screen in the application. Nothing would have
-errored.
+Rules of the cascade — one transaction, children first:
 
-`App\Books\LibraryDelete` does it explicitly instead, in one transaction, children first:
-checkouts (reached by joining `lib_books`, since `lib_checkouts` has no library id of its
-own), then books, collections, borrower tokens, imports, then the library row. Two orderings
-in it are load-bearing and neither fails loudly if reversed — the checkout delete must
-precede the book delete, and the cache invalidation must follow the commit.
+- **checkouts before books** — `lib_checkouts` has no library id and is reached by
+  joining `lib_books`; then books, collections, borrower tokens, imports, the row;
+- **cache invalidation after the commit**, not inside it;
+- **the confirmation requires the library's name typed exactly**, case-sensitive —
+  this one destroys a catalogue, so a CSRF token and a button is not enough;
+- **the change log gets an aggregate**: one `entryDeleted` row carrying the name in
+  `OldValue`, plus one counted row per dependent kind — not 16,383 book rows;
+- outstanding checkouts (`CheckedInOn IS NULL`) are counted and shown separately
+  because a book is physically out; they do not block the delete.
 
-Three decisions worth knowing before changing any of it:
+`enable_delete_action` stays commented out in the `library` entity spec so the
+generic single-row delete can never handle the entity.
 
-- **The confirmation asks for the library's name to be typed**, exactly and
-  case-sensitively. Every other delete on the site is a CSRF token and a button, which is
-  proportionate for one record; this one destroys a catalogue.
-- **The change log records an aggregate**: one `entryDeleted` row carrying the library's
-  name in `OldValue`, plus one counted row per dependent kind. Not 16,383 book rows. The
-  name is in the log because the row that held it is the one being deleted.
-- **The laminas generic delete stays disabled on purpose.** Switching
-  `enable_delete_action` on would have let `SionController::deleteAction()` handle the row —
-  and under `SYMFONY_KERNEL=0`, the documented rollback, that action would delete the
-  library *without* the cascade. Leaving it off means laminas answers "this entity cannot be
-  deleted, please check the configuration", which is the right answer from a front
-  controller that cannot do the job.
+**A library created outside the application answers 403 to everyone until the
+persistent cache is flushed.** `getRules()` derives its resources from the cached
+`getObjects('library')` and the assembled ACL is itself cached in APCu; a write
+through the application invalidates both, a migration or a DBA does not.
+`test/Smoke/LibraryDeleteSmokeTest` hits `/sm/clear-persistent-cache` after
+building its fixtures for exactly this reason.
 
-Outstanding checkouts (`CheckedInOn IS NULL`) are counted and shown separately from the
-checkout total, because they mean a book is physically out and the delete destroys the
-record of who has it. They do not block the deletion — the person confirming is the one who
-knows whether that matters.
+## Not here, and broken-but-reproduced
 
-One operational consequence, which is not specific to this page but is easiest to hit here:
-**a library created outside the application is not administrable until the persistent cache
-is flushed.** `getRules()` derives its `library_<id>` resources from the cached
-`getObjects('library')`, and the assembled ACL is itself cached in APCu, so a row inserted
-by SQL has no resource and default deny answers 403. A write through the application
-invalidates both; a migration or a DBA does not. `test/Smoke/LibraryDeleteSmokeTest` hits
-`/sm/clear-persistent-cache` after building its fixtures for exactly this reason — it cost
-that test six failures first.
-
-## Two things on this surface that are broken and reproduced
-
-Both were found by the batch-11b audit and left as they were, because fixing either is a
-decision rather than a transcription:
-
+- **No individual loan record page.** A library's loans are read through
+  `checkouts/library/{current,overdue}`, a person's through `borrowers/borrower`.
+- **No per-library staff list** — see `administrate` above.
 - **Mass checkout offers the Schoenstatt Fathers at every library**, where the
-  single-checkout form offers the library's own `checkoutPersonListKind` list. So the two
-  Austin libraries, which lend to anyone, present a list of priests.
-- **The borrower page announces a redirect it never performs.** Its countdown script does
-  not parse — a translated string is interpolated into JavaScript without quotes — and the
-  target it would have used is the hardcoded `/libraries/3`. Repairing the syntax without
-  deciding the target would send every borrower page to Colegio Mayor after fifteen seconds.
+  single-checkout form offers the library's own `CheckoutPersonListKind` list.
+- **The borrower page announces a redirect it never performs**: its countdown
+  script does not parse (a translated string interpolated into JavaScript
+  unquoted) and its target is the hardcoded `/libraries/3`. Fixing the syntax
+  without deciding the target would send every borrower to Colegio Mayor.
+
+See also [library-imports.md](library-imports.md).

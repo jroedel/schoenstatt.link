@@ -52,7 +52,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * left deliberately: the change log is an audit trail, and deleting rows from it by
  * time-range would be a more dangerous cleanup than the mess it tidies.
  *
- * The consequence is procedural and belongs with the one docs/strangler.md already records
+ * The consequence is procedural and belongs with the one docs/laminas-exit.md already records
  * for translation catalogs: **do not run the test suite between two baseline captures.**
  * `/sm/view-changes` renders the newest 500 changes and is one of the captured paths, so a
  * suite run between the laminas and Symfony captures shows up as drift on a page this

@@ -233,5 +233,5 @@ printf("  cache writes             %d\n", $allWrites);
 if (0 === $allWrites && $allGets > 0) {
     echo "\n  " . bold('Nothing was written to any cache during this run.') . "\n";
     echo "  Reads happened, so the storages are wired. A read-only cache is a cache whose\n";
-    echo "  contents predate the run — see docs/caching-performance.md.\n";
+    echo "  contents predate the run — see docs/caching.md.\n";
 }

@@ -18,7 +18,7 @@ require_once __DIR__ . '/../../module/Application/src/Module.php';
  * labelled with the row's own title or name. Nothing may translate those: a translator miss
  * is how a phrase is filed, so translating them files one row per record — which is what
  * happened between 2026-08-10 and -11, when publication titles reached 61% of the phrase
- * table (`docs/api-change-requests-response.md` §12).
+ * table (`docs/api-v3.md` §12).
  *
  * `markDataLabels()` is the whole of that decision, and it is deliberately static and pure so
  * it can be checked here rather than only through a rendered page — the mistake it prevents

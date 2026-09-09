@@ -23,7 +23,7 @@ use function ucwords;
  * 1. **Refuse without a form.** No `create_action_form` in the spec and laminas throws
  *    `InvalidArgumentException`. Reproduced in `form()`, and it is not hypothetical:
  *    `event`'s spec has the key commented out, which is one of the three reasons
- *    `/timeline/create` is unportable (see docs/strangler.md).
+ *    `/timeline/create` is unportable (see docs/laminas-exit.md).
  * 2. **The form**, from the container by that key — except for the three library-scoped
  *    ones, exactly as on the edit surface.
  * 3. **On POST**, `setData()` then `isValid()` then `SionTable::createEntity()`.

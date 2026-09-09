@@ -23,7 +23,7 @@ use Twig\Environment;
  * already reproduced — `templates/schoenstatt/_associations-table.html.twig` is what
  * both shrine indexes render — so porting this route is one controller and a two-line
  * template that reuses it. That reuse is the point: the shrine pages and this page show
- * the same six columns of the same rows, and docs/strangler.md asks two *ported* routes
+ * the same six columns of the same rows, and docs/laminas-exit.md asks two *ported* routes
  * to share rather than to copy.
  *
  * The `partial` variable the original supports (`$this->partial ?: 'associations-table'`)

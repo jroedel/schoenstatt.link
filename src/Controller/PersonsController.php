@@ -44,7 +44,7 @@ use function is_array;
  * So the ported page renders the table the .phtml has always described, and the search
  * box the controller has always built. That is a deliberate deviation from the porting
  * rule, taken as a decision rather than by accident: `tools/port-baseline.php` reports
- * twelve intentional non-matches here, itemized in docs/strangler.md under "Known
+ * twelve intentional non-matches here, itemized in docs/laminas-exit.md under "Known
  * differences". Everything else on the page — the create link, its ACL check, the four
  * column headers, the empty "Community" cell — is reproduced exactly.
  *

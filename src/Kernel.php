@@ -182,7 +182,7 @@ use function rtrim;
  * So the gate is laminas-mvc itself — i.e. finishing this migration — and not, as
  * this said until 2026-08-05, retiring kokspflanze/bjy-authorize: that also caps
  * laminas-cache at ^3 and is also worth retiring, but removing it leaves the pin
- * exactly where it is. The measurement is in docs/php-85.md.
+ * exactly where it is. The measurement is in docs/DEPLOY.md.
  *
  * The kernel is not gated on any of that: everything below comes from
  * symfony/http-kernel and symfony/routing, which need no psr/cache at all. When
