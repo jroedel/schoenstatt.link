@@ -143,6 +143,13 @@ class EntityFormatterTest extends TestCase
         $formatter = $this->formatter();
         $entities  = $this->entities();
 
+        //An identifier of the entity's **own** shape, because the show route constrains
+        //`sw_id` per entity (`SL4…T` for a text, `SL5…C` for a composition) and since
+        //step 6 the URL generator enforces that on generation. The laminas router did not:
+        //it substituted whatever it was handed, so this fixture used one association-shaped
+        //id for every type and produced links that router could never have matched.
+        $identifiers = ['text' => 'SL400001T', 'composition' => 'SL500001C'];
+
         foreach (['text', 'composition'] as $type) {
             $spec = $entities[$type] ?? null;
             self::assertNotNull($spec, "no $type spec");
@@ -151,7 +158,7 @@ class EntityFormatterTest extends TestCase
             self::assertNotEmpty($map, "$type no longer uses defaultRouteParams; is this test still right?");
 
             //a row carrying every field the map names, plus the id and name fields
-            $row = ['identifier' => 'SL10319A', 'slug' => 'a-slug'];
+            $row = ['identifier' => $identifiers[$type], 'slug' => 'a-slug'];
             foreach ([$spec->entityKeyField, $spec->nameField] as $field) {
                 $row[(string) $field] = $row[(string) $field] ?? 'value';
             }
@@ -161,7 +168,11 @@ class EntityFormatterTest extends TestCase
 
             if ($allowed) {
                 self::assertStringContainsString('<a href="', $markup, "$type produced no link");
-                self::assertStringContainsString('SL10319A', $markup, "$type's link lost its sw_id parameter");
+                self::assertStringContainsString(
+                    $identifiers[$type],
+                    $markup,
+                    "$type's link lost its sw_id parameter"
+                );
                 self::assertStringContainsString('a-slug', $markup, "$type's link lost its slug parameter");
             } else {
                 self::assertStringNotContainsString(
