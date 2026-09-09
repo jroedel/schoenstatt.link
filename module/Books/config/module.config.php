@@ -293,7 +293,6 @@ return [
         ],
         'invokables' => [
             'coins'                         => View\Helper\Coins::class,
-            'formatPublicationUrlObject'    => View\Helper\FormatPublicationUrlObject::class,
             'formatField'                   => View\Helper\FormatField::class,
             'booksJsonLd'                   => View\Helper\BooksJsonLd::class,
         ],

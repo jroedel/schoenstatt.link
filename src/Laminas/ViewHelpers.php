@@ -18,6 +18,7 @@ use JTranslate\View\Helper\Flag;
 use JTranslate\View\Helper\LanguageName;
 use App\View\Helper\DateFormat;
 use App\View\Helper\Translate;
+use Laminas\Translator\TranslatorInterface;
 use Laminas\View\HelperPluginManager;
 use SionModel\I18n\View\Helper\DatePrecisionFormat;
 use SionModel\I18n\View\Helper\DayFormat;
@@ -75,6 +76,12 @@ final class ViewHelpers
     private ?Markdown $markdown = null;
     private ?FileSize $fileSize = null;
     private ?DatePrecisionFormat $datePrecisionFormat = null;
+    private ?Telephone $telephone = null;
+    private ?FormatUrlObject $formatUrlObject = null;
+    private ?DayFormat $dayFormat = null;
+    private ?Tooltip $tooltip = null;
+    private ?FormatPublicationUrlObject $formatPublicationUrlObject = null;
+    private ?TranslatorInterface $translator = null;
 
     /**
      * @param Closure(): RouteUrl $urls handed to App\Laminas\LocaleUrlSubstitute below.
@@ -103,18 +110,14 @@ final class ViewHelpers
 
     public function telephone(): Telephone
     {
-        /** @var Telephone $helper */
-        $helper = $this->helpers()->get('telephone');
-
-        return $helper;
+        //memoized: the constructor builds a libphonenumber util and an offline geocoder,
+        //and a person page formats a number per contact row
+        return $this->telephone ??= new Telephone($this->translator());
     }
 
     public function formatUrlObject(): FormatUrlObject
     {
-        /** @var FormatUrlObject $helper */
-        $helper = $this->helpers()->get('formatUrlObject');
-
-        return $helper;
+        return $this->formatUrlObject ??= new FormatUrlObject();
     }
 
     /**
@@ -190,10 +193,7 @@ final class ViewHelpers
 
     public function formatPublicationUrlObject(): FormatPublicationUrlObject
     {
-        /** @var FormatPublicationUrlObject $helper */
-        $helper = $this->helpers()->get('formatPublicationUrlObject');
-
-        return $helper;
+        return $this->formatPublicationUrlObject ??= new FormatPublicationUrlObject($this->translator());
     }
 
     /**
@@ -279,18 +279,12 @@ final class ViewHelpers
      */
     public function dayFormat(): DayFormat
     {
-        /** @var DayFormat $helper */
-        $helper = $this->helpers()->get('dayFormat');
-
-        return $helper;
+        return $this->dayFormat ??= new DayFormat($this->translator());
     }
 
     public function tooltip(): Tooltip
     {
-        /** @var Tooltip $helper */
-        $helper = $this->helpers()->get('tooltip');
-
-        return $helper;
+        return $this->tooltip ??= new Tooltip();
     }
 
     /**
@@ -327,6 +321,27 @@ final class ViewHelpers
         if ($translate instanceof Translate) {
             $translate->setTranslatorTextDomain($domain);
         }
+    }
+
+    /**
+     * The one translator, for the ported helpers that used to reach `$this->view->translate()`.
+     *
+     * Resolved lazily and memoized: a page that formats no phone number and no month name
+     * never builds it, and the ones that do build it once. Null is not expected here — the
+     * container always has a translator — but the helpers accept null so that a host
+     * without one renders source text instead of failing.
+     */
+    private function translator(): ?TranslatorInterface
+    {
+        if (null !== $this->translator) {
+            return $this->translator;
+        }
+        if (! $this->laminas->has(TranslatorInterface::class)) {
+            return null;
+        }
+        $translator = $this->laminas->get(TranslatorInterface::class);
+
+        return $this->translator = $translator instanceof TranslatorInterface ? $translator : null;
     }
 
     private function helpers(): HelperPluginManager
