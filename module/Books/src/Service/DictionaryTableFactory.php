@@ -12,6 +12,9 @@ use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
 use SionModel\Service\SionTableWiring;
 
+use function is_array;
+use function is_string;
+
 /**
  * Builds {@see DictionaryTable}.
  *
@@ -33,10 +36,25 @@ class DictionaryTableFactory
             $container->get(EntitiesService::class),
             $container->get('SionModel\Config'),
             $container->get(ActingUserProviderInterface::class),
-            $container->get(RouteStackInterface::class)
+            $container->get(RouteStackInterface::class),
+            self::canonicalBaseUrl($container)
         );
         SionTableWiring::apply($container, $table);
 
         return $table;
+    }
+
+    /**
+     * `sion_model.canonical_base_url` — the scheme and host the schema.org projection
+     * publishes. Empty means "do not claim one", and getDictionaryUrl() then omits the
+     * `inDefinedTermSet` rather than emitting a relative URL into JSON-LD.
+     */
+    private static function canonicalBaseUrl(ContainerInterface $container): string
+    {
+        /** @var mixed $config */
+        $config = $container->get('SionModel\Config');
+        $base   = is_array($config) ? ($config['canonical_base_url'] ?? null) : null;
+
+        return is_string($base) ? $base : '';
     }
 }

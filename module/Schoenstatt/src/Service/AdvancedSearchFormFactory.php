@@ -32,9 +32,9 @@ class AdvancedSearchFormFactory implements FactoryInterface
         $form->get('roleTitle')->setValueOptions($roleTitles);
         $form->get('associationKind')->setValueOptions($kinds);
 
-        //retrieve country names. Built here rather than fetched from the ViewHelperManager:
-        //`countryName` is a plain class since 2026-09 and left the module's view_helpers
-        //config with the rest of the batch-4 cluster, so there is no name to ask for.
+        //retrieve country names. Built here rather than resolved by name: `countryName` is
+        //a plain class since 2026-09 and left the module's view_helpers config with the rest
+        //of the batch-4 cluster, and there is no view-helper manager to ask any more.
         $countryNames = new CountryName($container->get(CountriesInfo::class));
         $usedCountries = $table->getCountries();
         $countries = [];

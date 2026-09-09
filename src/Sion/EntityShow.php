@@ -294,7 +294,7 @@ final class EntityShow
             : null;
 
         /** @var IsAllowed $isAllowed */
-        $isAllowed = $this->laminas->get('ViewHelperManager')->get('isAllowed');
+        $isAllowed = $this->laminas->get(IsAllowed::class);
 
         return (bool) $isAllowed->__invoke($object[$resource], $permission);
     }
