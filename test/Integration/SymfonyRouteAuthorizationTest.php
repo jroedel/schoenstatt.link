@@ -10,9 +10,9 @@ use App\Authorization\RouteGuard;
 use App\Authorization\UndeclaredRouteAccess;
 use App\Http\AuthorizationListener;
 use App\Http\SymfonyRoute;
+use App\Laminas\ContainerFactory;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -412,13 +412,8 @@ class SymfonyRouteAuthorizationTest extends TestCase
         }
 
         $appConfig = require __DIR__ . '/../../config/application.config.php';
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $services = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($services);
-        $services->setService('ApplicationConfig', $appConfig);
-        $services->get('ModuleManager')->loadModules();
+        $services = ContainerFactory::build($appConfig);
 
         /** @var array<string, mixed> $config */
         $config = $services->get('config');

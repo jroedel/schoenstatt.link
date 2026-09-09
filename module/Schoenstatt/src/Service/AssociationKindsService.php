@@ -3,7 +3,6 @@ namespace Schoenstatt\Service;
 
 use Laminas\I18n\Translator\TranslatorInterface;
 use Schoenstatt\Model\AssociationKind;
-use Laminas\Mvc\I18n\Translator;
 use Schoenstatt\Model\SchoenstattTable;
 
 class AssociationKindsService
@@ -15,7 +14,7 @@ class AssociationKindsService
     protected $associationKinds = [];
 
     /**
-     * @var Translator $translator
+     * @var TranslatorInterface $translator
      */
     protected $translator;
     /**

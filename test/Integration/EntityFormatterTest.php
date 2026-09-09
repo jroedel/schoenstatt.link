@@ -6,10 +6,12 @@ namespace SchoenstattTest\Integration;
 
 use App\Http\CspNonce;
 use App\Laminas\EntityFormatter;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
+use App\View\Label;
 use Laminas\Db\Adapter\Adapter;
 use Locale;
 use LogicException;
@@ -36,7 +38,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *
  * **It cannot be a two-sided parity test, and that is worth stating plainly.** Every
  * other port in this migration had one — ShrineIndexParityTest (now
- * ShrineIndexInvariantsTest) and CacheStatusParityTest drove the laminas code and the
+ * ShrineIndexInvariantsTest) and CacheStatusEndpointTest drove the laminas code and the
  * ported code off the same input and compared. That is impossible here: the laminas helper's `wrapAsLink()` ends in
  * `$this->view->url()`, which needs a RouteMatch off an MvcEvent, and the absence of
  * that MvcEvent is the entire reason this class exists. Calling it to compare against
@@ -494,7 +496,8 @@ class EntityFormatterTest extends TestCase
             $urls,
             static fn (string $type, int|string|null $id): string => "PENCIL($type:$id)",
             static fn (string $route, array $params): string => 'PENCIL(' . $route . ')',
-            static fn (string $message): string => $message
+            static fn (string $message): string => $message,
+            new Label(static fn (string $text, ?string $domain): string => $text)
         );
     }
 
@@ -507,7 +510,8 @@ class EntityFormatterTest extends TestCase
             new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, '')),
             new RouteUrl($bridge, ''),
             new RequestStack(),
-            new CspNonce()
+            new CspNonce(),
+            new HostMessages()
         );
     }
 

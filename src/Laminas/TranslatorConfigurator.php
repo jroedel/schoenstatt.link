@@ -6,11 +6,12 @@ namespace App\Laminas;
 
 use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
+use Laminas\EventManager\EventInterface;
 use Laminas\I18n\Translator\Translator;
 use Laminas\I18n\Translator\TranslatorInterface;
-use Laminas\Mvc\I18n\Translator as MvcI18nTranslator;
 use Laminas\ServiceManager\Factory\DelegatorFactoryInterface;
 use Laminas\Validator\AbstractValidator;
+use Laminas\Validator\Translator\Translator as ValidatorTranslator;
 use Locale;
 use Psr\Container\ContainerInterface;
 
@@ -120,41 +121,49 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
 
     private function configure(ContainerInterface $container, TranslatorInterface $translator): void
     {
-        //onBootstrap calls these on the Mvc wrapper, which forwards them to the inner
-        //translator through __call(). Reaching the inner one explicitly via
-        //getTranslator() is the same object and the same effect, and it is typed — the
-        //__call route is invisible to static analysis, so PHPStan level 8 rejects every
-        //one of these six calls on the wrapper.
-        if (! $translator instanceof MvcI18nTranslator) {
+        //Registered on Laminas\I18n\Translator\TranslatorInterface, the canonical id, so
+        //what arrives is laminas-i18n's own Translator; `MvcTranslator` is a
+        //Laminas\Validator\Translator\Translator wrapped around this same instance
+        //(App\Laminas\TranslatorFactory), so configuring it here configures both.
+        if (! $translator instanceof Translator) {
             return;
         }
-        $inner = $translator->getTranslator();
-        if (! $inner instanceof Translator) {
-            return;
-        }
+        $inner = $translator;
 
         $inner->enableEventManager();
         $inner->setLocale(Locale::getDefault());
         $inner->setFallbackLocale(self::FALLBACK_LOCALE);
 
-        /** @var TranslationsTable $table */
-        $table = $container->get(TranslationsTable::class);
+        //JTranslate's missing-translation reporter, attached on the first miss rather than
+        //now. The table it needs is built through JUser's user table, whose factory builds
+        //JUser's mailer, whose factory asks for this very translator — so resolving it
+        //while the translator is still under construction recurses until memory runs
+        //out (measured). A miss can only happen once the translator exists, which is
+        //exactly late enough.
+        //
         //getLocales(TRUE): the argument includes the key locale, and without it an
         //English page view can never discover a phrase. JTranslate\Module passes the
-        //same thing — a discrepancy would mean discovery worked under one front
-        //controller and not the other. See TranslatorEventListener's class docblock.
-        (new TranslatorEventListener($table, $table->getLocales(true)))->attach($inner->getEventManager());
-
-        //The listener above only *queues* a miss; TranslationsTable::flush() writes
-        //it, and laminas calls that from MvcEvent::EVENT_FINISH, which a
-        //Symfony-served route never reaches. Arming here rather than having the
-        //kernel ask for the table is what keeps /_health and the maintenance
-        //endpoints from building one. See App\Laminas\PhraseFlush.
-        if ($container->has(PhraseFlush::class)) {
-            /** @var PhraseFlush $phrases */
-            $phrases = $container->get(PhraseFlush::class);
-            $phrases->arm($table);
-        }
+        //same thing. See TranslatorEventListener's class docblock.
+        $events    = $inner->getEventManager();
+        $bootstrap = static function (EventInterface $event) use (&$bootstrap, $events, $container): void {
+            $events->detach($bootstrap);
+            /** @var TranslationsTable $table */
+            $table    = $container->get(TranslationsTable::class);
+            $listener = new TranslatorEventListener($table, $table->getLocales(true));
+            $listener->attach($events);
+            //The listener only *queues* a miss; TranslationsTable::flush() writes it, from
+            //the kernel's terminate listener. Armed here, on the first miss, so that a
+            //request that misses nothing never builds the table. See App\Laminas\PhraseFlush.
+            if ($container->has(PhraseFlush::class)) {
+                /** @var PhraseFlush $phrases */
+                $phrases = $container->get(PhraseFlush::class);
+                $phrases->arm($table);
+            }
+            //this miss too: a listener attached during a trigger does not see the event
+            //that attached it
+            $listener->missingTranslation($event);
+        };
+        $events->attach(Translator::EVENT_MISSING_TRANSLATION, $bootstrap, 1);
 
         //Validator messages are translated as templates, before laminas fills in
         //%value%/%hostname%/%min%, so a stranger's mistyped input never reaches the
@@ -164,19 +173,15 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //translate the finished message are off in step with this — see
         //SionModel\Form\BootstrapFormRenderer::errors().
         //
-        //The static setter is what laminas-validator itself offers; it is set on the
-        //Mvc wrapper because that, not the inner translator, is what implements
-        //Laminas\Validator\Translator\TranslatorInterface.
-        AbstractValidator::setDefaultTranslator($translator, 'default');
+        //The static setter is what laminas-validator itself offers; it wants its own
+        //TranslatorInterface, which laminas-validator's adapter provides over ours.
+        AbstractValidator::setDefaultTranslator(new ValidatorTranslator($inner), 'default');
 
-        //Shared with the writer side rather than computed here, and since 2026-09-08 the
-        //table is configured with the same map by a delegator in App\Laminas\ServiceBridge —
-        //because a caller that *exports* catalogs must not depend on whether this delegator
-        //happened to run first. It did not, on the one path where it matters: a successful
-        //save redirects, so nothing renders and nothing builds a translator. See
+        //The same map the writer side gets from App\Laminas\TranslationsTableConfigurator,
+        //a delegator on the table itself — because a caller that *exports* catalogs must
+        //not depend on whether a translator was ever built. See
         //App\Laminas\ModuleLanguageDirectories.
         $modules = ModuleLanguageDirectories::forContainer($container);
-        $table->setUserModules($modules);
         foreach ($modules as $module => $directory) {
             if (file_exists($directory)) {
                 $inner->addTranslationFilePattern('phpArray', $directory, self::FILE_PATTERN, $module);

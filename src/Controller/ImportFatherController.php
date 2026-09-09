@@ -7,10 +7,10 @@ namespace App\Controller;
 use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use JTranslate\Controller\Plugin\NowMessenger;
 use JTranslate\I18n\TranslatableMessage;
 use Schoenstatt\Form\ImportFatherForm;
 use Schoenstatt\Service\PatresGateway;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -81,7 +81,7 @@ final class ImportFatherController
                 $data = $form->getData();
                 $this->import($data['personId'] ?? null);
             } else {
-                $this->messages->now(NowMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                $this->messages->now(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
             }
         }
 
@@ -96,7 +96,7 @@ final class ImportFatherController
     private function import(mixed $personId): void
     {
         if (null === $personId || '' === $personId) {
-            $this->messages->now(NowMessenger::NAMESPACE_ERROR, 'Please choose a person to import.');
+            $this->messages->now(FlashMessages::NAMESPACE_ERROR, 'Please choose a person to import.');
 
             return;
         }
@@ -109,7 +109,7 @@ final class ImportFatherController
 
         if (false === $result) {
             $fields = array_keys($gateway->getLastRemotePersonMessages());
-            $this->messages->now(NowMessenger::NAMESPACE_ERROR, new TranslatableMessage(
+            $this->messages->now(FlashMessages::NAMESPACE_ERROR, new TranslatableMessage(
                 'The record for this person in Patres could not be imported because it '
                 . 'is not valid. Fields at fault: %s. Ask Patres to correct it, then try again.',
                 [[] === $fields ? '(none reported)' : implode(', ', $fields)]
@@ -120,7 +120,7 @@ final class ImportFatherController
 
         if ($overwroteExisting) {
             $this->messages->now(
-                NowMessenger::NAMESPACE_SUCCESS,
+                FlashMessages::NAMESPACE_SUCCESS,
                 'This person had already been imported. Their record has been '
                 . 'refreshed from Patres, replacing what was stored here.'
             );
@@ -128,6 +128,6 @@ final class ImportFatherController
             return;
         }
 
-        $this->messages->now(NowMessenger::NAMESPACE_SUCCESS, 'Person successfully imported.');
+        $this->messages->now(FlashMessages::NAMESPACE_SUCCESS, 'Person successfully imported.');
     }
 }

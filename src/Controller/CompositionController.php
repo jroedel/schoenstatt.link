@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
-use App\View\PreferredUrls;
 use App\Sion\SiteWideIdentifier;
+use App\View\PreferredUrls;
 use Books\Model\MusicTable;
 use ChordPro\HtmlFormatter;
 use ChordPro\Parser;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
+use SionModel\Messaging\FlashMessages;
 use Spatie\SchemaOrg\BaseType;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -58,7 +59,8 @@ final class CompositionController
         private readonly EntityShow $show,
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
-        private readonly PreferredUrls $preferredUrls
+        private readonly PreferredUrls $preferredUrls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -164,7 +166,7 @@ final class CompositionController
 
     private function flash(string $message): void
     {
-        (new FlashMessenger())->setNamespace(FlashMessenger::NAMESPACE_ERROR)->addMessage($message);
+        $this->messages->flash(FlashMessages::NAMESPACE_ERROR, $message);
     }
 
     private function notFound(): Response

@@ -6,6 +6,7 @@ namespace App\Twig;
 
 use App\Books\CurrentLibrary;
 use App\Http\CspNonce;
+use App\Laminas\HostMessages;
 use App\JTranslate\Host\UrlBuilder as JTranslateUrlBuilder;
 use App\JUser\Host\UrlBuilder as JUserUrlBuilder;
 use App\Laminas\HostUrls;
@@ -86,7 +87,8 @@ final class TwigFactory
         ViewHelpers $helpers,
         RouteUrl $urls,
         RequestStack $requests,
-        CspNonce $nonce
+        CspNonce $nonce,
+        HostMessages $messages
     ): Environment {
         $root = dirname(__DIR__, 2);
 
@@ -108,7 +110,7 @@ final class TwigFactory
                 : new ForgivingCache(new FilesystemCache($cacheDir, FilesystemCache::FORCE_BYTECODE_INVALIDATION)),
             'auto_reload'      => true,
         ]);
-        $laminasExtension = new LaminasExtension($laminas, $helpers, $urls, $requests);
+        $laminasExtension = new LaminasExtension($laminas, $helpers, $urls, $requests, $messages);
         $twig->addExtension($laminasExtension);
         //The form helpers, translating through the same page-aware translate() the
         //rest of the templates use — a form label lives in its module's text domain

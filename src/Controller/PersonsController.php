@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Http\SymfonyRoute;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Form\SearchForm;
 use Schoenstatt\Model\SchoenstattTable;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -62,7 +63,8 @@ final class PersonsController
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -82,7 +84,7 @@ final class PersonsController
         }
 
         if (is_array($persons) && [] === $persons) {
-            $this->nowMessage(NowMessenger::NAMESPACE_INFO, 'No results found.');
+            $this->nowMessage(FlashMessages::NAMESPACE_INFO, 'No results found.');
         }
 
         return new Response($this->twig->render('schoenstatt/persons-search.html.twig', [
@@ -106,8 +108,6 @@ final class PersonsController
     /** @see LiteratureController::nowMessage() — the same shared plugin the layout renders from. */
     private function nowMessage(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 }

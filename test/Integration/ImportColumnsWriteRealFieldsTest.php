@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Books\Import\ImportColumns;
-use Laminas\Mvc\Service\ServiceManagerConfig;
-use Laminas\ServiceManager\ServiceManager;
+use App\Laminas\ContainerFactory;
 use PHPUnit\Framework\TestCase;
 
 use function array_keys;
@@ -64,13 +63,8 @@ class ImportColumnsWriteRealFieldsTest extends TestCase
         //Both caches off, for the reason AclGuardRouteDriftTest gives: a bare runner
         //cannot write data/config/, and a cache file owned by the wrong user beside a
         //real deployment is worse than a slow test.
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $services = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($services);
-        $services->setService('ApplicationConfig', $appConfig);
-        $services->get('ModuleManager')->loadModules();
+        $services = ContainerFactory::build($appConfig);
 
         /** @var array<string, mixed> $config */
         $config  = $services->get('config');

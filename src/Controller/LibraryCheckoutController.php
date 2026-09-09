@@ -6,14 +6,14 @@ namespace App\Controller;
 
 use App\Books\CheckoutForms;
 use App\Books\LibraryPage;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
 use Exception;
-use JTranslate\Controller\Plugin\NowMessenger;
 use JTranslate\I18n\TranslatableMessage;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Service\PatresGateway;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -65,7 +65,8 @@ final class LibraryCheckoutController
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
         private readonly LibraryPage $page,
-        private readonly CheckoutForms $forms
+        private readonly CheckoutForms $forms,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -94,7 +95,7 @@ final class LibraryCheckoutController
                     return $done;
                 }
             } else {
-                $this->now(NowMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+                $this->now(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
             }
         }
 
@@ -124,7 +125,7 @@ final class LibraryCheckoutController
             }
         }
         if ([] !== $bad) {
-            $this->now(NowMessenger::NAMESPACE_ERROR, new TranslatableMessage(
+            $this->now(FlashMessages::NAMESPACE_ERROR, new TranslatableMessage(
                 'The following book id\'s are invalid: %s Please try again.',
                 [implode(', ', $bad)]
             ));
@@ -145,7 +146,7 @@ final class LibraryCheckoutController
                 //The laminas action throws here, which reaches the error page. A lending
                 //desk gets a message instead: the person really can be absent — the remote
                 //database is another application — and a 500 tells the librarian nothing.
-                $this->now(NowMessenger::NAMESPACE_ERROR, 'The person selected was not found.');
+                $this->now(FlashMessages::NAMESPACE_ERROR, 'The person selected was not found.');
 
                 return null;
             }
@@ -156,13 +157,13 @@ final class LibraryCheckoutController
         try {
             $result = $table->checkoutWithinLibraryBooks($libraryId, $data);
         } catch (Exception $e) {
-            $this->now(NowMessenger::NAMESPACE_ERROR, $e->getMessage());
+            $this->now(FlashMessages::NAMESPACE_ERROR, $e->getMessage());
 
             return null;
         }
 
         if (true !== $result) {
-            $this->now(NowMessenger::NAMESPACE_ERROR, sprintf(
+            $this->now(FlashMessages::NAMESPACE_ERROR, sprintf(
                 'There was a problem checking out one of the books: (%s) Any other books '
                 . 'have been checked out. Please try again.',
                 implode(', ', is_array($result) ? $result : [])
@@ -171,9 +172,7 @@ final class LibraryCheckoutController
             return null;
         }
 
-        (new FlashMessenger())
-            ->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage('Books successfully checked out.');
+        $this->messages->flash(FlashMessages::NAMESPACE_SUCCESS, 'Books successfully checked out.');
 
         return new RedirectResponse(
             $this->urls->path('borrowers/borrower', ['person_id' => $data['personId']])
@@ -181,19 +180,11 @@ final class LibraryCheckoutController
     }
 
     /**
-     * `NowMessenger::addMessage()` is typed `string` and is documented to take a
-     * `TranslatableMessage` too — the laminas action passes one, and that is the whole
-     * point of the first failure path here: the message must reach the translator with
-     * its parameter still separate. The annotation below states what the parameter really
-     * accepts; widening JTranslate's own signature belongs in JTranslate.
-     *
-     * @param string|TranslatableMessage $message
+     * A TranslatableMessage where the first failure path needs one: the message must
+     * reach the translator with its parameter still separate.
      */
-    private function now(string $namespace, mixed $message): void
+    private function now(string $namespace, string|TranslatableMessage $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        /** @phpstan-ignore argument.type (see the docblock: the declared `string` is wrong) */
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 }

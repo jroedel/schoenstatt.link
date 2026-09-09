@@ -9,6 +9,7 @@ use Laminas\Db\Adapter\Adapter;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use ReflectionObject;
+use SionModel\Cache\CacheFlushQueue;
 use Schoenstatt\Model\SchoenstattTable;
 use SionModel\Db\Model\SionTable;
 use Throwable;
@@ -35,6 +36,8 @@ final class SionTableWiringCompletenessTest extends TestCase
 {
     private static ?ServiceBridge $bridge = null;
 
+    private static ?CacheFlushQueue $queue = null;
+
     private function bridge(): ServiceBridge
     {
         if (null !== self::$bridge) {
@@ -45,7 +48,10 @@ final class SionTableWiringCompletenessTest extends TestCase
         $appConfig['module_listener_options']['config_cache_enabled']     = false;
         $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        return self::$bridge = new ServiceBridge($appConfig);
+        //the end-of-request write queue a request registers, so that enrolment can be seen
+        self::$queue = new CacheFlushQueue();
+
+        return self::$bridge = new ServiceBridge($appConfig, null, self::$queue);
     }
 
     private function requireDatabase(): void
@@ -117,14 +123,12 @@ final class SionTableWiringCompletenessTest extends TestCase
     {
         $this->requireDatabase();
 
-        foreach ($this->tables() as $class => $table) {
-            //No setAccessible(): it has been a no-op since PHP 8.1 and is deprecated in 8.5.
-            $property = (new ReflectionObject($table))->getProperty('onFinishWired');
-
+        $tables = $this->tables();
+        self::assertNotNull(self::$queue);
+        foreach ($tables as $class => $table) {
             self::assertTrue(
-                (bool) $property->getValue($table),
-                "$class never attached its MvcEvent::FINISH listener, so nothing it caches "
-                . 'is ever written'
+                self::$queue->contains($table),
+                "$class never enrolled in the CacheFlushQueue, so nothing it caches is ever written"
             );
         }
     }

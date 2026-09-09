@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Sion\Entities;
 use App\Sion\EntityEdit;
 use App\Sion\FormViewVariables;
 use App\Sion\SiteWideIdentifier;
 use Laminas\Form\FormInterface;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Locale;
 use RuntimeException;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -99,7 +100,8 @@ final class EntityEditController
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
         private readonly Entities $entities,
-        private readonly FormViewVariables $viewVariables
+        private readonly FormViewVariables $viewVariables,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -139,7 +141,7 @@ final class EntityEditController
                 $data    = $form->getData();
                 $updated = $this->edit->update($entity, $id, $data);
 
-                $this->flash(FlashMessenger::NAMESPACE_SUCCESS, $this->edit->updatedMessage($entity));
+                $this->flash(FlashMessages::NAMESPACE_SUCCESS, $this->edit->updatedMessage($entity));
 
                 return new RedirectResponse(
                     $this->successTarget($request, $entity, $object, $updated),
@@ -149,7 +151,7 @@ final class EntityEditController
 
             //`nowMessenger` on laminas, which renders into the same flash region on this
             //request rather than the next. The Twig layout reads it from the same place.
-            $this->flash(FlashMessenger::NAMESPACE_ERROR, 'Error in form submission, please review.');
+            $this->flash(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
         } else {
             $form->setData($object);
         }
@@ -464,7 +466,7 @@ final class EntityEditController
      */
     private function notFound(string $entity, int $id): Response
     {
-        $this->flash(FlashMessenger::NAMESPACE_ERROR, $this->edit->deniedMessage($entity, $id));
+        $this->flash(FlashMessages::NAMESPACE_ERROR, $this->edit->deniedMessage($entity, $id));
 
         $index = $this->edit->indexRoute($entity);
         if (null === $index) {
@@ -483,6 +485,6 @@ final class EntityEditController
      */
     private function flash(string $namespace, string $message): void
     {
-        (new FlashMessenger())->setNamespace($namespace)->addMessage($message);
+        $this->messages->flash($namespace, $message);
     }
 }

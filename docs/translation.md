@@ -108,8 +108,9 @@ Every route declares its domain explicitly:
 - `App\Twig\LaminasExtension::translate()` reads it and passes it per call.
 - `App\Laminas\ViewHelpers::useTextDomain()` points the shared `translate` **view helper** at
   it, for helpers that translate through `$this->view->translate(...)` with no domain of
-  their own (`Books\View\Helper\FormatField`). `useFlashMessengerTextDomain()` does the same
-  for the flash messenger, from `LaminasExtension::flashMessages()`.
+  their own (`Books\View\Helper\FormatField`). `flash_messages()` and `now_messages()`
+  translate every message in it too, through `JTranslate\I18n\MessageRenderer`; a
+  `TranslatableMessage` naming its own domain keeps it.
 - The navigation renders in `jtranslate.navigation_text_domain` (`Application`): the menu is
   one tree on every page, so its strings belong to whoever owns the menu.
 

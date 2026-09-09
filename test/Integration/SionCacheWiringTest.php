@@ -8,8 +8,6 @@ use App\Laminas\ServiceBridge;
 use JUser\Model\UserTable;
 use Laminas\Cache\Storage\Adapter\Apcu;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\EventManager\EventManager;
-use Laminas\Mvc\MvcEvent;
 use PHPUnit\Framework\TestCase;
 use SionModel\Cache\CacheFlushQueue;
 use ReflectionProperty;
@@ -21,13 +19,14 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * How a SionTable ends up attached to the cache and to the request lifecycle.
  *
  * Both halves went wrong at once and neither announced itself. SionTable's
- * constructor injects the application-wide `SionModel\PersistentCache` and
- * attaches `onFinishWriteCache` to `MvcEvent::FINISH`; JUser's factory then
- * swapped in its own `JUser\Cache` — a different APCu namespace with a different
- * TTL — and attached the listener a *second* time. The visible symptom was every
- * JUser cache key appearing twice in the application log, "Writing cache" for the
- * same key back to back. The invisible one was a dependency map read from one
- * namespace vouching for keys stored in another.
+ * constructor used to inject the application-wide `SionModel\PersistentCache` and
+ * attach its end-of-request writer; JUser's factory then swapped in its own
+ * `JUser\Cache` — a different APCu namespace with a different TTL — and attached
+ * the writer a *second* time. The visible symptom was every JUser cache key appearing
+ * twice in the application log, "Writing cache" for the same key back to back. The
+ * invisible one was a dependency map read from one namespace vouching for keys stored
+ * in another. The end-of-request writer is `SionModel\Cache\CacheFlushQueue` now, the
+ * only flush point there is.
  *
  * The unit suite pins what the trait does with a storage it is handed
  * (test/Unit/SionCacheDependencyMapTest). This pins what the container actually
@@ -85,8 +84,7 @@ final class SionCacheWiringTest extends TestCase
      *
      * Separate from bridge() rather than a parameter on it because the two answer
      * different questions and each caches its ServiceManager: this one is "what a
-     * ported route builds", the other is "what a console process or a laminas
-     * request builds".
+     * request builds", the other is "what a console process builds".
      */
     private function queueBridge(): ServiceBridge
     {
@@ -104,11 +102,10 @@ final class SionCacheWiringTest extends TestCase
     }
 
     /**
-     * The bug the queue exists for: a Symfony-served route reaches no
-     * `MvcEvent::EVENT_FINISH`, so the listener that writes the persistent cache
-     * never ran and every ported page queued its items and threw them away —
-     * measured at 0 writes and 0 hits across 49 requests, with nothing logged and
-     * nothing failing. Registration happens in the factory, so this asserts the
+     * The bug the queue exists for: a Symfony-served route reached no laminas
+     * `MvcEvent::EVENT_FINISH`, so the listener that wrote the persistent cache never
+     * ran and every ported page queued its items and threw them away — measured at 0
+     * writes and 0 hits across 49 requests, with nothing logged and nothing failing. Registration happens in the factory, so this asserts the
      * property at the only place it can be seen before a request ends.
      */
     public function testATableBuiltForASymfonyRequestEnrolsInTheFlushQueue(): void
@@ -125,135 +122,6 @@ final class SionCacheWiringTest extends TestCase
         $this->assertFalse(
             self::$queue->isEmpty(),
             'building a SionTable must enrol it for the end-of-request cache write'
-        );
-    }
-
-    /**
-     * And when it does, the MVC path must be left alone — not as tidiness but
-     * because reaching it is expensive and pointless. `has(\'Application\')` answers
-     * true under a Symfony front controller: laminas-mvc\'s module config defines
-     * the service whether or not anything bootstraps it. The old code therefore
-     * built an MVC application per table per request to take an event manager whose
-     * event that request would never fire.
-     */
-    public function testTheQueueReplacesTheMvcListenerRatherThanJoiningIt(): void
-    {
-        $this->requireDatabase();
-        $bridge = $this->queueBridge();
-        if (! $bridge->has(UserTable::class)) {
-            $this->markTestSkipped('JUser is not enabled in this configuration');
-        }
-
-        $table = $bridge->get(UserTable::class);
-
-        $wired = new ReflectionProperty($table, 'onFinishWired');
-        $this->assertFalse(
-            $wired->getValue($table),
-            'with a queue in the container no MvcEvent listener should have been attached'
-        );
-    }
-
-    /**
-     * The other half of the same property: a host that registers no queue keeps the
-     * behaviour it has always had. This is what patres and every un-strangled
-     * laminas host get, and what a console process gets.
-     */
-    public function testWithoutAQueueTheTableStillTakesTheMvcPath(): void
-    {
-        $this->requireDatabase();
-        $bridge = $this->bridge();
-        if (! $bridge->has(UserTable::class)) {
-            $this->markTestSkipped('JUser is not enabled in this configuration');
-        }
-
-        $table = $bridge->get(UserTable::class);
-
-        $wired = new ReflectionProperty($table, 'onFinishWired');
-        $this->assertTrue(
-            $wired->getValue($table),
-            'with no queue the MvcEvent::FINISH listener is the only flush point there is'
-        );
-    }
-
-    /**
-     * Attaching twice used to mean writing twice: two listeners, two passes over
-     * the same queue, two setItem() calls per key on every request that cached
-     * anything. The guard lives in the trait so it protects every table, not
-     * just the one factory that got it wrong.
-     */
-    public function testWiringTheFinishTriggerTwiceAttachesOneListener(): void
-    {
-        $em = new EventManager();
-        //The trait method is overridden here rather than counting listeners:
-        //laminas-eventmanager keeps its queue private, and "ran once" is the
-        //property that matters anyway — two listeners meant two passes over the
-        //write queue, not merely two entries in a list.
-        $host = new class {
-            use \SionModel\Db\Model\SionCacheTrait;
-
-            public $calls = 0;
-
-            public function onFinishWriteCache()
-            {
-                $this->calls++;
-            }
-        };
-
-        $host->wireOnFinishTrigger($em);
-        $host->wireOnFinishTrigger($em);
-        $em->trigger(MvcEvent::EVENT_FINISH);
-
-        $this->assertSame(1, $host->calls, 'onFinishWriteCache must be attached exactly once');
-    }
-
-    /**
-     * The default flush priority puts the write *after* the response has been sent.
-     *
-     * `Laminas\Mvc\SendResponseListener` attaches to the same `MvcEvent::FINISH` at
-     * -10000, so anything above that serializes and stores the whole write queue while
-     * the visitor is still waiting for bytes. That was the arrangement until
-     * 2026-08-22 (priority 100), and it is the reason a bounded write queue ever
-     * looked like a good idea: measured here, the heaviest single request writes about
-     * 4.4 MiB across five items in ~17 ms.
-     *
-     * Asserted by *ordering against a stand-in for the sender* rather than by reading
-     * the priority back, because the number on its own proves nothing — it is only
-     * ever meaningful relative to -10000, and a future laminas-mvc that moved its own
-     * sender would break this silently. The Symfony host has no equivalent test
-     * because `kernel.terminate` runs after the response by definition.
-     */
-    public function testTheFlushRunsAfterTheResponseHasBeenSent(): void
-    {
-        $em    = new EventManager();
-        $order = [];
-
-        $host = new class {
-            use \SionModel\Db\Model\SionCacheTrait;
-
-            /** @var callable */
-            public $onFlush;
-
-            public function onFinishWriteCache()
-            {
-                ($this->onFlush)();
-            }
-        };
-        $host->onFlush = static function () use (&$order): void {
-            $order[] = 'flush';
-        };
-
-        $host->wireOnFinishTrigger($em);
-        //the priority laminas-mvc's own SendResponseListener uses
-        $em->attach(MvcEvent::EVENT_FINISH, static function () use (&$order): void {
-            $order[] = 'send';
-        }, -10000);
-
-        $em->trigger(MvcEvent::EVENT_FINISH);
-
-        $this->assertSame(
-            ['send', 'flush'],
-            $order,
-            'the cache flush must run after SendResponseListener, not in front of it'
         );
     }
 

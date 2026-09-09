@@ -7,11 +7,11 @@ namespace SchoenstattTest\Integration;
 use App\Books\Import\ImportProblem;
 use App\Books\Import\LibraryImporter;
 use App\Books\Import\PlannedRow;
+use App\Laminas\ContainerFactory;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\SpreadsheetReader;
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -66,13 +66,8 @@ class LibraryImportPlanTest extends TestCase
         }
         try {
             $appConfig = require __DIR__ . '/../../config/application.config.php';
-            $appConfig['module_listener_options']['config_cache_enabled']     = false;
-            $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-            $services = new ServiceManager();
-            (new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($services);
-            $services->setService('ApplicationConfig', $appConfig);
-            $services->get('ModuleManager')->loadModules();
+            $services = ContainerFactory::build($appConfig);
 
             /** @var AdapterInterface $adapter */
             $adapter = $services->get('Laminas\Db\Adapter\Adapter');

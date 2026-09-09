@@ -12,11 +12,10 @@ use App\Sion\SiteWideIdentifier;
 use Books\Form\CopyToMainCorpusForm;
 use Books\Form\CreateNewEditionForm;
 use Books\Model\PublicationsTable;
-use JTranslate\Controller\Plugin\NowMessenger;
 use Laminas\Form\Form;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -90,7 +89,7 @@ final class PublicationDuplicateController
         //carries the source's name, and an empty string would be as good as none
         if (empty($entity['dataSource'])) {
             $this->messages->flash(
-                FlashMessenger::NAMESPACE_ERROR,
+                FlashMessages::NAMESPACE_ERROR,
                 'Only data-sourced publications can be copied.'
             );
 
@@ -104,7 +103,7 @@ final class PublicationDuplicateController
             if ($this->confirmed($form, $request)) {
                 $newId = $this->table()->copyPublicationToMainCorpus($entity['publicationId']);
                 $this->messages->flash(
-                    FlashMessenger::NAMESPACE_SUCCESS,
+                    FlashMessages::NAMESPACE_SUCCESS,
                     'Publication copied into main literature corpus.'
                 );
 
@@ -185,7 +184,7 @@ final class PublicationDuplicateController
 
         $entity = $this->show->row(self::ENTITY, $id);
         if (null === $entity) {
-            $this->messages->flash(FlashMessenger::NAMESPACE_ERROR, $this->show->deniedMessage(self::ENTITY, $id));
+            $this->messages->flash(FlashMessages::NAMESPACE_ERROR, $this->show->deniedMessage(self::ENTITY, $id));
 
             return new RedirectResponse($this->urls->path('publications'));
         }
@@ -218,7 +217,7 @@ final class PublicationDuplicateController
      */
     private function expired(): int
     {
-        $this->messages->now(NowMessenger::NAMESPACE_ERROR, 'Your confirmation expired. Please try again.');
+        $this->messages->now(FlashMessages::NAMESPACE_ERROR, 'Your confirmation expired. Please try again.');
 
         return Response::HTTP_BAD_REQUEST;
     }
