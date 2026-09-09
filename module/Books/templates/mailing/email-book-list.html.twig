@@ -1,7 +1,7 @@
 {#-
-  The checkout list inside an overdue notice, one block per book. Ported from
-  view/books/libraries/email-book-list.phtml byte for byte: title, author, call number, due
-  date in the process locale, and "(Overdue)" where it applies. Rendered by
+  The checkout list inside an overdue notice, one block per book. Reproduces the laminas
+  view script it replaced byte for byte: title, author, call number, due date in the
+  process locale, and "(Overdue)" where it applies. Rendered by
   SionModel\Mailing\Mailer through the `partial` paragraph type — see
   Books\Mailing\BooksMailer::sendBookNotices().
 -#}
