@@ -172,9 +172,9 @@ JTranslate); see §6 before starting any of them.
   `laminas-mvc` from `require-dev`. SionModel: `SionCacheTrait` attaches to the literal
   `'finish'`; `MailerFactory` takes the renderer interface; `SionFormRow` and the
   `neilime/zf2-twb-bundle` requirement go; its three controllers, `ErrorListener`,
-  `RequestContext::attributesFor()`, `Mvc\CspListener`, `RouteNameFactory` and
-  `Module::onBootstrap()` are deleted **or** moved to a `SionModel\Bridge\Laminas\`
-  namespace excluded from PHPStan — depends on §6 Q1.
+  `RequestContext::attributesFor()`, `Mvc\CspListener`, `RouteNameFactory`,
+  `Module::onBootstrap()` and the `Application` fallback in `SionTableWiring` are
+  **deleted** — patres follows this line, so nothing is kept for a laminas host.
 
 ### 4.3 Batches
 
@@ -227,16 +227,23 @@ JTranslate); see §6 before starting any of them.
   and measure with the general log or a rendered page in a non-English locale, signed in.
 - **Docs**: a doc states what is true now and the rules. Dated narrative goes to git.
 
-## 6. Open decisions
+## 6. Decisions
 
-1. **The shared libraries and patres.** Steps 2 to 8 rewrite SionModel, JUser and
-   JTranslate. patres consumes them on laminas. Either patres follows (the libraries drop
-   laminas in place, patres upgrades at its own pace against tagged releases) or the
-   libraries fork here. Unanswered; blocks step 0's SionModel decision (Bridge namespace
-   vs delete) and everything after.
-2. **Database layer**: Doctrine DBAL (recommended) or a thin PDO wrapper of our own.
-3. **Forms**: Symfony Form + Validator (recommended) or an own minimal layer.
-4. **Mail templates in step 0**: Twig (recommended) or a PhpRenderer factory.
+Taken 2026-09-09:
+
+- **patres follows schoenstatt.link.** The shared libraries (SionModel, JUser, JTranslate)
+  drop laminas **in place** on `modernization`; no bridge namespace is kept for a laminas
+  host, dead laminas-only code is deleted, and patres upgrades against tagged releases at
+  its own pace. Do what is best for this application; it will be best for patres too.
+- **No exceptions** for individual laminas packages.
+- **Dependencies are minimised everywhere**, not only laminas: see §8.
+- `slm/locale` and `laminas-twb-bundle` go in step 0; the `RestApi` module is deleted.
+
+Still open:
+
+1. **Database layer**: Doctrine DBAL (recommended) or a thin PDO wrapper of our own.
+2. **Forms**: Symfony Form + Validator (recommended) or an own minimal layer.
+3. **Mail templates in step 0**: Twig (recommended) or a PhpRenderer factory.
 
 ## 7. How the Symfony side is built (reference)
 
@@ -317,3 +324,31 @@ armed by `TranslatorConfigurator`) and `App\Http\SionCacheFlushListener` (draini
 `SionModel\Cache\CacheFlushQueue`). `App\Laminas\TranslationsTableConfigurator` sets the
 module → catalog-directory map on the table itself, because a successful write redirects
 and never builds a translator. The session starts in `App\Http\SessionListener`.
+
+## 8. Beyond laminas: every other dependency
+
+Direct, non-laminas requirements across the application and the three submodules,
+measured 2026-09-09 (files using the namespace, outside `vendor/` and `.phtml`):
+
+| package | own deps | files | verdict |
+|---|---|---|---|
+| symfony/{http-kernel, http-foundation, routing, event-dispatcher, console, mailer, security-core}, twig/twig | — | the platform | keep |
+| symfony/error-handler | 2 | **0** direct uses; http-kernel requires it | drop the direct line |
+| monolog/monolog | 0 | 2 (SionModel logging) | keep; PSR-3 with no deps |
+| firebase/php-jwt | 0 | 4 (API tokens, JUser) | keep, or replace with `hash_hmac` over a signed id (tokens are opaque to callers) |
+| spatie/schema-org | 0 | 13 (JSON-LD on books, shrines, persons) | candidate: the JSON-LD emitted is a handful of fixed shapes; a typed array builder replaces a 900-class package |
+| erusev/parsedown + parsedown-extra | 0 + 1 | 4 | keep one Markdown parser; parsedown is unmaintained since 2019 — replace with `league/commonmark` (maintained, 3 deps) **or** drop Markdown where it is only rendering plain notes. Decide per use |
+| nesbot/carbon | 4 | 4 | replace with `DateTimeImmutable` + `IntlDateFormatter` (`DiffForHumans` is the one non-trivial call) |
+| giggsey/libphonenumber-for-php | 2 | 1 (`Telephone` helper) | replace with a formatting-only fallback, or drop formatting: one helper, display only |
+| voku/html2text, tijsverkoyen/css-to-inline-styles | 1 + 1 | 3 + 1 | mail only (text alternative, inlined styles); fold into the Twig mail port with a 40-line inliner or accept plain-text mails |
+| neitanod/forceutf8 | 0 | 1 | replace with `mb_convert_encoding`/`iconv` |
+| tedivm/jshrink | 0 | 2 | drop: minify at build time or serve the source; not a runtime concern |
+| matriphe/iso-639 | 0 | 1 | replace with a 200-line array of the languages this site uses |
+| cocur/slugify | 0 | 2 | replace with `Symfony\Component\String\Slugger` (already installed via symfony/string) |
+| scottconnerly/timezone | 0 | 1 | replace with `DateTimeZone::listIdentifiers()` + Intl |
+| spatie/opening-hours | 0 | 2 (shrine opening hours) | keep for now; revisit with the shrine dataset work |
+| nicolaswurtz/chordpro-php (jroedel fork) | 0 | 1 (`CompositionController`) | the last personal fork after step 0; either upstream the fork or vendor the ~300 lines this site uses |
+| neilime/zf2-twb-bundle (SionModel `composer.json`) | — | not installed here | remove the requirement in step 0 |
+
+Rule: before adding a package, ask whether twenty lines of our own code would do; when
+touching code that uses one of the candidates above, replace it in the same PR.
