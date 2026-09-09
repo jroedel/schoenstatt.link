@@ -1204,7 +1204,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
 
     private function juserRoutes(): RouteResolver
     {
-        return $this->juserRoutes ??= new RouteResolver($this->laminas());
+        return $this->juserRoutes ??= new RouteResolver();
     }
 
     /**

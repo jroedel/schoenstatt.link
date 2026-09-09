@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace App\JUser\Host;
 
-use App\Laminas\ServiceBridge;
+use App\Http\SymfonyRoutes;
 use App\Locale\Locales;
 use JUser\Host\RouteResolverInterface;
-use Laminas\Http\Request as LaminasRequest;
-use Laminas\Router\Http\RouteInterface as HttpRouteInterface;
-use Laminas\Router\Http\TreeRouteStack;
-use Laminas\Router\RouteMatch;
-use Laminas\Router\RouteStackInterface;
+use Symfony\Component\Routing\Matcher\UrlMatcher;
+use Symfony\Component\Routing\RequestContext;
 use Throwable;
 
 use function explode;
 use function implode;
+use function in_array;
 use function is_string;
 use function ltrim;
 use function parse_url;
@@ -25,7 +23,7 @@ use const PHP_URL_PATH;
 use const PHP_URL_QUERY;
 
 /**
- * `JUser\Host\RouteResolverInterface` over the laminas router.
+ * `JUser\Host\RouteResolverInterface` over the Symfony router.
  *
  * **This class is where the four hard-won details of the old `App\JUser\RedirectTarget`
  * live now**, and it is the reason that class could shrink from 318 lines to 113. None of
@@ -35,69 +33,104 @@ use const PHP_URL_QUERY;
  *
  * ## The locale prefix has to come off first
  *
- * Under a laminas dispatch the router only ever sees `/shrines`, because SlmLocale's
- * listener strips the locale segment off the request and sets the router's base URL. Under a
- * Symfony dispatch no MVC listener runs at all, so the router sees exactly what it is handed
- * — measured through `App\Laminas\ServiceBridge` on 2026-08-21:
+ * Every `?redirect=` the route guards emit carries the locale prefix, and the matcher is
+ * asked about the *unprefixed* path: the prefixed twin of a route is a separate declaration
+ * (`shrines` serves `/shrines`, `shrines.locale` serves `/{_locale}/shrines`), and stripping
+ * first means one answer rather than a name that has to be un-suffixed afterwards.
  *
- *     /en/shrines  => NO MATCH          /shrines => shrines
- *     /en/users    => NO MATCH          /        => welcome
- *     /en/         => NO MATCH
+ * Getting this wrong refuses every destination on the site while nothing fails anywhere —
+ * "no route" is a legitimate answer. The *first* attempt at this, against the laminas
+ * router, did exactly that: it asked about the prefixed path, matched nothing, and sent
+ * every visitor to the home page after signing in.
  *
- * Every `?redirect=` the route guards emit carries the prefix. So the *first* attempt at
- * this, which asked the router directly, refused every destination and sent every visitor to
- * the home page after signing in — silently, and looking exactly like the "three redirects,
- * no explanation" defect that had just been fixed.
+ * ## Why the Symfony router, since step 6
  *
- * ## On a clone, with an empty base URL
+ * It used to be the laminas one, on a clone with an empty base URL — because
+ * `TreeRouteStack::match()` uses `strlen($this->baseUrl)` as a **path offset**, so a shared
+ * router whose base `App\Laminas\RouteUrl` had already set to `/en` matched `/shrines`
+ * three characters in, looked for `ines`, and found nothing. That made the answer depend on
+ * whether a link had been rendered earlier in the same request. Symfony's matcher holds no
+ * such state, so the hazard is gone rather than worked around.
  *
- * Not caution: without it the answer depends on whether `App\Laminas\RouteUrl` happened to
- * assemble a link earlier in the same request. `RouteUrl` sets the shared router's base URL
- * to `<base>/<alias>` so that assembled links carry the prefix — and
- * `TreeRouteStack::match()` uses `strlen($this->baseUrl)` as a **path offset**. With the base
- * left at `/en`, matching `/shrines` starts three characters in, looks for `ines`, and finds
- * nothing. Every destination refused, but only on pages that had already rendered a link —
- * which is most of them, and would have made this look intermittent.
+ * The old reason for preferring laminas — that it knew the whole site while Symfony knew
+ * only the ported part — expired when the last route was ported. Symfony now knows every
+ * route it serves, and two names it does **not** answer are handled explicitly below.
  *
- * A clone is enough: `match()` reads the route list and writes only `$baseUrl` and
- * `$requestUri`, which are exactly the state being isolated. Setting the base to the empty
- * string also stops `match()` adopting it from the request, which it does while the property
- * is null.
- *
- * ## The laminas router is still the right one to ask
- *
- * Not the Symfony one, and not both. Every ported route keeps a laminas route declared —
- * that is the `$ported()` contract in config/symfony/routes.php, and it is what lets
- * `laminas_path()` and the BjyAuthorize guards go on naming them — so the laminas router
- * knows the whole site while the Symfony router knows only the ported part. The day a Symfony
- * route ships with no laminas twin, this has to consult both, and the symptom will be that
- * signing in towards that page lands on the home page instead.
+ * Measured against the laminas router over a corpus generated from the route collection:
+ * 111 paths resolve to the same name, and the differences are understood — see
+ * test/Integration/RouteMatchParityTest.
  */
 final class RouteResolver implements RouteResolverInterface
 {
-    public function __construct(private readonly ServiceBridge $laminas)
+    public function __construct()
     {
     }
 
+    /**
+     * Routes that match but are not destinations.
+     *
+     * `not-found` is the catch-all and matches **every** path, which is the one thing that
+     * cannot be ported naively: the laminas router answered null for a path it did not
+     * recognise, and this must keep doing that. Without the exclusion `valid()` would
+     * accept any string beginning with a slash as a redirect target, which is not the
+     * open redirect its other guards prevent but is still "nowhere to go" reported as
+     * somewhere. The `/api` refusals are excluded for the same reason.
+     */
+    private const NOT_A_DESTINATION = [
+        'not-found',
+        'api-not-found',
+        'api-not-found/rest',
+    ];
+
+    /**
+     * Symfony route name → the name the **ACL** knows, where the two differ.
+     *
+     * The answer goes to `JUser\Page\RedirectTarget::refusedRoute()`, which hands it to
+     * `Access::userMayReachRoute()` — and that looks up `route/<name>` and **denies when the
+     * resource does not exist**. The ACL is keyed on the laminas route names throughout, so
+     * returning Symfony's name for a page the two spell differently would tell a signed-in
+     * user they may not reach a page they can, with nothing failing anywhere.
+     *
+     * Two routes are affected and both were renamed when they were ported.
+     * test/Integration/RouteMatchParityTest compares every route against the laminas router
+     * and fails if this map is ever incomplete, so a third divergence cannot arrive quietly.
+     */
+    private const ACL_NAME = [
+        'sm-cache-status'           => 'sion-model/cache-status',
+        'sm-clear-persistent-cache' => 'sion-model/clear-persistent-cache',
+    ];
+
     public function routeFor(string $path): ?string
     {
+        $matcher = new UrlMatcher(SymfonyRoutes::collection(), new RequestContext());
+
+        //**The matcher takes a path, not a URI.** The laminas router was handed a
+        //`Laminas\Http\Request` and parsed the query off itself; Symfony's matches the
+        //string it is given, so `/assignments/search?search=Walter` matches nothing and
+        //every `?redirect=` carrying a query — which is most of the ones worth returning
+        //to — would be refused as "no route". Caught by the sign-in smoke tests.
+        $withoutPrefix = $this->withoutLocalePrefix($path);
+        $pathOnly      = parse_url($withoutPrefix, PHP_URL_PATH);
+        if (! is_string($pathOnly) || '' === $pathOnly) {
+            return null;
+        }
+
         try {
-            $request = new LaminasRequest();
-            $request->setUri($this->withoutLocalePrefix($path));
-            $match = $this->router()->match($request);
+            $match = $matcher->match($pathOnly);
         } catch (Throwable) {
-            //the router throws for a malformed URI and for a part route that may not
-            //terminate; either way the answer is "not a destination"
+            //ResourceNotFoundException for a path no route claims, MethodNotAllowedException
+            //for one whose route exists but not for a GET — `comments/create` is POST-only,
+            //and a browser cannot be redirected there either way. The laminas router named
+            //it, having no method constraint to consult; nothing asked it to.
             return null;
         }
 
-        if (! $match instanceof RouteMatch) {
+        $route = $match['_route'] ?? null;
+        if (! is_string($route) || '' === $route || in_array($route, self::NOT_A_DESTINATION, true)) {
             return null;
         }
 
-        $route = $match->getMatchedRouteName();
-
-        return is_string($route) && '' !== $route ? $route : null;
+        return self::ACL_NAME[$route] ?? $route;
     }
 
     /**
@@ -129,17 +162,5 @@ final class RouteResolver implements RouteResolverInterface
         $stripped = '/' . ltrim(implode('/', $segments), '/');
 
         return is_string($query) && '' !== $query ? $stripped . '?' . $query : $stripped;
-    }
-
-    /** @return TreeRouteStack<HttpRouteInterface> */
-    private function router(): TreeRouteStack
-    {
-        /** @var TreeRouteStack<HttpRouteInterface> $shared */
-        $shared = $this->laminas->get(RouteStackInterface::class);
-
-        $router = clone $shared;
-        $router->setBaseUrl('');
-
-        return $router;
     }
 }
