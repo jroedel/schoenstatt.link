@@ -14,13 +14,14 @@ use JTranslate\I18n\TranslatableMessage;
  *
  * The twin of `App\JUser\Host\Flash`, and as short for the same reason: `Severity`'s values
  * *are* the laminas flash namespaces, so the mapping is `$severity->value`. Both adapters
- * share one {@see HostMessages} — one `FlashMessenger` per request, not per module, which
- * is the property that keeps two messages from becoming one.
+ * share one {@see HostMessages} — one flash store per request, not per module, which is
+ * the property that keeps two messages from becoming one.
  *
- * `test/Integration/JTranslateHostContractTest` pins the five values against the laminas
- * constants. That test is not ceremony: a message written by this surface crosses a
- * redirect **in the session**, and on a value that did not match, the layout would look in
- * a bucket nothing wrote to. Every successful save on this surface redirects, so the
+ * `test/Integration/JTranslateHostContractTest` pins the five values against the
+ * constants of `SionModel\Messaging\FlashMessages`. That test is not ceremony: a message
+ * written by this surface crosses a redirect **in the session**, and on a value that did
+ * not match, the layout would look in a bucket nothing wrote to. Every successful save on
+ * this surface redirects, so the
  * messages that would vanish are precisely the ones confirming a write.
  */
 final class Flash implements FlashInterface

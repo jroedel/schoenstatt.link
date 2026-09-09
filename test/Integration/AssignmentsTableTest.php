@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Http\CspNonce;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
@@ -248,11 +249,12 @@ class AssignmentsTableTest extends TestCase
             new ViewHelpers($this->bridge(), fn (): RouteUrl => new RouteUrl($this->bridge(), '')),
             new RouteUrl($this->bridge(), ''),
             $requests,
-            new CspNonce()
+            new CspNonce(),
+            new HostMessages()
         );
     }
 
-    /** Config caches off, for the reason CacheStatusParityTest states: no test may write data/config/. */
+    /** Config caches off, for the reason CacheStatusEndpointTest states: no test may write data/config/. */
     private function bridge(): ServiceBridge
     {
         if (null !== self::$bridge) {

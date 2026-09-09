@@ -14,14 +14,14 @@ use App\Books\Import\LibraryImporter;
 use App\Books\Import\PlannedRow;
 use App\Books\Import\RunImportForm;
 use App\Books\LibraryPage;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\SionResult;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\SpreadsheetReader;
-use JTranslate\Controller\Plugin\NowMessenger;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -89,7 +89,8 @@ final class LibraryImportConfigureController
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
         private readonly LibraryPage $page,
-        private readonly ImportStorage $storage
+        private readonly ImportStorage $storage,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -251,9 +252,7 @@ final class LibraryImportConfigureController
         }
         $table->updateEntity('library-import', $importId, $update);
 
-        (new FlashMessenger())
-            ->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage('Columns saved.');
+        $this->messages->flash(FlashMessages::NAMESPACE_SUCCESS, 'Columns saved.');
 
         return new RedirectResponse($this->urls->path(
             'library-imports/library-import/edit',
@@ -312,9 +311,7 @@ final class LibraryImportConfigureController
             'status'           => LibraryTable::IMPORT_STATUS_COMPLETED,
         ], []);
 
-        (new FlashMessenger())
-            ->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage('The import has been run.');
+        $this->messages->flash(FlashMessages::NAMESPACE_SUCCESS, 'The import has been run.');
 
         return new RedirectResponse($this->urls->path(
             'library-imports/library-import',
@@ -564,8 +561,6 @@ final class LibraryImportConfigureController
 
     private function now(string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage($message);
+        $this->messages->now(FlashMessages::NAMESPACE_ERROR, $message);
     }
 }

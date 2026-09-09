@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,7 +61,8 @@ final class PersonController
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -201,9 +203,7 @@ final class PersonController
      */
     private function notFound(): RedirectResponse
     {
-        $this->laminas->get('ControllerPluginManager')->get('flashMessenger')
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Person not found.');
+        $this->messages->flash(FlashMessages::NAMESPACE_ERROR, 'Person not found.');
 
         return new RedirectResponse($this->urls->path('persons'), Response::HTTP_FOUND);
     }

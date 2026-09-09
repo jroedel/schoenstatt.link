@@ -16,8 +16,7 @@
  * top-level 'console' config key.
  */
 
-use Laminas\Mvc\Service\ServiceManagerConfig;
-use Laminas\ServiceManager\ServiceManager;
+use App\Laminas\ContainerFactory;
 use Laminas\Stdlib\ArrayUtils;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
@@ -56,13 +55,7 @@ if (file_exists(__DIR__ . '/../config/development.config.php')) {
 // Reading it is no better — a stale cache is precisely what cache:clear-config
 // exists to remove, and honouring it here would make the command's own view of
 // the configuration the thing it is trying to delete.
-$appConfig['module_listener_options']['config_cache_enabled'] = false;
-$appConfig['module_listener_options']['module_map_cache_enabled'] = false;
-
-$serviceManager = new ServiceManager();
-(new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($serviceManager);
-$serviceManager->setService('ApplicationConfig', $appConfig);
-$serviceManager->get('ModuleManager')->loadModules();
+$serviceManager = ContainerFactory::build($appConfig, false);
 
 $config = $serviceManager->get('config');
 $commands = $config['console']['commands'] ?? [];

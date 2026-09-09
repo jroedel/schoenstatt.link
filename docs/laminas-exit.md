@@ -95,40 +95,34 @@ JTranslate); see §6 before starting any of them.
 
 ### 4.1 What laminas-mvc still provides
 
-- **The container bootstrap.** `Laminas\Mvc\Service\ServiceManagerConfig`,
-  `ModuleManagerFactory` and `ServiceListenerFactory` are laminas-mvc classes. They are
-  copied at 22 call sites: `bin/console`, `App\Laminas\ServiceBridge`,
-  `tools/acl-table.php`, `test/Fuzz/FormRepository`, 18 integration tests.
-- **Service ids the Symfony side still asks the bridge for**: `ViewHelperManager` (13:
-  `App\Laminas\ViewHelpers`, the `isAllowed` helper from `EntityCreate/Show/Edit/Delete`
-  and `LiteratureController`, `translate`/`countryName` in three Schoenstatt factories),
-  `ControllerPluginManager` (15, the `nowMessenger` plugin), `MvcTranslator` (11),
-  `Application` (13, all guarded by `has()` or already shadowed by
-  `App\Books\{LibraryScopedForms,CheckoutForms,CurrentLibrary}` and `App\View\NavigationTree`),
-  `ViewRenderer` (4). `Router` survives — laminas-router's own ConfigProvider provides it.
-- **Two `.phtml` are still rendered**: `sion-model/mailing/action-email` and the
-  `books/libraries/email-book-list` partial, by `SionModel\Mailing\Mailer::renderTemplate()`
-  for `bin/console books:send-notices`. The partial is the only view script left in the
-  app modules and resolves off Books' `view_manager.template_path_stack`; SionModel's
-  other ten are dead and go with its controllers.
-- **Two dead `onBootstrap()` hooks** (SionModel, JTranslate's dispatch listener); their
-  Symfony-side replacements exist (`App\Http\CspListener`, `TranslatorConfigurator`,
-  `PhraseFlushListener`). The app modules' hooks and `SessionBootstrap` are gone.
-- **Three laminas controllers**, all in SionModel, with its `LazyControllerFactory` and
-  JTranslate's. The 18 app-module controllers, their factories and the `controllers`
-  config keys are gone (batch 1).
-- **The flash/now layer**: `Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger` instantiated
-  at 10 `src/` sites and in `App\Laminas\HostMessages`; 65 references to its namespace
-  constants; JTranslate's `NowMessenger` plugin and the two rendering helpers, reached from
-  Twig only via `flash_messages()`/`now_messages()` in `layout.html.twig`.
-- **The translator decorator** `Laminas\Mvc\I18n\Translator`. No route has a translatable
-  segment, so mvc-i18n's router delegator is unused; `laminas-validator` already ships the
-  equivalent adapter (`Laminas\Validator\Translator\Translator`).
-- **TwbBundle** is reached from live code in two places: `ViewHelpers::label()` (one Twig
-  call site and `EntityFormatter`) and `SionModel\Form\View\Helper\SionFormRow`, which
-  nothing uses since `BootstrapFormRenderer`. **SlmLocale**: no Symfony-side code reads its
-  config; `App\Http\LocaleListener` reproduces it and keeps the cookie *name* `slm_locale`.
-- `laminas-mvc-plugin-prg` has zero call sites; `identity()` only in dead controllers.
+- **Nothing, at runtime.** Every container is built by `App\Laminas\ContainerFactory`
+  (event managers, `ModuleManager` with the default listeners and a `ServiceListener` for
+  `service_manager` and `view_helpers`); it defines `ViewHelperManager`
+  (`App\Laminas\ViewHelperManagerFactory`) and `MvcTranslator` (a
+  `Laminas\Validator\Translator\Translator` over the canonical laminas-i18n translator,
+  `App\Laminas\TranslatorFactory`) under the ids ported code asks for, and registers the
+  two delegators. Nothing asks for `Application`, `ControllerPluginManager` or
+  `ViewRenderer`. `Router` survives — laminas-router's own ConfigProvider provides it. The
+  packages are still installed and their modules still listed in `modules.config.php`;
+  removing both is batch 4.
+- **No `.phtml` is rendered.** The two mail templates are Twig
+  (`module/SionModel/templates/mailing/`, `module/Books/templates/mailing/`), rendered by
+  `SionModel\Mailing\Mailer` through `TemplateRendererInterface` in a mail-only Twig
+  environment (`SionModel\Service\TemplateRendererFactory`, paths from
+  `sion_model.mail_template_paths`). The only `.phtml` left in the tree are JUser's bridge
+  helpers, unused here.
+- **No controller, no `onBootstrap()` hook** is left in any module except the translator
+  half of JTranslate's, which runs only under a laminas ModuleManager bootstrap and is kept
+  for patres until it adopts a configurator of its own.
+- **The flash/now layer** is `SionModel\Messaging\FlashMessages` (session container
+  `FlashMessenger`, one `SplQueue` per namespace, one hop — the plugin's own layout, so a
+  flash survives the deploy in either direction) and `NowMessages`, behind one
+  `App\Laminas\HostMessages` per request that every ported controller takes;
+  `JTranslate\I18n\MessageRenderer` renders both from `LaminasExtension`.
+- **TwbBundle** is reached from nothing: `App\View\Label` renders the label. **SlmLocale**:
+  no Symfony-side code reads its config; `App\Http\LocaleListener` reproduces it and keeps
+  the cookie *name* `slm_locale`.
+- `laminas-mvc-plugin-prg` and `-identity` have zero call sites.
 
 ### 4.2 Design
 
@@ -160,16 +154,13 @@ JTranslate); see §6 before starting any of them.
   Twig already), byte-compared with `books:send-notices --dry-run`. Fallback: a 40-line
   PhpRenderer factory.
 - `App\View\Label` replaces `TwbBundleLabel`; `SionFormRow` is deleted.
-- Still to delete (batch 2): the four route-aware form factories
-  (`Book/Library/Collection/CheckoutFormFactory`) and `LibraryInfoFactory` — they read
-  `get('Application')->getMvcEvent()`, and `test/Fuzz/FormRepository` injects an MvcEvent
-  by reflection so they build; the harness must resolve those forms through
-  `App\Books\LibraryScopedForms`/`CheckoutForms` in the same commit or the fuzz baseline
-  changes silently. JTranslate's `controller_plugins` key; the `view_manager` remnants
-  (Application's `doctype`, read by the bridged form helpers, and Books' path stack for
-  the mail partial); `sionmodel.global.php`'s `inject_headers_event`, which
-  `App\Http\CspListener` **requires** — omit it and the CSP header disappears without an
-  error, so the listener changes first. **Keep `router` config** until step 6.
+- What stays until later steps: Application's `view_manager.doctype` (read by our
+  `ViewHelperManagerFactory` for the bridged form helpers; goes with laminas-view, step 4)
+  and the **`router` config** (step 6).
+- `TranslatorConfigurator` attaches JTranslate's missing-translation listener **on the
+  first miss**, not at construction: the table it needs is built through JUser's user
+  table, whose factory builds JUser's mailer, whose factory asks for the translator —
+  resolving it inside the translator's own delegator recurses until memory runs out.
 - `public/index.php`: the install check becomes `class_exists(App\Kernel::class)`.
 - Shared libraries: JTranslate drops `laminas-mvc` and `laminas-mvc-plugin-flashmessenger`
   from `require`, deletes its plugin, rendering helpers, `LazyControllerFactory` and
@@ -187,10 +178,13 @@ JTranslate); see §6 before starting any of them.
    The ACL diff showed exactly one change (the `api-route-not-found` guard);
    `docs/acl-baseline.json` carries it. The mail body rendered before and after was
    byte-identical. Deploy.
-2. **Replace the runtime uses** in `src/` and tests (everything in §4.2 that is new code).
-   Our factories shadow laminas-mvc's under the same ids, so this deploys with the package
-   still installed. Deploy; send one notice with `--dry-run` before and after and diff.
-3. **Submodule PRs** (JTranslate, SionModel, JUser), then pointer bumps.
+2. **Replace the runtime uses** in `src/` and tests (everything in §4.2 that is new code):
+   done, together with batch 3, as one superproject PR over three submodule PRs. Our
+   factories shadow laminas-mvc's under the same ids, so this deploys with the package
+   still installed. The mail body rendered before and after was byte-identical
+   (`--dry-run` returns before rendering, so the comparison drove
+   `Mailer::renderTemplate()` directly). Deploy.
+3. **Submodule PRs** (JTranslate, SionModel, JUser): done with batch 2.
 4. **Composer**: remove the seven packages and the two `repositories` fork entries; add the
    now-direct requirements (`laminas-servicemanager`, `laminas-modulemanager`,
    `laminas-eventmanager`, `laminas-http` — `App\JUser\Host\RouteResolver` matches a

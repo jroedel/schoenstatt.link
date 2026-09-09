@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\ContainerFactory;
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -88,14 +88,8 @@ class EventFeatureStateTest extends TestCase
         }
 
         $appConfig = require __DIR__ . '/../../config/application.config.php';
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $serviceManager = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))
-            ->configureServiceManager($serviceManager);
-        $serviceManager->setService('ApplicationConfig', $appConfig);
-        $serviceManager->get('ModuleManager')->loadModules();
+        $serviceManager = ContainerFactory::build($appConfig);
 
         /** @var array<string, mixed> $config */
         $config = $serviceManager->get('config');
@@ -261,14 +255,8 @@ class EventFeatureStateTest extends TestCase
 
         try {
             $appConfig = require __DIR__ . '/../../config/application.config.php';
-            $appConfig['module_listener_options']['config_cache_enabled']     = false;
-            $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-            $serviceManager = new ServiceManager();
-            (new ServiceManagerConfig($appConfig['service_manager'] ?? []))
-                ->configureServiceManager($serviceManager);
-            $serviceManager->setService('ApplicationConfig', $appConfig);
-            $serviceManager->get('ModuleManager')->loadModules();
+            $serviceManager = ContainerFactory::build($appConfig);
 
             /** @var AdapterInterface $adapter */
             $adapter = $serviceManager->get('Laminas\Db\Adapter\Adapter');

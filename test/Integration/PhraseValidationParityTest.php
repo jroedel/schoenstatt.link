@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\ContainerFactory;
 use JTranslate\Form\EditPhraseForm;
 use JTranslate\Form\PhraseValidator;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -335,13 +335,8 @@ final class PhraseValidationParityTest extends TestCase
 
         /** @var array<string, mixed> $appConfig */
         $appConfig = require __DIR__ . '/../../config/application.config.php';
-        $appConfig['module_listener_options']['config_cache_enabled']     = false;
-        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
-        $services = new ServiceManager();
-        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($services);
-        $services->setService('ApplicationConfig', $appConfig);
-        $services->get('ModuleManager')->loadModules();
+        $services = ContainerFactory::build($appConfig);
 
         return self::$services = $services;
     }

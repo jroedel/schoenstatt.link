@@ -16,11 +16,9 @@ use Books\View\Helper\Markdown;
 use JTranslate\View\Helper\CountryName;
 use JTranslate\View\Helper\Flag;
 use JTranslate\View\Helper\LanguageName;
-use JTranslate\View\Helper\NowMessenger as NowMessengerHelper;
 use JUser\Bridge\Laminas\ZfcUserDisplayName;
 use Laminas\I18n\View\Helper\DateFormat;
 use Laminas\I18n\View\Helper\Translate;
-use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
 use Laminas\View\HelperPluginManager;
 use SionModel\I18n\View\Helper\DatePrecisionFormat;
 use SionModel\I18n\View\Helper\DayFormat;
@@ -30,7 +28,6 @@ use SionModel\View\Helper\Email;
 use SionModel\View\Helper\FormatUrlObject;
 use SionModel\View\Helper\Telephone;
 use SionModel\View\Helper\Tooltip;
-use TwbBundle\View\Helper\TwbBundleLabel;
 
 /**
  * The laminas view helpers a Symfony-served route may reuse — and, by being the
@@ -57,11 +54,9 @@ use TwbBundle\View\Helper\TwbBundleLabel;
  * that a compile-time fact rather than a rule someone has to remember.
  *
  * Priming note: HelperPluginManager injects a renderer into its helpers only once a
- * renderer has claimed it, which PhpRenderer does in its own constructor. So
- * `ViewRenderer` must be pulled out of the container before any helper is used, or
- * `$this->view` is null and even `flag` fatals on escapeHtmlAttr(). That single
- * `get()` is the whole of laminas-view instantiated here: no MvcEvent, no view
- * model, no layout, no rendering.
+ * renderer has claimed it, and without one `$this->view` is null and even `flag` fatals
+ * on escapeHtmlAttr(). App\Laminas\ViewHelperManagerFactory attaches a bare PhpRenderer
+ * for that reason; it resolves and renders nothing.
  */
 final class ViewHelpers
 {
@@ -113,27 +108,6 @@ final class ViewHelpers
         return $helper;
     }
 
-    /**
-     * Session-backed, which is the point: a laminas action that sets a flash and
-     * redirects to a ported page would otherwise lose it silently.
-     */
-    public function flashMessenger(): FlashMessenger
-    {
-        /** @var FlashMessenger $helper */
-        $helper = $this->helpers()->get('flashMessenger');
-
-        return $helper;
-    }
-
-    /**
-     * TwbBundle's Bootstrap label — `<span class="label-info label">…</span>`.
-     *
-     * On the allowlist for the same reason `flag` is: it is real logic (a translator
-     * domain, and escaping of both the text and the class attribute, which is why the
-     * space in the class arrives as `&#x20;`) and it was measured to run with no
-     * MvcEvent. Reproducing it would mean copying that escaping by hand and getting the
-     * entity right, on markup that appears beside a role on the changes page.
-     */
     /**
      * Laminas' Intl date formatter. Reaches ext/intl and \Locale::getDefault() and
      * nothing else — no MvcEvent — and reproducing it would mean re-deriving the
@@ -321,34 +295,6 @@ final class ViewHelpers
     }
 
     /**
-     * JTranslate's within-request messenger — the counterpart of `flashMessenger` for
-     * messages meant for the page being rendered rather than the next one.
-     *
-     * templates/layout.html.twig used to say this could not be reproduced "because
-     * nothing on a ported route can populate it". That stopped being true with the
-     * literature search page, which adds "No results found." and the 300-result cap
-     * notice while rendering. Populating it is a matter of reaching the *same* plugin
-     * instance: `NowMessengerFactory` pulls `nowMessenger` out of the shared
-     * ControllerPluginManager and hands it to the helper, so a controller that pushes
-     * into that plugin is pushing into what this renders.
-     */
-    public function nowMessenger(): NowMessengerHelper
-    {
-        /** @var NowMessengerHelper $helper */
-        $helper = $this->helpers()->get('nowMessenger');
-
-        return $helper;
-    }
-
-    public function label(): TwbBundleLabel
-    {
-        /** @var TwbBundleLabel $helper */
-        $helper = $this->helpers()->get('label');
-
-        return $helper;
-    }
-
-    /**
      * The authorization check every Twig `is_allowed()` call and every ported controller's
      * `isAllowed()` wrapper reaches. Since the ACL cutover this is `App\Acl\IsAllowed` over
      * `App\Acl\Authorizer`, not `BjyAuthorize\View\Helper\IsAllowed` — the call signature
@@ -392,43 +338,11 @@ final class ViewHelpers
         }
     }
 
-    /**
-     * The same thing for the **flash messenger**, which is the one other helper on this
-     * bridge that translates strings of its own.
-     *
-     * `JTranslate\Module` sets a per-request text domain on twelve view helpers from a
-     * listener attached to `AbstractActionController::dispatch`. A Symfony-served request
-     * never dispatches a laminas controller, so that listener never runs, and every helper
-     * keeps the construction default — `default`. Ten of the twelve do not matter here
-     * because nothing on the Symfony side reaches them: Twig writes its own `<title>`,
-     * `templates/layout.html.twig` passes the navigation domain explicitly, and
-     * `SionModel\Form\BootstrapFormRenderer` routes every form string through
-     * `LaminasExtension::translate()`. `translate` is handled above. This is the twelfth.
-     *
-     * Left unset it costs twice. A flash set by a laminas action and rendered on a ported
-     * page is looked up in `default` rather than in the module domain the laminas layout
-     * would have used, so it renders as its English source in every locale; and because a
-     * missing translation is exactly how JTranslate discovers a phrase, the miss also
-     * **files a duplicate row in `default`** — the leak database/db7.8.sql cleans up,
-     * arriving one string at a time through a second door after the first was shut.
-     * Measured: "Assignment not found." filed as `Schoenstatt` from the laminas capture
-     * and again as `default` from the Symfony one, 107 minutes apart on 2026-08-13.
-     */
-    public function useFlashMessengerTextDomain(string $domain): void
-    {
-        $this->flashMessenger()->setTranslatorTextDomain($domain);
-    }
-
     private function helpers(): HelperPluginManager
     {
         if (null !== $this->helpers) {
             return $this->helpers;
         }
-
-        //ordering, not decoration: PhpRenderer::__construct() calls
-        //HelperPluginManager::setRenderer($this), and without that every helper's
-        //$this->view is null
-        $this->laminas->get('ViewRenderer');
 
         /** @var HelperPluginManager $helpers */
         $helpers = $this->laminas->get('ViewHelperManager');

@@ -6,6 +6,7 @@ use Interop\Container\ContainerInterface;
 use Books\Mailing\BooksMailer;
 use Books\Model\BorrowerTokenTable;
 use Books\Model\LibraryTable;
+use SionModel\Mailing\TemplateRendererInterface;
 use Schoenstatt\Model\SchoenstattTable;
 
 /**
@@ -29,7 +30,7 @@ class BooksMailerFactory implements FactoryInterface
         //the shared application transport, built from `smtp_options` by
         //SionModel\Service\MailTransportFactory
         $transport = $container->get('SionModel\MailTransport');
-        $renderer = $container->get('ViewRenderer');
+        $renderer = $container->get(TemplateRendererInterface::class);
         $config = $container->get('Config');
 
         $tokens = $container->get(BorrowerTokenTable::class);

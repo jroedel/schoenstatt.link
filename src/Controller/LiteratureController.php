@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Acl\IsAllowed;
+use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
-use App\Acl\IsAllowed;
 use Books\Form\PublicationsSearchForm;
 use Books\Model\DictionaryTable;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\DriveGateway;
-use JTranslate\Controller\Plugin\NowMessenger;
 use Laminas\Form\FormInterface;
 use Locale;
 use RuntimeException;
+use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -74,7 +75,8 @@ final class LiteratureController
         private readonly ServiceBridge $laminas,
         private readonly ViewHelpers $helpers,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -174,7 +176,7 @@ final class LiteratureController
 
                 if (self::MAX_SEARCH_RESULTS === count($entities)) {
                     $this->nowMessage(
-                        NowMessenger::NAMESPACE_INFO,
+                        FlashMessages::NAMESPACE_INFO,
                         'More than the max number of publications match your search. '
                         . 'Only the first 300 results shown.'
                     );
@@ -183,7 +185,7 @@ final class LiteratureController
         }
 
         if (is_array($entities) && [] === $entities) {
-            $this->nowMessage(NowMessenger::NAMESPACE_INFO, 'No results found.');
+            $this->nowMessage(FlashMessages::NAMESPACE_INFO, 'No results found.');
         }
 
         return new Response($this->twig->render('books/literature-search.html.twig', $this->chrome($form) + [
@@ -457,15 +459,12 @@ final class LiteratureController
     }
 
     /**
-     * A message for the page being rendered — not the next one. It goes into the shared
-     * ControllerPluginManager instance the `nowMessenger` *view* helper reads from, which
-     * is what makes the layout's `now_messages()` show it.
+     * A message for the page being rendered — not the next one. It goes into the request's
+     * HostMessages, which is what the layout's `now_messages()` renders.
      */
     private function nowMessage(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 
     private function isAllowed(string $resource, ?string $privilege = null): bool

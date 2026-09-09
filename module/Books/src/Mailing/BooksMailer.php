@@ -106,7 +106,7 @@ class BooksMailer extends Mailer
         $localizedLibraryName = [];
         $subjectBase = '%s - Overdue notice';
         $localizedSubject = [];
-        $template = 'sion-model/mailing/action-email';
+        $template = '@sion-model/mailing/action-email.html.twig';
         $tags = 'book-checkouts|library' . $library['libraryId']; //pipe-separated
         $textDomain = 'Books';
         $paragraphPrototype = [
@@ -132,7 +132,7 @@ class BooksMailer extends Mailer
             'blank' => [],//blank paragraph
             'list' => [ // checkout list
                 'type' => 'partial',
-                'partial' => 'books/libraries/email-book-list',
+                'partial' => '@books/mailing/email-book-list.html.twig',
                 'checkouts' => null,
             ],
             //A link the reader can actually act on, without an account.

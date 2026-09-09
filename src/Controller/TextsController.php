@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Laminas\HostMessages;
 use App\Laminas\ServiceBridge;
 use Books\Form\TextSearchForm;
 use Books\Model\EventTextTable;
-use JTranslate\Controller\Plugin\NowMessenger;
 use Laminas\Db\Sql\Predicate\Like;
 use Laminas\Db\Sql\Predicate\Operator;
 use Laminas\Db\Sql\Predicate\Predicate;
 use Laminas\Db\Sql\Predicate\PredicateSet;
 use SionModel\Entity\Entity;
+use SionModel\Messaging\FlashMessages;
 use SionModel\Service\EntitiesService;
 use SionModel\Text\Text;
 use Symfony\Component\HttpFoundation\Request;
@@ -55,7 +56,8 @@ final class TextsController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig
+        private readonly Environment $twig,
+        private readonly HostMessages $messages
     ) {
     }
 
@@ -103,7 +105,7 @@ final class TextsController
         }
 
         if (is_array($objects) && [] === $objects) {
-            $this->nowMessage(NowMessenger::NAMESPACE_INFO, 'No results found.');
+            $this->nowMessage(FlashMessages::NAMESPACE_INFO, 'No results found.');
         }
 
         return new Response($this->twig->render('books/texts-index.html.twig', [
@@ -185,8 +187,6 @@ final class TextsController
     /** @see LiteratureController::nowMessage() */
     private function nowMessage(string $namespace, string $message): void
     {
-        /** @var NowMessenger $messenger */
-        $messenger = $this->laminas->get('ControllerPluginManager')->get('nowMessenger');
-        $messenger->setNamespace($namespace)->addMessage($message);
+        $this->messages->now($namespace, $message);
     }
 }
