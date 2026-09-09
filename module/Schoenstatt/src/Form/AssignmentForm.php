@@ -4,7 +4,7 @@ namespace Schoenstatt\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\SionForm;
-use Laminas\Json\Json;
+use App\Json;
 
 class AssignmentForm extends SionForm implements InputFilterProviderInterface
 {

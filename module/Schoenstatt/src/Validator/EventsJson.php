@@ -2,7 +2,7 @@
 namespace Schoenstatt\Validator;
 
 use Laminas\Validator\AbstractValidator;
-use Laminas\Json\Json;
+use App\Json;
 
 class EventsJson extends AbstractValidator
 {
@@ -36,7 +36,7 @@ class EventsJson extends AbstractValidator
             return false;
         }
         try {
-            $json = Json::decode($value, Json::TYPE_ARRAY);
+            $json = Json::decodeToArray($value);
         } catch (\Exception $e) {
             $this->error(self::INVALID_JSON);
             return false;
