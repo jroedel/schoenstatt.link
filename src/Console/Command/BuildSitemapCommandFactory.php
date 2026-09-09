@@ -70,7 +70,7 @@ final class BuildSitemapCommandFactory implements FactoryInterface
         return new BuildSitemapCommand(
             static function () use ($appConfig, $root): SitemapGenerator {
                 $laminas = new ServiceBridge($appConfig);
-                $urls    = new RouteUrl($laminas, '');
+                $urls    = new RouteUrl('');
 
                 return new SitemapGenerator(
                     $laminas,

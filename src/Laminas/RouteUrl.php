@@ -6,8 +6,6 @@ namespace App\Laminas;
 
 use App\Http\SymfonyRoutes;
 use App\Locale\Locales;
-use Laminas\Router\Http\RouteInterface as HttpRouteInterface;
-use Laminas\Router\Http\TreeRouteStack;
 use Locale;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Generator\UrlGenerator;
@@ -27,40 +25,41 @@ use function strlen;
 use function substr;
 
 /**
- * Assembles URLs for laminas routes from a Symfony-served request.
+ * Every URL the application generates.
  *
- * This is the single reason a Twig layout is possible at all. Rendering any
- * existing .phtml dies in the `url` view helper, which needs an MvcEvent for its
- * RouteMatch — but the **router itself** needs nothing: `Router` resolves out of
- * App\Laminas\ServiceBridge with no bootstrap and assembles happily. So every
- * link on a ported page to a not-yet-ported page goes through here, and the pages
- * stay linked while the migration is half done.
+ * The single seam: ~150 PHP call sites and every `laminas_path()` in a template come
+ * through {@see path()}, which is what allowed the engine underneath to be replaced in one
+ * commit rather than in two hundred. It assembled laminas routes until step 6 of the
+ * laminas exit and generates Symfony ones now.
  *
- * The locale prefix is put back the way SlmLocale\Strategy\UriPathStrategy does
- * it: by setting the router's base URL to `<base>/<alias>` once, after which every
- * assembled path carries it. Doing it that way rather than concatenating a prefix
- * onto each result means routes that are themselves locale-aware — there are none
- * today, but the route tree is free to grow some — behave the same under both
- * front controllers.
+ * ## The locale prefix is a route, not a base URL
  *
- * `Router` is a shared service inside one request's ServiceBridge and nothing else
- * holds a reference to it on a ported route, so mutating its base URL is not
- * reaching into someone else's state; on a bridged request this class is never
- * built.
+ * laminas produced it by setting the shared router's base URL to `<base>/<alias>` once, the
+ * way SlmLocale's UriPathStrategy did. Symfony declares it instead: `shrines` serves
+ * `/shrines` and `shrines.locale` serves `/{_locale}/shrines`, so `path()` resolves to the
+ * prefixed twin and passes the locale as a parameter. Routes with no twin — the `/api`
+ * refusals, which answer their own unprefixed path deliberately — fall back to the plain
+ * name.
+ *
+ * That also retired a hazard rather than moving it: the base URL lived on a *shared*
+ * router, so anything else matching or assembling against it in the same request saw
+ * whatever locale was set last. Nothing is shared now; the RequestContext belongs to this
+ * object.
+ *
+ * ## Absolute URLs
+ *
+ * `force_canonical` becomes `ABSOLUTE_URL`, whose scheme and host come off the
+ * RequestContext — {@see setCanonicalHost()}, which {@see HostUrls} calls for the one
+ * caller that wants one, the emailed sign-in link.
  */
 final class RouteUrl
 {
-    /** @var TreeRouteStack<HttpRouteInterface>|null */
-    private ?TreeRouteStack $router = null;
-
     private ?UrlGenerator $generator = null;
 
     private ?RequestContext $context = null;
 
-    public function __construct(
-        private readonly ServiceBridge $laminas,
-        private readonly string $baseUrl
-    ) {
+    public function __construct(private readonly string $baseUrl)
+    {
     }
 
     /**
@@ -186,45 +185,5 @@ final class RouteUrl
         }
 
         return $result;
-    }
-
-    /**
-     * The shared laminas router, its base URL set to carry the locale prefix.
-     *
-     * **Public because one collaborator assembles for itself rather than through
-     * `path()`:** `JUser\Service\Mailer` builds the sign-in link with
-     * `force_canonical`, on a router handed to it by its own factory. Given the raw
-     * container router it assembles `/user/verify?token=…` with no locale prefix — which
-     * is the *unprefixed twin* of a ported route, so the emailed link 302s before it is
-     * redeemed, and a mail client or a scanner that does not follow the hop loses the
-     * token. Measured 2026-08-21, and it is what batch 13 got wrong first.
-     *
-     * Handing over the prepared router rather than having callers prime it by side effect
-     * is the whole point, and since 2026-08-21 the caller is `App\JUser\Host\UrlBuilder`,
-     * which asks for an absolute URL through `path()` with `force_canonical` — so the
-     * emailed link comes off the same builder as every link on every page, and the answer
-     * does not depend on whether some template happened to render one first.
-     * `App\JUser\Host\RouteResolver` has the same hazard from the other direction and
-     * solves it by matching on a clone with an empty base.
-     *
-     * @param string|null $locale null means the request's own default
-     * @return TreeRouteStack<HttpRouteInterface>
-     */
-    public function router(?string $locale = null): TreeRouteStack
-    {
-        $alias = Locales::aliasFor($locale ?? Locale::getDefault());
-
-        //Re-set rather than memoized on the alias: the base URL lives on the router,
-        //which is shared, so remembering "we already configured it" while someone else
-        //asks for a different locale would assemble the second request's links under
-        //the first one's prefix. Setting it is a property assignment.
-        if (null === $this->router) {
-            /** @var TreeRouteStack<HttpRouteInterface> $router */
-            $router       = $this->laminas->get('Router');
-            $this->router = $router;
-        }
-        $this->router->setBaseUrl(rtrim($this->baseUrl, '/') . '/' . $alias);
-
-        return $this->router;
     }
 }
