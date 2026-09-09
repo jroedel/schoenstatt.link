@@ -21,9 +21,8 @@ use JTranslate\View\Helper\LanguageName;
 use App\View\Helper\DateFormat;
 use App\View\Helper\Translate;
 use App\View\Label;
+use Laminas\Router\Http\TreeRouteStack;
 use Laminas\Translator\TranslatorInterface;
-use Laminas\View\Helper\Url;
-use Laminas\View\HelperPluginManager;
 use Schoenstatt\Service\AssociationKindsService;
 use Schoenstatt\View\Helper\FormatAssociation;
 use Schoenstatt\View\Helper\FormatEntity;
@@ -64,23 +63,19 @@ use SionModel\View\Helper\Tooltip;
  * this as a typed method per helper rather than a `get(string $name)` is what makes
  * that a compile-time fact rather than a rule someone has to remember.
  *
- * Priming note: HelperPluginManager injects a renderer into its helpers only once a
- * renderer has claimed it, and without one `$this->view` is null and even `flag` fatals
- * on escapeHtmlAttr(). App\Laminas\ViewHelperManagerFactory attaches a bare PhpRenderer
- * for that reason; it resolves and renders nothing.
+ * Nothing is resolved from a plugin manager any more. Every helper below is constructed
+ * here, which is what allowed laminas-view to be removed: the manager existed to hand each
+ * helper a renderer it could reach its collaborators through, and none of them reaches one.
  */
 final class ViewHelpers
 {
-    private ?HelperPluginManager $helpers = null;
-
     private ?IsAllowed $isAllowed = null;
 
     /*
-     * Ported helpers, constructed here rather than resolved from the plugin manager.
-     * Each is a plain class now — no `Laminas\View\Helper\AbstractHelper` base, nothing
-     * asked of a renderer — so the manager could not build one anyway: it validates every
-     * instance against laminas-view's HelperInterface. Step 4 of the laminas exit empties
-     * the manager this way, one group at a time.
+     * Every helper this class exposes, constructed here. Each is a plain class — no
+     * `Laminas\View\Helper\AbstractHelper` base, nothing asked of a renderer — and each
+     * takes as constructor arguments the collaborators it used to reach through
+     * `$this->view`. That is what emptied the plugin manager and let laminas-view go.
      */
     private ?Email $email = null;
     private ?LanguageName $languageName = null;
@@ -108,6 +103,8 @@ final class ViewHelpers
     private ?FormatEntity $formatEntity = null;
     private ?FormatPublication $formatPublication = null;
     private ?Label $label = null;
+    private ?DateFormat $dateFormat = null;
+    private ?LocaleUrlSubstitute $localeUrl = null;
 
     /**
      * @param Closure(): RouteUrl $urls handed to App\Laminas\LocaleUrlSubstitute below.
@@ -153,10 +150,7 @@ final class ViewHelpers
      */
     public function dateFormat(): DateFormat
     {
-        /** @var DateFormat $helper */
-        $helper = $this->helpers()->get('dateFormat');
-
-        return $helper;
+        return $this->dateFormat ??= new DateFormat();
     }
 
     /**
@@ -214,10 +208,7 @@ final class ViewHelpers
             return $this->booksJsonLd;
         }
 
-        /** @var LocaleUrlSubstitute $localeUrl */
-        $localeUrl = $this->helpers()->get('localeUrl');
-
-        return $this->booksJsonLd = new BooksJsonLd($localeUrl->__invoke(...));
+        return $this->booksJsonLd = new BooksJsonLd($this->localeUrl()->__invoke(...));
     }
 
     public function formatPublicationUrlObject(): FormatPublicationUrlObject
@@ -426,18 +417,27 @@ final class ViewHelpers
     }
 
     /**
-     * The laminas `url` view helper as a closure. Still the laminas one: it is registered
-     * with the router and no route match, which is all the cluster ever needed — every call
-     * names a route and passes its parameters.
+     * Route assembly as a closure, for the entity-markup cluster.
+     *
+     * This was `Laminas\View\Helper\Url` until laminas-view was removed, and it is the
+     * same call: that helper's `__invoke($name, $params)` is
+     * `$router->assemble($params, ['name' => $name])` and nothing else. Its other two
+     * arguments — `$options` and `$reuseMatchedParams` — are what needed a RouteMatch, and
+     * no caller here has ever passed either; every call names a route and its parameters.
+     *
+     * `HttpRouter` is the same shared TreeRouteStack as `Router`, which is what
+     * App\Laminas\RouteUrl assembles against, so the locale prefix RouteUrl sets on the
+     * base URL applies here exactly as it did through the helper.
      *
      * @return Closure(string, array<string, mixed>): string
      */
     private function url(): Closure
     {
-        /** @var Url $url */
-        $url = $this->helpers()->get('url');
+        /** @var TreeRouteStack<mixed> $router */
+        $router = $this->laminas->get('HttpRouter');
 
-        return static fn (string $route, array $params = []): string => (string) $url($route, $params);
+        return static fn (string $route, array $params = []): string
+            => (string) $router->assemble($params, ['name' => $route]);
     }
 
     /** The Bootstrap label markup, translating through the same page-aware helper. */
@@ -484,7 +484,17 @@ final class ViewHelpers
      */
     public function isAllowed(): IsAllowed
     {
-        return $this->isAllowed ??= new IsAllowed(new AclProvider($this->laminas));
+        if (null !== $this->isAllowed) {
+            return $this->isAllowed;
+        }
+
+        //the container's, not a second one: the ported controllers and App\Sion\* ask it
+        //for the same service, and two AclProviders in a request assemble the ACL twice
+        $isAllowed = $this->laminas->get(IsAllowed::class);
+
+        return $this->isAllowed = $isAllowed instanceof IsAllowed
+            ? $isAllowed
+            : new IsAllowed(new AclProvider($this->laminas));
     }
 
     /**
@@ -521,9 +531,7 @@ final class ViewHelpers
             return $this->translateHelper;
         }
 
-        $translate = $this->helpers()->get('translate');
-
-        return $this->translateHelper = $translate instanceof Translate ? $translate : new Translate();
+        return $this->translateHelper = (new Translate())->setTranslator($this->translator());
     }
 
     /**
@@ -547,31 +555,18 @@ final class ViewHelpers
         return $this->translator = $translator instanceof TranslatorInterface ? $translator : null;
     }
 
-    private function helpers(): HelperPluginManager
+    /**
+     * The `localeUrl` helper, reached only by Books\View\Helper\BooksJsonLd.
+     *
+     * laminas's own `localeUrl` factory needed an MvcEvent, so a substitute was registered
+     * over it in the plugin manager; with the manager gone it is simply constructed here.
+     * That also retires the `setAllowOverride()` dance the registration needed — the
+     * manager was a *shared* service and this class is not, so a second ViewHelpers built
+     * against the same ServiceBridge (which two integration tests do) met a substitute that
+     * was already registered and `setService()` threw.
+     */
+    private function localeUrl(): LocaleUrlSubstitute
     {
-        if (null !== $this->helpers) {
-            return $this->helpers;
-        }
-
-        /** @var HelperPluginManager $helpers */
-        $helpers = $this->laminas->get('ViewHelperManager');
-
-        //`localeUrl` is on the refused list because its factory needs an MvcEvent, and a
-        //helper this class does not expose is normally simply unreachable. It is not:
-        //Books\View\Helper\BooksJsonLd reaches it internally, and that is a helper this
-        //class *does* expose. So a working implementation is registered in its place
-        //rather than the caller being reimplemented — see App\Laminas\LocaleUrlSubstitute
-        //for how that was discovered and what it costs.
-        //`setAllowOverride(true)` because the plugin manager is a *shared* service and
-        //this class is not: a second ViewHelpers built against the same ServiceBridge —
-        //which is what test/Integration/ShrineTemplateTest and EntityFormatterTest do —
-        //finds the substitute already registered and `setService()` throws
-        //ContainerModificationsNotAllowedException. Registering is idempotent this way,
-        //and the flag is put back so nothing else acquires the licence.
-        $helpers->setAllowOverride(true);
-        $helpers->setService('localeUrl', new LocaleUrlSubstitute($this->urls));
-        $helpers->setAllowOverride(false);
-
-        return $this->helpers = $helpers;
+        return $this->localeUrl ??= new LocaleUrlSubstitute($this->urls);
     }
 }

@@ -30,17 +30,16 @@ under `module/*/src` that a Symfony-served request reaches.
   re-reads the account every request. laminas-authentication was removed 2026-09-09.
 - **laminas-mvc is gone** (step 0, 2026-09-09), with mvc-i18n, the three mvc plugins,
   `diablomedia/laminas-twb-bundle` and `slm/locale`. The container is built by
-  `App\Laminas\ContainerFactory`, the view helpers by `App\Laminas\ViewHelperManagerFactory`,
-  `MvcTranslator` by `App\Laminas\TranslatorFactory`; messages live in
+  `App\Laminas\ContainerFactory`, which also constructs the view helpers
+  (`App\Laminas\ViewHelpers`) and the translator; messages live in
   `SionModel\Messaging` behind `App\Laminas\HostMessages`; mail renders through Twig.
   `composer.json` has no `repositories` fork entry left but the chordpro one.
 - **What laminas still does**, and therefore what this plan removes: the service
   container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`,
   `laminas-eventmanager` — direct requirements since step 0), the database layer
   (`laminas-db`, under `SionModel\Db\Model\SionTable`), forms and validation
-  (`laminas-form`, `inputfilter`, `validator`, `filter`), translation (`laminas-i18n`,
-  under JTranslate), session, cache, the view-helper classes Twig bridges (`laminas-view`),
-  and URL generation from the laminas router config.
+  (`laminas-form`, `inputfilter`, `validator`, `filter`), session, and URL generation from
+  the laminas router config. laminas-i18n went at step 3 and laminas-view at step 4.
 - `App\Laminas\ServiceBridge` is the seam: a lazily built laminas `ServiceManager` a
   Symfony controller asks for laminas-side services. It disappears at step 7.
 
@@ -87,6 +86,13 @@ match against. So both leave at step 6, not here. `laminas-json` is required by
 serializer — step 4 and step 2. What was actually removable in step 1 was the four
 packages of 1a and `laminas-navigation`.
 
+**A `laminas/*` a submodule uses is invisible to `tools/laminas-audit.php`.** The audit
+scans this application's roots only — SionModel, JUser and JTranslate are separate composer
+packages with their own requirements — so a package can read as unused here and still be
+load-bearing there. Removing `laminas-json` in step 4 broke `JTranslate\Service\CountriesFactory`
+exactly that way, caught by grepping all four repositories rather than by the audit. Grep
+every repository before dropping a package, and check the submodules' `composer.json` too.
+
 **Declare what you use, or removal takes something with it.** Dropping `laminas-captcha`
 in step 1a also dropped `laminas-session`, because captcha was the only package requiring
 it and this application never declared it — `App\Http\SessionListener` and
@@ -106,10 +112,10 @@ deletes.
 | 0 ✅ | laminas-mvc, mvc-i18n, mvc-plugin-{identity,flashmessenger,prg}, diablomedia/laminas-twb-bundle, slm/locale | see §4 | **done 2026-09-09.** Own container bootstrap; own view-helper manager; `Laminas\Validator\Translator\Translator`; session-backed flash store; Twig mail templates |
 | 1a ✅ | laminas-captcha, recaptcha, text (**0 uses**), math (6 `Rand`); our direct `laminas-json` line (8 call sites → `App\Json`) | 12 files | **done 2026-09-09.** `random_int`/`random_bytes`; `App\Json` reproduces the two behaviours that were load-bearing |
 | 1b ✅ | navigation (config-only: nothing resolved the service) | 3 config files | **done 2026-09-09.** `App\View\NavigationTree` already built the tree from the `navigation` config key, which stays |
-| 1c | json (the package itself — laminas-view and laminas-serializer still pull it), serializer (it is the laminas-cache serializer), uri (7 files, but laminas-http **and laminas-router** require it), http (`Client` in two gateways and a console command; `Request` only to feed the laminas router) | ~15 files | `symfony/http-client` or ~20 lines of our own; the rest unblock at steps 2 and 6 |
+| 1c | json ✅ (went with laminas-view at step 4), serializer (it is the laminas-cache serializer), uri (7 files, but laminas-http **and laminas-router** require it), http (`Client` in two gateways and a console command; `Request` only to feed the laminas router) | ~15 files | `symfony/http-client` or ~20 lines of our own; the rest unblock at steps 2 and 6 |
 | 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
 | 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours, implementing `Laminas\Translator\TranslatorInterface`. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
-| 4 | laminas-view (**28** `AbstractHelper` subclasses, measured 2026-09-09), laminas-escaper, and laminas-json with them (nothing else requires it) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery in `App\Laminas\{ViewHelperManagerFactory,ViewHelpers}` | Twig extensions; `App\Laminas\EntityFormatter` already wraps the biggest helper, and `App\Twig\LaminasExtension` is the established pattern |
+| 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. **laminas-escaper does not leave here** — laminas-form (`^2`) and laminas-uri (`^2.9`) require it, so it goes with steps 5 and 6; no code of ours uses it any more |
 | 5 | laminas-form, inputfilter, validator, filter | 36 forms, ~170 files | Symfony Form + Validator. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 | laminas-router (27) | every route is declared twice today | Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names |
 | 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
@@ -122,8 +128,10 @@ laminas-view in composer, and since step 3 nothing here resolves a laminas-form 
 — `SionModel\Form\BootstrapFormRenderer` renders every form by hand. What holds laminas-view
 is our own 28 helpers, and that is step 4's actual content. Measured 2026-09-09.
 
-**Order by packages removed, not by the numbering.** Step 4 takes three (view, escaper,
-json). Step 6 takes four (router, uri, http, loader) but changes URL generation at 57
+**Order by packages removed, not by the numbering.** Step 4 took two (view, json) — not
+the three first planned: `laminas-escaper` is required by `laminas-form` (`^2`) and
+`laminas-uri` (`^2.9`), so it cannot leave before steps 5 and 6 however little of our own
+code touches it. Step 6 takes four (router, uri, http, loader) but changes URL generation at 57
 template call sites and the ACL resource names with it. Step 5 takes four and unblocks two
 more (session, hydrator) across ~170 files. Nothing in 4, 5 or 6 blocks the others.
 
@@ -144,8 +152,7 @@ JTranslate); see §6 before starting any of them.
 
 - **Nothing, at runtime.** Every container is built by `App\Laminas\ContainerFactory`
   (event managers, `ModuleManager` with the default listeners and a `ServiceListener` for
-  `service_manager` and `view_helpers`); it defines `ViewHelperManager`
-  (`App\Laminas\ViewHelperManagerFactory`) and `MvcTranslator` (since 2026-09 an alias of
+  `service_manager`); it defines `MvcTranslator` (since 2026-09 an alias of
   `JTranslate\I18n\Translator\Translator`, the one translator) under the ids ported code
   asks for, and registers the two delegators. Nothing asks for `Application`, `ControllerPluginManager` or
   `ViewRenderer`. `Router` survives — laminas-router's own ConfigProvider provides it. The
@@ -178,11 +185,11 @@ JTranslate); see §6 before starting any of them.
   Options: config caches on/off; pre-built `PhraseFlush`/`CacheFlushQueue` instances.
   Used by `ServiceBridge`, `bin/console`, `tools/acl-table.php`, `FormRepository` and a
   `test/Integration/LaminasContainer.php` helper.
-- `App\Laminas\ViewHelperManagerFactory` under the id `ViewHelperManager`: builds
-  `HelperPluginManager` from `view_helpers` config, wires the router into the `url` helper
-  (`FormatEntity`, `EditPencil`, `EditPencilNew` call `$this->view->url()`), attaches a
-  bare `PhpRenderer` so `$this->view` exists. Translator injection is automatic while the
-  `MvcTranslator` id exists — keep that id through step 0.
+- `App\Laminas\ViewHelperManagerFactory` under the id `ViewHelperManager`: built
+  `HelperPluginManager` from `view_helpers` config, wired the router into the `url` helper,
+  and attached a bare `PhpRenderer` so `$this->view` existed. **Removed at step 4** — every
+  helper is a plain class `App\Laminas\ViewHelpers` constructs, and there is no
+  `view_helpers` config left.
 - `Laminas\Validator\Translator\Translator` registered as `MvcTranslator` (and as
   `Laminas\Mvc\I18n\Translator` for SionModel's factory map) around the container's
   `Laminas\I18n\Translator\TranslatorInterface`. `TranslatorConfigurator`'s delegator moves
@@ -200,9 +207,8 @@ JTranslate); see §6 before starting any of them.
   Twig already), byte-compared with `books:send-notices --dry-run`. Fallback: a 40-line
   PhpRenderer factory.
 - `App\View\Label` replaces `TwbBundleLabel`; `SionFormRow` is deleted.
-- What stays until later steps: Application's `view_manager.doctype` (read by our
-  `ViewHelperManagerFactory` for the bridged form helpers; goes with laminas-view, step 4)
-  and the **`router` config** (step 6).
+- What stays until later steps: the **`router` config** (step 6). Application's
+  `view_manager.doctype` went at step 4 with the helper manager that read it.
 - `TranslatorConfigurator` attaches JTranslate's missing-translation listener **on the
   first miss**, not at construction: the table it needs is built through JUser's user
   table, whose factory builds JUser's mailer, whose factory asks for the translator —

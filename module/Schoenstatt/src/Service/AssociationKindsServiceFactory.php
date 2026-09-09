@@ -3,6 +3,7 @@ namespace Schoenstatt\Service;
 
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
+use Laminas\Translator\TranslatorInterface;
 
 /**
  * Factory responsible of constructing the central collection of AssociationKind specs
@@ -24,9 +25,10 @@ class AssociationKindsServiceFactory implements FactoryInterface
         }
 
         $kindsConfig = $config['schoenstatt']['association_kinds'];
-        $plugins = $container->get('ViewHelperManager');
-        $translateViewHelper = $plugins->get('translate');
-        $translator = $translateViewHelper->getTranslator();
+        //the one translator, asked for directly. This reached it through the `translate`
+        //view helper until laminas-view was removed; the helper only ever handed back what
+        //the container had put into it.
+        $translator = $container->get(TranslatorInterface::class);
         $kindsService = new AssociationKindsService($kindsConfig, $translator, $config);
         return $kindsService;
     }

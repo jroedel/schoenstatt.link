@@ -10,8 +10,6 @@
 
 namespace Application;
 
-use App\Acl\AclProvider;
-use App\Acl\IsAllowed;
 use App\Laminas\ContainerServices;
 use App\JUser\Host\Session as JUserSession;
 use JUser\Host\SessionInterface as JUserSessionInterface;
@@ -185,15 +183,6 @@ return [
 //             ],
 //         ],
 //     ],
-    /*
-     * Nothing renders a laminas view any more, but the bridged view helpers still read
-     * the doctype: the laminas form element helpers close void elements as XHTML unless
-     * told otherwise, and SionModel\Form\BootstrapFormRenderer is byte-compatible with
-     * what they emitted under HTML5. Goes with the ViewHelperManager (laminas-exit.md §4).
-     */
-    'view_manager' => [
-        'doctype' => 'HTML5',
-    ],
     'bjyauthorize' => [
         'guards' => [
             // legacy identifier string (BjyAuthorize removed); App\Acl\AclAssembler keys guards on it
@@ -208,22 +197,6 @@ return [
                 //controllers enforce the same ACL — but a menu item that changes how the
                 //site renders has no business being offered to visitors.
             ],
-        ],
-    ],
-    'view_helpers' => [
-        'factories' => [
-            /*
-             * The `isAllowed` view helper, since the ACL cutover pointed at App\Acl\Authorizer
-             * rather than BjyAuthorize\View\Helper\IsAllowed (the only prior registrant, which
-             * disappears with the package). This one registration covers every laminas-side
-             * caller at once: the ported controllers that fetch it from the ViewHelperManager,
-             * and the module view helpers (Schoenstatt\FormatAssociation, SionModel's two
-             * edit pencils) that call `$this->view->isAllowed()`. The container a view-helper factory receives
-             * is the app ServiceManager itself, so ContainerServices adapts it without building
-             * a second one.
-             */
-            'isAllowed'                    => static fn (ContainerInterface $c): IsAllowed
-                => new IsAllowed(new AclProvider(new ContainerServices($c))),
         ],
     ],
 ];

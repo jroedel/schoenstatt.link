@@ -263,7 +263,7 @@ final class EntityCreateController
         }
 
         /** @var IsAllowed $isAllowed */
-        $isAllowed = $this->laminas->get('ViewHelperManager')->get('isAllowed');
+        $isAllowed = $this->laminas->get(IsAllowed::class);
 
         if ((bool) $isAllowed->__invoke('library_' . $libraryId, $permission)) {
             return null;
@@ -492,7 +492,7 @@ final class EntityCreateController
         /** @var mixed $sourceLibrary */
         $sourceLibrary = $source['libraryId'] ?? null;
         /** @var IsAllowed $isAllowed */
-        $isAllowed = $this->laminas->get('ViewHelperManager')->get('isAllowed');
+        $isAllowed = $this->laminas->get(IsAllowed::class);
         if (! (bool) $isAllowed->__invoke('library_' . (string) $sourceLibrary, 'show')) {
             return;
         }
