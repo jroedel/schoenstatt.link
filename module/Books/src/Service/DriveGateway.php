@@ -4,7 +4,7 @@ namespace Books\Service;
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\Http\Client;
 use App\Json;
-use Laminas\Cache\Storage\StorageInterface;
+use SionModel\Cache\Storage as CacheStorage;
 use Books\InputFilter\DriveFileFilter;
 
 class DriveGateway
@@ -28,7 +28,7 @@ class DriveGateway
     protected $filesApiUrl;
 
     /**
-     * @var StorageInterface $cache;
+     * @var CacheStorage $cache;
      */
     protected $cache;
 
@@ -176,7 +176,7 @@ class DriveGateway
 
     /**
      * Get the cache value
-     * @return StorageInterface
+     * @return CacheStorage
      */
     public function getCache()
     {
@@ -188,10 +188,10 @@ class DriveGateway
 
     /**
      * Set the cache value
-     * @param StorageInterface $cache
+     * @param CacheStorage $cache
      * @return self
      */
-    public function setCache(StorageInterface $cache)
+    public function setCache(CacheStorage $cache)
     {
         $this->cache = $cache;
         return $this;

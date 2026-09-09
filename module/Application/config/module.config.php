@@ -17,8 +17,8 @@ use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
 use Laminas\Router\Http\Literal;
 use Laminas\I18n\Translator\TranslatorServiceFactory;
-use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
-use Laminas\Cache\Storage\StorageInterface;
+use SionModel\Cache\Storage as CacheStorage;
+use SionModel\Cache\StorageFactory as CacheStorageFactory;
 use Psr\Container\ContainerInterface;
 use Laminas\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
@@ -98,13 +98,23 @@ return [
         ],
     ],
     'service_manager' => [
-        'abstract_factories' => [
-            StorageCacheAbstractServiceFactory::class,
-        ],
         'factories' => [
             'translator' => TranslatorServiceFactory::class,
             //default persistent storage, configured in cache.local.php
-            StorageInterface::class => Service\CacheFactory::class,
+            CacheStorage::class => Service\CacheFactory::class,
+            /*
+             * JTranslate's phrase cache. That module builds no cache of its own — it asks
+             * the host for a PSR-16 one by service id (`jtranslate.cache_service`) — so
+             * this is where its namespace and TTL are decided, from the same
+             * `jtranslate.cache_options` block the laminas storage was built from.
+             */
+            'JTranslate\Cache' => static function (ContainerInterface $c): CacheStorage {
+                /** @var array<string, mixed> $config */
+                $config = $c->get('Config');
+                $cache  = $config['jtranslate']['cache_options'] ?? [];
+
+                return CacheStorageFactory::fromConfig(is_array($cache) ? $cache : []);
+            },
             //The sitemap builder. An App\ class registered from a laminas module config
             //because bin/console resolves commands out of this container — see
             //App\Console\Command\BuildSitemapCommandFactory for what it does and does not

@@ -1,22 +1,27 @@
 <?php
+
+/**
+ * The application-wide cache, read by Application\Service\CacheFactory.
+ *
+ * The shape is laminas-cache's and is kept so an existing deployment's cache.local.php
+ * keeps working; SionModel\Cache\StorageFactory reads it. Two keys of that shape are
+ * now ignored, and a copy that still carries them is fine:
+ *
+ * - `plugins.serializer`: each backend encodes the way that backend should — APCu stores
+ *   PHP values natively, the filesystem one serializes.
+ * - `plugins.exception_handler`: the storages do not throw; a failed read is a miss.
+ */
 return [
-    // cache options have to be compatible with Laminas\Cache\StorageFactory::factory
     'cache_options' => [
         'adapter' => [
+            //'apcu' in production, where the segment is shared with the other caches;
+            //'filesystem' for a process without the extension
             'name'    => 'filesystem',
-            'ttl'       => 60 * 60, //1 hour
-            // With a namespace we can indicate the same type of items
-            // -> So we can simple use the db id as cache key
-            //'options' => [
-            //    'namespace' => 'JTranslate'
-            //],
-        ],
-        'plugins' => [
-            // Don't throw exceptions on cache errors
-            //'exception_handler' => [
-            //    'throw_exceptions' => false
-                //],
-                'Serializer'
+            'ttl'     => 60 * 60, //1 hour
+            'options' => [
+                //'namespace' => 'schoenstatt',
+                //'cache_dir' => 'data/cache',
+            ],
         ],
     ],
 ];

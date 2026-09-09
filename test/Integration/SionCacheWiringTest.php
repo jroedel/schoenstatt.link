@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Laminas\ServiceBridge;
 use JUser\Model\UserTable;
-use Laminas\Cache\Storage\Adapter\Apcu;
+use SionModel\Cache\ApcuStorage;
 use Laminas\Db\Adapter\Adapter;
 use PHPUnit\Framework\TestCase;
 use SionModel\Cache\CacheFlushQueue;
@@ -142,10 +142,10 @@ final class SionCacheWiringTest extends TestCase
         $table = $bridge->get(UserTable::class);
         $cache = $table->getPersistentCache();
 
-        $this->assertInstanceOf(Apcu::class, $cache);
+        $this->assertInstanceOf(ApcuStorage::class, $cache);
         $this->assertSame(
             'juser',
-            $cache->getOptions()->getNamespace(),
+            $cache->namespace(),
             'UserTable must end up on JUser\Cache, not the SionModel-wide storage'
         );
     }
