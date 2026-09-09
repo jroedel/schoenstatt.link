@@ -12,9 +12,8 @@ use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
 use JTranslate\I18n\TranslatableMessage;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\EventManager\EventInterface;
-use Laminas\I18n\Translator\Translator;
-use Laminas\I18n\Translator\TranslatorInterface;
+use JTranslate\I18n\Translator\Translator;
+use Laminas\Translator\TranslatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Messaging\FlashMessages;
@@ -93,13 +92,17 @@ class MessengerDataIsNotTranslatedTest extends TestCase
         /** @var Translator $translator */
         $translator = $this->bridge()->get(TranslatorInterface::class);
         $asked      = [];
-        $spy        = $translator->getEventManager()->attach(
-            Translator::EVENT_MISSING_TRANSLATION,
-            static function (EventInterface $e) use (&$asked): void {
-                $asked[] = (string) $e->getParam('message');
-                $e->stopPropagation(true);
-            },
-            1000
+        //The spy replaces the discovery listener for the duration, so this test records
+        //what was asked for without writing a phrase row. Restored in the finally below,
+        //which matters: the delegator installs the real listener lazily and a test that
+        //left the spy in place would silently stop discovery for the rest of the process.
+        $translator->clearMissingTranslationListeners();
+        $translator->onMissingTranslation(
+            static function (string $message) use (&$asked): ?string {
+                $asked[] = $message;
+
+                return null;
+            }
         );
 
         try {
@@ -107,7 +110,7 @@ class MessengerDataIsNotTranslatedTest extends TestCase
             $messages->now($namespace, new TranslatableMessage('Token issued, copy it now: %s', [self::SECRET]));
             $rendered = $this->twig($messages)->createTemplate('{{ now_messages() }}')->render();
         } finally {
-            $translator->getEventManager()->detach($spy);
+            $translator->clearMissingTranslationListeners();
         }
 
         self::assertContains(

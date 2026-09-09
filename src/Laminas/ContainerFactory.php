@@ -10,7 +10,9 @@ use Laminas\EventManager\EventManagerAwareInterface;
 use Laminas\EventManager\EventManagerInterface;
 use Laminas\EventManager\SharedEventManager;
 use Laminas\EventManager\SharedEventManagerInterface;
-use Laminas\I18n\Translator\TranslatorInterface;
+use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
+use JTranslate\I18n\Translator\TranslatorFactory as JTranslateTranslatorFactory;
+use Laminas\Translator\TranslatorInterface;
 use Laminas\ModuleManager\Feature\ServiceProviderInterface;
 use Laminas\ModuleManager\Feature\ViewHelperProviderInterface;
 use Laminas\ModuleManager\Listener\ConfigListener;
@@ -20,7 +22,6 @@ use Laminas\ModuleManager\Listener\ServiceListener;
 use Laminas\ModuleManager\ModuleEvent;
 use Laminas\ModuleManager\ModuleManager;
 use Laminas\ServiceManager\ServiceManager;
-use Laminas\Validator\Translator\Translator as ValidatorTranslator;
 use SionModel\Cache\CacheFlushQueue;
 
 use function is_array;
@@ -44,13 +45,13 @@ use function is_array;
  * ported code asks for them by those names:
  *
  * - `ViewHelperManager` — {@see ViewHelperManagerFactory};
- * - `MvcTranslator` — {@see TranslatorFactory}, a `Laminas\Validator\Translator\Translator`
- *   over the canonical laminas-i18n translator, which is what laminas-mvc-i18n's decorator
- *   was for; `jtranslate_translator` is the same object;
+ * - `MvcTranslator` — an alias for `JTranslate\I18n\Translator\Translator`, the one
+ *   translator; `jtranslate_translator` and `Laminas\Translator\TranslatorInterface` are
+ *   the same object under other names;
  * - `config`, `Config`, `configuration` — the merged module configuration.
  *
  * And the two delegators the application needs on every code path: {@see TranslatorConfigurator}
- * on the canonical translator id (aliases resolve before delegators are looked up, so a
+ * on the translator's **class** id (aliases resolve before delegators are looked up, so a
  * delegator on an alias silently never runs) and {@see TranslationsTableConfigurator}.
  *
  * The one entry point for every caller — `ServiceBridge` per request, `bin/console`,
@@ -97,23 +98,29 @@ final class ContainerFactory
         //configs defined, and there is nothing to shadow before that. Before anything
         //asks for them, which nothing has yet — a delegator on an already-built service
         //would throw.
-        //`MvcTranslator` is an alias here rather than a factory id, because laminas-mvc-i18n
-        //(installed until the last batch of step 0) declares it as an alias too, and a
-        //factory under the same name as a module's alias is a cycle. Redefining the alias
-        //is allowed for a service nobody has built yet, and it points every reader —
-        //including JTranslate's `jtranslate_translator` — at our own factory.
+        //There is one translator and every name for it is an alias, which is what makes
+        //the delegator below reach all of them. `MvcTranslator` is historical — laminas-mvc
+        //named it and 27 config entries still do — and `jtranslate_translator` is
+        //JTranslate's own name for the same object.
+        //
+        //Since 2026-09 that object is `JTranslate\I18n\Translator\Translator`, which
+        //implements both the `Laminas\Translator` interface (what laminas-validator 3 will
+        //want) and laminas-validator 2's own deprecated one, so validators take it
+        //directly. The `Laminas\Validator\Translator\Translator` adapter that used to sit
+        //in between is gone with laminas-i18n.
         $services->configure([
             'factories'  => [
-                'ViewHelperManager'        => ViewHelperManagerFactory::class,
-                ValidatorTranslator::class => TranslatorFactory::class,
+                'ViewHelperManager'         => ViewHelperManagerFactory::class,
+                JTranslateTranslator::class => JTranslateTranslatorFactory::class,
             ],
             'aliases'    => [
-                'MvcTranslator'         => ValidatorTranslator::class,
-                'jtranslate_translator' => ValidatorTranslator::class,
+                TranslatorInterface::class => JTranslateTranslator::class,
+                'MvcTranslator'            => JTranslateTranslator::class,
+                'jtranslate_translator'    => JTranslateTranslator::class,
             ],
             'delegators' => [
-                TranslatorInterface::class => [TranslatorConfigurator::class],
-                TranslationsTable::class   => [TranslationsTableConfigurator::class],
+                JTranslateTranslator::class => [TranslatorConfigurator::class],
+                TranslationsTable::class    => [TranslationsTableConfigurator::class],
             ],
         ]);
 

@@ -71,20 +71,26 @@ class DatePrecisionContractTest extends TestCase
 
     /**
      * The regression that matters most: a date known to the day must render
-     * byte-for-byte what Laminas\I18n\View\Helper\DateFormat rendered before, in
-     * every locale the site serves. The call sites that moved passed MEDIUM, except
-     * the association page's foundation date which passed LONG — which is why the
-     * day format is a parameter rather than a constant.
+     * byte-for-byte what the plain date helper renders, in every locale the site serves.
+     * The call sites that moved passed MEDIUM, except the association page's foundation
+     * date which passed LONG — which is why the day format is a parameter rather than a
+     * constant.
+     *
+     * The oracle was `Laminas\I18n\View\Helper\DateFormat` until 2026-09; it is
+     * `App\View\Helper\DateFormat` now, which is that class transcribed when laminas-i18n
+     * was removed. Comparing two helpers rather than freezing ICU's output keeps this test
+     * silent on an ICU upgrade, which changes month abbreviations and would otherwise read
+     * as a regression in our code.
      */
     #[DataProvider('dayPrecisionParityCases')]
     public function testDayPrecisionRendersExactlyWhatDateFormatDid(string $locale, string $iso, int $dayFormat): void
     {
         \Locale::setDefault($locale);
 
-        $laminas = new \Laminas\I18n\View\Helper\DateFormat();
-        $laminas->setLocale($locale);
+        $plain = new \App\View\Helper\DateFormat();
+        $plain->setLocale($locale);
 
-        $expected = $laminas($this->date($iso), $dayFormat, \IntlDateFormatter::NONE);
+        $expected = $plain($this->date($iso), $dayFormat, \IntlDateFormatter::NONE);
         $actual   = ($this->helper())($this->date($iso), DatePrecisionFormat::DAY, $dayFormat);
 
         self::assertSame($expected, $actual);

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use App\View\Helper\DateFormat;
+use App\View\Helper\Translate;
+use JTranslate\I18n\Translator\Translator;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Laminas\View\Helper\Doctype;
 use Laminas\View\Helper\Url;
@@ -32,8 +35,10 @@ use function is_string;
  *   of building `ViewRenderer`. The renderer has no resolver and renders nothing;
  *   helpers reach it for other helpers (`url`, `escapeHtml`).
  *
- * The translator is injected by the plugin manager's own initializer, which looks for a
- * service named `MvcTranslator` first — {@see ContainerFactory} keeps that id.
+ * `translate` and `dateFormat` are registered here since 2026-09, when laminas-i18n — whose
+ * helper config supplied them — was removed. {@see \App\View\Helper\Translate} is given
+ * the one translator directly rather than through the plugin manager's translator
+ * initializer, which looked for laminas-i18n's `TranslatorAwareInterface`.
  */
 final class ViewHelperManagerFactory implements FactoryInterface
 {
@@ -71,6 +76,27 @@ final class ViewHelperManagerFactory implements FactoryInterface
         };
         $helpers->setFactory(Doctype::class, $doctype);
         $helpers->setFactory('laminasviewhelperdoctype', $doctype);
+
+        //`translate` and `dateFormat` came from laminas-i18n's own helper config until
+        //2026-09. Registered here now, under both the class name and the lowercase alias
+        //the plugin manager normalises to, so `$this->view->translate(...)` inside another
+        //helper resolves exactly as it did.
+        $translate = static function () use ($container): Translate {
+            $helper = new Translate();
+            if ($container->has(Translator::class)) {
+                /** @var Translator $translator */
+                $translator = $container->get(Translator::class);
+                $helper->setTranslator($translator);
+            }
+
+            return $helper;
+        };
+        $helpers->setFactory(Translate::class, $translate);
+        $helpers->setFactory('translate', $translate);
+
+        $helpers->setFactory(DateFormat::class, static fn (): DateFormat => new DateFormat());
+        $helpers->setAlias('dateFormat', DateFormat::class);
+        $helpers->setAlias('dateformat', DateFormat::class);
 
         (new PhpRenderer())->setHelperPluginManager($helpers);
 

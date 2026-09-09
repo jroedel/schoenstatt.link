@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\I18n\Translator\TranslatorInterface;
+use Laminas\Translator\TranslatorInterface;
 use Schoenstatt\Model\AssociationKind;
 use Schoenstatt\Model\SchoenstattTable;
 

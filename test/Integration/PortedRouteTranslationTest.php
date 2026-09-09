@@ -11,9 +11,8 @@ use App\Laminas\TranslatorConfigurator;
 use App\Laminas\ViewHelpers;
 use App\Twig\LaminasExtension;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\EventManager\EventInterface;
-use Laminas\I18n\Translator\Translator;
-use Laminas\I18n\Translator\TranslatorInterface;
+use JTranslate\I18n\Translator\Translator;
+use Laminas\Translator\TranslatorInterface;
 use Locale;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -148,14 +147,14 @@ class PortedRouteTranslationTest extends TestCase
         self::assertSame(
             TranslatorConfigurator::FALLBACK_LOCALE,
             $translator->getFallbackLocale(),
-            'no fallback locale: the delegator did not run. It must be keyed on the canonical '
-            . 'Laminas\I18n\Translator\TranslatorInterface, not on an alias — an alias is resolved '
-            . 'before delegators are looked up, so one registered under it never fires.'
+            'no fallback locale: the delegator did not run. It must be keyed on '
+            . 'JTranslate\I18n\Translator\Translator, the class, not on an alias — an alias is '
+            . 'resolved before delegators are looked up, so one registered under it never fires.'
         );
         self::assertTrue(
-            $translator->isEventManagerEnabled(),
-            'the event manager is off, so JTranslate\'s missing-translation reporter cannot attach '
-            . 'and the phrase table will stop learning what ported pages need'
+            $translator->hasMissingTranslationListeners(),
+            'nothing is listening for a missing translation, so JTranslate\'s reporter will never '
+            . 'be installed and the phrase table will stop learning what ported pages need'
         );
     }
 
@@ -224,15 +223,15 @@ class PortedRouteTranslationTest extends TestCase
         $translator = $this->bridge()->get(TranslatorInterface::class);
 
         $domains = [];
-        $spy     = $translator->getEventManager()->attach(
-            Translator::EVENT_MISSING_TRANSLATION,
-            static function (EventInterface $e) use (&$domains): void {
-                $domains[] = $e->getParam('text_domain');
-                //before JTranslate's reporter, which would write a row for a phrase that
-                //exists only inside this test
-                $e->stopPropagation(true);
-            },
-            1000
+        //replaces JTranslate's reporter for the duration, which would otherwise write a row
+        //for a phrase that exists only inside this test
+        $translator->clearMissingTranslationListeners();
+        $translator->onMissingTranslation(
+            static function (string $message, string $locale, string $textDomain) use (&$domains): ?string {
+                $domains[] = $textDomain;
+
+                return null;
+            }
         );
 
         try {
@@ -247,11 +246,11 @@ class PortedRouteTranslationTest extends TestCase
             $phrase = 'A phrase no catalog holds, filed by nothing: ' . self::class;
             self::assertSame($phrase, $extension->translate($phrase), 'an unknown phrase renders as itself');
         } finally {
-            $translator->getEventManager()->detach($spy, Translator::EVENT_MISSING_TRANSLATION);
+            $translator->clearMissingTranslationListeners();
         }
 
-        //the *set* of domains, not the number of events: Translator::translate() retries
-        //in the fallback locale and fires once per locale, so two events for one lookup
+        //the *set* of domains, not the number of notifications: Translator::translate()
+        //retries in the fallback locale and reports once per locale, so two for one lookup
         //is normal and says nothing about domains
         self::assertSame(
             ['Schoenstatt'],
@@ -282,13 +281,14 @@ class PortedRouteTranslationTest extends TestCase
         /** @var Translator $translator */
         $translator = $this->bridge()->get(TranslatorInterface::class);
         $domains    = [];
-        $spy        = $translator->getEventManager()->attach(
-            Translator::EVENT_MISSING_TRANSLATION,
-            static function (EventInterface $e) use (&$domains): void {
-                $domains[] = $e->getParam('text_domain');
-                $e->stopPropagation(true);
-            },
-            1000
+        //replaces JTranslate's reporter for the duration; see the sibling test above
+        $translator->clearMissingTranslationListeners();
+        $translator->onMissingTranslation(
+            static function (string $message, string $locale, string $textDomain) use (&$domains): ?string {
+                $domains[] = $textDomain;
+
+                return null;
+            }
         );
         try {
             $messages = new HostMessages();
@@ -302,7 +302,7 @@ class PortedRouteTranslationTest extends TestCase
             );
             $rendered = $extension->nowMessages();
         } finally {
-            $translator->getEventManager()->detach($spy, Translator::EVENT_MISSING_TRANSLATION);
+            $translator->clearMissingTranslationListeners();
         }
         self::assertStringContainsString('A message no catalog holds', $rendered);
         self::assertSame(

@@ -2,39 +2,82 @@
 
 namespace SchoenstattTest\Integration;
 
-use SionModel\Form\BootstrapFormRenderer;
-use Books\View\Helper\FormSelectWithoutOptions;
 use Laminas\Form\Element\Select;
-use Laminas\I18n\Translator\Loader\PhpMemoryArray;
-use Laminas\View\Renderer\PhpRenderer;
 use PHPUnit\Framework\TestCase;
+use SionModel\Form\BootstrapFormRenderer;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
- * Characterization test for Books\View\Helper\FormSelectWithoutOptions, which
- * used to extend Laminas\Form\View\Helper\FormSelect (now `@final`) purely to
- * intercept renderOptions().
+ * Golden master for the narrowed-<select> rendering that
+ * `SionModel\Form\BootstrapFormRenderer::selectWithoutOptions()` performs.
  *
- * Its job: render a <select> containing only the options that are currently
- * selected — used for the huge author/editor/publication pickers in
- * books/publications/fields-partial.phtml, where shipping all options would be
- * enormous and the remaining choices are fetched over AJAX.
+ * Its job: render a <select> containing only the options that are currently selected —
+ * the author/editor/publication pickers on the publication edit form, where shipping the
+ * full option list would be enormous and the remaining choices are fetched over AJAX
+ * (`templates/books/_publication-fields.html.twig`, five call sites, all passing
+ * `false`).
  *
- * Written against the pre-change code and passing there.
+ * **This was a parity harness and is now a golden master.** It used to render every case
+ * twice, through `Books\View\Helper\FormSelectWithoutOptions` and through the
+ * reproduction, and assert the two agreed. The laminas helper extended
+ * `Laminas\Form\View\Helper\AbstractHelper` — hence `Laminas\I18n\View\Helper\
+ * AbstractTranslatorHelper` — so it could not survive the removal of laminas-i18n and was
+ * deleted with it in 2026-09. Every string frozen below was captured from the running
+ * code before that deletion: what the laminas helper rendered is recorded in
+ * `testRenderedMarkupIsUnchanged`, and what the reproduction renders is what each case
+ * now asserts. The reproduction must keep matching them.
  *
- * Needs vendor/ (laminas-form, laminas-view), so it runs in the capsule:
- * php composer.phar integration
+ * The two are not byte-identical and never were: the reproduction emits `multiple` and
+ * `selected` as bare boolean attributes where laminas emitted `multiple="multiple"` and
+ * `selected="selected"`, and terminates its last <option> with a newline. That difference
+ * is systematic across every element this renderer produces and is already accounted for
+ * by `tools/port-baseline.php`'s normalization; `testRenderedMarkupIsUnchanged` spells it
+ * out as a substitution so that it stays reviewable and so that any *other* drift —
+ * a lost `[]` on a multiple name, a reordered attribute — fails.
+ *
+ * Method names that speak of "both implementations" or "both sides" are kept verbatim so
+ * the history stays greppable. The second side is now the frozen literal.
+ *
+ * Removed with the helper, having no counterpart on the reproduction:
+ * - `testRenderOptionsFiltersToTheSelectedSet` and
+ *   `testRenderOptionsWithNothingSelectedRendersNothing` pinned the helper's public
+ *   `renderOptions()`, a seam that existed because the pre-2026 subclass overrode it.
+ *   The reproduction narrows the element and renders it in one pass; there is no options
+ *   list to hand in and nothing left to call.
+ * - `testTranslatorCanBeDisabled` asserted `isTranslatorEnabled()` after
+ *   `setTranslatorEnabled(false)`, i.e. laminas translator-aware-helper state. The
+ *   reproduction holds no such state — translation is the `$translateOptions` argument —
+ *   so the assertion has no subject. The *behaviour* that method guarded is still covered
+ *   by `testDisablingTheTranslatorSuppressesLabelTranslation` below.
+ * - `testTheSymfonyReproductionSelectsTheSameOptions` and
+ *   `testTheSymfonyReproductionAddsNoBootstrapClass` were the reproduction's halves of
+ *   `testRendersOnlySelectedOptions` / `testRenderedMarkupIsUnchanged`; with the laminas
+ *   halves gone they assert nothing the frozen markup does not already assert exactly,
+ *   including the absence of `form-control`.
+ *
+ * Needs vendor/ (laminas-form, for the Select element the renderer takes), so it runs in
+ * the capsule: php composer.phar integration
  */
 class FormSelectWithoutOptionsContractTest extends TestCase
 {
-    private function helper(): FormSelectWithoutOptions
-    {
-        $helper = new FormSelectWithoutOptions();
-        $helper->setView(new PhpRenderer());
+    /**
+     * What the deleted laminas helper rendered for {@see multiSelect()}, captured
+     * 2026-09 from the running code. Kept as the reference point of the port.
+     */
+    private const LAMINAS_MULTI_SELECT = '<select name="authorsAll&#x5B;&#x5D;" multiple="multiple">'
+        . '<option value="1" selected="selected">Kentenich</option>' . "\n"
+        . '<option value="3" selected="selected">Unused</option>'
+        . '</select>';
 
-        return $helper;
-    }
+    /**
+     * The reproduction's own output for the same element: the same markup in the boolean
+     * attribute spelling, with the trailing newline the option loop always emits.
+     */
+    private const MULTI_SELECT = '<select name="authorsAll&#x5B;&#x5D;" multiple>'
+        . '<option value="1" selected>Kentenich</option>' . "\n"
+        . '<option value="3" selected>Unused</option>' . "\n"
+        . '</select>';
 
     private function multiSelect(): Select
     {
@@ -51,7 +94,7 @@ class FormSelectWithoutOptionsContractTest extends TestCase
      */
     public function testRendersOnlySelectedOptions(): void
     {
-        $html = ($this->helper())($this->multiSelect());
+        $html = $this->reproduction()->selectWithoutOptions($this->multiSelect(), false);
 
         self::assertStringContainsString('>Kentenich<', $html);
         self::assertStringContainsString('>Unused<', $html);
@@ -60,160 +103,99 @@ class FormSelectWithoutOptionsContractTest extends TestCase
 
     public function testSelectedOptionsAreMarkedSelected(): void
     {
-        $html = ($this->helper())($this->multiSelect());
+        $html = $this->reproduction()->selectWithoutOptions($this->multiSelect(), false);
 
-        self::assertSame(2, substr_count($html, 'selected="selected"'));
+        self::assertSame(2, substr_count($html, ' selected'));
     }
 
     /**
-     * Byte-for-byte output of the current implementation, so any rendering
-     * drift from the base-class swap is caught rather than eyeballed.
+     * Byte-for-byte output, so any rendering drift is caught rather than eyeballed.
+     *
+     * The second assertion is the parity claim the deleted helper used to make in code:
+     * spell the boolean attributes out and drop the last option's newline, and what is
+     * left has to be the laminas markup exactly — including the `[]` on the name, without
+     * which a browser posts only the last selected author, and the absence of any
+     * `form-control` class, which none of the five call sites is a row for.
      */
     public function testRenderedMarkupIsUnchanged(): void
     {
-        $expected = '<select name="authorsAll&#x5B;&#x5D;" multiple="multiple">'
-            . '<option value="1" selected="selected">Kentenich</option>' . "\n"
-            . '<option value="3" selected="selected">Unused</option>'
-            . '</select>';
+        $html = $this->reproduction()->selectWithoutOptions($this->multiSelect(), false);
 
-        self::assertSame($expected, ($this->helper())($this->multiSelect()));
+        self::assertSame(self::MULTI_SELECT, $html);
+
+        $inLaminasSpelling = str_replace(
+            [' multiple>', ' selected>', "</option>\n</select>"],
+            [' multiple="multiple">', ' selected="selected">', '</option></select>'],
+            $html
+        );
+        self::assertSame(self::LAMINAS_MULTI_SELECT, $inLaminasSpelling);
     }
 
     /**
-     * renderOptions() is public API on this helper and filters independently of
-     * the element, so it is pinned separately.
-     */
-    public function testRenderOptionsFiltersToTheSelectedSet(): void
-    {
-        $html = $this->helper()->renderOptions([1 => 'A', 2 => 'B', 3 => 'C'], [2]);
-
-        self::assertSame('<option value="2" selected="selected">B</option>', $html);
-    }
-
-    public function testRenderOptionsWithNothingSelectedRendersNothing(): void
-    {
-        self::assertSame('', $this->helper()->renderOptions([1 => 'A', 2 => 'B'], []));
-    }
-
-    /**
-     * fields-partial.phtml calls setTranslatorEnabled(false) on this helper
-     * before use, so that method has to keep existing.
-     */
-    public function testTranslatorCanBeDisabled(): void
-    {
-        $helper = $this->helper();
-        $helper->setTranslatorEnabled(false);
-
-        self::assertFalse($helper->isTranslatorEnabled());
-    }
-
-    /**
-     * ...and disabling it has to actually stop option labels being translated.
-     * Rendering is delegated now, so the translator state must travel with the
-     * delegation — otherwise setTranslatorEnabled(false) would silently become
-     * a no-op.
+     * Disabling translation has to actually stop option labels being translated.
+     *
+     * This was `setTranslatorEnabled(false)` on the laminas helper and is the
+     * `$translateOptions` argument here; all five call sites in
+     * `_publication-fields.html.twig` pass `false`, so the untranslated rendering is the
+     * production path and the translated one only proves the flag is doing the work.
      */
     public function testDisablingTheTranslatorSuppressesLabelTranslation(): void
     {
-        $translator = new \Laminas\I18n\Translator\Translator();
-        $translator->getPluginManager()->setService('PhpMemoryArray', new PhpMemoryArray([
-            'default' => ['en_US' => ['Kentenich' => 'TRANSLATED']],
-        ]));
-        $translator->addRemoteTranslations('PhpMemoryArray', 'default');
-        $translator->setLocale('en_US');
+        $renderer = new BootstrapFormRenderer(
+            static fn (string $message): string => $message === 'Kentenich' ? 'TRANSLATED' : $message
+        );
 
-        $enabled = $this->helper();
-        $enabled->setTranslator($translator);
-        self::assertStringContainsString('>TRANSLATED<', ($enabled)($this->multiSelect()));
+        self::assertSame(
+            '<select name="authorsAll&#x5B;&#x5D;" multiple>'
+                . '<option value="1" selected>TRANSLATED</option>' . "\n"
+                . '<option value="3" selected>Unused</option>' . "\n"
+                . '</select>',
+            $renderer->selectWithoutOptions($this->multiSelect(), true)
+        );
 
-        $disabled = $this->helper();
-        $disabled->setTranslator($translator);
-        $disabled->setTranslatorEnabled(false);
-        self::assertStringContainsString('>Kentenich<', ($disabled)($this->multiSelect()));
+        self::assertSame(
+            self::MULTI_SELECT,
+            $renderer->selectWithoutOptions($this->multiSelect(), false)
+        );
     }
 
     /**
-     * An empty option that is not itself selected was dropped by the old
-     * implementation, because FormSelect::render() prepends it only after the
-     * point where renderOptions() filtered.
+     * An empty option that is not itself selected is dropped.
+     *
+     * In laminas that fell out of *where* the old subclass filtered — `FormSelect::
+     * render()` prepends the empty option after the point renderOptions() had narrowed —
+     * rather than from a decision, so it is exactly the sort of behaviour a reproduction
+     * written from the *description* of the helper would miss.
      */
     public function testUnselectedEmptyOptionIsDropped(): void
     {
         $select = $this->multiSelect();
         $select->setEmptyOption('Choose...');
 
-        $html = ($this->helper())($select);
+        $html = $this->reproduction()->selectWithoutOptions($select, false);
 
         self::assertStringNotContainsString('Choose...', $html);
-    }
-
-    // -- the Symfony-side reproduction ---------------------------------------
-
-    /**
-     * `SionModel\Form\BootstrapFormRenderer::selectWithoutOptions()` renders the same choices.
-     *
-     * The publication edit form is served by the Symfony kernel, where none of the
-     * laminas view helpers can be reached — each ends in `$this->view->…`, which wants an
-     * MvcEvent a ported route does not have. So the helper above is reproduced, and these
-     * assertions are what keep the two from drifting.
-     *
-     * **Not asserted byte-for-byte, and deliberately so.** The reproduction emits
-     * `multiple` and `selected` as bare boolean attributes where laminas emits
-     * `multiple="multiple"` and `selected="selected"`; that difference is systematic
-     * across every element this renderer produces, is already accounted for by
-     * `tools/port-baseline.php`'s normalization, and is not what this helper is for. What
-     * *is* specific to this helper — which options survive, and in what order — is
-     * asserted exactly.
-     */
-    public function testTheSymfonyReproductionSelectsTheSameOptions(): void
-    {
-        $html = $this->reproduction()->selectWithoutOptions($this->multiSelect(), false);
-
-        self::assertStringContainsString('>Kentenich<', $html);
-        self::assertStringContainsString('>Unused<', $html);
-        self::assertStringNotContainsString('>Schoenstatt<', $html);
-        self::assertSame(2, substr_count($html, ' selected'));
-        self::assertStringContainsString('name="authorsAll&#x5B;&#x5D;"', $html);
+        self::assertSame(self::MULTI_SELECT, $html);
     }
 
     /**
      * The narrowed list follows the *selected* order, not the option order.
      *
-     * `onlySelected()` walks `$selectedOptions` and looks each one up, so a publication
+     * The narrowing walks the selected values and looks each one up, so a publication
      * whose authors were chosen out of table order keeps the order they were chosen in.
-     * Reproducing the option order instead would silently reorder every author list on
-     * the page, which is the kind of difference nothing fails on.
+     * Following the option order instead would silently reorder every author list on the
+     * page, which is the kind of difference nothing fails on.
      */
     public function testBothImplementationsFollowTheSelectedOrder(): void
     {
         $select = $this->multiSelect();
         $select->setValue([3, 1]);
 
-        $laminas = ($this->helper())($select);
-        self::assertLessThan(
-            strpos($laminas, '>Kentenich<'),
-            strpos($laminas, '>Unused<'),
-            'precondition: the laminas helper orders by the selected values'
-        );
-
-        $ported = $this->reproduction()->selectWithoutOptions($select, false);
-        self::assertLessThan(strpos($ported, '>Kentenich<'), strpos($ported, '>Unused<'));
-    }
-
-    /**
-     * The unselected empty option is dropped on both sides.
-     *
-     * In laminas that falls out of where the old subclass filtered rather than from a
-     * decision, so it is exactly the sort of behaviour a reproduction written from the
-     * *description* of the helper would miss.
-     */
-    public function testTheSymfonyReproductionAlsoDropsAnUnselectedEmptyOption(): void
-    {
-        $select = $this->multiSelect();
-        $select->setEmptyOption('Choose...');
-
-        self::assertStringNotContainsString(
-            'Choose...',
+        self::assertSame(
+            '<select name="authorsAll&#x5B;&#x5D;" multiple>'
+                . '<option value="3" selected>Unused</option>' . "\n"
+                . '<option value="1" selected>Kentenich</option>' . "\n"
+                . '</select>',
             $this->reproduction()->selectWithoutOptions($select, false)
         );
     }
@@ -229,44 +211,24 @@ class FormSelectWithoutOptionsContractTest extends TestCase
         $select->setEmptyOption('Choose...');
         $select->setValue('');
 
-        self::assertStringContainsString('Choose...', ($this->helper())($select));
-        self::assertStringContainsString(
-            'Choose...',
+        //laminas: <select name="mainPublicationId"><option value="" selected="selected">Choose...</option></select>
+        self::assertSame(
+            '<select name="mainPublicationId">'
+                . '<option value="" selected>Choose...</option>' . "\n"
+                . '</select>',
             $this->reproduction()->selectWithoutOptions($select, false)
         );
     }
 
     /**
-     * No `form-control` class, because none of the five call sites is a row.
-     *
-     * TwbBundle adds that class in `formRow`; `fields-partial.phtml` builds the
-     * `form-group` by hand and calls this helper directly, so laminas emits a bare
-     * `<select>`. The reproduction defaulted to adding it and put a class on all five
-     * pickers — a difference no assertion here saw, because every test above checks
-     * *which options* are rendered and none checked the element's own attributes. Found
-     * by `tools/port-baseline.php`, which is the answer to "why keep running that when
-     * the tests pass".
-     */
-    public function testTheSymfonyReproductionAddsNoBootstrapClass(): void
-    {
-        $laminas = ($this->helper())($this->multiSelect());
-        self::assertStringNotContainsString('form-control', $laminas, 'precondition: laminas adds no class');
-
-        self::assertStringNotContainsString(
-            'form-control',
-            $this->reproduction()->selectWithoutOptions($this->multiSelect(), false)
-        );
-    }
-
-    /**
-     * A picker that has never been set drops its empty option, on both sides.
+     * A picker that has never been set drops its empty option.
      *
      * The distinction this pins is `(array) null` — the empty array — against `[null]`.
-     * The helper casts, so `in_array('', $selected)` is false and the empty option goes;
-     * building the array by hand as `[$raw]` makes it `[null]`, and `null == ''` under
-     * the loose comparison the original uses, so the option stayed. Both `mainPublicationId`
-     * and `translatedFromPublicationId` are exactly this case on a publication that names
-     * no main edition, which is most of them.
+     * The renderer casts, so `in_array('', $selected)` is false and the empty option goes;
+     * building the array by hand as `[$raw]` makes it `[null]`, and `null == ''` under the
+     * loose comparison, so the option would stay. Both `mainPublicationId` and
+     * `translatedFromPublicationId` are exactly this case on a publication that names no
+     * main edition, which is most of them.
      */
     public function testAnUnsetPickerDropsItsEmptyOptionOnBothSides(): void
     {
@@ -276,9 +238,9 @@ class FormSelectWithoutOptionsContractTest extends TestCase
         //no setValue() at all: getValue() answers null, as it does for a publication
         //whose main edition has never been chosen
 
-        self::assertStringNotContainsString('Choose...', ($this->helper())($select));
-        self::assertStringNotContainsString(
-            'Choose...',
+        //byte-identical to laminas here, there being no option to spell an attribute on
+        self::assertSame(
+            '<select name="mainPublicationId"></select>',
             $this->reproduction()->selectWithoutOptions($select, false)
         );
     }
@@ -286,8 +248,7 @@ class FormSelectWithoutOptionsContractTest extends TestCase
     private function reproduction(): BootstrapFormRenderer
     {
         //The translator is the identity function: what these tests check is which options
-        //are rendered, and fields-partial.phtml disables translation on this helper
-        //anyway.
+        //are rendered, and every call site disables option translation anyway.
         return new BootstrapFormRenderer(static fn (string $message): string => $message);
     }
 }

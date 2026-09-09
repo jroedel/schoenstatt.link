@@ -14,8 +14,8 @@ use Closure;
 use JTranslate\I18n\MessageRenderer;
 use DateTime;
 use DateTimeInterface;
-use Laminas\I18n\Translator\Translator as I18nTranslator;
-use Laminas\I18n\Translator\TranslatorInterface;
+use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
+use Laminas\Translator\TranslatorInterface;
 use IntlDateFormatter;
 use Symfony\Component\HttpFoundation\RequestStack;
 use SionModel\Entity\Entity;
@@ -252,10 +252,10 @@ final class LaminasExtension extends AbstractExtension
      * A message's translation as it stands in a domain's compiled catalog, or null when
      * the catalog has no usable one.
      *
-     * A read, deliberately: unlike `Translator::translate()` this fires no
-     * missing-translation event, so consulting a second domain cannot file a phrase in
-     * it. `getAllMessages()` loads the catalog if needed, through the same cache the
-     * translation itself uses, so the cost is a lookup the next line would have made
+     * A read, deliberately: unlike `Translator::translate()` this notifies no
+     * missing-translation listener, so consulting a second domain cannot file a phrase in
+     * it. `getAllMessages()` loads the catalog if needed, into the same per-request store
+     * the translation itself reads, so the cost is a lookup the next line would have made
      * anyway.
      *
      * `null` and `''` count as absent because that is `Translator::translate()`'s own
@@ -263,15 +263,15 @@ final class LaminasExtension extends AbstractExtension
      */
     private function catalogValue(string $domain, string $message): ?string
     {
-        //the canonical laminas-i18n translator, the instance `MvcTranslator` wraps:
+        //the one translator, which `MvcTranslator` and the rest are aliases of:
         //getAllMessages() is not on TranslatorInterface
         $translator = $this->laminas->get(TranslatorInterface::class);
-        if (! $translator instanceof I18nTranslator) {
+        if (! $translator instanceof JTranslateTranslator) {
             return null;
         }
 
         $messages = $translator->getAllMessages($domain);
-        if (null === $messages || ! isset($messages[$message])) {
+        if (! isset($messages[$message])) {
             return null;
         }
 
