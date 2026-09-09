@@ -386,9 +386,8 @@ Background: [caching.md](caching.md).
 - The `1.0.x` branches (patres's frozen 2020-22 line) are a review source to **port from,
   never merge**: both lines rewrote the same files. Converge on `modernization`; diff the
   files being touched against `1.0.x` first at each step.
-- **Whether patres follows the laminas exit or the libraries fork here** is open decision 1
-  in [laminas-exit.md](laminas-exit.md) § 6; it blocks step 0's SionModel choice and every
-  later step.
+- **patres follows the laminas exit** (decided 2026-09-09): libraries drop laminas in place,
+  nothing is kept for a laminas host; patres converges on tagged releases.
 - **Migrate patres onto the converged line.** Checklist: inject `ActingUserProviderInterface`
   into its table factories; `$this->actingUserId` is gone (`getActingUserId()`); check
   `setActingUserId()` callers and its `SionTable` subclasses against the still-eager

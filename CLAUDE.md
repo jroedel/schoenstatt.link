@@ -6,10 +6,11 @@ schoenstatt.link: a database application for Schoenstatt-related topics (shrines
 associations, people, a literature catalogue, lending libraries, a translation GUI and a
 v3 API). Live production site, dormant 2020–2026, being brought to the state of the art.
 
-**Direction (decided 2026-09-09): minimise dependencies; remove every `laminas/*`
-package, no exceptions.** The plan and its rules are [docs/laminas-exit.md](docs/laminas-exit.md).
-Prefer eliminating a dependency over rescuing it. Before building on any dependency,
-check it is maintained. Propose a migration before a patch, but propose it first.
+**Direction (decided 2026-09-09): remove every `laminas/*` package, no exceptions, and
+minimise dependencies everywhere.** The plan, its rules and the dependency inventory are
+[docs/laminas-exit.md](docs/laminas-exit.md). Prefer eliminating a dependency over
+rescuing it; before adding one, ask whether twenty lines of our own code would do. Propose
+a migration before a patch, but propose it first.
 
 ## Identity and working style
 
@@ -51,7 +52,8 @@ per repo, same feature-branch name everywhere:
 
 A stacked PR merges into its base, not into `modernization`: verify with
 `git merge-base --is-ancestor` before any pointer bump. These libraries are shared with
-patres: changes may affect it (open question in laminas-exit.md §6).
+patres, which **follows this application's lead**: do what is best here, drop laminas in
+place, keep no code for a laminas host; patres upgrades against tagged releases.
 
 ## Architecture
 
