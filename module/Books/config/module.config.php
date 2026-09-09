@@ -291,11 +291,6 @@ return [
         'factories' => [
             'formatPublication'             => Service\FormatPublicationFactory::class,
         ],
-        'invokables' => [
-            'coins'                         => View\Helper\Coins::class,
-            'formatField'                   => View\Helper\FormatField::class,
-            'booksJsonLd'                   => View\Helper\BooksJsonLd::class,
-        ],
     ],
     'router' => [
         'routes' => [

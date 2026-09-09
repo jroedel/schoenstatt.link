@@ -1,12 +1,30 @@
 <?php
 namespace Books\View\Helper;
 
-use Laminas\View\Helper\AbstractHelper;
+use Closure;
+use SionModel\View\Escape;
 
-class FormatField extends AbstractHelper
+class FormatField
 {
     const DISPLAY_TITLE = 'title';
     const DISPLAY_AUTHORS = 'authors';
+
+    /**
+     * @param Closure(string): string $translate the shared `translate` **view helper**, not
+     *        the translator behind it: the label is looked up with no text domain, so what
+     *        answers has to be the object App\Laminas\ViewHelpers::useTextDomain() sets the
+     *        request's domain on. A raw translator would look in `default`, miss, and return
+     *        the English source on every locale.
+     * @param Closure(?string, ?string): bool $isAllowed the `isAllowed` helper, for
+     *        `displayOnlyWithPermission`.
+     * @param Closure(mixed, int, int): (string|false) $dateFormat the `dateFormat` helper.
+     */
+    public function __construct(
+        private readonly Closure $translate,
+        private readonly Closure $isAllowed,
+        private readonly Closure $dateFormat
+    ) {
+    }
 
     /**
      *
@@ -39,7 +57,7 @@ class FormatField extends AbstractHelper
         }
 
         if (isset($options['displayOnlyWithPermission']) && ! is_null($options['displayOnlyWithPermission']) &&
-            ! $this->view->isAllowed($options['displayOnlyWithPermission'])
+            ! ($this->isAllowed)($options['displayOnlyWithPermission'])
         ) {
             return '';
         }
@@ -48,9 +66,9 @@ class FormatField extends AbstractHelper
 
         if (! is_null($label)) {
             if ($translateLabel) {
-                $label = $this->view->translate($label);
+                $label = ($this->translate)($label);
             }
-            $finalMarkup .= sprintf($labelMarkup, $this->view->escapeHtml($label));
+            $finalMarkup .= sprintf($labelMarkup, Escape::html((string) $label));
         }
 //      switch ($displayOption) {
 //          case 'authors': //@todo make it work when we have real authors
@@ -63,11 +81,11 @@ class FormatField extends AbstractHelper
 
         if ($value instanceof \DateTime) {
             //@todo make format configurable
-            $finalMarkup .= $this->view->dateFormat($value, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::NONE);
+            $finalMarkup .= ($this->dateFormat)($value, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::NONE);
         } elseif (is_array($value)) {
             $finalMarkup .= implode(', ', $value);
         } else {
-            $finalMarkup .= $this->view->escapeHtml($value);
+            $finalMarkup .= Escape::html((string) $value);
         }
 
 //      if ($showLabels) {

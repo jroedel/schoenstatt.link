@@ -1,11 +1,21 @@
 <?php
 namespace Books\View\Helper;
 
-use Laminas\View\Helper\AbstractHelper;
+use Closure;
 use Spatie\SchemaOrg\Schema;
+use Stringable;
 
-class BooksJsonLd extends AbstractHelper
+class BooksJsonLd
 {
+    /**
+     * @param Closure(string, string, array<string, mixed>): Stringable $localeUrl the
+     *        `localeUrl` view helper, injected because this class no longer has a renderer
+     *        to reach it through.
+     */
+    public function __construct(private readonly Closure $localeUrl)
+    {
+    }
+
     public static $fieldSchemaPropertyMap = [
         'authorsText'                   => 'authorsText',
         'bookEdition'                   => 'bookEdition',
@@ -86,7 +96,7 @@ class BooksJsonLd extends AbstractHelper
                     }
                     break;
                 case 'url':
-                    $book->url($this->view->localeUrl(
+                    $book->url(($this->localeUrl)(
                         'en_US',
                         'publication',
                         [
