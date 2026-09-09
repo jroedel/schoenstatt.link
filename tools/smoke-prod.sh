@@ -214,8 +214,8 @@ done
 # bad merge, or a public_html/api/ directory the deploy failed to delete, both
 # show up here.
 #
-# The check is on the SHAPE of the refusal, not just the status. RestApi's
-# api-route-not-found catch-all must answer these as a JSON 410: an HTML error page
+# The check is on the SHAPE of the refusal, not just the status. The /api catch-all
+# (App\Controller\Api\ApiRouteNotFoundController) must answer these as a JSON 410: an HTML error page
 # would mean the catch-all stopped matching and the ordinary 404 page took over,
 # which is a regression for every remaining machine caller including /api/v3. A 404
 # here would mean the retired-version branch stopped firing, which costs the indexing

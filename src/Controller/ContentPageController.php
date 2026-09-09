@@ -39,10 +39,8 @@ use function sprintf;
  * its target is still on the laminas side. That is also what lets the layout decide
  * which crumb is the current page by comparing hrefs.
  *
- * `indexAction()` used to read five blog posts that index.phtml never rendered, and this
- * controller deliberately did not reproduce the query — ContentPageParityTest showed it
- * cost the response nothing. The blog has since been removed and the laminas action no
- * longer makes that query either, so the two now agree by construction.
+ * The laminas `indexAction()` used to read five blog posts that index.phtml never
+ * rendered; this controller never reproduced the query, and the blog is gone.
  */
 final class ContentPageController
 {

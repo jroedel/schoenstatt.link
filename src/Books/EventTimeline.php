@@ -9,11 +9,10 @@ use Books\Filter\KentenichPeriodFromDate;
 /**
  * The Fr. Kentenich timeline's grouping: events by period, then by year.
  *
- * A line-for-line port of Books\Controller\EventsController::groupEventsByEpochAndYear(),
- * left in place rather than shared, for the reason docs/laminas-exit.md gives: sharing
- * would mean editing the laminas action, and production still serves it. What pins the
- * agreement instead is test/Integration/EventTimelineParityTest, which drives both off
- * the same rows.
+ * A line-for-line port of the laminas `EventsController::groupEventsByEpochAndYear()`,
+ * which is deleted; this is the only copy. While both existed,
+ * EventTimelineParityTest drove them off the same 1,000-odd rows and asserted the same
+ * nested structure, which is what makes the two properties below trustworthy.
  *
  * Two properties of the original are load-bearing and easy to lose in a rewrite:
  *

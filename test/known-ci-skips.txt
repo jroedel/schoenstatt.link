@@ -35,13 +35,12 @@
 # connect, and CI has neither the file nor a server. The double check is not
 # redundant: without local.php the service manager cannot even be built, since
 # App\Application\Service\DbAdapterServiceFactory has nothing to read.
-SchoenstattTest\Integration\AdminIndexParityTest              # renders the admin index against real rows
+SchoenstattTest\Integration\AdminIndexBadgesTest              # counts the admin badges against real rows
 SchoenstattTest\Integration\AssignmentsTableTest              # reads sch_roles / assignments
 SchoenstattTest\Integration\BorrowerSelfServiceTest           # lib_borrower_tokens round trip
 SchoenstattTest\Integration\CacheStatusParityTest             # compares the two cache-status renderings
 SchoenstattTest\Integration\EntityFormatterTest               # formats real entity rows
 SchoenstattTest\Integration\EventFeatureStateTest             # asserts texts.LegacyEventId is still empty
-SchoenstattTest\Integration\EventTimelineParityTest           # 527 events under 7 period headings
 SchoenstattTest\Integration\JUserSignInLinkTest               # writes and redeems a verification token
 SchoenstattTest\Integration\JUserUserAdminTest                # reads the user table
 SchoenstattTest\Integration\JwtRoundTripTest                  # needs the configured cypherKey
@@ -54,7 +53,7 @@ SchoenstattTest\Integration\PhraseIdentityConstraintTest      # asserts the phra
 SchoenstattTest\Integration\PhraseValidationParityTest        # form and API share an InputFilter
 SchoenstattTest\Integration\PortedRouteErrorReportingTest     # builds the container to dispatch
 SchoenstattTest\Integration\PortedRouteTranslationTest        # resolves text domains against catalogs
-SchoenstattTest\Integration\ShrineIndexParityTest             # compares /shrines renderings
+SchoenstattTest\Integration\ShrineIndexInvariantsTest         # groups the real shrine rows by region
 SchoenstattTest\Integration\ShrineTemplateTest                # renders a shrine from its row
 SchoenstattTest\Integration\SionCacheWiringTest               # asserts the cache flush queue wiring
 SchoenstattTest\Integration\SionTableWiringCompletenessTest   # every SionTable resolves

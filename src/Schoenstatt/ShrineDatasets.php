@@ -12,11 +12,9 @@ use Spatie\SchemaOrg\Organization;
  * The two schema.org Dataset descriptions the shrine index publishes, English and
  * Spanish.
  *
- * A copy of Schoenstatt\Controller\SchoenstattController::getShrineDatasets(),
- * which is `protected` and so cannot be called from here even though it takes no
- * arguments and reads no state. Purely static content; the copy is pinned by
- * test/Integration/ShrineIndexParityTest.php, which reaches the original by
- * reflection and asserts the two arrays are identical.
+ * Ported from the laminas `SchoenstattController::getShrineDatasets()`, which is
+ * deleted; this is the only copy. Purely static content. The wayside-shrines page
+ * publishes the *shrine* datasets too, as the original did — reproduced, not corrected.
  */
 final class ShrineDatasets
 {
