@@ -35,9 +35,9 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * path, and this is what keeps the reproduction honest.
  *
  * **It cannot be a two-sided parity test, and that is worth stating plainly.** Every
- * other port in this migration has one — ShrineIndexParityTest and
- * CacheStatusParityTest drive the laminas code and the ported code off the same input
- * and compare. That is impossible here: the laminas helper's `wrapAsLink()` ends in
+ * other port in this migration had one — ShrineIndexParityTest (now
+ * ShrineIndexInvariantsTest) and CacheStatusParityTest drove the laminas code and the
+ * ported code off the same input and compared. That is impossible here: the laminas helper's `wrapAsLink()` ends in
  * `$this->view->url()`, which needs a RouteMatch off an MvcEvent, and the absence of
  * that MvcEvent is the entire reason this class exists. Calling it to compare against
  * would fail with "Call to a member function getRouteMatch() on null".

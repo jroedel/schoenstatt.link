@@ -20,9 +20,6 @@ use Laminas\Navigation\Service\DefaultNavigationFactory;
 use Laminas\I18n\Translator\TranslatorServiceFactory;
 use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
 use Laminas\Cache\Storage\StorageInterface;
-use Application\Session\SessionBootstrap;
-use Application\View\GdprStrategy;
-use Laminas\Session\ManagerInterface as SessionManagerInterface;
 use Psr\Container\ContainerInterface;
 use Laminas\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
@@ -110,18 +107,6 @@ return [
             'navigation' => DefaultNavigationFactory::class,
             //default persistent storage, configured in cache.local.php
             StorageInterface::class => Service\CacheFactory::class,
-            GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
-            /*
-             * Starts the session, and is attached from `config/application.config.php`'s
-             * `listeners` key rather than from a module `onBootstrap()` — it has to outrank
-             * every module hook, because SionModel's asks BjyAuthorize for the identity and
-             * that bakes the ACL's roles for the rest of the request. See the class.
-             *
-             * A closure rather than a factory class: one constructor argument, and the
-             * indirection would only hide which service that is.
-             */
-            SessionBootstrap::class => static fn (ContainerInterface $c): SessionBootstrap
-                => new SessionBootstrap($c->get(SessionManagerInterface::class)),
             //The sitemap builder. An App\ class registered from a laminas module config
             //because bin/console resolves commands out of this container — see
             //App\Console\Command\BuildSitemapCommandFactory for what it does and does not
@@ -172,28 +157,14 @@ return [
 //             ],
 //         ],
 //     ],
-    'controllers' => [
-//         'invokables' => [
-//             IndexController::class => IndexController::class
-//         ],
-        'factories' => [
-            Controller\IndexController::class => Service\IndexControllerFactory::class,
-        ],
-        'abstract_factories' => [
-            \Application\Controller\LazyControllerFactory::class,
-        ],
-    ],
+    /*
+     * Nothing renders a laminas view any more, but the bridged view helpers still read
+     * the doctype: the laminas form element helpers close void elements as XHTML unless
+     * told otherwise, and SionModel\Form\BootstrapFormRenderer is byte-compatible with
+     * what they emitted under HTML5. Goes with the ViewHelperManager (laminas-exit.md §4).
+     */
     'view_manager' => [
-        'doctype'                  => 'HTML5',
-        'not_found_template'       => 'error/404',
-        'exception_template'       => 'error/index',
-        'template_map' => include __DIR__ . '/template_map.config.php',
-        'template_path_stack' => [
-            __NAMESPACE__ => __DIR__ . '/../view',
-        ],
-        'strategies' => [
-            'ViewJsonStrategy',
-        ],
+        'doctype' => 'HTML5',
     ],
     'bjyauthorize' => [
         'guards' => [
@@ -214,10 +185,8 @@ return [
     'view_helpers' => [
         'aliases' => [
             'formElement' => 'TwbBundle\Form\View\Helper\TwbBundleFormElement',
-            'requestUri'  => View\Helper\RequestUri::class,
         ],
         'factories' => [
-            View\Helper\RequestUri::class  => Service\RequestUriFactory::class,
             /*
              * The `isAllowed` view helper, since the ACL cutover pointed at App\Acl\Authorizer
              * rather than BjyAuthorize\View\Helper\IsAllowed (the only prior registrant, which

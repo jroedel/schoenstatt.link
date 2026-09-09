@@ -10,16 +10,10 @@ use function floor;
  * The shrine index's data assembly: group by region, and score each region's
  * completeness.
  *
- * A line-for-line port of the body of
- * Schoenstatt\Controller\SchoenstattController::shrinesAction(), which
- * waysideShrinesAction() duplicates verbatim. docs/laminas-exit.md asks a route
- * answering from two places to *share* the code that builds the response, and this
- * would be that code — but the laminas action is deliberately left untouched, so
- * that both front controllers keep answering exactly as they do today. What pins
- * the agreement instead is
- * test/Integration/ShrineIndexParityTest.php, which drives the laminas action and
- * this class off the same rows and asserts the two produce identical arrays. When
- * the laminas route is finally deleted, this stays and the duplication goes with it.
+ * A line-for-line port of the body of the laminas `shrinesAction()`, which its
+ * `waysideShrinesAction()` duplicated verbatim; both actions are deleted and this is
+ * the only copy. While both existed, ShrineIndexParityTest drove them off the same rows
+ * and asserted identical arrays; what remains of it is ShrineIndexInvariantsTest.
  *
  * Two things about the arithmetic, reproduced rather than corrected because
  * "reproduce its output exactly" is the contract for this port:

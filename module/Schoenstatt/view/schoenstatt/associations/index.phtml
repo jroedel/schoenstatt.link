@@ -1,8 +1,0 @@
-<p><?php if ($this->isAllowed('route/associations/create')) :?>
-<a href="<?php echo $this->url('associations/create');?>"><?php
-    echo $this->translate('Create new association');?></a><?php
-   endif;
-   $partial = isset($this->partial) ? $this->partial : 'associations-table';
-   echo $this->partial($partial, [
-    'objects' => $this->objects
-   ]);
