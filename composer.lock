@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c68944c6d107f8b7056e6a19cef5e8cc",
+    "content-hash": "efa6bfa8e6bc0357a8ecbba5a0087f62",
     "packages": [
         {
             "name": "brick/varexporter",
@@ -2041,87 +2041,6 @@
                 }
             ],
             "time": "2025-10-17T22:17:10+00:00"
-        },
-        {
-            "name": "laminas/laminas-navigation",
-            "version": "2.23.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laminas/laminas-navigation.git",
-                "reference": "76b032c39d6f3686e12a2a81d6473e01754cabc8"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-navigation/zipball/76b032c39d6f3686e12a2a81d6473e01754cabc8",
-                "reference": "76b032c39d6f3686e12a2a81d6473e01754cabc8",
-                "shasum": ""
-            },
-            "require": {
-                "laminas/laminas-stdlib": "^2.7 || ^3.0",
-                "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
-            },
-            "conflict": {
-                "zendframework/zend-navigation": "*"
-            },
-            "require-dev": {
-                "laminas/laminas-coding-standard": "~3.1.0",
-                "laminas/laminas-config": "^3.10.1",
-                "laminas/laminas-http": "^2.22",
-                "laminas/laminas-i18n": "^2.30",
-                "laminas/laminas-mvc": "^3.8",
-                "laminas/laminas-permissions-acl": "^2.17",
-                "laminas/laminas-router": "^3.14.0",
-                "laminas/laminas-servicemanager": "^3.23.1",
-                "laminas/laminas-uri": "^2.13.0",
-                "laminas/laminas-view": "^2.43",
-                "phpunit/phpunit": "^11.5.50",
-                "psalm/plugin-phpunit": "^0.19.5",
-                "vimeo/psalm": "^6.13.1"
-            },
-            "suggest": {
-                "laminas/laminas-config": "^3.7, to provide page configuration (optional, as arrays and Traversables are also allowed)",
-                "laminas/laminas-permissions-acl": "^2.9, to provide ACL-based access restrictions to pages",
-                "laminas/laminas-router": "^3.5, to use router-based URI generation with Mvc pages",
-                "laminas/laminas-servicemanager": "^3.16, to use the navigation factories",
-                "laminas/laminas-view": "^2.14, to use the navigation view helpers"
-            },
-            "type": "library",
-            "extra": {
-                "laminas": {
-                    "component": "Laminas\\Navigation",
-                    "config-provider": "Laminas\\Navigation\\ConfigProvider"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laminas\\Navigation\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "Manage trees of pointers to web pages in order to build navigation systems",
-            "homepage": "https://laminas.dev",
-            "keywords": [
-                "laminas",
-                "navigation"
-            ],
-            "support": {
-                "chat": "https://laminas.dev/chat",
-                "docs": "https://docs.laminas.dev/laminas-navigation/",
-                "forum": "https://discourse.laminas.dev",
-                "issues": "https://github.com/laminas/laminas-navigation/issues",
-                "rss": "https://github.com/laminas/laminas-navigation/releases.atom",
-                "source": "https://github.com/laminas/laminas-navigation"
-            },
-            "funding": [
-                {
-                    "url": "https://funding.communitybridge.org/projects/laminas-project",
-                    "type": "community_bridge"
-                }
-            ],
-            "time": "2026-02-04T20:59:23+00:00"
         },
         {
             "name": "laminas/laminas-router",
