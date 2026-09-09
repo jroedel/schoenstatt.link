@@ -36,6 +36,11 @@
 #   make prod-deploy CI=1           # run ci-local.sh first, and refuse if it fails
 #   make prod-deploy CHECKS_ONLY=1  # run the checks and stop; never reaches deploy.sh
 #
+# The last check is the only one that warns rather than refuses: it lists open pull
+# requests whose head is not in the tree being deployed. Twice a deploy has shipped the
+# previous release because the PR the operator had in mind had not merged, and every other
+# check passed — correctly, because master really was clean, synced and consistent.
+#
 # CHECKS_ONLY exists because the checks are the part worth exercising — before a release,
 # or when changing this script — and every other way of doing that ends one step away from
 # a live deploy. Piping this script's output through `head` or `sed` truncates what you
@@ -200,6 +205,45 @@ ok ".deploy.local is present"
 if [ "$CI" = "1" ]; then
     printf '\n%sRunning ci-local.sh first%s\n' "$BOLD" "$OFF"
     ./tools/ci-local.sh || die "ci-local failed. Not deploying."
+fi
+
+# --- 7. open pull requests that are not in this tree -------------------------------
+# **A warning, never a refusal.** Deploying while PRs are open is normal and most of them
+# are nobody's intention to ship. This exists because of the one case that is: twice now a
+# deploy has shipped the previous release because the PR the operator had in mind had not
+# actually merged — and every check above passed, correctly, because master really was
+# clean, synced and internally consistent. "Is this the code you just merged?" is not a
+# question this script can answer, so it names what is open and leaves the judgement where
+# it belongs.
+#
+# Submodule PRs are deliberately not listed: an unmerged one shows up as a pointer that is
+# not on the integration branch, which check 4 already refuses over.
+if command -v gh >/dev/null 2>&1; then
+    # `|| true` twice over: gh is optional, may be unauthenticated, and may be offline.
+    # None of that is a reason to stand between someone and a deploy.
+    OPEN_PRS="$(gh pr list --state open --limit 20 --json number,title,headRefOid \
+        -q '.[] | [.number, .headRefOid, .title] | @tsv' 2>/dev/null || true)"
+
+    NOT_HERE=""
+    while IFS=$'\t' read -r PR_NUM PR_SHA PR_TITLE; do
+        [ -n "${PR_NUM:-}" ] || continue
+        # A head commit this clone has never fetched is certainly not in the tree; one it
+        # has is in the tree only if it is an ancestor of what we are about to ship.
+        if git cat-file -e "${PR_SHA}^{commit}" 2>/dev/null \
+           && git merge-base --is-ancestor "$PR_SHA" HEAD 2>/dev/null; then
+            continue
+        fi
+        NOT_HERE="${NOT_HERE}  #${PR_NUM} ${PR_TITLE}"$'\n'
+    done <<< "$OPEN_PRS"
+
+    if [ -n "$NOT_HERE" ]; then
+        printf '\n'
+        warn "open pull request(s) NOT in the tree about to be deployed:"
+        printf '%s' "$NOT_HERE"
+        printf '  If you meant to ship one, merge it and re-run. Otherwise carry on.\n'
+    else
+        ok "no open pull request is missing from this tree"
+    fi
 fi
 
 # --- hand over ---------------------------------------------------------------------
