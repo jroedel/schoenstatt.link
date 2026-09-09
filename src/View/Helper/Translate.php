@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\View\Helper;
 
 use Laminas\Translator\TranslatorInterface;
-use Laminas\View\Helper\AbstractHelper;
 
 /**
  * The `translate` view helper, formerly `Laminas\I18n\View\Helper\Translate`.
@@ -28,8 +27,12 @@ use Laminas\View\Helper\AbstractHelper;
  * The original threw when asked to translate with none set. A console process legitimately
  * has one and a missing translation must never be the thing that takes a page down, so this
  * returns the message unchanged, which is what a total catalog miss does anyway.
+ *
+ * Not a `Laminas\View\Helper\AbstractHelper` since 2026-09. It never read `$this->view`,
+ * and the plugin manager keeps resolving it: an object with `__invoke()` passes the same
+ * validation a HelperInterface does.
  */
-final class Translate extends AbstractHelper
+final class Translate
 {
     private ?TranslatorInterface $translator = null;
 
