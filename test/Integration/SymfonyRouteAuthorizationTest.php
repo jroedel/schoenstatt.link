@@ -327,7 +327,7 @@ class SymfonyRouteAuthorizationTest extends TestCase
 
         return new RouteGuard(
             $bridge,
-            new RouteUrl($bridge, ''),
+            new RouteUrl(''),
             static fn (): Environment => self::fail('the 403 template must not be rendered here')
         );
     }

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Books\Service;
 
+use App\Http\SymfonyRoutes;
 use Books\Model\DictionaryTable;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Router\RouteStackInterface;
 use Psr\Container\ContainerInterface;
+use Symfony\Component\Routing\Generator\UrlGenerator;
+use Symfony\Component\Routing\RequestContext;
 use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
 use SionModel\Service\SionTableWiring;
@@ -36,7 +38,7 @@ class DictionaryTableFactory
             $container->get(EntitiesService::class),
             $container->get('SionModel\Config'),
             $container->get(ActingUserProviderInterface::class),
-            $container->get(RouteStackInterface::class),
+            new UrlGenerator(SymfonyRoutes::collection(), new RequestContext()),
             self::canonicalBaseUrl($container)
         );
         SionTableWiring::apply($container, $table);

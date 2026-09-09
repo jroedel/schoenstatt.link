@@ -188,7 +188,7 @@ class EntityFormatterTest extends TestCase
     private function isAllowedRoute(string $route): bool
     {
         $bridge  = $this->bridge();
-        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, ''));
+        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl(''));
 
         return (bool) $helpers->isAllowed()->__invoke('route/' . $route);
     }
@@ -492,8 +492,8 @@ class EntityFormatterTest extends TestCase
     private function formatter(): EntityFormatter
     {
         $bridge  = $this->bridge();
-        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, ''));
-        $urls    = new RouteUrl($bridge, '');
+        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl(''));
+        $urls    = new RouteUrl('');
 
         //The three closures the formatter takes. In production they come from
         //App\Twig\LaminasExtension; here the two pencil renderers return a marker rather
@@ -518,8 +518,8 @@ class EntityFormatterTest extends TestCase
 
         return (new TwigFactory())->create(
             $bridge,
-            new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, '')),
-            new RouteUrl($bridge, ''),
+            new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl('')),
+            new RouteUrl(''),
             new RequestStack(),
             new CspNonce(),
             new HostMessages()

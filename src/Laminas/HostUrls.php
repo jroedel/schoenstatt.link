@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
-use Laminas\Uri\Http as HttpUri;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -25,22 +24,22 @@ use Symfony\Component\HttpFoundation\RequestStack;
  *
  * ## The query is only passed when there is one
  *
- * `TreeRouteStack::assemble()` tests `isset($options['query'])`, not whether it is empty, so
- * handing it `[]` calls `Uri::setQuery([])` on every single link. Harmless today and exactly
- * the kind of thing that stops being harmless, so the key is omitted instead.
+ * A leftover from the laminas router, which tested `isset($options['query'])` rather than
+ * whether it was empty and so called `Uri::setQuery([])` on every link. Kept because it is
+ * still the honest shape: "no query" and "an empty query" are different things to say.
  *
- * ## `force_canonical` needs a request URI, and nothing under Symfony sets one
+ * ## An absolute URL needs a host, and a console process has none
  *
- * An absolute URL is assembled by filling in the scheme and host from the router's
- * `requestUri` — which `TreeRouteStack::match()` sets, and which therefore is **never set on
- * a Symfony-served request**: nothing matches against that router. Left alone, `assemble()`
- * with `force_canonical` throws `Request URI has not been set`.
+ * `url()` fills in the scheme and host from the request being answered. Under laminas that
+ * meant priming a `requestUri` on the router — never set on a Symfony-served request, since
+ * nothing matched against it — and `assemble()` threw `Request URI has not been set`
+ * without one. Symfony takes them from the RequestContext instead, and would quietly answer
+ * `localhost` if they were absent.
  *
- * That was invisible for as long as exactly one caller wanted an absolute URL — the emailed
- * sign-in link — because `JUser\Service\MailerFactory` primes the router itself, precisely
- * to avoid it. The priming lives here now, so any module asking for `url()` gets a link that
- * works rather than an exception. It is the one thing on that surface whose breakage shows
- * up on no page at all.
+ * So the refusal here is deliberate and is the interesting part: with no request there is no
+ * host, and guessing one puts a wrong link in an email rather than raising. It is the one
+ * thing on this surface whose breakage shows up on no page at all — exactly one caller wants
+ * an absolute URL, the emailed sign-in link.
  */
 final class HostUrls
 {
@@ -80,16 +79,17 @@ final class HostUrls
     }
 
     /**
-     * See the class docblock: without this, an absolute URL is an exception.
+     * Scheme and host for an absolute URL, which Symfony's generator takes from the
+     * RequestContext.
      *
-     * It **sets** rather than checks-then-sets, which is both shorter and the only version
-     * static analysis can read: `TreeRouteStack::getRequestUri()` has no declared return
-     * type and its property is annotated non-nullable, so `null !== $router->getRequestUri()`
-     * is an always-true branch to PHPStan and everything after it unreachable — which is
-     * also why `JUser\Service\MailerFactory` reaches for `isset()` there.
+     * This used to prime a request URI on the laminas router as well, because
+     * `TreeRouteStack::assemble()` with `force_canonical` threw `Request URI has not been
+     * set` without one. Nothing assembles through that router since step 6, so only the
+     * RequestContext is set now.
      *
-     * Overwriting is safe: `assemble()` reads only the scheme and host off this URI, and the
-     * request being answered is the same request whatever set it first.
+     * Still a hard refusal when there is no request: a console process asking for an
+     * absolute URL has no host to put in it, and Symfony would quietly answer `localhost`
+     * rather than raise — which is a wrong link in an email instead of a stack trace.
      */
     private function primeRequestUri(): void
     {
@@ -103,9 +103,6 @@ final class HostUrls
             );
         }
 
-        $this->urls->router()->setRequestUri(new HttpUri($request->getSchemeAndHttpHost()));
-        //and the same host for the Symfony generator, which is what path() assembles with
-        //since step 4 of the laminas exit; it reads scheme and host off the RequestContext.
         $this->urls->setCanonicalHost($request->getScheme(), $request->getHttpHost());
     }
 }
