@@ -104,5 +104,8 @@ final class HostUrls
         }
 
         $this->urls->router()->setRequestUri(new HttpUri($request->getSchemeAndHttpHost()));
+        //and the same host for the Symfony generator, which is what path() assembles with
+        //since step 4 of the laminas exit; it reads scheme and host off the RequestContext.
+        $this->urls->setCanonicalHost($request->getScheme(), $request->getHttpHost());
     }
 }
