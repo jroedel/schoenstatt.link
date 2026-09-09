@@ -109,11 +109,23 @@ deletes.
 | 1c | json (the package itself — laminas-view and laminas-serializer still pull it), serializer (it is the laminas-cache serializer), uri (7 files, but laminas-http **and laminas-router** require it), http (`Client` in two gateways and a console command; `Request` only to feed the laminas router) | ~15 files | `symfony/http-client` or ~20 lines of our own; the rest unblock at steps 2 and 6 |
 | 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
 | 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours, implementing `Laminas\Translator\TranslatorInterface`. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
-| 4 | laminas-view (32 `AbstractHelper` subclasses), laminas-escaper | ~46 files | Twig extensions; `App\Laminas\EntityFormatter` already wraps the biggest helper |
+| 4 | laminas-view (**28** `AbstractHelper` subclasses, measured 2026-09-09), laminas-escaper, and laminas-json with them (nothing else requires it) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery in `App\Laminas\{ViewHelperManagerFactory,ViewHelpers}` | Twig extensions; `App\Laminas\EntityFormatter` already wraps the biggest helper, and `App\Twig\LaminasExtension` is the established pattern |
 | 5 | laminas-form, inputfilter, validator, filter | 36 forms, ~170 files | Symfony Form + Validator. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 | laminas-router (27) | every route is declared twice today | Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names |
 | 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
 | 8 | laminas-db (96 files; `SionTable` is 2,413 lines over `TableGateway`/`Sql`) | the largest | Doctrine DBAL (decision pending, §6) |
+
+**Step 4 is not gated on step 5, though it looks it.** Every `Laminas\Form\View\Helper\*`
+class extends `Laminas\I18n\View\Helper\AbstractTranslatorHelper`, so it is tempting to
+conclude the forms hold laminas-view down. They do not: laminas-form does not *require*
+laminas-view in composer, and since step 3 nothing here resolves a laminas-form view helper
+— `SionModel\Form\BootstrapFormRenderer` renders every form by hand. What holds laminas-view
+is our own 28 helpers, and that is step 4's actual content. Measured 2026-09-09.
+
+**Order by packages removed, not by the numbering.** Step 4 takes three (view, escaper,
+json). Step 6 takes four (router, uri, http, loader) but changes URL generation at 57
+template call sites and the ACL resource names with it. Step 5 takes four and unblocks two
+more (session, hydrator) across ~170 files. Nothing in 4, 5 or 6 blocks the others.
 
 **laminas-session does not leave at step 2.** `Laminas\Validator\Csrf` reads a
 `Laminas\Session\Container`, and every form here carries a CSRF element, so the session
