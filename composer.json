@@ -121,7 +121,6 @@
             "Books\\": "module/Books/src/",
             "JTranslate\\": "module/JTranslate/src/",
             "JUser\\": "module/JUser/src/",
-            "RestApi\\": "module/RestApi/src/",
             "Schoenstatt\\": "module/Schoenstatt/src/",
             "SionModel\\": "module/SionModel/src/"
         }

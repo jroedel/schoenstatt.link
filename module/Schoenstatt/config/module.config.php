@@ -63,11 +63,6 @@ $federationRoles = [
     ],
 ];
 return [
-    'controllers' => [
-        'abstract_factories' => [
-            \Schoenstatt\Controller\LazyControllerFactory::class,
-        ],
-    ],
     'service_manager' => [
         'factories' => [
             Service\PatresGateway::class            => Service\PatresGatewayFactory::class,
@@ -83,12 +78,6 @@ return [
             Form\ImportFatherForm::class            => Service\ImportFatherFormFactory::class,
             'Schoenstatt\PersonTagsValueOptions'    => Service\PersonTagsValueOptionsFactory::class,
             Service\AssociationKindsService::class  => Service\AssociationKindsServiceFactory::class,
-        ],
-    ],
-    'view_manager' => [
-        'template_map' => include __DIR__ . '/template_map.config.php',
-        'template_path_stack' => [
-            'schoenstatt' => __DIR__ . '/../view',
         ],
     ],
     'view_helpers' => [
@@ -1281,7 +1270,6 @@ return [
                 'table_key'                             => 'PersonId',
                 'entity_key_field'                      => 'personId',
                 'sion_model_class'                      => Model\SchoenstattTable::class,
-                'sion_controllers'                      => [Controller\PersonsController::class],
                 'controller_services'                   => [
 
                 ],
@@ -1449,7 +1437,6 @@ return [
                 'table_key'                             => 'AssociationId',
                 'entity_key_field'                      => 'associationId',
                 'sion_model_class'                      => Model\SchoenstattTable::class,
-                'sion_controllers'                      => [Controller\AssociationsController::class],
                 'controller_services'                   => [
                     CountriesInfo::class,
                 ],
@@ -1601,7 +1588,6 @@ return [
                 'table_key'                             => 'RoleId',
                 'entity_key_field'                      => 'roleId',
                 'sion_model_class'                      => Model\SchoenstattTable::class,
-                'sion_controllers'                      => [Controller\RolesController::class],
                 'controller_services'                   => [
 
                 ],
@@ -1668,7 +1654,6 @@ return [
                 'table_key'                             => 'AssignmentId',
                 'entity_key_field'                      => 'assignmentId',
                 'sion_model_class'                      => Model\SchoenstattTable::class,
-                'sion_controllers'                      => [Controller\AssignmentsController::class],
                 'controller_services'                   => [
                     Form\AdvancedSearchForm::class,
                 ],

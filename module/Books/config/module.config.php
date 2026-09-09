@@ -261,11 +261,6 @@ return [
             ],
         ],
     ],
-     'controllers' => [
-         'abstract_factories' => [
-            \Books\Controller\LazyControllerFactory::class,
-         ],
-     ],
     'service_manager' => [
         'factories' => [
             'Books\Cache'                       => Service\CacheFactory::class,
@@ -1260,7 +1255,6 @@ return [
                 'name'                                      => 'event',
                 'table_name'                                => 'events',
                 'table_key'                                 => 'EventId',
-                'sion_controllers'                          => [Controller\EventsController::class],
                 'controller_services'                       => [],
                 'entity_key_field'                          => 'eventId',
                 'sion_model_class'                          => Model\EventTextTable::class,
@@ -1419,7 +1413,6 @@ return [
                 'table_key'                             => 'LibraryId',
                 'entity_key_field'                      => 'libraryId',
                 'sion_model_class'                      => Model\LibraryTable::class,
-                'sion_controllers'                      => [Controller\LibrariesController::class],
                 'controller_services'                   => [
                     Form\SearchForm::class,
                     'Books\BorrowersValueOptions',
@@ -1618,7 +1611,6 @@ return [
                 'table_key'                                 => 'book_id',
                 'entity_key_field'                          => 'bookId',
                 'sion_model_class'                          => Model\LibraryTable::class,
-                'sion_controllers'                          => [Controller\BooksController::class],
                 'controller_services'                       => [
                     'Books\BorrowersValueOptions',
                     Model\PublicationsTable::class,
@@ -1722,7 +1714,6 @@ return [
                 'table_key'                             => 'CheckoutId',
                 'entity_key_field'                      => 'checkoutId',
                 'sion_model_class'                      => Model\LibraryTable::class,
-                'sion_controllers'                      => [Controller\CheckoutsController::class],
                 'controller_services'                   => [
                     PatresGateway::class,
                     SchoenstattTable::class,
@@ -1809,7 +1800,6 @@ return [
                 'table_key'                             => 'PublicationId',
                 'entity_key_field'                      => 'publicationId',
                 'sion_model_class'                      => Model\PublicationsTable::class,
-                'sion_controllers'                      => [Controller\PublicationsController::class],
                 'controller_services'                   => [
                     FilesTable::class,
                     Form\PublicationsSearchForm::class,
@@ -1986,7 +1976,6 @@ return [
                 'table_key'                                 => 'CollectionId',
                 'entity_key_field'                          => 'collectionId',
                 'sion_model_class'                          => Model\LibraryTable::class,
-                'sion_controllers'                          => [Controller\CollectionsController::class],
                 'controller_services'                       => [],
 //                 'get_object_function'                       => 'getSimpleCollection',
 //                 'get_objects_function'                      => 'getUnlinkedCollections',
@@ -2071,7 +2060,6 @@ return [
                 'table_key'                                 => 'PersonId',
                 'entity_key_field'                          => 'personId',
                 'sion_model_class'                          => SchoenstattTable::class,
-                'sion_controllers'                          => [],//BorrowersController::class],
                 'controller_services'                       => [
 
                 ],
@@ -2126,9 +2114,6 @@ return [
                 'table_key'                                 => 'TextId',
                 'entity_key_field'                          => 'textId',
                 'sion_model_class'                          => Model\EventTextTable::class,
-                'sion_controllers'                          => [
-                    Controller\TextsController::class
-                ],//BorrowersController::class],
                 'controller_services'                       => [],
                 'row_processor_function'                    => 'processTextRow',
 //                 'get_object_function'                       => 'getText',
@@ -2195,7 +2180,6 @@ return [
                 'table_key'                                 => 'EntryId',
                 'entity_key_field'                          => 'entryId',
                 'sion_model_class'                          => Model\DictionaryTable::class,
-                'sion_controllers'                          => [Controller\DictionaryController::class],//BorrowersController::class],
                 'controller_services'                       => [
                     DictionaryTable::class,
                     Navigation::class,
@@ -2294,7 +2278,6 @@ return [
                 'table_key'                             => 'CompositionId',
                 'entity_key_field'                      => 'compositionId',
                 'sion_model_class'                      => Model\MusicTable::class,
-                'sion_controllers'                      => [Controller\CompositionsController::class],
                 'controller_services'                   => [
                 ],
                 'row_processor_function'                => 'processCompositionRow',
@@ -2574,8 +2557,13 @@ return [
             ],
         ],
     ],
+    /*
+     * One view script is still rendered: books/libraries/email-book-list, the checkout
+     * list inside the overdue notice that `bin/console books:send-notices` sends through
+     * SionModel\Mailing\Mailer::renderTemplate(). It is resolved off this path stack,
+     * and this key goes when that template is a Twig one (laminas-exit.md §4.2).
+     */
     'view_manager' => [
-        'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
             __NAMESPACE__ => __DIR__ . '/../view',
         ],

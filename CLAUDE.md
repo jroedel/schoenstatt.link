@@ -72,8 +72,8 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   services ported code still needs (config, tables, translator). Nothing must build it on
   `/_health`.
 - **Modules** in `module/` (PSR-4 via `composer.json`): `Application`, `Books`,
-  `JTranslate`, `JUser`, `RestApi` (one shadowed route; deleted in step 0), `Schoenstatt`,
-  `SionModel`. `SionModel` and `J*` are the user's shared libraries (git submodules).
+  `JTranslate`, `JUser`, `Schoenstatt`, `SionModel`. `SionModel` and `J*` are the user's
+  shared libraries (git submodules).
   Enabled modules: `config/modules.config.php`; environment config in `config/autoload/`
   (`*.local.php` from the `.dist` files via `config.sh`). PSR-4 paths must match namespaces
   exactly.

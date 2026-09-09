@@ -6,7 +6,7 @@
  * Both halves are still load-bearing after /api/v1 and /api/v2 were retired on
  * 2026-08-14, which is not obvious from the name:
  *
- * - `responseFormat` is read by RestApi\Controller\RouteNotFoundController, the only
+ * - `responseFormat` is read by App\Controller\Api\ApiRouteNotFoundController, the only
  *   thing left that builds this envelope — every retired v1/v2 URL is answered with it.
  * - `jwtAuth` is read by App\Api\BotIdentity and JUser\Service\ApiTokenService, i.e. by
  *   /api/v3. `cypherKey` lives in the untracked local.php and must be at least 32 bytes
@@ -31,7 +31,8 @@ return [
             //says the resource existed and is permanently gone, which is what gets an
             //indexed URL dropped rather than merely demoted. Scoped to v1 and v2 in
             //RouteNotFoundController — an unknown /api/v3 path is a typo, not a
-            //withdrawal, and must stay a 404.
+            //withdrawal, and must stay a 404. ("RouteNotFoundController" is now
+            //App\Controller\Api\ApiRouteNotFoundController.)
             //Names the schema document, matching the successor-version Link header. A
             //bare /api/v3 is not a route and answers 404, so sending a caller there was
             //sending it nowhere; /api/v3/schema is public and lists every endpoint.
