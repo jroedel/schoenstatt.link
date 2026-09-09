@@ -109,15 +109,7 @@ function loadMergedConfig(): array
  */
 function routeNames(): array
 {
-    $symfony = symfonyRoutes();
-    $names   = [];
-    foreach (array_keys($symfony['routes']) as $name) {
-        $bare = preg_replace('/\.locale$/', '', (string) $name) ?? (string) $name;
-        $names[App\Http\SymfonyRoutes::ACL_NAME[$bare] ?? $bare] = true;
-    }
-    ksort($names);
-
-    return $names;
+    return App\Http\SymfonyRoutes::aclNames();
 }
 
 /**
