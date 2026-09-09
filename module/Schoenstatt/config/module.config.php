@@ -87,7 +87,6 @@ return [
         ],
         'invokables' => [
             'formatPerson'          => View\Helper\FormatPerson::class,
-            'languageChooser'       => View\Helper\LanguageChooser::class,
         ],
     ],
     'schoenstatt' => [
