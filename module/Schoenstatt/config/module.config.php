@@ -80,15 +80,11 @@ return [
             Service\AssociationKindsService::class  => Service\AssociationKindsServiceFactory::class,
         ],
     ],
-    'view_helpers' => [
-        'factories' => [
-            'formatEntity'          => Service\FormatEntityFactory::class,
-            'formatAssociation'     => Service\FormatAssociationFactory::class,
-        ],
-        'invokables' => [
-            'formatPerson'          => View\Helper\FormatPerson::class,
-        ],
-    ],
+    /**
+     * **No `view_helpers` key any more.** `formatEntity`, `formatAssociation` and
+     * `formatPerson` became plain classes on 2026-09 and take their collaborators as
+     * constructor closures; App\Laminas\ViewHelpers builds them.
+     */
     'schoenstatt' => [
         'general_presidium_id' => 71,
         'person_value_options_providers' => [
