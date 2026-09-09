@@ -3,7 +3,7 @@ namespace Books\Service;
 
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\Http\Client;
-use Laminas\Json\Json;
+use App\Json;
 use Laminas\Cache\Storage\StorageInterface;
 use Books\InputFilter\DriveFileFilter;
 
@@ -135,7 +135,7 @@ class DriveGateway
             //best to cache the JSON instead of serializing afterwards, plus it gets re-validated
             $cache->setItem(self::FILES_CACHE_KEY, $json);
         }
-        $data = Json::decode($json, Json::TYPE_ARRAY);
+        $data = Json::decodeToArray($json);
         if (! is_array($data)) {
             throw new \Exception('Failed to retrieve list of files from Google Drive. No data returned');
         }

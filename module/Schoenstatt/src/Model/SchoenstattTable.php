@@ -24,7 +24,7 @@ use Spatie\SchemaOrg\PropertyValue;
 use Spatie\SchemaOrg\CatholicChurch;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Spatie\OpeningHours\OpeningHours;
-use Laminas\Json\Json;
+use App\Json;
 use Laminas\Validator\Timezone;
 use Laminas\Db\Sql\Predicate\IsNull;
 use Laminas\Db\Sql\Predicate\IsNotNull;
@@ -1247,7 +1247,7 @@ class SchoenstattTable extends SionTable implements
         }
         if ($openingHoursValidator->isValid($object['openingHoursSpecificationJson'])) {
             try {
-                $spec = Json::decode($object['openingHoursSpecificationJson'], Json::TYPE_ARRAY);
+                $spec = Json::decodeToArray($object['openingHoursSpecificationJson']);
                 if (isset($object['timeZoneId'])) {
                     $openingHours = OpeningHours::create($spec, $object['timeZoneId']);
                 } else {
@@ -1350,7 +1350,7 @@ class SchoenstattTable extends SionTable implements
                 $eventsJsonValidator = new EventsJson();
             }
             if ($eventsJsonValidator->isValid($object['eventsJson'])) {
-                $eventsJson = Json::decode($object['eventsJson'], Json::TYPE_ARRAY);
+                $eventsJson = Json::decodeToArray($object['eventsJson']);
                 $schema->event($eventsJson);
             }
         }
@@ -1510,7 +1510,7 @@ class SchoenstattTable extends SionTable implements
         }
         if ($openingHoursValidator->isValid($object['openingHoursSpecificationJson'])) {
             try {
-                $spec = Json::decode($object['openingHoursSpecificationJson'], Json::TYPE_ARRAY);
+                $spec = Json::decodeToArray($object['openingHoursSpecificationJson']);
                 if (isset($object['timeZoneId'])) {
                     $openingHours = OpeningHours::create($spec, $object['timeZoneId']);
                 } else {
@@ -1613,7 +1613,7 @@ class SchoenstattTable extends SionTable implements
                 $eventsJsonValidator = new EventsJson();
             }
             if ($eventsJsonValidator->isValid($object['eventsJson'])) {
-                $eventsJson = Json::decode($object['eventsJson'], Json::TYPE_ARRAY);
+                $eventsJson = Json::decodeToArray($object['eventsJson']);
                 $schema->event($eventsJson);
             }
         }

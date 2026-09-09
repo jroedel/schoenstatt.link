@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http;
 
-use Laminas\Math\Rand;
+use function base64_encode;
+use function random_bytes;
+use function rtrim;
+use function substr;
 
 /**
  * One nonce per request, shared by the listener that names it in the
@@ -17,8 +20,8 @@ use Laminas\Math\Rand;
  * renders something — and both must see the *same* value. Generated lazily so a
  * request that renders no HTML never spends the entropy.
  *
- * Twelve characters is what SionModel\Mvc\CspListener uses; there is nothing
- * magic about it beyond being well past guessable for a single response.
+ * Twelve characters is what the laminas CSP listener used; there is nothing magic
+ * about it beyond being well past guessable for a single response.
  */
 final class CspNonce
 {
@@ -26,6 +29,10 @@ final class CspNonce
 
     public function value(): string
     {
-        return $this->value ??= Rand::getString(12);
+        //`Laminas\Math\Rand::getString(12)` until 2026-09, and this is what that did with
+        //no character list: base64 of ceil(12 * 0.75) = 9 random bytes, cut to 12. A nonce
+        //is compared only against itself, so the base64 alphabet is fine where it appears —
+        //quoted in the header, quoted in the attribute.
+        return $this->value ??= substr(rtrim(base64_encode(random_bytes(9)), '='), 0, 12);
     }
 }

@@ -10,13 +10,13 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Locale\Locales;
 use Closure;
-use Laminas\Math\Rand;
 use Locale;
 use Throwable;
 
 use function in_array;
 use function is_array;
 use function is_string;
+use function random_int;
 use function sprintf;
 use function str_contains;
 
@@ -290,18 +290,19 @@ final class SiteChrome
     }
 
     /**
-     * The flag each locale is shown with. `Rand::getInteger()` on every request is
-     * the original's behaviour, not an accident.
+     * The flag each locale is shown with. Picking one at random on every request is the
+     * original's behaviour, not an accident. (`Laminas\Math\Rand` until 2026-09, whose
+     * getInteger() called random_int().)
      *
      * @return array<string, string>
      */
     private static function flags(): array
     {
         return [
-            'en_US' => ['us', 'gb'][Rand::getInteger(0, 1)],
-            'es_ES' => ['ar', 'es', 'cl', 'mx'][Rand::getInteger(0, 3)],
-            'de_DE' => ['de', 'ch'][Rand::getInteger(0, 1)],
-            'pt_BR' => ['pt', 'br'][Rand::getInteger(0, 1)],
+            'en_US' => ['us', 'gb'][random_int(0, 1)],
+            'es_ES' => ['ar', 'es', 'cl', 'mx'][random_int(0, 3)],
+            'de_DE' => ['de', 'ch'][random_int(0, 1)],
+            'pt_BR' => ['pt', 'br'][random_int(0, 1)],
             'it_IT' => 'it',
         ];
     }
