@@ -6,8 +6,6 @@ use Laminas\Db\Adapter\AdapterInterface;
 use Cocur\Slugify\Slugify;
 use Laminas\Db\ResultSet\ResultSetInterface;
 use Books\Exception\DuplicateKeyException;
-use Laminas\View\Helper\ServerUrl;
-use Laminas\View\Helper\Url;
 use Laminas\Router\RouteStackInterface;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Expression;
@@ -24,6 +22,9 @@ class DictionaryTable extends SionTable
      */
     protected $router;
 
+    /** Scheme and host for the absolute URLs the schema.org projection carries. */
+    protected string $canonicalBaseUrl;
+
     /**
      * The router arrives as an argument. It used to be pulled out of the container this
      * constructor was handed, which is the pattern SionTable stopped supporting when it
@@ -37,9 +38,11 @@ class DictionaryTable extends SionTable
         EntitiesService $entities,
         array $config,
         ?ActingUserProviderInterface $actingUserProvider,
-        RouteStackInterface $router
+        RouteStackInterface $router,
+        string $canonicalBaseUrl = ''
     ) {
-        $this->router = $router;
+        $this->router           = $router;
+        $this->canonicalBaseUrl = rtrim($canonicalBaseUrl, '/');
         parent::__construct($dbAdapter, $entities, $config, $actingUserProvider);
     }
 
@@ -117,28 +120,31 @@ class DictionaryTable extends SionTable
      */
     protected function getDictionaryUrl($inLanguage)
     {
-        if (! isset($inLanguage)) {
+        if (! isset($inLanguage) || '' === $this->canonicalBaseUrl) {
             return null;
         }
 
-        static $serverUrlHelper;
-        static $urlHelper;
-        static $inLanguageUrls;
-        if (! isset($serverUrlHelper)) {
-            $serverUrlHelper = new ServerUrl();
+        //`Laminas\View\Helper\Url` until laminas-view was removed; its `__invoke($name,
+        //$params)` is exactly this assemble() call and nothing else.
+        //
+        //The host used to come from `Laminas\View\Helper\ServerUrl`, which reads the
+        //request's own scheme and host out of $_SERVER. This is the canonical host instead:
+        //the value goes into a schema.org `inDefinedTermSet`, which is a public identifier
+        //for the term set and must not vary with the host that happened to serve the page.
+        //In production the two are the same string; they differ only where the site answers
+        //on another name, which is exactly the case worth pinning.
+        if (! isset($this->inLanguageUrls[$inLanguage])) {
+            $this->inLanguageUrls[$inLanguage] = $this->canonicalBaseUrl
+                . $this->router->assemble(
+                    ['inLanguage' => $inLanguage],
+                    ['name' => 'dictionary/inLanguage']
+                );
         }
-        if (! isset($urlHelper)) {
-            $urlHelper = new Url();
-            $urlHelper->setRouter($this->router);
-        }
-        if (isset($inLanguage) && ! isset($inLanguageUrls[$inLanguage])) {
-            $inLanguageUrls[$inLanguage] = $serverUrlHelper->__invoke($urlHelper->__invoke(
-                'dictionary/inLanguage',
-                ['inLanguage' => $inLanguage]
-            ));
-        }
-        return isset($inLanguageUrls[$inLanguage]) ? $inLanguageUrls[$inLanguage] : null;
+        return $this->inLanguageUrls[$inLanguage];
     }
+
+    /** @var array<string, string> memoized per language, as the static locals used to be */
+    private array $inLanguageUrls = [];
 
     /**
      *

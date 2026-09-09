@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use App\Acl\AclProvider;
+use App\Acl\IsAllowed;
 use JTranslate\Model\TranslationsTable;
 use Laminas\EventManager\EventManager;
 use Laminas\EventManager\EventManagerAwareInterface;
@@ -14,7 +16,6 @@ use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
 use JTranslate\I18n\Translator\TranslatorFactory as JTranslateTranslatorFactory;
 use Laminas\Translator\TranslatorInterface;
 use Laminas\ModuleManager\Feature\ServiceProviderInterface;
-use Laminas\ModuleManager\Feature\ViewHelperProviderInterface;
 use Laminas\ModuleManager\Listener\ConfigListener;
 use Laminas\ModuleManager\Listener\DefaultListenerAggregate;
 use Laminas\ModuleManager\Listener\ListenerOptions;
@@ -41,10 +42,9 @@ use function is_array;
  * `config/modules.config.php`. The keys laminas-mvc alone consumed — `controllers`,
  * `controller_plugins`, `view_manager` — are not read.
  *
- * Three services laminas-mvc used to define are defined here under the same ids, because
+ * Two services laminas-mvc used to define are defined here under the same ids, because
  * ported code asks for them by those names:
  *
- * - `ViewHelperManager` — {@see ViewHelperManagerFactory};
  * - `MvcTranslator` — an alias for `JTranslate\I18n\Translator\Translator`, the one
  *   translator; `jtranslate_translator` and `Laminas\Translator\TranslatorInterface` are
  *   the same object under other names;
@@ -110,8 +110,14 @@ final class ContainerFactory
         //in between is gone with laminas-i18n.
         $services->configure([
             'factories'  => [
-                'ViewHelperManager'         => ViewHelperManagerFactory::class,
                 JTranslateTranslator::class => JTranslateTranslatorFactory::class,
+                //The ambient authorization question, shared for the request. Registered on
+                //the container rather than on a view-helper manager (where BjyAuthorize put
+                //it, and where it stayed until laminas-view was removed) so that the one
+                //instance serves the ported controllers, App\Sion\* and App\Laminas\ViewHelpers
+                //alike — two AclProviders in a request assemble the ACL twice.
+                IsAllowed::class            => static fn (ServiceManager $container): IsAllowed
+                    => new IsAllowed(new AclProvider(new ContainerServices($container))),
             ],
             'aliases'    => [
                 TranslatorInterface::class => JTranslateTranslator::class,
@@ -191,13 +197,6 @@ final class ContainerFactory
                         ServiceProviderInterface::class,
                         'getServiceConfig'
                     );
-                    $serviceListener->addServiceManager(
-                        'ViewHelperManager',
-                        'view_helpers',
-                        ViewHelperProviderInterface::class,
-                        'getViewHelperConfig'
-                    );
-
                     /** @var EventManager $events */
                     $events = $container->get('EventManager');
                     $defaultListeners->attach($events);

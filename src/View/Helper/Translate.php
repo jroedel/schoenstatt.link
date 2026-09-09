@@ -28,9 +28,9 @@ use Laminas\Translator\TranslatorInterface;
  * has one and a missing translation must never be the thing that takes a page down, so this
  * returns the message unchanged, which is what a total catalog miss does anyway.
  *
- * Not a `Laminas\View\Helper\AbstractHelper` since 2026-09. It never read `$this->view`,
- * and the plugin manager keeps resolving it: an object with `__invoke()` passes the same
- * validation a HelperInterface does.
+ * Not a `Laminas\View\Helper\AbstractHelper` since 2026-09, and not resolved from anything:
+ * App\Laminas\ViewHelpers constructs it and hands it the translator, which is also what
+ * sets the text domain on it.
  */
 final class Translate
 {

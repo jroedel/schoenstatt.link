@@ -479,7 +479,7 @@ final class PublicationController
     private function isAllowed(string $resource, ?string $privilege = null): bool
     {
         /** @var IsAllowed $helper */
-        $helper = $this->laminas->get('ViewHelperManager')->get('isAllowed');
+        $helper = $this->laminas->get(IsAllowed::class);
 
         return (bool) $helper->__invoke($resource, $privilege);
     }
