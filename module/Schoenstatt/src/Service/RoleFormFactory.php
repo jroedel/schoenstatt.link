@@ -22,7 +22,7 @@ class RoleFormFactory implements FactoryInterface
     {
         /** @var SchoenstattTable $table **/
         $table = $container->get(SchoenstattTable::class);
-        /** @var \Laminas\I18n\Translator\Translator $translator */
+        /** @var \Laminas\Translator\TranslatorInterface $translator */
         $translator = $container->get('translator');
 
         $associations = $table->getAssociationValueOptions();

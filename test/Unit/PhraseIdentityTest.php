@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../module/JTranslate/src/Model/PhraseIdentity.php';
  * those changes is silently destructive, and none of them would fail any other test
  * in this repository until translations started disappearing in production.
  *
- * The relation it has to implement is `Laminas\I18n\Translator`'s, which compares
+ * The relation it has to implement is the translator's, which compares
  * catalog keys byte for byte. `trans_phrases.phrase_hash` carries that relation into
  * the schema as `UNIQUE (project, text_domain, phrase_hash)`. So a hash function that
  * maps two distinct translator keys onto one value does not merely lose a row — it

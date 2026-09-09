@@ -7,7 +7,6 @@ use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
 use JUser\Host\IdentityInterface;
 use JUser\Service\IdentityActingUserProvider;
-use Laminas\EventManager\Event;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 
@@ -185,16 +184,14 @@ class PhraseDiscoveryTest extends TestCase
         $queue->setValue($this->table, []);
 
         $listener = new TranslatorEventListener($this->table, $this->table->getLocales(true));
-        $event    = new Event();
         //A distinct message per call: reportMissingTranslation() marks a phrase seen in
         //the in-request index, so reusing one string would make every call after the
         //first look ignored.
-        $event->setParams([
-            'locale'      => $locale,
-            'text_domain' => 'IntegrationTestDomain',
-            'message'     => 'discovery probe ' . $locale . ' ' . bin2hex(random_bytes(6)),
-        ]);
-        $listener->missingTranslation($event);
+        $listener->missingTranslation(
+            'discovery probe ' . $locale . ' ' . bin2hex(random_bytes(6)),
+            $locale,
+            'IntegrationTestDomain'
+        );
 
         return [] !== $queue->getValue($this->table);
     }
