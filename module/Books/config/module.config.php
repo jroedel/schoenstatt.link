@@ -297,7 +297,6 @@ return [
             'formatPublicationUrlObject'    => View\Helper\FormatPublicationUrlObject::class,
             'formatField'                   => View\Helper\FormatField::class,
             'booksJsonLd'                   => View\Helper\BooksJsonLd::class,
-            'formSelectWithoutOptions'      => View\Helper\FormSelectWithoutOptions::class,
             'markdown'                      => View\Helper\Markdown::class,
         ],
     ],

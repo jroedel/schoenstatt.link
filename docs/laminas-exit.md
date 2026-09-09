@@ -108,7 +108,7 @@ deletes.
 | 1b ✅ | navigation (config-only: nothing resolved the service) | 3 config files | **done 2026-09-09.** `App\View\NavigationTree` already built the tree from the `navigation` config key, which stays |
 | 1c | json (the package itself — laminas-view and laminas-serializer still pull it), serializer (it is the laminas-cache serializer), uri (7 files, but laminas-http **and laminas-router** require it), http (`Client` in two gateways and a console command; `Request` only to feed the laminas router) | ~15 files | `symfony/http-client` or ~20 lines of our own; the rest unblock at steps 2 and 6 |
 | 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
-| 3 | laminas-i18n (23) | JTranslate is the layer | `symfony/translation` (6.4 already installed transitively); the precompiled PHP-array catalog format stays |
+| 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours, implementing `Laminas\Translator\TranslatorInterface`. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
 | 4 | laminas-view (32 `AbstractHelper` subclasses), laminas-escaper | ~46 files | Twig extensions; `App\Laminas\EntityFormatter` already wraps the biggest helper |
 | 5 | laminas-form, inputfilter, validator, filter | 36 forms, ~170 files | Symfony Form + Validator. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 | laminas-router (27) | every route is declared twice today | Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names |
@@ -133,10 +133,9 @@ JTranslate); see §6 before starting any of them.
 - **Nothing, at runtime.** Every container is built by `App\Laminas\ContainerFactory`
   (event managers, `ModuleManager` with the default listeners and a `ServiceListener` for
   `service_manager` and `view_helpers`); it defines `ViewHelperManager`
-  (`App\Laminas\ViewHelperManagerFactory`) and `MvcTranslator` (a
-  `Laminas\Validator\Translator\Translator` over the canonical laminas-i18n translator,
-  `App\Laminas\TranslatorFactory`) under the ids ported code asks for, and registers the
-  two delegators. Nothing asks for `Application`, `ControllerPluginManager` or
+  (`App\Laminas\ViewHelperManagerFactory`) and `MvcTranslator` (since 2026-09 an alias of
+  `JTranslate\I18n\Translator\Translator`, the one translator) under the ids ported code
+  asks for, and registers the two delegators. Nothing asks for `Application`, `ControllerPluginManager` or
   `ViewRenderer`. `Router` survives — laminas-router's own ConfigProvider provides it. The
   packages are still installed and their modules still listed in `modules.config.php`;
   removing both is batch 4.

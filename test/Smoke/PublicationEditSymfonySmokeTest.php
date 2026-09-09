@@ -11,9 +11,10 @@ use PDO;
  * The publication edit form, the ninth and last of the edit surface.
  *
  * Batch 7 ported eight of the ten `SionController::editAction()` routes and left this one
- * out because its view is the only one that does not render rows: `fields-partial.phtml`
- * builds five `form-group`s by hand around `formSelectWithoutOptions`, a helper no other
- * form uses.
+ * out because its view was the only one that did not render rows: `fields-partial.phtml`
+ * built five `form-group`s by hand around `formSelectWithoutOptions`, a helper no other
+ * form used. Both are gone — the helper with laminas-i18n in 2026-09 — and
+ * `BootstrapFormRenderer::selectWithoutOptions()` is what renders those five pickers now.
  *
  * ## What is specific to this page, and therefore what this file is for
  *
@@ -25,9 +26,9 @@ use PDO;
  * breaks the **save**, because the browser posts what the markup contained. So the
  * assertions here are about what the selects contain, not about the page answering.
  *
- * `test/Integration/FormSelectWithoutOptionsContractTest` compares the helper and its
- * reproduction directly and is the finer-grained check; this is the same claim over HTTP,
- * with the real form, the real data and a real save.
+ * `test/Integration/FormSelectWithoutOptionsContractTest` pins that renderer's exact bytes
+ * against what the deleted helper produced, and is the finer-grained check; this is the
+ * same claim over HTTP, with the real form, the real data and a real save.
  *
  * ## The write test restores what it touches
  *

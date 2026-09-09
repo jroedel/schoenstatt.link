@@ -18,7 +18,7 @@ use JUser\Host\SessionInterface as JUserSessionInterface;
 use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
 use Laminas\Router\Http\Literal;
-use Laminas\I18n\Translator\TranslatorServiceFactory;
+use JTranslate\I18n\Translator\Translator as AppTranslator;
 use SionModel\Cache\Storage as CacheStorage;
 use SionModel\Cache\StorageFactory as CacheStorageFactory;
 use Psr\Container\ContainerInterface;
@@ -101,7 +101,6 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            'translator' => TranslatorServiceFactory::class,
             /*
              * The session JUser reads and writes, as its own host contract rather than a
              * laminas Container. Registered here, in the laminas container, because that is
@@ -155,6 +154,15 @@ return [
         'aliases' => [
             //this helps clarify throughout the app which kind of Logger we should expect.
             LoggerInterface::class => 'SionModel\Logger',
+            /*
+             * The historical short name for the translator, which three factories still
+             * resolve. An alias rather than a factory since 2026-09: there is one
+             * translator and every other name for it — `MvcTranslator`,
+             * `jtranslate_translator`, `Laminas\Translator\TranslatorInterface` — is an
+             * alias of the same class, so a second factory here would build a second
+             * translator with no catalogs and no missing-phrase listener.
+             */
+            'translator' => AppTranslator::class,
         ],
     ],
     /*

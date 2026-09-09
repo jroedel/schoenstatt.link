@@ -260,23 +260,31 @@ exports as `-u www-data`.
 - A console retirement (`jtranslate:retire`) writes the database but not the web SAPI's APCu;
   flush the phrase cache over HTTP afterwards.
 
-## Where the translator is going
+## The translator
 
-`symfony/translation` **6.4** is already installed, but only as a transitive dependency of
-`nesbot/carbon`; it should become a root require and take over the *translator* — the
-lookup, the catalogue loading and its compiled cache. JTranslate keeps what Symfony does not
-provide: the phrase database, runtime discovery, the editing GUI and the v3 API. The
-precompiled PHP-array catalog format **stays**; Symfony's own compiled cache is the same
-`return [...]` file, so this is the original design with a maintained implementation.
-Three things to preserve deliberately, each silent when wrong: the two-step domain fallback
-(page domain, then `default`) with the database's domain names mapping through unchanged,
-since Symfony defaults to `messages` and has no per-route magic; a miss-recorder that asks
-`MessageCatalogue::has()` rather than comparing strings, because every `en_US` row stores
-the phrase as its own translation; and explicit purge-and-rewarm on a database write, since
-a file-based cache cannot see one. Books is 86% of the corpus and is data — nothing may
-assume phrases come from source (`translation:extract` is wrong here). This is **step 3 of
-the laminas exit** ([laminas-exit.md](laminas-exit.md)); `laminas/laminas-i18n` stays until
-then because `TranslatorConfigurator` wires its interface.
+`JTranslate\I18n\Translator\Translator` — ours, since 2026-09, when `laminas-i18n` was
+removed. It is the lookup and nothing else: a message, a text domain, a locale, a fallback,
+and a way to be told about a miss. Everything around it was already this module's — the
+phrase database, discovery, the editing GUI, the v3 API and the compiled `.lang.php`
+catalogs, whose format is unchanged.
+
+`symfony/translation` was the planned replacement and was rejected on measurement. It would
+have needed a custom loader for the catalog format, a decorator to detect a catalogue miss
+(it has no missing-translation event, and discovery depends on one) and an adapter to the
+laminas interface the form validators still require — while ICU formatting, pluralization
+and its other loaders went unused. Ours implements `Laminas\Translator\TranslatorInterface`
+directly, which is the shape laminas-validator 3 will require, so the deprecated
+`Laminas\Validator\Translator\Translator` adapter went with it.
+
+Three properties are load-bearing and silent when wrong:
+
+- **The domain fallback is two-step** — the page's domain, then `default` — and the database's
+  domain names map through unchanged.
+- **A miss is reported once per locale tried**, so a lookup that misses in `de_DE` and again
+  in the fallback `en_US` reports both. That is what lets an English page view discover a
+  phrase; see the discovery listener.
+- **Catalogs come from the database, never from source.** Books is 86% of the corpus and is
+  data, so any extract-from-source tooling is wrong here.
 
 ## Where the code is
 

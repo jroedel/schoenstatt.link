@@ -13,12 +13,11 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   laminas-mvc since 2026-09-08: every page is Symfony-served, `LegacyBridge` and the
   `SYMFONY_KERNEL` canary are deleted; laminas-mvc survives only as the container bootstrap
   and the service ids `App\Laminas\ServiceBridge` still hands out.
-- **Removing laminas-mvc does not unlock servicemanager 4, laminas-cache 4 or
-  FrameworkBundle.** Ten current laminas components cap servicemanager at 3.x at their
-  latest releases (form, i18n, session, router, view, validator, filter, inputfilter, text,
-  cache), and laminas-i18n and laminas-session require laminas-cache 3. Only removing the
-  packages makes them reachable. The PHP 8.5 pin (`config.platform.php` 8.4.24) has eleven
-  blockers: step 0 clears six, steps 1 and 2 the rest.
+- **Removing laminas-mvc did not unlock servicemanager 4 or FrameworkBundle**, and the
+  remaining components still cap servicemanager at 3.x at their latest releases (form,
+  session, router, view, validator, filter, inputfilter). Only removing them makes it
+  reachable. FrameworkBundle's own blocker is gone: laminas-cache held `psr/cache` at `^1`
+  and left with step 2.
 - Progress metric: `composer show --locked | grep laminas` (37 on 2026-09-09); also run
   `why-not php 8.5.0` and `why-not laminas/laminas-servicemanager 4.0.0` around each step.
   No deadline panic: laminas-mvc and PHP 8.4 both have security fixes to 2028-12-31.

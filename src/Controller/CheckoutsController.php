@@ -8,7 +8,7 @@ use App\Books\LibraryPage;
 use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
-use Laminas\I18n\Translator\TranslatorInterface;
+use Laminas\Translator\TranslatorInterface;
 use RuntimeException;
 use Schoenstatt\Model\SchoenstattTable;
 use Symfony\Component\HttpFoundation\Request;
