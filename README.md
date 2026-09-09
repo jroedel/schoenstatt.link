@@ -66,7 +66,7 @@ Layout
 | `src/` (`App\`) | the Symfony kernel, controllers, `/api/v3`, console commands; PHPStan level 8 |
 | `templates/` | Twig templates; `layout.html.twig` is the shared chrome |
 | `config/symfony/routes.php` | every route the site serves |
-| `module/{Application,Books,Schoenstatt,RestApi}` | laminas modules: config, models, forms |
+| `module/{Application,Books,Schoenstatt}` | laminas modules: config, models, forms |
 | `module/{SionModel,JUser,JTranslate}` | shared libraries, **git submodules** — commit there first, then move the pointer |
 | `config/autoload/` | `*.global.php` committed, `*.local.php` machine-specific (from `.dist` via `config.sh`) |
 | `database/` | incremental migrations, applied through the `sch_migration` ledger |

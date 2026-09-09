@@ -29,7 +29,6 @@ $modules = [
     'Laminas\Cache\Storage\Adapter\Filesystem',
     'Laminas\Serializer',
     'SlmLocale',
-    'RestApi',
     'JUser',
     'SionModel',
     'JTranslate',

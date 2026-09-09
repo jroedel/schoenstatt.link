@@ -13,14 +13,9 @@ use function count;
  * The content of the admin landing page: which pages it links to, and the two
  * counters it puts a badge on.
  *
- * A copy of `Schoenstatt\Controller\AdminController::indexAction()`, and copied for
- * the reason docs/laminas-exit.md gives: sharing would mean *rewriting* the laminas
- * action, which is still live behind the canary. Adding a row to its literal array,
- * as the kernel-switch move did, is not that — it is the one edit shape the
- * duplication tolerates, because the parity test catches a half-done one.
- * `test/Integration/AdminIndexParityTest` is what makes the duplicate safe: it
- * drives the laminas action and compares both halves against this class. When the
- * laminas route is deleted, the action goes and the test goes with it.
+ * Ported from the laminas `AdminController::indexAction()`, which is deleted; this is
+ * the only copy. `test/Integration/AdminIndexBadgesTest` pins that every badge names a
+ * listed page.
  *
  * The `pages` list is route names, not URLs, exactly as the original — the template
  * both filters them through the ACL and assembles them, and it can only do that

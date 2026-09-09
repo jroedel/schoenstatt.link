@@ -7,31 +7,11 @@
  * @see https://docs.zendframework.com/tutorials/advanced-config/#environment-specific-application-configuration
  */
 
-use Application\Session\SessionBootstrap;
-
 $env = getenv('APP_ENV') ?: 'production';
 $inDevelopment = $env !== 'production';
 return [
     // Retrieve list of modules used in this application.
     'modules' => require __DIR__ . '/modules.config.php',
-
-    /*
-     * Listeners attached to the application's event manager by `Application::init()`
-     * **before** it triggers `EVENT_BOOTSTRAP`, which is what makes them able to outrank
-     * every module's `onBootstrap()`.
-     *
-     * `SessionBootstrap` starts the session, and it is here rather than in
-     * `Application\Module::onBootstrap()` for a reason worth knowing before anything is
-     * added to this list: module hooks run in `modules.config.php` order at one priority,
-     * and `SionModel` at position 43 calls `Authorize::getIdentity()` in its own hook —
-     * which bakes the identity's roles into the ACL for the whole request. Reached before
-     * the session exists it bakes `guest`, and every authorization answer on that request
-     * is then anonymous. Read the class docblock; the failure is silent and invisible under
-     * the Symfony front controller.
-     */
-    'listeners' => [
-        SessionBootstrap::class,
-    ],
 
     // These are various options for the listeners attached to the ModuleManager
     'module_listener_options' => [

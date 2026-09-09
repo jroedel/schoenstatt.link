@@ -275,15 +275,11 @@ class AclGuardRouteDriftTest extends TestCase
     }
 
     /**
-     * Pre-existing, recorded 2026-08-04. Each is a UI affordance that can never
-     * appear because the ACL has no such resource. Do not add to this list.
+     * Empty since the app modules' view scripts were deleted (laminas-exit.md, step 0);
+     * the four entries recorded here on 2026-08-04 all lived in them. The walk now covers
+     * the view scripts the shared libraries still carry. Do not add to this list.
      */
-    private const KNOWN_DEAD_PERMISSION_CHECKS = [
-        'search-bar.phtml asks about route/publications/advanced-search',
-        'show.phtml asks about route/persons/person/edit-contact-info',
-        'show.phtml asks about route/persons/person/edit-contact-info',
-        'show.phtml asks about route/persons/person/edit-private-info',
-    ];
+    private const KNOWN_DEAD_PERMISSION_CHECKS = [];
 
     /**
      * @return list<string>

@@ -1,9 +1,6 @@
 {#
-  module/Schoenstatt/view/schoenstatt/schoenstatt/submitting-photos.phtml, ported.
-
-  Two templates now render this page: this one under the Symfony front controller
-  and the .phtml under the laminas one, which production still serves. See
-  docs/strangler.md.
+  Ported from module/Schoenstatt/view/schoenstatt/schoenstatt/submitting-photos.phtml,
+  which is deleted; this is the page's only copy.
 
   The only page on the site whose *body* is chosen by locale, which makes it the one
   that proves App\Http\LocaleListener does its job: the .phtml compares
@@ -12,8 +9,8 @@
   exactly, comparison and fallback both — current_locale() returns what
   \Locale::getDefault() returns.
 
-  Both Markdown bodies are copies of that file's heredocs, byte for byte, pinned by
-  test/Integration/ContentPageParityTest. The verbatim wrappers are defensive rather
+  Both Markdown bodies were copied from that file's heredocs byte for byte, and
+  ContentPageParityTest compared them for as long as both existed. The verbatim wrappers are defensive rather
   than required: no Twig delimiter appears in this prose today, but prose is exactly
   the kind of text that grows a brace, and with strict_variables on that would be an
   exception on a live page rather than a typo.

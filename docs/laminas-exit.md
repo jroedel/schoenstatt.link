@@ -108,14 +108,15 @@ JTranslate); see §6 before starting any of them.
   `ViewRenderer` (4). `Router` survives — laminas-router's own ConfigProvider provides it.
 - **Two `.phtml` are still rendered**: `sion-model/mailing/action-email` and the
   `books/libraries/email-book-list` partial, by `SionModel\Mailing\Mailer::renderTemplate()`
-  for `bin/console books:send-notices`. The other 116 are dead.
-- **Four dead `onBootstrap()` hooks** (Application, Books, Schoenstatt, SionModel,
-  JTranslate's dispatch listener) and `Application\Session\SessionBootstrap`; every one has
-  a Symfony-side replacement already (`GdprCookieListener`, `NavigationTree`/`SiteChrome`,
-  `LibraryPage`, `App\Http\CspListener`, `Kernel::upgrade()`, `TranslatorConfigurator`,
-  `PhraseFlushListener`, `SessionListener`).
-- **21 laminas controllers** (4,456 lines; 18 in the app modules, 3 in SionModel), five
-  `LazyControllerFactory` copies and their factories.
+  for `bin/console books:send-notices`. The partial is the only view script left in the
+  app modules and resolves off Books' `view_manager.template_path_stack`; SionModel's
+  other ten are dead and go with its controllers.
+- **Two dead `onBootstrap()` hooks** (SionModel, JTranslate's dispatch listener); their
+  Symfony-side replacements exist (`App\Http\CspListener`, `TranslatorConfigurator`,
+  `PhraseFlushListener`). The app modules' hooks and `SessionBootstrap` are gone.
+- **Three laminas controllers**, all in SionModel, with its `LazyControllerFactory` and
+  JTranslate's. The 18 app-module controllers, their factories and the `controllers`
+  config keys are gone (batch 1).
 - **The flash/now layer**: `Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger` instantiated
   at 10 `src/` sites and in `App\Laminas\HostMessages`; 65 references to its namespace
   constants; JTranslate's `NowMessenger` plugin and the two rendering helpers, reached from
@@ -159,12 +160,16 @@ JTranslate); see §6 before starting any of them.
   Twig already), byte-compared with `books:send-notices --dry-run`. Fallback: a 40-line
   PhpRenderer factory.
 - `App\View\Label` replaces `TwbBundleLabel`; `SionFormRow` is deleted.
-- Delete: the 18 app-module controllers, factories, `onBootstrap()` hooks,
-  `SessionBootstrap`, `GdprStrategy`, `FixNavigationPages`, `RequestUri`, the four
-  route-aware form factories and `LibraryInfoFactory`, 116 `.phtml`, the whole `RestApi`
-  module (its one route is shadowed), the `controllers`/`controller_plugins`/`view_manager`
-  config keys, `sionmodel.global.php`'s `inject_headers_event`, the `listeners` key.
-  **Keep `router` config** until step 6.
+- Still to delete (batch 2): the four route-aware form factories
+  (`Book/Library/Collection/CheckoutFormFactory`) and `LibraryInfoFactory` — they read
+  `get('Application')->getMvcEvent()`, and `test/Fuzz/FormRepository` injects an MvcEvent
+  by reflection so they build; the harness must resolve those forms through
+  `App\Books\LibraryScopedForms`/`CheckoutForms` in the same commit or the fuzz baseline
+  changes silently. JTranslate's `controller_plugins` key; the `view_manager` remnants
+  (Application's `doctype`, read by the bridged form helpers, and Books' path stack for
+  the mail partial); `sionmodel.global.php`'s `inject_headers_event`, which
+  `App\Http\CspListener` **requires** — omit it and the CSP header disappears without an
+  error, so the listener changes first. **Keep `router` config** until step 6.
 - `public/index.php`: the install check becomes `class_exists(App\Kernel::class)`.
 - Shared libraries: JTranslate drops `laminas-mvc` and `laminas-mvc-plugin-flashmessenger`
   from `require`, deletes its plugin, rendering helpers, `LazyControllerFactory` and
@@ -178,9 +183,10 @@ JTranslate); see §6 before starting any of them.
 
 ### 4.3 Batches
 
-1. **Delete what nothing dispatches** (app modules only, no dependency change): ~9,000
-   lines, zero new code. ACL diff must show exactly one change (the `api-route-not-found`
-   guard). Deploy.
+1. **Delete what nothing dispatches** (app modules only, no dependency change): done.
+   The ACL diff showed exactly one change (the `api-route-not-found` guard);
+   `docs/acl-baseline.json` carries it. The mail body rendered before and after was
+   byte-identical. Deploy.
 2. **Replace the runtime uses** in `src/` and tests (everything in §4.2 that is new code).
    Our factories shadow laminas-mvc's under the same ids, so this deploys with the package
    still installed. Deploy; send one notice with `--dry-run` before and after and diff.

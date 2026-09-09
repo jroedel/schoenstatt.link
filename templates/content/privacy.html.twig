@@ -1,14 +1,9 @@
 {#
-  module/Application/view/application/index/privacy.phtml, ported.
+  Ported from module/Application/view/application/index/privacy.phtml.
 
-  Two templates now render this page: this one under the Symfony front controller
-  and the .phtml under the laminas one, which production still serves. See
-  docs/strangler.md.
-
-  The Markdown is a copy of the heredoc in that .phtml, byte for byte — it is the
-  page's content, not code, and test/Integration/ContentPageParityTest pins the two
-  against each other so a later edit to one shows up as a failure rather than as a
-  page that quietly says something different in production.
+  The .phtml is deleted; this is the page's only copy. Its Markdown was copied from
+  the heredoc there byte for byte, and ContentPageParityTest compared the two for as
+  long as both existed.
 
   The verbatim wrapper is defensive rather than required: no Twig delimiter appears
   in this prose today, but prose is exactly the kind of text that grows a brace, and
