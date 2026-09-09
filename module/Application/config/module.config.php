@@ -16,7 +16,6 @@ use App\Laminas\ContainerServices;
 use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
 use Laminas\Router\Http\Literal;
-use Laminas\Navigation\Service\DefaultNavigationFactory;
 use Laminas\I18n\Translator\TranslatorServiceFactory;
 use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
 use Laminas\Cache\Storage\StorageInterface;
@@ -104,7 +103,6 @@ return [
         ],
         'factories' => [
             'translator' => TranslatorServiceFactory::class,
-            'navigation' => DefaultNavigationFactory::class,
             //default persistent storage, configured in cache.local.php
             StorageInterface::class => Service\CacheFactory::class,
             //The sitemap builder. An App\ class registered from a laminas module config

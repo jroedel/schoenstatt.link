@@ -15,7 +15,6 @@ use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
 use Laminas\Router\Http\Method;
 use Books\Model\DictionaryTable;
-use Laminas\Navigation\Navigation;
 use Laminas\ServiceManager\Factory\InvokableFactory;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
@@ -2179,9 +2178,12 @@ return [
                 'table_key'                                 => 'EntryId',
                 'entity_key_field'                          => 'entryId',
                 'sion_model_class'                          => Model\DictionaryTable::class,
+                //`controller_services` was read by SionControllerFactory, deleted with the
+                //laminas controllers in 2026-09. SionModel\Entity\Entity still carries the
+                //property, deprecated and unread. This one named Laminas\Navigation, which
+                //is the last thing that did — see docs/BACKLOG.md for the wider sweep.
                 'controller_services'                       => [
                     DictionaryTable::class,
-                    Navigation::class,
                 ],
 //                 'get_object_function'                       => 'getText',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',

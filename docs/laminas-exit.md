@@ -75,7 +75,16 @@ three cache adapters — so the platform stays 8.4.24 until steps 1 and 2.
 
 **Measure, never assume.** Before and after every step: `why-not php 8.5.0`,
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
-— the count of the last is the progress metric. Step 0 took it 37 → 32, step 1a 32 → 28.
+— the count of the last is the progress metric. Step 0 took it 37 → 32, step 1a 32 → 28,
+step 1b 28 → 27.
+
+**Most of what step 1 listed is blocked behind later steps, and the measurement says so.**
+`laminas-uri` is required by `laminas-http` *and* `laminas-router`; `laminas-http` is what
+`App\JUser\Host\RouteResolver` and `tools/acl-table.php` hand to the laminas router to
+match against. So both leave at step 6, not here. `laminas-json` is required by
+`laminas-view` and `laminas-serializer`, and `laminas-serializer` *is* the laminas-cache
+serializer — step 4 and step 2. What was actually removable in step 1 was the four
+packages of 1a and `laminas-navigation`.
 
 **Declare what you use, or removal takes something with it.** Dropping `laminas-captcha`
 in step 1a also dropped `laminas-session`, because captcha was the only package requiring
@@ -95,7 +104,8 @@ deletes.
 |---|---|---|---|
 | 0 ✅ | laminas-mvc, mvc-i18n, mvc-plugin-{identity,flashmessenger,prg}, diablomedia/laminas-twb-bundle, slm/locale | see §4 | **done 2026-09-09.** Own container bootstrap; own view-helper manager; `Laminas\Validator\Translator\Translator`; session-backed flash store; Twig mail templates |
 | 1a ✅ | laminas-captcha, recaptcha, text (**0 uses**), math (6 `Rand`); our direct `laminas-json` line (8 call sites → `App\Json`) | 12 files | **done 2026-09-09.** `random_int`/`random_bytes`; `App\Json` reproduces the two behaviours that were load-bearing |
-| 1b | json (the package itself — laminas-view and laminas-serializer still pull it), serializer (the laminas-cache serializer, so it leaves with the cache), uri (18 `Uri\Http`), http (`Request` 9, `Client` 5), navigation (page classes used as data) | ~40 files | HttpFoundation, `symfony/http-client`, an `App\View` page tree |
+| 1b ✅ | navigation (config-only: nothing resolved the service) | 3 config files | **done 2026-09-09.** `App\View\NavigationTree` already built the tree from the `navigation` config key, which stays |
+| 1c | json (the package itself — laminas-view and laminas-serializer still pull it), serializer (it is the laminas-cache serializer), uri (7 files, but laminas-http **and laminas-router** require it), http (`Client` in two gateways and a console command; `Request` only to feed the laminas router) | ~15 files | `symfony/http-client` or ~20 lines of our own; the rest unblock at steps 2 and 6 |
 | 2 | laminas-session (15), laminas-authentication (13, all JUser), laminas-cache + 3 adapters (20, behind `SionModel`'s persistent cache and the navigation cache) | ~48 files | HttpFoundation `Session`; JUser's own identity storage (the `Host` contract already abstracts it); `symfony/cache` APCu + filesystem. **Lifts the `psr/cache` 1 pin** |
 | 3 | laminas-i18n (23) | JTranslate is the layer | `symfony/translation` (6.4 already installed transitively); the precompiled PHP-array catalog format stays |
 | 4 | laminas-view (32 `AbstractHelper` subclasses), laminas-escaper | ~46 files | Twig extensions; `App\Laminas\EntityFormatter` already wraps the biggest helper |
