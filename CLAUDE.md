@@ -59,7 +59,8 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
 
 - **One front controller**: `public/index.php` runs `App\Kernel` (symfony/http-kernel,
   hand-wired, no FrameworkBundle). Every page and API endpoint is Symfony-served; nothing
-  dispatches through laminas-mvc; there is no laminas front controller to roll back to.
+  dispatches through laminas-mvc — the package is **removed** (2026-09-09) — and there is
+  no laminas front controller to roll back to.
   `curl https://schoenstatt.link/_health` confirms the kernel booted.
 - Symfony-side code is `src/` (`App\`), PHPStan **level 8**, PSR-12. Routes are declared
   in `config/symfony/routes.php`; JUser and JTranslate contribute theirs through closures

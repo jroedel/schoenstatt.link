@@ -183,9 +183,6 @@ return [
         ],
     ],
     'view_helpers' => [
-        'aliases' => [
-            'formElement' => 'TwbBundle\Form\View\Helper\TwbBundleFormElement',
-        ],
         'factories' => [
             /*
              * The `isAllowed` view helper, since the ACL cutover pointed at App\Acl\Authorizer

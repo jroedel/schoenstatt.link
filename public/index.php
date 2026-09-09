@@ -1,7 +1,6 @@
 <?php
 
 use App\Kernel;
-use Laminas\Mvc\Application;
 use Laminas\Stdlib\ArrayUtils;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -23,7 +22,9 @@ if (php_sapi_name() === 'cli-server') {
 // Composer autoloading
 include __DIR__ . '/../vendor/autoload.php';
 
-if (! class_exists(Application::class)) {
+// The class the front controller is about to instantiate. It was `Laminas\Mvc\Application`
+// until that package left; a check naming a class nothing uses would pass a broken install.
+if (! class_exists(Kernel::class)) {
     throw new RuntimeException(
         "Unable to load application.\n"
         . "- Type `composer install` if you are developing locally.\n"
@@ -36,9 +37,8 @@ if (! class_exists(Application::class)) {
 // hit max_execution_time, a TypeError escaping every catch) never reaches
 // dispatch.error, so the visitor gets a blank HTTP 200 and nothing is logged.
 // Installed here, before any configuration is loaded, so a failure while merging
-// config or loading modules is still recorded; SionModel\Module::onBootstrap()
-// upgrades it to the fully configured pipeline — including notification — once
-// the service container exists.
+// config or loading modules is still recorded; App\Kernel upgrades it to the fully
+// configured pipeline — including notification — once the container exists.
 SionModel\Error\FatalErrorHandler::registerEarly(dirname(__DIR__));
 
 // Retrieve configuration

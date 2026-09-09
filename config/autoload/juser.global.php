@@ -50,9 +50,16 @@ return [
 
         'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR', 'it_IT'],
 
+        /**
+         * Historical: SlmLocale was removed in 2026-09 and nothing reads this key. The
+         * negotiation it describes is reproduced by App\Http\LocaleListener and
+         * App\Http\LocalePrefix, in this order, and the block is kept as the record of
+         * what they reproduce. `aliases` and `default` below are live — App\Locale\Locales,
+         * SchoenstattTable and AssociationKindsService all read them.
+         */
         'strategies' => [
             [
-                'name' => \SlmLocale\Strategy\UriPathStrategy::class,
+                'name' => 'SlmLocale\Strategy\UriPathStrategy',
                 'options' => [
                     'redirect_when_found' => true,
                     'aliases' => [
