@@ -4,7 +4,7 @@ namespace Schoenstatt\Service;
 use Schoenstatt\Model\SchoenstattTable;
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\Http\Client;
-use Laminas\Json\Json;
+use App\Json;
 use Psr\Log\LoggerInterface;
 
 class PatresGateway
@@ -119,7 +119,7 @@ class PatresGateway
             throw new \Exception('Failed to retrieve list of fathers from Patres. Status code: '
                 . $response->getStatusCode());
         }
-        $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
+        $data = Json::decodeToArray($response->getBody());
         if (! isset($data['data'])) {
             throw new \Exception('Failed to retrieve list of fathers from Patres. No data returned');
         }
@@ -228,7 +228,7 @@ class PatresGateway
             throw new \Exception('Request for information on father \'' . $personId . '\' failed. Status code: '
                 . $response->getStatusCode());
         }
-        $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
+        $data = Json::decodeToArray($response->getBody());
         if (! isset($data['data'])) {
             throw new \Exception('Request for information on father \'' . $personId
                 . '\' failed. No information returned.');

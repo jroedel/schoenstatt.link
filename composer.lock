@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3886dd834e47c51d5287aef81b3826fb",
+    "content-hash": "c68944c6d107f8b7056e6a19cef5e8cc",
     "packages": [
         {
             "name": "brick/varexporter",
@@ -1093,73 +1093,6 @@
             "time": "2025-01-23T15:41:59+00:00"
         },
         {
-            "name": "laminas/laminas-captcha",
-            "version": "2.20.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laminas/laminas-captcha.git",
-                "reference": "78905e9f4147142ed875a8a265a9c8a4da924600"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-captcha/zipball/78905e9f4147142ed875a8a265a9c8a4da924600",
-                "reference": "78905e9f4147142ed875a8a265a9c8a4da924600",
-                "shasum": ""
-            },
-            "require": {
-                "laminas/laminas-recaptcha": "^3.4.0",
-                "laminas/laminas-session": "^2.25",
-                "laminas/laminas-stdlib": "^3.10.1",
-                "laminas/laminas-text": "^2.12.1",
-                "laminas/laminas-validator": "^2.19.0",
-                "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
-            },
-            "conflict": {
-                "zendframework/zend-captcha": "*"
-            },
-            "require-dev": {
-                "ext-gd": "*",
-                "laminas/laminas-coding-standard": "~2.5.0",
-                "phpunit/phpunit": "^9.5.26",
-                "psalm/plugin-phpunit": "^0.19.0",
-                "vimeo/psalm": "^6.13"
-            },
-            "suggest": {
-                "laminas/laminas-i18n-resources": "Translations of captcha messages"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Laminas\\Captcha\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "Generate and validate CAPTCHAs using Figlets, images, ReCaptcha, and more",
-            "homepage": "https://laminas.dev",
-            "keywords": [
-                "captcha",
-                "laminas"
-            ],
-            "support": {
-                "chat": "https://laminas.dev/chat",
-                "docs": "https://docs.laminas.dev/laminas-captcha/",
-                "forum": "https://discourse.laminas.dev",
-                "issues": "https://github.com/laminas/laminas-captcha/issues",
-                "rss": "https://github.com/laminas/laminas-captcha/releases.atom",
-                "source": "https://github.com/laminas/laminas-captcha"
-            },
-            "funding": [
-                {
-                    "url": "https://funding.communitybridge.org/projects/laminas-project",
-                    "type": "community_bridge"
-                }
-            ],
-            "time": "2026-03-31T17:11:06+00:00"
-        },
-        {
             "name": "laminas/laminas-config",
             "version": "3.11.0",
             "source": {
@@ -2035,74 +1968,6 @@
             "time": "2025-12-30T11:30:39+00:00"
         },
         {
-            "name": "laminas/laminas-math",
-            "version": "3.8.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laminas/laminas-math.git",
-                "reference": "a9e54f68accf5f8a3e66dd01fc6b32180e520018"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-math/zipball/a9e54f68accf5f8a3e66dd01fc6b32180e520018",
-                "reference": "a9e54f68accf5f8a3e66dd01fc6b32180e520018",
-                "shasum": ""
-            },
-            "require": {
-                "ext-mbstring": "*",
-                "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0"
-            },
-            "conflict": {
-                "zendframework/zend-math": "*"
-            },
-            "require-dev": {
-                "laminas/laminas-coding-standard": "~2.4.0",
-                "phpunit/phpunit": "~9.5.25"
-            },
-            "suggest": {
-                "ext-bcmath": "If using the bcmath functionality",
-                "ext-gmp": "If using the gmp functionality"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "3.2.x-dev",
-                    "dev-develop": "3.3.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laminas\\Math\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "Create cryptographically secure pseudo-random numbers, and manage big integers",
-            "homepage": "https://laminas.dev",
-            "keywords": [
-                "laminas",
-                "math"
-            ],
-            "support": {
-                "chat": "https://laminas.dev/chat",
-                "docs": "https://docs.laminas.dev/laminas-math/",
-                "forum": "https://discourse.laminas.dev",
-                "issues": "https://github.com/laminas/laminas-math/issues",
-                "rss": "https://github.com/laminas/laminas-math/releases.atom",
-                "source": "https://github.com/laminas/laminas-math"
-            },
-            "funding": [
-                {
-                    "url": "https://funding.communitybridge.org/projects/laminas-project",
-                    "type": "community_bridge"
-                }
-            ],
-            "abandoned": true,
-            "time": "2024-12-05T13:49:56+00:00"
-        },
-        {
             "name": "laminas/laminas-modulemanager",
             "version": "2.19.0",
             "source": {
@@ -2257,72 +2122,6 @@
                 }
             ],
             "time": "2026-02-04T20:59:23+00:00"
-        },
-        {
-            "name": "laminas/laminas-recaptcha",
-            "version": "3.9.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laminas/laminas-recaptcha.git",
-                "reference": "d8c710d6ed90f245db5ee85bd024279b35476f3f"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-recaptcha/zipball/d8c710d6ed90f245db5ee85bd024279b35476f3f",
-                "reference": "d8c710d6ed90f245db5ee85bd024279b35476f3f",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "laminas/laminas-http": "^2.15",
-                "laminas/laminas-stdlib": "^3.10.1",
-                "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
-            },
-            "conflict": {
-                "zendframework/zendservice-recaptcha": "*"
-            },
-            "require-dev": {
-                "laminas/laminas-coding-standard": "~2.5.0",
-                "laminas/laminas-config": "^3.9",
-                "laminas/laminas-validator": "^2.30.1",
-                "phpunit/phpunit": "^11.5",
-                "psalm/plugin-phpunit": "^0.19.0",
-                "vimeo/psalm": "^6.13"
-            },
-            "suggest": {
-                "laminas/laminas-validator": "~2.0, if using ReCaptcha's Mailhide API"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Laminas\\ReCaptcha\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "OOP wrapper for the ReCaptcha web service",
-            "homepage": "https://laminas.dev",
-            "keywords": [
-                "laminas",
-                "recaptcha"
-            ],
-            "support": {
-                "chat": "https://laminas.dev/chat",
-                "docs": "https://docs.laminas.dev/laminas-recaptcha/",
-                "forum": "https://discourse.laminas.dev",
-                "issues": "https://github.com/laminas/laminas-recaptcha/issues",
-                "rss": "https://github.com/laminas/laminas-recaptcha/releases.atom",
-                "source": "https://github.com/laminas/laminas-recaptcha"
-            },
-            "funding": [
-                {
-                    "url": "https://funding.communitybridge.org/projects/laminas-project",
-                    "type": "community_bridge"
-                }
-            ],
-            "time": "2025-12-05T10:07:10+00:00"
         },
         {
             "name": "laminas/laminas-router",
@@ -2700,67 +2499,6 @@
                 }
             ],
             "time": "2025-10-11T18:13:12+00:00"
-        },
-        {
-            "name": "laminas/laminas-text",
-            "version": "2.13.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laminas/laminas-text.git",
-                "reference": "d18a04f97dad73f55ca1c66a70a981e663d13003"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-text/zipball/d18a04f97dad73f55ca1c66a70a981e663d13003",
-                "reference": "d18a04f97dad73f55ca1c66a70a981e663d13003",
-                "shasum": ""
-            },
-            "require": {
-                "laminas/laminas-servicemanager": "^3.22.0",
-                "laminas/laminas-stdlib": "^3.7.1",
-                "php": "^8.1.0"
-            },
-            "conflict": {
-                "zendframework/zend-text": "*"
-            },
-            "require-dev": {
-                "laminas/laminas-coding-standard": "^3.0.1",
-                "phpunit/phpunit": "^10.5.38",
-                "psalm/plugin-phpunit": "^0.18.4",
-                "vimeo/psalm": "^5.26.1"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Laminas\\Text\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "Create FIGlets and text-based tables",
-            "homepage": "https://laminas.dev",
-            "keywords": [
-                "laminas",
-                "text"
-            ],
-            "support": {
-                "chat": "https://laminas.dev/chat",
-                "docs": "https://docs.laminas.dev/laminas-text/",
-                "forum": "https://discourse.laminas.dev",
-                "issues": "https://github.com/laminas/laminas-text/issues",
-                "rss": "https://github.com/laminas/laminas-text/releases.atom",
-                "source": "https://github.com/laminas/laminas-text"
-            },
-            "funding": [
-                {
-                    "url": "https://funding.communitybridge.org/projects/laminas-project",
-                    "type": "community_bridge"
-                }
-            ],
-            "abandoned": true,
-            "time": "2026-01-27T12:27:12+00:00"
         },
         {
             "name": "laminas/laminas-translator",
