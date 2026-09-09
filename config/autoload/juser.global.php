@@ -32,7 +32,7 @@ return [
          * form, which is the failure db6.6.sql exists to prevent.
          */
         'api_token_roles' => ['sch_api_bot', 'sch_api_translator'],
-        // cache options have to be compatible with Laminas\Cache\StorageFactory::factory
+        // Read by SionModel\Cache\StorageFactory; the shape is laminas-cache's, kept as-is
         'cache_options' => [
             'adapter' => [
                 'name'    => 'apcu',

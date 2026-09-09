@@ -17,12 +17,6 @@ $modules = [
     'Laminas\Validator',
     //provides the session factories JUser\Module::onBootstrap starts
     'Laminas\Session',
-    //Laminas\Cache + its APCu/Filesystem adapters back the application's own caches
-    //(config/autoload's StorageInterface, the SionModel persistent cache).
-    'Laminas\Cache',
-    'Laminas\Cache\Storage\Adapter\Apcu',
-    'Laminas\Cache\Storage\Adapter\Filesystem',
-    'Laminas\Serializer',
     'JUser',
     'SionModel',
     'JTranslate',
