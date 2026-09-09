@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use App\Http\SymfonyRoutes;
 use App\Locale\Locales;
 use Laminas\Router\Http\RouteInterface as HttpRouteInterface;
 use Laminas\Router\Http\TreeRouteStack;
 use Locale;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\Generator\UrlGenerator;
+use Symfony\Component\Routing\RequestContext;
 
 use function array_merge;
+use function is_array;
 use function array_shift;
 use function explode;
 use function http_build_query;
@@ -48,6 +53,10 @@ final class RouteUrl
     /** @var TreeRouteStack<HttpRouteInterface>|null */
     private ?TreeRouteStack $router = null;
 
+    private ?UrlGenerator $generator = null;
+
+    private ?RequestContext $context = null;
+
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly string $baseUrl
@@ -68,7 +77,65 @@ final class RouteUrl
         array $options = [],
         ?string $locale = null
     ): string {
-        return $this->router($locale)->assemble($params, array_merge($options, ['name' => $routeName]));
+        $routes = SymfonyRoutes::collection();
+
+        //The locale prefix is a **separate route** on the Symfony side — `shrines` serves
+        //`/shrines`, `shrines.locale` serves `/{_locale}/shrines` — where laminas produced
+        //it by setting one base URL. So the prefixed twin is what reproduces laminas, and
+        //the plain name is the fallback for the handful of routes that have no twin (the
+        ///api ones, which answer their own unprefixed path on purpose).
+        $name = null !== $routes->get($routeName . '.locale') ? $routeName . '.locale' : $routeName;
+
+        if ($name !== $routeName) {
+            $params['_locale'] = Locales::aliasFor($locale ?? Locale::getDefault());
+        }
+
+        //laminas took a query string as an option; Symfony turns any parameter the route
+        //does not consume into one, so they merge into the same array.
+        if (isset($options['query']) && is_array($options['query'])) {
+            $params = array_merge($params, $options['query']);
+        }
+
+        return $this->generator()->generate(
+            $name,
+            $params,
+            ($options['force_canonical'] ?? false)
+                ? UrlGeneratorInterface::ABSOLUTE_URL
+                : UrlGeneratorInterface::ABSOLUTE_PATH
+        );
+    }
+
+    /**
+     * Scheme and host for `force_canonical`, which Symfony takes from the RequestContext
+     * rather than from a request URI on the router.
+     *
+     * {@see \App\Laminas\HostUrls} is the one caller: an absolute URL is requested only
+     * for the links JUser emails, and a console process that asks for one without setting
+     * this gets Symfony's `localhost` rather than an exception — which is why HostUrls
+     * still refuses first when there is no request to take a host from.
+     */
+    public function setCanonicalHost(string $scheme, string $host): void
+    {
+        $context = $this->context();
+        $context->setScheme($scheme);
+        $context->setHost($host);
+    }
+
+    private function generator(): UrlGenerator
+    {
+        return $this->generator ??= new UrlGenerator(SymfonyRoutes::collection(), $this->context());
+    }
+
+    private function context(): RequestContext
+    {
+        if (null === $this->context) {
+            $this->context = new RequestContext();
+            //the application's mount point, without the locale segment: that segment is
+            //part of each `.locale` route's own path, not part of the base URL
+            $this->context->setBaseUrl(rtrim($this->baseUrl, '/'));
+        }
+
+        return $this->context;
     }
 
     /**
