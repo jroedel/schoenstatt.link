@@ -14,7 +14,6 @@ $modules = [
     'Laminas\Router',
     'Laminas\I18n',
     'Laminas\Form',
-    'Laminas\Navigation',
     'Laminas\Validator',
     //provides the session factories JUser\Module::onBootstrap starts
     'Laminas\Session',

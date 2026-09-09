@@ -134,6 +134,12 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
 - ~~Retire the two dependency forks (`slm/locale`, `diablomedia/laminas-twb-bundle`)~~ —
   **done 2026-09-09**: step 0 removed both packages and both `repositories` entries. The
   only fork left is `nicolaswurtz/chordpro-php`.
+- **Delete the dead `controller_services` / `sion_controllers` entity config** (20 keys
+  across Books, Schoenstatt, JUser and SionModel, plus the two `@deprecated` properties on
+  `SionModel\Entity\Entity` that hold them). `SionControllerFactory` read them and was
+  deleted with the laminas controllers in 2026-09; nothing has read either since. Left in
+  place when laminas-navigation went, because clearing them properly spans two submodules
+  and that removal needed only one line of it.
 - **Watch for date-format drift from the ICU downgrade** (8.4/8.5 builds ship ICU 72.1 vs
   8.3's 76.1; 27 `IntlDateFormatter` sites). A wrong non-English date is this, not our code.
 - **Passkeys (WebAuthn)**: web-auth/webauthn-lib, a credential table, enrollment inside an
