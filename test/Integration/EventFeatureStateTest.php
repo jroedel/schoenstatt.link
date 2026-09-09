@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Http\SymfonyRoutes;
 use App\Laminas\ContainerFactory;
 use Laminas\Db\Adapter\AdapterInterface;
 use Laminas\ServiceManager\ServiceManager;
@@ -132,7 +133,6 @@ class EventFeatureStateTest extends TestCase
     public function testTheEventWriteSurfaceDoesNotExist(): void
     {
         $guarded = $this->guardedRouteNames();
-        $routes  = $this->config()['router']['routes'] ?? [];
 
         self::assertContains(
             'events',
@@ -140,13 +140,13 @@ class EventFeatureStateTest extends TestCase
             'the /timeline index should stay guarded `user, guest` — it is the reachable half'
         );
         self::assertTrue(
-            $this->routeExists('events', $routes),
+            $this->routeExists('events'),
             'sanity: the /timeline index route itself should still exist'
         );
 
         foreach (self::REMOVED_ROUTES as $route) {
             self::assertFalse(
-                $this->routeExists($route, $routes),
+                $this->routeExists($route),
                 sprintf(
                     'route `%s` is back. It was deleted on 2026-09-08 because there is nothing '
                     . 'behind it: no form, no template, no create handler, and no registered ACL '
@@ -186,15 +186,13 @@ class EventFeatureStateTest extends TestCase
 
         self::assertIsArray($entity, 'the `event` entity spec has disappeared from the merged config');
 
-        $routes = $config['router']['routes'] ?? [];
-
         foreach (['index_route', 'show_route', 'edit_route', 'create_action_redirect_route', 'delete_action_redirect_route'] as $key) {
             if (! array_key_exists($key, $entity)) {
                 continue;
             }
 
             self::assertTrue(
-                $this->routeExists((string) $entity[$key], $routes),
+                $this->routeExists((string) $entity[$key]),
                 sprintf('the event entity spec\'s `%s` names `%s`, which is not a route', $key, $entity[$key])
             );
         }
@@ -203,20 +201,14 @@ class EventFeatureStateTest extends TestCase
     /**
      * @param array<string, mixed> $routes
      */
-    private function routeExists(string $name, array $routes): bool
+    /**
+     * Walked the laminas `router` config's nested `child_routes` until step 6 removed it;
+     * the routes that exist are now the Symfony ones. Names are unchanged — that is what
+     * made the walk replaceable rather than the assertions.
+     */
+    private function routeExists(string $name): bool
     {
-        $segments = explode('/', $name);
-        $current  = $routes;
-
-        foreach ($segments as $segment) {
-            if (! is_array($current) || ! array_key_exists($segment, $current)) {
-                return false;
-            }
-            $node    = $current[$segment];
-            $current = $node['child_routes'] ?? [];
-        }
-
-        return true;
+        return isset(SymfonyRoutes::aclNames()[$name]);
     }
 
     /**

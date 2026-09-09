@@ -11,7 +11,6 @@
  * This should be an array of module namespaces used in the application.
  */
 $modules = [
-    'Laminas\Router',
     'Laminas\Form',
     'Laminas\Validator',
     //provides the session factories JUser\Module::onBootstrap starts

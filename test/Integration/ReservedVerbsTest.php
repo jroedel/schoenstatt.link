@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Http\SymfonyRoutes;
 use App\Laminas\ServiceBridge;
 use App\Sion\ReservedVerbs;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -70,11 +71,11 @@ class ReservedVerbsTest extends TestCase
      */
     public function testEveryLaminasVerbRouteIsReserved(): void
     {
-        $found = $this->laminasVerbs();
+        $found = $this->verbRoutes();
 
         $this->assertNotEmpty(
             $found,
-            'no /:sw_id/<verb> routes were found in the laminas config at all, which means this '
+            'no /{sw_id}/<verb> routes were found in the route collection at all, which means this '
             . 'test stopped looking where they live rather than that they stopped existing'
         );
 
@@ -264,44 +265,27 @@ class ReservedVerbsTest extends TestCase
     }
 
     /**
-     * Every distinct `<verb>` among the laminas routes whose path is `/:sw_id/<verb>`.
+     * Every distinct `<verb>` among the routes whose path is `/{sw_id}/<verb>`.
      *
-     * Read off the merged `router.routes` config rather than the built router, so no
-     * container and no database are involved. Nested child routes are walked too: none
-     * of today's verb routes is a child, and a future one being a child is not a reason
-     * for this test to stop seeing it.
+     * Read off the laminas `router.routes` config until step 6 removed it, and off the
+     * Symfony route collection now. The set is unchanged — `copy-to-main-corpus`,
+     * `create-new-edition`, `delete`, `edit` — which is what made the source replaceable
+     * without weakening the test: a new verb route still has to be reserved, or the show
+     * route `/{sw_id}[/{slug}]` swallows it.
+     *
+     * The `.locale` twin carries the same path behind a locale segment, so both forms are
+     * matched and the verb is counted once.
      *
      * @return list<string>
      */
-    private function laminasVerbs(): array
+    private function verbRoutes(): array
     {
         $verbs = [];
-
-        $walk = static function (array $definitions) use (&$walk, &$verbs): void {
-            foreach ($definitions as $definition) {
-                if (! is_array($definition)) {
-                    continue;
-                }
-
-                $route = $definition['options']['route'] ?? null;
-                if (is_string($route) && str_starts_with($route, '/:sw_id/')) {
-                    $verb = substr($route, 8);
-                    //`/:sw_id/edit` yields `edit`. Anything with a further segment or a
-                    //placeholder is not a verb route and is not this test's business.
-                    if ('' !== $verb && ! str_contains($verb, '/') && ! str_contains($verb, ':')) {
-                        $verbs[$verb] = true;
-                    }
-                }
-
-                if (isset($definition['child_routes']) && is_array($definition['child_routes'])) {
-                    $walk($definition['child_routes']);
-                }
+        foreach (SymfonyRoutes::collection()->all() as $route) {
+            if (1 === preg_match('#^(?:/\{_locale\})?/\{sw_id\}/([a-z0-9-]+)$#', $route->getPath(), $m)) {
+                $verbs[$m[1]] = true;
             }
-        };
-
-        /** @var array<string, mixed> $routes */
-        $routes = $this->config()['router']['routes'] ?? [];
-        $walk($routes);
+        }
 
         return array_keys($verbs);
     }
