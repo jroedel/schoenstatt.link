@@ -1,12 +1,13 @@
 # Deploying schoenstatt.link
 
 ```bash
-./tools/deploy.sh
+make prod-deploy
 ```
 
-That is the whole thing: preflight, build, migrate, warm, swap, verify. It runs
-`rsync` over your own shell account on **port 222** and needs no local PHP — only
-`git`, `rsync`, `ssh`, `curl` and (strongly recommended) `timeout`/`gtimeout`.
+`make prod-deploy` proves the tree is the one you think it is, then hands over to
+`./tools/deploy.sh`, which is the whole thing: preflight, build, migrate, warm, swap,
+verify. That runs `rsync` over your own shell account on **port 222** and needs no local
+PHP — only `git`, `rsync`, `ssh`, `curl` and (strongly recommended) `timeout`/`gtimeout`.
 
 **Deployment is atomic.** A release is built, composer-installed and warmed in a
 directory nothing is serving, and goes live when one symlink is replaced by a
@@ -19,6 +20,64 @@ Configuration lives in **`.deploy.local`** (gitignored, mode 0600), seeded from
 and the full-DDL database credentials. **Nothing in it is ever written to the
 server, committed, printed or copied.** An unreplaced `TODO` aborts the preflight —
 a bogus API key would fail the smoke run and roll back a release that was fine.
+
+## The entry point: `make prod-deploy`
+
+```bash
+make prod-deploy                # checks, then hands over to tools/deploy.sh
+make prod-deploy DRY_RUN=1      # checks, then deploy.sh --dry-run (server untouched)
+make prod-deploy CI=1           # run ci-local.sh first, and refuse if it fails
+make prod-deploy CHECKS_ONLY=1  # run the checks and stop; never reaches deploy.sh
+```
+
+`tools/deploy.sh` is careful about *how* it ships a tree. What it cannot check is whether
+the tree it is about to package is the tree you think it is. That is `tools/prod-deploy.sh`,
+and it refuses rather than repairs — every repair here is a judgement a script should not
+make on its own.
+
+It answers six questions, in this order:
+
+1. **Is the working tree clean?** A release is built from the working tree, so anything
+   uncommitted would ship. Submodule pointer differences are excluded and handled by 3.
+2. **Are we on master, and synced with origin?** Both halves matter. `git merge --ff-only`
+   exits 0 when HEAD is *ahead*, so it is no answer on its own; the commits are compared
+   directly. Deploying a local-only commit ships code no rollback can reproduce.
+3. **Do the submodule checkouts match what master pins?** The one that matters — see below.
+4. **Is every pinned submodule commit merged into `origin/modernization`?** That is the
+   same question as "has this submodule's PR been pulled". A commit merely *pushed* to a
+   feature branch is unreviewed and may yet be rebased or abandoned.
+5. **Is `.deploy.local` present?** Asked before anything slow.
+6. **Optionally, is it green?** `CI=1` runs `tools/ci-local.sh` first.
+
+`CHECKS_ONLY=1` exists because the checks are the part worth exercising, and every other
+way of doing that ends one step away from a live deploy. Piping the script through `head`
+or `sed` truncates what you see and does **not** stop it running.
+
+### Why check 3 is the one that matters
+
+**A release is `git ls-files --recurse-submodules` over the working tree**, not over HEAD.
+So the submodule code that ships is whatever is checked out inside `module/*` — and
+`git checkout master` does **not** move a submodule's working tree. Those stay wherever
+they were left, which on this project is usually `modernization`, often several merges
+ahead of what master pins.
+
+Deploying in that state ships the application from master and its shared libraries from
+somewhere else. On 2026-09-09 the same mismatch, in the capsule, produced an empty 200 on
+every page. In production it would be that, live, on a tree no branch can reproduce.
+
+### Bumping the pointers: `make dev-bump-submodules`
+
+```bash
+make dev-bump-submodules              # verify, bump, commit, push
+make dev-bump-submodules DRY_RUN=1    # verify and report, change nothing
+```
+
+Run it on the superproject feature branch after the submodule PRs merge. It proves each
+submodule's branch is an **ancestor** of `origin/modernization` — never GitHub's merge
+status, because a stacked PR merges into its own base and can report MERGED while its
+commits sit on the feature branch — fast-forwards each submodule, pins the merge commits,
+and pushes to the open superproject PR. It also says so when the merged tree differs from
+the branch `ci-local` ran against.
 
 ## Flags
 
