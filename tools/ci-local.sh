@@ -130,12 +130,13 @@ case $VERDICT in
         printf '        retry, or run `php composer.phar audit --locked` on the host\n'
         ;;
 esac
-# The autoload sanity check, verbatim from ci.yml: five classes spanning the app and all
-# three submodules, so a PSR-4 break or an unpushed submodule pointer fails loudly.
+# The autoload sanity check, verbatim from ci.yml: five classes spanning the Symfony side,
+# the app modules and all three submodules, so a PSR-4 break or an unpushed submodule
+# pointer fails loudly. `App\Kernel` was `Laminas\Mvc\Application` until that package left.
 OUT=$(in_capsule php -r '
     require "vendor/autoload.php";
     foreach ([
-        "Laminas\\Mvc\\Application",
+        "App\\Kernel",
         "Application\\Module",
         "SionModel\\Db\\Model\\SionTable",
         "JUser\\Service\\LoginTokenService",

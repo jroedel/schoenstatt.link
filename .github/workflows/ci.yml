@@ -248,7 +248,7 @@ jobs:
           php -r '
             require "vendor/autoload.php";
             $classes = [
-                "Laminas\\Mvc\\Application",
+                "App\\Kernel",
                 "Application\\Module",
                 "SionModel\\Db\\Model\\SionTable",
                 "JUser\\Service\\LoginTokenService",
