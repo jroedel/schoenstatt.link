@@ -287,11 +287,12 @@ return [
             Service\SpreadsheetReader::class    => InvokableFactory::class,
         ],
     ],
-    'view_helpers' => [
-        'factories' => [
-            'formatPublication'             => Service\FormatPublicationFactory::class,
-        ],
-    ],
+    /**
+     * **No `view_helpers` key any more.** `formatPublication` extends SionModel's
+     * `formatEntity` and was ported with it on 2026-09; App\Laminas\ViewHelpers builds it,
+     * and SionModel\View\Helper\FormatEntity reaches it through the `$formatHelpers` map
+     * rather than by asking a renderer for the name in `format_view_helper`.
+     */
     'router' => [
         'routes' => [
             // The `admin` route itself belongs to the Schoenstatt module. Books used to
