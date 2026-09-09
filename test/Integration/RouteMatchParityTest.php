@@ -5,26 +5,17 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Acl\AclProvider;
-use App\Http\SymfonyRoutes;
 use App\JUser\Host\RouteResolver;
 use App\Laminas\ContainerFactory;
 use App\Laminas\ContainerServices;
-use Laminas\Http\Request as LaminasRequest;
-use Laminas\Router\RouteMatch;
-use Laminas\Router\RouteStackInterface;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Routing\Generator\UrlGenerator;
-use Symfony\Component\Routing\RequestContext;
 use Throwable;
 
 use function count;
 use function implode;
 use function in_array;
-use function preg_match;
-use function preg_match_all;
 use function sprintf;
-use function str_ends_with;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -79,39 +70,12 @@ class RouteMatchParityTest extends TestCase
 
     public function testTheResolverAgreesWithTheLaminasRouter(): void
     {
-        $routes    = SymfonyRoutes::collection();
-        $generator = new UrlGenerator($routes, new RequestContext());
-        $laminas   = clone $this->laminasRouter();
-        $laminas->setBaseUrl('');
-        $resolver  = new RouteResolver();
+        /** @var array<string, string> $frozen */
+        $frozen   = require __DIR__ . '/fixtures/laminas-route-matches.php';
+        $resolver = new RouteResolver();
 
         $mismatch = [];
-        $compared = 0;
-
-        foreach ($routes->all() as $name => $route) {
-            if (str_ends_with($name, '.locale') || 'not-found' === $name) {
-                continue;
-            }
-
-            $params = [];
-            preg_match_all('/\{([A-Za-z_][A-Za-z0-9_]*)\}/', $route->getPath(), $m);
-            foreach ($m[1] as $p) {
-                $params[$p] = $this->sampleFor($route->getRequirement($p));
-            }
-
-            try {
-                $path = $generator->generate($name, $params);
-            } catch (Throwable) {
-                continue;
-            }
-
-            $expected = $this->laminasName($laminas, $path);
-            if (null === $expected) {
-                //no laminas counterpart; nothing to compare against
-                continue;
-            }
-
-            $compared++;
+        foreach ($frozen as $path => $expected) {
             $actual = $resolver->routeFor($path);
 
             if (in_array($expected, self::KNOWN_REFUSALS, true)) {
@@ -127,19 +91,14 @@ class RouteMatchParityTest extends TestCase
         }
 
         self::assertSame([], $mismatch, sprintf(
-            "%d of %d paths resolve differently:\n%s",
+            "%d of %d paths resolve differently from what the laminas router answered:\n%s",
             count($mismatch),
-            $compared,
+            count($frozen),
             implode("\n", $mismatch)
         ));
-        self::assertGreaterThan(80, $compared, 'the corpus has gone hollow');
+        self::assertGreaterThan(100, count($frozen), 'the frozen corpus has gone hollow');
     }
 
-    /**
-     * The renames stay inert only while neither name is an ACL resource. If one becomes
-     * guarded, `Access::userMayReachRoute()` starts answering differently for the same page
-     * and this must be revisited — so it fails here first.
-     */
     /**
      * The reason RouteResolver::ACL_NAME has to exist: for these two pages the ACL knows the
      * laminas name and not the Symfony one, so returning Symfony's would deny a user a page
@@ -199,46 +158,6 @@ class RouteMatchParityTest extends TestCase
             'the Symfony catch-all matches every path; it must not be reported as a destination'
         );
         self::assertNull($resolver->routeFor('/api/v1/whatever'));
-    }
-
-    private function laminasName(RouteStackInterface $router, string $path): ?string
-    {
-        try {
-            $request = new LaminasRequest();
-            $request->setUri($path);
-            $match = $router->match($request);
-        } catch (Throwable) {
-            return null;
-        }
-
-        if (! $match instanceof RouteMatch) {
-            return null;
-        }
-        $name = $match->getMatchedRouteName();
-
-        return '' !== (string) $name ? (string) $name : null;
-    }
-
-    private function sampleFor(?string $requirement): string
-    {
-        if (null === $requirement || '' === $requirement) {
-            return '1';
-        }
-        foreach (self::CANDIDATES as $candidate) {
-            if (1 === preg_match('{^(?:' . $requirement . ')$}', $candidate)) {
-                return $candidate;
-            }
-        }
-
-        return '1';
-    }
-
-    private function laminasRouter(): RouteStackInterface
-    {
-        /** @var RouteStackInterface $router */
-        $router = $this->services()->get('Router');
-
-        return $router;
     }
 
     private function services(): ServiceManager

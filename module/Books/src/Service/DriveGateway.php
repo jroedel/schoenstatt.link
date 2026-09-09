@@ -2,7 +2,7 @@
 namespace Books\Service;
 
 use Laminas\InputFilter\InputFilterInterface;
-use Laminas\Http\Client;
+use Symfony\Component\HttpClient\HttpClient;
 use App\Json;
 use SionModel\Cache\Storage as CacheStorage;
 use Books\InputFilter\DriveFileFilter;
@@ -122,16 +122,15 @@ class DriveGateway
         if (! $success) {
             $key = $this->getApiKey();
             $listUrl = $this->getFilesApiUrl();
-            $client = new Client();
-            $client->setMethod('get');
-            $client->setUri($listUrl);
-            $client->setParameterGet(['key' => $key]);
-            $response = $client->send();
+            $response = HttpClient::create()->request('GET', $listUrl, ['query' => ['key' => $key]]);
+            $status   = $response->getStatusCode();
 
-            if (200 != $response->getStatusCode()) {
-                throw new \Exception('Failed to retrieve list of files from Google Drive. Status code: ' . $response->getStatusCode());
+            if (200 != $status) {
+                throw new \Exception('Failed to retrieve list of files from Google Drive. Status code: ' . $status);
             }
-            $json = $response->getBody();
+            //`false`: the status is checked above, so the client must not throw its own
+            //exception over it and replace that message.
+            $json = $response->getContent(false);
             //best to cache the JSON instead of serializing afterwards, plus it gets re-validated
             $cache->setItem(self::FILES_CACHE_KEY, $json);
         }
