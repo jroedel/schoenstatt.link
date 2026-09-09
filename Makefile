@@ -16,6 +16,7 @@ help: ## Show this help
 	@printf '\nVariables\n'
 	@printf '  \033[32m%-22s\033[0m %s\n' 'DRY_RUN=1' 'verify and report without changing anything'
 	@printf '  \033[32m%-22s\033[0m %s\n' 'CI=1' 'prod-deploy: run ci-local.sh first and refuse if it fails'
+	@printf '  \033[32m%-22s\033[0m %s\n' 'CHECKS_ONLY=1' 'prod-deploy: run the checks and stop, never deploying'
 
 ci: ## Run everything CI runs, plus smoke, fuzz and the post-deploy script
 	@./tools/ci-local.sh
