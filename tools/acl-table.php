@@ -116,79 +116,6 @@ function routeNames(array $config): array
 }
 
 /**
- * Compose each laminas route name's URL *pattern*, with the constraints that
- * govern its parameters, so it can be compared with the Symfony router's.
- *
- * Only needed because of the strangler migration, and only approximate on
- * purpose: `Literal` and `Segment` both carry their piece of the path in
- * `options.route`, a `Method` child constrains the verb and contributes nothing,
- * and `Regex` has no literal path at all — those get null. A null simply means
- * "cannot be compared", which is reported rather than skipped (see
- * shadowedBySymfony), because a route nobody could compare is exactly the kind of
- * thing this tool used to be silent about.
- *
- * Constraints accumulate down the tree: a child's `:sw_id` may well be constrained
- * by an ancestor's `constraints` array rather than its own, and a probe URL needs
- * every parameter in the composed pattern, not just the ones this node named. A
- * child that re-declares a name wins, which is what laminas does too.
- *
- * The composed pattern has no locale prefix, because there is none in the config:
- * SlmLocale\Strategy\UriPathStrategy strips `/en` before the router ever sees the
- * request. The Symfony side declares both forms for exactly that reason, so
- * matching the unprefixed path is the right comparison.
- *
- * @param array<string, mixed> $config
- * @return array<string, array{pattern: string|null, constraints: array<string, string>}>
- */
-function laminasRoutePaths(array $config): array
-{
-    $paths = [];
-
-    /** @var callable(array<string, mixed>, string|null, string, array<string, string>): void $walk */
-    $walk = static function (
-        array $definitions,
-        ?string $prefix,
-        string $parentName,
-        array $inherited
-    ) use (&$walk, &$paths): void {
-        foreach ($definitions as $name => $definition) {
-            $full = $parentName === '' ? (string) $name : $parentName . '/' . $name;
-
-            $segment = $definition['options']['route'] ?? null;
-            $type    = isset($definition['type']) ? (string) $definition['type'] : '';
-            if ($prefix === null) {
-                // Once an ancestor could not be composed, nothing below it can be.
-                $path = null;
-            } elseif (is_string($segment)) {
-                $path = $prefix . $segment;
-            } else {
-                // A Method route (verb only) inherits its parent's path; anything
-                // else with no literal `route` option cannot be composed.
-                $path = str_contains($type, 'Method') ? $prefix : null;
-            }
-
-            $own = [];
-            foreach ((array) ($definition['options']['constraints'] ?? []) as $param => $regex) {
-                if (is_string($regex)) {
-                    $own[(string) $param] = $regex;
-                }
-            }
-            $constraints = $own + $inherited;
-
-            $paths[$full] = ['pattern' => $path, 'constraints' => $constraints];
-
-            if (isset($definition['child_routes']) && is_array($definition['child_routes'])) {
-                $walk($definition['child_routes'], $path, $full, $constraints);
-            }
-        }
-    };
-
-    $walk($config['router']['routes'] ?? [], '', '', []);
-
-    return $paths;
-}
-
-/**
  * Every concrete path a laminas pattern can produce, once its optional groups are
  * taken and left.
  *
@@ -326,10 +253,9 @@ function probeUrls(?string $pattern, array $constraints): array
  * that declares nothing has to be reported loudly rather than quietly listed. That
  * is the silent-bypass shape: the page keeps working and simply admits everyone.
  *
- * The catch-all (App\Controller\NotFoundController, formerly App\Http\LegacyBridge) is excluded from the matcher: it claims
- * every path by design, so leaving it in would report the entire site as ported. It
- * also, correctly, declares no RouteAccess — laminas-mvc runs its own guard behind
- * it — so excluding it here also keeps it out of the undeclared warning.
+ * The catch-all (App\Controller\NotFoundController) is excluded: it claims every path by
+ * design, so listing it would report the entire site as ported, and it correctly declares
+ * no RouteAccess — so excluding it also keeps it out of the undeclared warning.
  *
  * @return array{
  *     routes: array<string, array{
@@ -337,8 +263,6 @@ function probeUrls(?string $pattern, array $constraints): array
  *         controller: string,
  *         access: array{kind: string, resource: string|null, reason: string|null, denial_style: string}
  *     }>,
- *     matcher: Symfony\Component\Routing\Matcher\UrlMatcher|null,
- *     collection: Symfony\Component\Routing\RouteCollection|null,
  *     available: bool
  * }
  */
@@ -353,13 +277,12 @@ function symfonyRoutes(): array
 
     $file = __DIR__ . '/../config/symfony/routes.php';
     if (! is_file($file)) {
-        return $result = ['routes' => [], 'matcher' => null, 'collection' => null, 'available' => false];
+        return $result = ['routes' => [], 'available' => false];
     }
 
     /** @var Symfony\Component\Routing\RouteCollection $collection */
     $collection = require $file;
 
-    $ported = new Symfony\Component\Routing\RouteCollection();
     $routes = [];
     foreach ($collection->all() as $name => $route) {
         //`[Class::class, 'method']` since batch 4: a controller serving more than one
@@ -380,19 +303,11 @@ function symfonyRoutes(): array
                 $route->getDefault(App\Authorization\RouteAccess::ATTRIBUTE)
             ),
         ];
-        $ported->add((string) $name, $route);
     }
     ksort($routes);
 
     return $result = [
         'routes'    => $routes,
-        'matcher'   => new Symfony\Component\Routing\Matcher\UrlMatcher(
-            $ported,
-            new Symfony\Component\Routing\RequestContext()
-        ),
-        // The collection itself, so the shadow check can walk the URLs Symfony
-        // owns and ask the laminas router which guard each one bypasses.
-        'collection' => $ported,
         'available' => true,
     ];
 }
@@ -429,218 +344,6 @@ function describeRouteAccess(mixed $access): array
         // it would put a value in the snapshot that nothing reads.
         'denial_style' => $access->isOpen() ? 'n/a' : strtolower($access->denialStyle->name),
     ];
-}
-
-/**
- * The real laminas router, built from the merged config with no application
- * around it.
- *
- * `TreeRouteStack::factory()` needs no ServiceManager for the four route types
- * this config uses, and no bootstrap, so the tool stays a config reader. Note it
- * comes back with a **null base URL**, where the running application's router has
- * `/en`: SlmLocale sets the base URL to the negotiated locale at request time.
- * Matching unprefixed paths against this one is therefore the correct comparison,
- * and the same reason the Symfony side declares a bare twin for every route.
- *
- * @param array<string, mixed> $config
- */
-function laminasRouter(array $config): ?Laminas\Router\Http\TreeRouteStack
-{
-    if (! is_array($config['router'] ?? null)) {
-        return null;
-    }
-
-    try {
-        return Laminas\Router\Http\TreeRouteStack::factory($config['router']);
-    } catch (Throwable) {
-        return null;
-    }
-}
-
-/**
- * A concrete URL a Symfony route answers, for asking the laminas router what used
- * to serve it.
- *
- * The locale prefix is stripped rather than instantiated, because the laminas
- * router built above has no base URL and its config carries no locale segment.
- * That also collapses each `.locale` twin onto its bare form, which is what we
- * want: they are the same page and would otherwise be counted twice.
- */
-function symfonyProbeUrl(Symfony\Component\Routing\Route $route): ?string
-{
-    $path = $route->getPath();
-    if (str_starts_with($path, '/{_locale}')) {
-        $path = substr($path, strlen('/{_locale}'));
-        if ($path === '') {
-            $path = '/';
-        }
-    }
-
-    $failed = false;
-    $url    = preg_replace_callback(
-        '/\{(\w+)\}/',
-        static function (array $m) use ($route, &$failed): string {
-            $sample = App\Routing\RegexSampler::sample($route->getRequirement($m[1]) ?? '[^/]+');
-            if ($sample === null) {
-                $failed = true;
-                return $m[0];
-            }
-            return $sample;
-        },
-        $path
-    );
-
-    if ($failed || $url === null || str_contains($url, '{')) {
-        return null;
-    }
-
-    return $url;
-}
-
-/**
- * Which laminas routes a Symfony route now answers instead.
- *
- * Matched with the real UrlMatcher rather than by comparing strings, so the
- * answer accounts for defaults, requirements and route order exactly as a request
- * would.
- *
- * ## Why this takes probe URLs rather than patterns
- *
- * Until 2026-08-14 it passed the composed laminas *pattern* — `/:sw_id/edit` —
- * straight to the matcher, which matches URLs and not patterns, so it threw and
- * the route was skipped. Every laminas route with a parameter in it was therefore
- * unshadowable by construction: **0 of the 31** rows the table reported had one,
- * while ~90 parameterized routes went unexamined. That is the exact blindness
- * that let batch 5 make nine guarded routes unreachable without this tool saying
- * a word (see docs/BACKLOG.md and src/Sion/ReservedVerbs.php).
- *
- * Now each pattern is instantiated into concrete URLs — one per combination of
- * its optional segments, each parameter replaced by a value *verified* against
- * its own constraint — and those are matched. A route counts as shadowed if any
- * of its probes resolves to a ported route.
- *
- * ## Both directions, because neither alone is enough
- *
- * A probe is one point in a route's URL space, so a forward match is conclusive
- * and a forward non-match is merely evidence: a Symfony route claiming a narrow
- * slice of a broad laminas route would be missed. `api-route-not-found`
- * (`/api(/.*)?`) is not a hypothetical example of this — `/api/v3/associations`
- * is claimed by Symfony while `/api/a` is not.
- *
- * So the check also runs the other way, and that direction is the one that maps
- * to reality: for every URL Symfony *owns*, ask the **real laminas router** which
- * route would have served it, and record that route's guard as bypassed. There is
- * no sampling on the laminas side of that question at all — the router answers
- * it — and the set of URLs Symfony owns is exactly the set where a laminas guard
- * silently stops running.
- *
- * The two passes are unioned. A laminas route neither pass could decide is
- * reported as *uncomparable* rather than quietly treated as unshadowed, so the
- * tool's silence about a route now means something.
- *
- * @param array<string, mixed> $config
- * @param array<string, array{pattern: string|null, constraints: array<string, string>}> $laminasPaths
- * @param array<string, bool> $matchable route name => is a matchable endpoint
- * @return array{
- *     shadowed: array<string, array{
- *         path: string,
- *         probe: string,
- *         symfony_route: string,
- *         access: array{kind: string, resource: string|null, reason: string|null, denial_style: string}
- *     }>,
- *     uncomparable: array<string, array{path: string|null, reason: string}>
- * }
- */
-function shadowedBySymfony(array $config, array $laminasPaths, array $matchable): array
-{
-    $symfony = symfonyRoutes();
-    $matcher = $symfony['matcher'];
-    if ($matcher === null) {
-        return ['shadowed' => [], 'uncomparable' => []];
-    }
-
-    $shadowed     = [];
-    $uncomparable = [];
-    foreach ($laminasPaths as $name => $route) {
-        $name  = (string) $name;
-        $probe = probeUrls($route['pattern'], $route['constraints']);
-
-        if ($probe['urls'] === []) {
-            // A Part route that only namespaces its children can never be matched
-            // by anything, so reporting that it could not be compared would be
-            // noise rather than a gap.
-            if (($matchable[$name] ?? false) && $probe['reason'] !== null) {
-                $uncomparable[$name] = ['path' => $route['pattern'], 'reason' => $probe['reason']];
-            }
-            continue;
-        }
-
-        foreach ($probe['urls'] as $url) {
-            try {
-                $match = $matcher->match($url);
-            } catch (Throwable) {
-                continue;
-            }
-            $symfonyRoute    = (string) ($match['_route'] ?? '?');
-            $shadowed[$name] = [
-                'path'          => (string) $route['pattern'],
-                // The URL that actually matched, so a reviewer can reproduce the
-                // claim with curl instead of taking the tool's word for it.
-                'probe'         => $url,
-                'symfony_route' => $symfonyRoute,
-                // Carried along so the warning below can ask the question that actually
-                // matters: not "does the laminas guard still run" (it never does) but
-                // "does the ported route check the same resource it used to".
-                'access'        => $symfony['routes'][$symfonyRoute]['access']
-                    ?? ['kind' => 'undeclared', 'resource' => null, 'reason' => null, 'denial_style' => 'n/a'],
-            ];
-            break;
-        }
-    }
-
-    // Second pass, from the other end: every URL Symfony owns, resolved by the
-    // real laminas router. This is what catches a ported route that claims only
-    // part of a laminas route's URL space, which the forward probe cannot see.
-    $legacy = laminasRouter($config);
-    if ($legacy !== null) {
-        foreach ($symfony['collection']?->all() ?? [] as $name => $route) {
-            $url = symfonyProbeUrl($route);
-            if ($url === null) {
-                continue;
-            }
-            $request = new Laminas\Http\Request();
-            $request->setUri('http://localhost' . $url);
-            try {
-                $match = $legacy->match($request);
-            } catch (Throwable) {
-                continue;
-            }
-            if ($match === null) {
-                continue;
-            }
-            $laminasRoute = (string) $match->getMatchedRouteName();
-            // The forward pass already recorded a probe for this route; keep it,
-            // because its URL is derived from the laminas route's own pattern and
-            // so reads more naturally in the table.
-            if (isset($shadowed[$laminasRoute])) {
-                continue;
-            }
-            $symfonyName             = (string) $name;
-            $shadowed[$laminasRoute] = [
-                'path'          => (string) ($laminasPaths[$laminasRoute]['pattern'] ?? $url),
-                'probe'         => $url,
-                'symfony_route' => $symfonyName,
-                'access'        => $symfony['routes'][$symfonyName]['access']
-                    ?? ['kind' => 'undeclared', 'resource' => null, 'reason' => null, 'denial_style' => 'n/a'],
-            ];
-            unset($uncomparable[$laminasRoute]);
-        }
-    }
-
-    ksort($shadowed);
-    ksort($uncomparable);
-
-    return ['shadowed' => $shadowed, 'uncomparable' => $uncomparable];
 }
 
 // ---------------------------------------------------------------------------
@@ -1154,9 +857,6 @@ $resourceInfo = nonRouteResources($config);
 $ruleInfo     = configRules($config);
 $libraryInfo  = readLibraryPolicies($config, $warnings);
 $symfony      = symfonyRoutes();
-$shadowInfo   = shadowedBySymfony($config, laminasRoutePaths($config), $routes);
-$shadowed     = $shadowInfo['shadowed'];
-$uncomparable = $shadowInfo['uncomparable'];
 
 sort($allRoles);
 
@@ -1305,45 +1005,50 @@ foreach ($symfony['routes'] as $symfonyRoute => $info) {
     );
 }
 
-// The laminas guard on a shadowed route never runs — a Symfony-served request never
-// boots laminas-mvc. Until 2026-08-06 that meant any restricted route was unportable
-// and this loop warned about every one of them. Now the question is narrower and more
-// useful: does the ported route check the *same* resource its laminas guard did? If
-// it does, nothing was lost and there is nothing to say. If it declares openness, or
-// names some other resource, then a page that used to be restricted is no longer
-// restricted in the same way, and that is exactly the change nothing else would fail
-// on.
-foreach ($shadowed as $laminasRoute => $info) {
-    $row = $rows[$laminasRoute] ?? null;
-    if ($row === null || $row['public']) {
+// **Every restricted guard must be claimed by a Symfony route.**
+//
+// A bjyauthorize guard no longer runs: every request is Symfony-served, and the ACL is
+// consulted through the `RouteAccess` each Symfony route declares. So a guard that
+// restricts a route to some roles enforces nothing by itself — something on the Symfony
+// side has to name `route/<that route>` as its resource, or the restriction has quietly
+// become no restriction.
+//
+// Until step 6 this was asked the other way round: the laminas router was rebuilt here,
+// each Symfony route's URL was matched against it to discover which laminas route it
+// displaced, and the displaced route's guard was compared with the displacing route's
+// declaration. That inference is gone with the router, and it is no loss — the resource
+// is *declared*, so it can simply be read. What was inferred is now looked up.
+$declaredResources = [];
+foreach ($symfony['routes'] as $symfonyName => $symfonyInfo) {
+    $declared = $symfonyInfo['access']['resource'] ?? null;
+    if (is_string($declared) && $declared !== '') {
+        $declaredResources[$declared][] = (string) $symfonyName;
+    }
+}
+
+foreach ($rows as $laminasRoute => $row) {
+    if ($row['public']) {
         continue;
     }
-    // A guard naming the default role is public by another spelling: bjyauthorize
-    // hands `guest` to every request without an identity, so an anonymous visitor
-    // already held it and there was no restriction for porting to lose. Only a
-    // literal `null` was treated as public before, which made every ported /api
-    // route look like it had dropped the guard on `api-route-not-found` — a
-    // 404 handler declared `['guest', 'user']`.
+    // A guard naming the default role is public by another spelling: bjyauthorize hands
+    // `guest` to every request without an identity, so an anonymous visitor already held
+    // it and there is no restriction here to lose.
     if ($defaultRole !== null && in_array($defaultRole, $row['effective_roles'], true)) {
         continue;
     }
     $expected = 'route/' . $laminasRoute;
-    if ($info['access']['resource'] === $expected) {
+    if (isset($declaredResources[$expected])) {
         continue;
     }
     $warnings[] = sprintf(
-        'Route "%s" (%s) is now served by the Symfony route "%s", whose bjyauthorize guard restricted it '
-        . 'to %s — and the ported route %s instead of checking "%s". A Symfony-served request never runs '
-        . 'the laminas guard, so that restriction is not being enforced. Declare '
-        . 'RouteAccess::guardedBy(\'%s\'), or unport the route.',
+        'The guard on "%s" restricts it to %s, but no Symfony route declares '
+        . 'RouteAccess::guardedBy(\'%s\'). Every request is Symfony-served, so this guard '
+        . 'enforces nothing — and there are two very different reasons for that. Either the '
+        . 'page is gone and the entry is dead config, or a route does serve it without '
+        . 'checking the resource, which is a restriction silently lifted. Request the path '
+        . 'to tell them apart: a 404 is the first, a 200 is the second.',
         $laminasRoute,
-        $info['path'],
-        $info['symfony_route'],
         implode(', ', $row['effective_roles']) ?: '(nobody)',
-        $info['access']['kind'] === 'acl'
-            ? sprintf('checks "%s"', (string) $info['access']['resource'])
-            : ($info['access']['kind'] === 'open' ? 'is declared open to everyone' : 'declares nothing'),
-        $expected,
         $expected
     );
 }
@@ -1373,11 +1078,6 @@ $counts = [
     'roles'                    => count($allRoles),
     'route_guard_entries'      => array_sum(array_map('count', $guards['declarations'])),
     'routes_declared_twice'    => count($duplicates),
-    'routes_shadowed_by_symfony' => count($shadowed),
-    // Matchable laminas routes the shadow check could not decide either way.
-    // Should be 0: every entry is a route about which this tool's silence means
-    // nothing, which is the state that let the batch-5 regression through.
-    'routes_uncomparable'      => count($uncomparable),
     'rules_from_rule_config'   => count($ruleInfo['rules']),
     'symfony_served_routes'    => count($symfony['routes']),
     'symfony_routes_acl_checked' => $symfonyByKind['acl'],
@@ -1499,40 +1199,6 @@ if ($format === 'json') {
             $libraryInfo['libraries']
         ),
         'guarded_routes'    => $jsonRows,
-        'laminas_routes_shadowed_by_symfony' => array_map(
-            static fn (string $name, array $info): array => [
-                'laminas_route' => $name,
-                'path'          => $info['path'],
-                'symfony_route' => $info['symfony_route'],
-                // What the (now inert) laminas guard said, so a reader can see at
-                // a glance whether porting the route changed who gets in. The
-                // roles themselves are one lookup away in guarded_routes; copying
-                // 43 of them per entry here would only bury the diff.
-                'was_guarded'   => isset($rows[$name]),
-                'was_public'    => $rows[$name]['public'] ?? null,
-                // What the ported route checks in the laminas guard's place. Equal to
-                // 'route/' . laminas_route means the restriction carried over intact;
-                // anything else on a non-public route is warned about above.
-                'now_checks'    => $info['access']['resource'],
-                'access_kind'   => $info['access']['kind'],
-                // The concrete URL that matched. Reproducible with curl, and the
-                // thing to look at first when a row here surprises you.
-                'probe'         => $info['probe'],
-            ],
-            array_keys($shadowed),
-            array_values($shadowed)
-        ),
-        // Routes the shadow check could not decide either way. Empty is the goal;
-        // a non-empty list is a known blind spot rather than a clean bill of health.
-        'laminas_routes_uncomparable' => array_map(
-            static fn (string $name, array $info): array => [
-                'laminas_route' => $name,
-                'path'          => $info['path'],
-                'reason'        => $info['reason'],
-            ],
-            array_keys($uncomparable),
-            array_values($uncomparable)
-        ),
         'non_route_resources' => $resourceInfo['resources'],
         'notes'             => [
             'guard_assign_not_merge' => 'BjyAuthorize\Guard\AbstractGuard assigns $rules[$resource], so for a '
@@ -1731,166 +1397,6 @@ if ($openReasons !== []) {
     }
     $o();
 }
-
-$o('### Laminas routes now shadowed by one of them');
-$o();
-$o('A laminas route whose path a Symfony route claims first. Matched with the real `UrlMatcher`, not');
-$o('by comparing strings. Laminas paths carry no locale prefix here because there is none in the');
-$o('config — `SlmLocale\Strategy\UriPathStrategy` strips `/en` before routing — which is why the');
-$o('Symfony side declares both the bare and the prefixed form.');
-$o();
-$o('A parameterized route is matched by *probe*: its pattern is instantiated into a concrete URL,');
-$o('each parameter replaced by a value generated from — and then checked against — its own');
-$o('constraint. The probe column is that URL, so any row here can be reproduced with `curl` rather');
-$o('than taken on trust. Before 2026-08-14 the pattern itself was handed to the matcher, which');
-$o('matches URLs and not patterns, so it threw and every parameterized route was skipped: 0 of the');
-$o('31 rows had a parameter in it and ~90 routes went unexamined. That is the blind spot that let');
-$o('nine guarded routes become unreachable without a word from this tool.');
-$o();
-$o('The guard column is what bjyauthorize *would* have enforced here and no longer does; the last');
-$o('column is what the ported route checks in its place. Those two agreeing — `route/<the same');
-$o('route>` — is what "porting changed nothing about who gets in" now means. A restricted route whose');
-$o('shadow checks something else, or nothing, is a real change of authorization and is reported as a');
-$o('warning at the top of this file.');
-$o();
-if ($shadowed === []) {
-    $o('_None._');
-} else {
-    $o('| laminas route | path | probe | shadowed by | its (now inert) guard | what the shadow checks |');
-    $o('| --- | --- | --- | --- | --- | --- |');
-    foreach ($shadowed as $laminasRoute => $info) {
-        $row = $rows[$laminasRoute] ?? null;
-        if ($row === null) {
-            $guard = 'no guard entry — was reachable by nobody';
-        } elseif ($row['public']) {
-            $guard = '**public** (`null` in its roles)';
-        } elseif ($defaultRole !== null && in_array($defaultRole, $row['effective_roles'], true)) {
-            $guard = sprintf('**public** (names the default role `%s`)', $defaultRole);
-        } else {
-            $guard = 'restricted to ' . (implode(', ', $row['effective_roles']) ?: '(nobody)');
-        }
-        $resource = $info['access']['resource'];
-        if ($resource === null) {
-            $now = $info['access']['kind'] === 'open' ? '_open, deliberately_' : '**UNDECLARED**';
-        } elseif ($resource === 'route/' . $laminasRoute) {
-            $now = '`' . $resource . '` — **the same resource**';
-        } else {
-            $now = '`' . $resource . '` — a *different* resource';
-        }
-        $o(sprintf(
-            '| `%s` | `%s` | `%s` | `%s` | %s | %s |',
-            $laminasRoute,
-            $info['path'],
-            // A route with no parameters is its own probe; saying so twice is
-            // noise in a table this wide.
-            $info['probe'] === $info['path'] ? '—' : $info['probe'],
-            $info['symfony_route'],
-            $guard,
-            $now
-        ));
-    }
-}
-$o();
-
-$o('### Laminas routes the shadow check could not decide');
-$o();
-$o('A matchable laminas route whose path could not be turned into a concrete URL, so neither');
-$o('"shadowed" nor "not shadowed" was established for it. This section exists so that this tool');
-$o('being quiet about a route is distinguishable from it having *checked* the route — the two were');
-$o('the same thing until 2026-08-14, and telling them apart is the whole point.');
-$o();
-$o('Empty is the goal. A non-empty list is a known blind spot, and a route in it wants either a');
-$o('constraint this tool can sample or a note in `docs/BACKLOG.md` saying why it cannot have one.');
-$o();
-if ($uncomparable === []) {
-    $o('_None — every matchable laminas route was compared._');
-} else {
-    $o('| laminas route | path | why not |');
-    $o('| --- | --- | --- |');
-    foreach ($uncomparable as $laminasRoute => $info) {
-        $o(sprintf(
-            '| `%s` | %s | %s |',
-            $laminasRoute,
-            $info['path'] === null ? '_uncomposable_' : '`' . $info['path'] . '`',
-            $info['reason']
-        ));
-    }
-}
-$o();
-
-// -- Role hierarchy ---------------------------------------------------------
-
-$o('## Role hierarchy');
-$o();
-if (! $hierarchy['available']) {
-    $o('_Unavailable: the role table could not be read (see Warnings)._');
-    $o();
-} else {
-    $children = [];
-    foreach ($parents as $role => $parent) {
-        $children[$parent ?? ''][] = $role;
-    }
-    foreach ($children as $k => $_) {
-        sort($children[$k]);
-    }
-
-    $o('```');
-    $printTree = static function (string $parent, int $depth) use (&$printTree, $children, $o, $defaultRole): void {
-        foreach ($children[$parent] ?? [] as $role) {
-            $o(str_repeat('    ', $depth) . $role . ($role === $defaultRole ? '   <- default_role' : ''));
-            $printTree($role, $depth + 1);
-        }
-    };
-    $printTree('', 0);
-    $o('```');
-    $o();
-    $o('Indentation is inheritance: an indented role inherits everything allowed to the role above it.');
-    $o();
-    $o('| role | parent | inherits from (all ancestors, nearest first) | roles beneath it |');
-    $o('| --- | --- | --- | --- |');
-    foreach ($allRoles as $role) {
-        $anc = ancestorsOf($role, $parents);
-        $o(sprintf(
-            '| %s | %s | %s | %s |',
-            $role,
-            $parents[$role] ?? '(root)',
-            $anc === [] ? '(none)' : implode(' → ', $anc),
-            $descendants[$role] === [] ? '(none)' : implode(', ', $descendants[$role])
-        ));
-    }
-    $o();
-}
-
-// -- Main table -------------------------------------------------------------
-
-$o('## Guarded routes');
-$o();
-$o('One row per route named by a guard entry, showing the **winning** entry only.');
-$o('`dup` marks a route declared more than once — the losing declarations are itemized after the table.');
-$o();
-$o('| route | in router | roles in winning entry | effective roles (count) | anon? | dup |');
-$o('| --- | --- | --- | --- | --- | --- |');
-ksort($rows);
-foreach ($rows as $route => $row) {
-    $o(sprintf(
-        '| `%s` | %s | %s | %s | %s | %s |',
-        $route,
-        $row['exists_in_router']
-            // A guard on a non-terminating Part parent can never fire, but it
-            // still declares the `route/<name>` resource views ask about.
-            ? ($row['matchable'] ? 'yes' : 'yes, but not an endpoint')
-            : '**NO**',
-        formatRoles($row['declared_roles']) . ($row['assertion'] !== null
-            ? ' _(assertion: `' . $row['assertion'] . '`)_'
-            : ''),
-        $row['public']
-            ? '**everyone (public)** — ' . count($row['effective_roles']) . ' named roles plus anonymous'
-            : (implode(', ', $row['effective_roles']) ?: '(none)') . ' (' . count($row['effective_roles']) . ')',
-        $row['anonymous_allowed'] ? 'yes' : 'no',
-        $row['declaration_count'] > 1 ? '**dup ×' . $row['declaration_count'] . '**' : ''
-    ));
-}
-$o();
 
 $o('### Routes declared by more than one guard entry');
 $o();
