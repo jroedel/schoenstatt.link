@@ -29,8 +29,8 @@ use function is_string;
  *
  * The laminas helper is a two-line wrapper over `JShrink\Minifier::minify()`, so this calls
  * the library directly instead of bridging the helper: there is no laminas behaviour in
- * between to preserve, and reaching through `ViewHelperManager` for it would need an entry
- * in `App\Laminas\ViewHelpers` that no other template would ever use.
+ * between to preserve, and reaching it any other way would need an entry in
+ * `App\Laminas\ViewHelpers` that no other template would ever use.
  *
  * Used as a block filter, which is how the original reads too — a heredoc, then the
  * minifier:

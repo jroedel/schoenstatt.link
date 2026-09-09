@@ -25,8 +25,8 @@ use function md5;
  * and a changes table formats a date per row.
  *
  * Not a `Laminas\View\Helper\AbstractHelper` since 2026-09: it asks the renderer for
- * nothing. It stays registered in App\Laminas\ViewHelperManagerFactory, which still
- * resolves it — the plugin manager validates callables as well as HelperInterfaces.
+ * nothing. App\Laminas\ViewHelpers constructs it directly — there is no plugin manager to
+ * resolve it from since laminas-view was removed.
  */
 final class DateFormat
 {

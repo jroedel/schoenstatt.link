@@ -9,21 +9,22 @@ use Stringable;
 
 /**
  * `SlmLocale\View\Helper\LocaleUrl`, reimplemented against App\Laminas\RouteUrl and
- * registered into the helper plugin manager in its place.
+ * constructed by App\Laminas\ViewHelpers in its place.
  *
  * ## Why this exists rather than another entry on the refused list
  *
- * `localeUrl` is one of the helpers App\Laminas\ViewHelpers refuses by name: its factory
- * calls `$application->getMvcEvent()->getRouteMatch()`, which is null on a Symfony-served
- * route, and the failure is the familiar "Call to a member function getRouteMatch() on
- * null" thrown from inside laminas-view on a page that is otherwise fine.
+ * `localeUrl` is one of the helpers App\Laminas\ViewHelpers refuses by name: the original's
+ * factory calls `$application->getMvcEvent()->getRouteMatch()`, which is null on a
+ * Symfony-served route, and the failure was the familiar "Call to a member function
+ * getRouteMatch() on null" thrown from inside laminas-view on a page that is otherwise fine.
  *
  * Refusing it is only workable while nothing *reachable* calls it. `Books\View\Helper\
  * BooksJsonLd` does — one line, in its `url` branch, to give a publication's schema.org
  * `Book` its canonical `en_US` address — and that helper is 208 lines of field-to-property
  * mapping that would otherwise have to be copied wholesale to replace one URL. Overriding
- * the helper it reaches is the smaller change by two orders of magnitude, and it fixes
- * every future caller at the same time.
+ * the helper it reaches was the smaller change by two orders of magnitude, and it fixed
+ * every future caller at the same time. Since laminas-view was removed there is no manager
+ * to override: ViewHelpers hands BooksJsonLd this object's `__invoke` directly.
  *
  * **This was found by a rendering failure, not by review.** The audit that cleared the
  * other bridged helpers grepped for `$this->view->url(`, and `localeUrl` is a different
@@ -47,8 +48,7 @@ use Stringable;
  * `->__toString()` on the result: the original returns a `Laminas\Uri\Uri`.
  *
  * It extended `Laminas\View\Helper\AbstractHelper` until 2026-09 and used nothing from
- * it — the URL comes from RouteUrl, never from `$this->view`. The plugin manager still
- * accepts it, because it validates a callable as readily as a HelperInterface.
+ * it — the URL comes from RouteUrl, never from `$this->view`.
  */
 final class LocaleUrlSubstitute
 {
