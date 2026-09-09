@@ -175,19 +175,19 @@ use function rtrim;
 /**
  * The Symfony kernel, hand-wired from components.
  *
- * There is no FrameworkBundle here and that is not an oversight: it requires
- * symfony/cache, which requires psr/cache ^2|^3, which laminas-cache 3.14 pins
- * to ^1. laminas-cache 4 lifts that pin, but it needs laminas-servicemanager ^4.5
- * and laminas-mvc requires ^3.20.0 in *every* version it has, 4.0.x-dev included.
- * So the gate is laminas-mvc itself — i.e. finishing this migration — and not, as
- * this said until 2026-08-05, retiring kokspflanze/bjy-authorize: that also caps
- * laminas-cache at ^3 and is also worth retiring, but removing it leaves the pin
- * exactly where it is. The measurement is in docs/DEPLOY.md.
+ * There is no FrameworkBundle here, and the reason has changed. It used to be a
+ * hard block: FrameworkBundle needs symfony/cache, symfony/cache needs psr/cache
+ * ^2|^3, and laminas-cache 3.14 pinned psr/cache to ^1. Removing laminas-cache
+ * took psr/cache out of the tree altogether, so nothing pins it any more and the
+ * block is gone.
  *
- * The kernel is not gated on any of that: everything below comes from
- * symfony/http-kernel and symfony/routing, which need no psr/cache at all. When
- * the gate does open, this class is what FrameworkBundle replaces; the routes and
- * the LegacyBridge behind it carry over unchanged.
+ * What remains is a choice rather than a constraint, and it follows the direction
+ * in CLAUDE.md: everything below comes from symfony/http-kernel and
+ * symfony/routing, two components, wired by hand in one readable file. Adopting
+ * FrameworkBundle would add a container compiler, a bundle system and a cache
+ * warmer to replace roughly two hundred lines. If that ever becomes worth it,
+ * this class is what it replaces, and the routes and the LegacyBridge behind it
+ * carry over unchanged.
  *
  * Exceptions are left to propagate. HttpKernel catches them and dispatches
  * kernel.exception, but nothing listens, so handleThrowable() rethrows and the

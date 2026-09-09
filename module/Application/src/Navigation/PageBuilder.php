@@ -9,7 +9,7 @@ use Books\Model\LibraryTable;
 use Books\Model\MusicTable;
 use Books\Model\PublicationsTable;
 use Closure;
-use Laminas\Cache\Storage\StorageInterface;
+use SionModel\Cache\Storage as CacheStorage;
 use Locale;
 use Schoenstatt\Model\SchoenstattTable;
 use Throwable;
@@ -462,11 +462,11 @@ final class PageBuilder
     }
 
     /** The persistent cache, or null where there is none to speak of. */
-    private function cache(): ?StorageInterface
+    private function cache(): ?CacheStorage
     {
         $cache = ($this->services)('SionModel\PersistentCache');
 
-        return $cache instanceof StorageInterface ? $cache : null;
+        return $cache instanceof CacheStorage ? $cache : null;
     }
 
     /**
@@ -480,7 +480,7 @@ final class PageBuilder
      * @param array<int|string, mixed> $pages
      * @return bool whether the write succeeded
      */
-    private function cacheBranch(StorageInterface $cache, string $cacheKey, array $pages): bool
+    private function cacheBranch(CacheStorage $cache, string $cacheKey, array $pages): bool
     {
         try {
             if (false === $cache->setItem($cacheKey, $pages)) {

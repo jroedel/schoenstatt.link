@@ -6,7 +6,7 @@ namespace App\Controller;
 
 use App\Http\MaintenanceKey;
 use App\Laminas\ServiceBridge;
-use Laminas\Cache\Storage\FlushableInterface;
+use SionModel\Cache\Storage as CacheStorage;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -25,8 +25,9 @@ use Symfony\Component\HttpFoundation\Request;
  * SionModelController::clearPersistentCacheAction() flushes — and not
  * apcu_clear_cache() directly. Today those amount to the same thing, and it is
  * worth saying so rather than implying otherwise: the configured adapter is
- * laminas-cache's Apcu, whose flush() *is* apcu_clear_cache(), so this really does
- * empty the whole segment (docs/DEPLOY.md says as much). Going through the service
+ * SionModel\Cache\ApcuStorage and `persistent_cache_config` gives it no namespace, so its
+ * flush() has nothing to scope itself by and empties the whole segment (docs/DEPLOY.md
+ * says as much). Going through the service
  * is about who decides that: the endpoint flushes whatever `persistent_cache_config`
  * says the cache is, so reconfiguring it — a different adapter, or a
  * namespace-scoped clear — changes this endpoint with it, and the laminas action
@@ -61,7 +62,7 @@ final class ClearPersistentCacheController
         }
 
         $cache = $this->laminas->has(self::CACHE_SERVICE) ? $this->laminas->get(self::CACHE_SERVICE) : null;
-        if (! $cache instanceof FlushableInterface) {
+        if (! $cache instanceof CacheStorage) {
             return self::message(
                 null === $cache
                     ? 'Please configure the persistent cache to clear the cache.'
