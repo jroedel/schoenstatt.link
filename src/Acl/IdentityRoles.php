@@ -5,18 +5,17 @@ declare(strict_types=1);
 namespace App\Acl;
 
 use App\Laminas\LaminasServices;
-use Laminas\Authentication\AuthenticationService;
+use JUser\Host\IdentityInterface;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\ResultSet\ResultSetInterface;
 
 use function is_array;
 use function is_object;
 use function is_string;
-use function method_exists;
 
 /**
  * The current visitor's role names, resolved app-side — the replacement for asking
- * BjyAuthorize's identity provider (`JUser\Bridge\Laminas\ZfcUserZendDbPlusSelfAsRole`).
+ * BjyAuthorize's identity provider (`ZfcUserZendDbPlusSelfAsRole`, once in JUser).
  *
  * That class implemented a bjy interface, so keeping it meant keeping the bjy package.
  * Reproducing its two-line logic here is what let this application drop `bjy-authorize`
@@ -38,7 +37,6 @@ use function method_exists;
 final class IdentityRoles
 {
     private const DEFAULT_ROLE_FALLBACK = 'guest';
-    private const AUTH_SERVICE          = 'JUser\AuthService';
 
     public function __construct(private readonly LaminasServices $laminas)
     {
@@ -47,17 +45,11 @@ final class IdentityRoles
     /** @return list<string> */
     public function current(): array
     {
-        $auth = $this->authService();
-        if (! $auth instanceof AuthenticationService || ! $auth->hasIdentity()) {
-            return [$this->defaultRole()];
-        }
+        $user = $this->identity()?->current();
 
-        $identity = $auth->getIdentity();
-        if (! is_object($identity) || ! method_exists($identity, 'getId')) {
-            return [$this->defaultRole()];
-        }
-
-        return $this->rolesForUser((int) $identity->getId());
+        return null === $user
+            ? [$this->defaultRole()]
+            : $this->rolesForUser((int) $user->getId());
     }
 
     /**
@@ -105,13 +97,18 @@ final class IdentityRoles
         return is_string($role) && '' !== $role ? $role : self::DEFAULT_ROLE_FALLBACK;
     }
 
-    private function authService(): ?AuthenticationService
+    /**
+     * Null when the host has registered no identity at all, which is a console process
+     * rather than an anonymous visitor. Both answer with the default role, and the caller
+     * cannot tell them apart because nothing downstream should.
+     */
+    private function identity(): ?IdentityInterface
     {
-        if (! $this->laminas->has(self::AUTH_SERVICE)) {
+        if (! $this->laminas->has(IdentityInterface::class)) {
             return null;
         }
-        $auth = $this->laminas->get(self::AUTH_SERVICE);
+        $identity = $this->laminas->get(IdentityInterface::class);
 
-        return $auth instanceof AuthenticationService ? $auth : null;
+        return $identity instanceof IdentityInterface ? $identity : null;
     }
 }
