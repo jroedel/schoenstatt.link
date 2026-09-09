@@ -45,6 +45,19 @@
 # Everything after the checks is tools/deploy.sh, which has its own confirmation for an
 # unusual run and its own rollback. See docs/DEPLOY.md.
 
+# ## Why the brace around everything below
+#
+# Check 2 runs `git checkout master`, which REWRITES THIS FILE while bash is reading it.
+# Bash reads a script incrementally and seeks by byte offset, so without this it resumes
+# inside whatever master's copy happens to have at that offset: measured 2026-09-09, a
+# script that replaces itself mid-run executes the replacement's remaining lines at every
+# size tried (1 KB to 60 KB, growing or shrinking). Two consequences, both bad — a syntax
+# error mid-deploy, and checks that silently come from the branch you just left rather
+# than the one you are deploying.
+#
+# A brace group is one compound command, so bash parses all of it before running any of
+# it. Nothing may be added after the closing brace.
+{
 set -uo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
@@ -201,3 +214,4 @@ if [ "$DRY_RUN" = "1" ]; then
     exec ./tools/deploy.sh --dry-run
 fi
 exec ./tools/deploy.sh
+}
