@@ -52,7 +52,9 @@ use Throwable;
  * 1. **A library.** The book, collection, library and checkout forms only mean
  *    something against one library's value options, and the application builds them
  *    through `App\Books\LibraryScopedForms` and `App\Books\CheckoutForms` with the
- *    library id taken off the route. There is no route here, so the harness asks the
+ *    library id taken off the route. `CheckoutForms::mass()` is asked too: the mass
+ *    checkout form's `personId` sits inside its collection's target element, where a
+ *    bare construction leaves it with no options at all. There is no route here, so the harness asks the
  *    same two classes for library 1 — a real id from the capsule's production data.
  *    The alternative — skipping four forms — is exactly the outcome the brief
  *    forbids, since an unconstructable form is where a hole hides.
@@ -525,6 +527,23 @@ final class FormRepository
         });
         if ($checkout instanceof Fieldset && ! isset($byClass[$checkout::class])) {
             $byClass[$checkout::class] = [$checkout, CheckoutForms::class . '::forLibrary()'];
+        }
+
+        //The mass-checkout form, for the same reason and with a sharper consequence: its
+        //`personId` lives inside the collection's *target element*, so a bare
+        //`new MassCheckoutForm()` leaves it with no options and its own InArray rejecting
+        //every id. `WholeFormEngineParityTest` reported that as eight disagreements
+        //between the engine and laminas before this seam existed — a harness artefact
+        //wearing the shape of a finding.
+        $mass = $this->quietly(static function () use ($bridge): ?object {
+            try {
+                return (new CheckoutForms($bridge))->mass();
+            } catch (Throwable) {
+                return null;
+            }
+        });
+        if ($mass instanceof Fieldset && ! isset($byClass[$mass::class])) {
+            $byClass[$mass::class] = [$mass, CheckoutForms::class . '::mass()'];
         }
 
         return $byClass;

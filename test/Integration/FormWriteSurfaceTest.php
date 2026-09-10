@@ -178,8 +178,14 @@ final class FormWriteSurfaceTest extends TestCase
     {
         $form   = FormRepository::instance()->forms()['Books\Form\PublicationForm'];
         $filter = $form->getInputFilter();
-        $filter->remove('security');
 
+        //**The CSRF input is deliberately left in place.** This form comes from
+        //FormRepository, which builds each one once and hands the same object to every
+        //test in the process, so `$filter->remove('security')` here removed it for
+        //everybody — and WholeFormEngineParityTest duly reported PublicationForm as the
+        //one form whose assembled inputs disagreed with FormSpecification's, in a run
+        //where it passed on its own. Nothing below needs it gone: getValues() returns a
+        //value for every input whatever the verdict, and the verdict is not asserted.
         //a save that never mentions the field, which is every save: no element renders it
         $filter->setData(['title' => 'A publication', 'resourceId' => null]);
         $filter->isValid();
