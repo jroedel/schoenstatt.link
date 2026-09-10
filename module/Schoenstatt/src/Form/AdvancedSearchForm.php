@@ -140,6 +140,7 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
             ],
             'roleTitle' => [
                 'required' => false,
+                'validators' => ChoiceDomain::validators($this->get('roleTitle')),
             ],
             'associationKind' => [
                 'required' => false,
