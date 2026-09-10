@@ -82,6 +82,15 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
+            //Named here only to say `required` out loud. The domain is the element's:
+            //Select::getInputSpecification() builds an InArray over the value options
+            //CheckoutForms fills in with the library's borrowers, and a specification
+            //merges into that input rather than replacing it (see
+            //SionModel\Form\ChoiceDomain). Restating the InArray would be a second copy
+            //of the same haystack.
+            'personId' => [
+                'required' => true,
+            ],
             'adminNotes' => [
                 'required' => false,
                 'filters' => [
