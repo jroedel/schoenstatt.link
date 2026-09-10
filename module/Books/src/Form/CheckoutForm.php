@@ -5,6 +5,7 @@ use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Laminas\Validator\NotEmpty;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\ChoiceDomain;
 
 class CheckoutForm extends SionForm implements InputFilterProviderInterface
 {
@@ -92,6 +93,7 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
             //of the same haystack.
             'personId' => [
                 'required' => true,
+                'validators' => ChoiceDomain::validators($this->get('personId')),
             ],
             'adminNotes' => [
                 'required' => false,

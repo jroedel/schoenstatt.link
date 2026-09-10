@@ -616,6 +616,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('mainPublicationId')),
             ],
             'translatedFromPublicationId' => [
                 'required' => false,
@@ -626,6 +627,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('translatedFromPublicationId')),
             ],
             'isbn' => [
                 'required' => false,

@@ -139,6 +139,35 @@ final class AssociationInputFilterSpec
     }
 
     /**
+     * What a checkbox may post: its checked and unchecked values, and nothing else.
+     *
+     * `Laminas\Form\Element\Checkbox` builds exactly this for itself
+     * (`InArray(['1', '0'], strict: false)`) and hands it to the input filter, which is
+     * why six association fields were constrained here today without this class saying
+     * so — see `SionModel\Form\CheckboxDomain`. That stops being true when
+     * `SionModel\Form\Validation\InputFilter` replaces `Laminas\InputFilter`: it reads
+     * the specification and nothing else.
+     *
+     * Stated as a literal rather than read off an element, because **this class has no
+     * elements**. It is the shared contract between the web form and the API, and the API
+     * builds no form. That the values are `'1'` and `'0'` is a fact about the data — the
+     * columns are `tinyint` — rather than about how a checkbox renders, so this is the
+     * right place for it. `AssociationValidationParityTest` asserts the form's checkboxes
+     * still agree, so the literal cannot drift away from the elements unnoticed.
+     *
+     * Five of the six also carry `ToBit`, which normalises anything to 0 or 1 before a
+     * validator runs and makes this check unreachable for them. `isLifeCommunity` does
+     * not, and there the check is the only thing standing between an arbitrary string and
+     * the column.
+     */
+    private const CHECKBOX_DOMAIN = [
+        [
+            'name'    => InArray::class,
+            'options' => ['haystack' => ['1', '0'], 'strict' => false],
+        ],
+    ];
+
+    /**
      * @return array<string, mixed> a `Laminas\InputFilter\Factory` specification
      */
     public function toArray(): array
@@ -160,10 +189,12 @@ final class AssociationInputFilterSpec
             'overrideNameFormat' => [
                 'required' => false,
                 'filters'  => [['name' => ToBit::class]],
+                'validators' => self::CHECKBOX_DOMAIN,
             ],
             'isNameTranslateable' => [
                 'required' => false,
                 'filters'  => [['name' => ToBit::class]],
+                'validators' => self::CHECKBOX_DOMAIN,
             ],
             'internalName' => [
                 'required' => false,
@@ -175,6 +206,7 @@ final class AssociationInputFilterSpec
             'isInternalNameTranslateable' => [
                 'required' => false,
                 'filters'  => [['name' => ToBit::class]],
+                'validators' => self::CHECKBOX_DOMAIN,
             ],
             'parentId' => [
                 'required' => false,
@@ -261,13 +293,16 @@ final class AssociationInputFilterSpec
             'isAuthor' => [
                 'required' => false,
                 'filters'  => [['name' => ToBit::class]],
+                'validators' => self::CHECKBOX_DOMAIN,
             ],
             'isActive' => [
                 'required' => false,
                 'filters'  => [['name' => ToBit::class]],
+                'validators' => self::CHECKBOX_DOMAIN,
             ],
             'isLifeCommunity' => [
                 'required' => false,
+                'validators' => self::CHECKBOX_DOMAIN,
             ],
             'email' => [
                 'required' => false,

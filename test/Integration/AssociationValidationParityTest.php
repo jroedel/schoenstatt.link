@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use Laminas\Form\Element\Checkbox;
 use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use App\Schoenstatt\Association\AssociationValidator;
@@ -117,6 +118,19 @@ final class AssociationValidationParityTest extends TestCase
 
         return $form;
     }
+
+    /**
+     * The association's checkboxes. Named once because two assertions need the same list
+     * and a copy of it would drift.
+     */
+    private const CHECKBOXES = [
+        'isActive',
+        'isAuthor',
+        'isLifeCommunity',
+        'isNameTranslateable',
+        'overrideNameFormat',
+        'isInternalNameTranslateable',
+    ];
 
     /** A payload that must pass, and the base every invalid case below is a mutation of. */
     private const VALID = [
@@ -353,6 +367,40 @@ final class AssociationValidationParityTest extends TestCase
      *
      * @return array{validators: list<string>, filters: list<string>}
      */
+    /**
+     * The literal in `AssociationInputFilterSpec::CHECKBOX_DOMAIN` still describes the
+     * form's actual checkboxes.
+     *
+     * That class holds no elements — it is the contract the web form and the API share,
+     * and the API builds no form — so the two checkbox values are written there as `'1'`
+     * and `'0'` rather than read off anything, which is the one place this specification
+     * duplicates knowledge instead of deriving it. This keeps the duplicate honest: change
+     * `checked_value` on one of these elements and the shared specification would quietly
+     * describe a domain the form no longer posts.
+     *
+     * `SionModel\Form\CheckboxDomain` is what every other form uses, and it reads the
+     * element precisely so that no such assertion is needed. Six fields here cannot.
+     */
+    public function testTheSharedSpecificationStillDescribesTheFormsCheckboxes(): void
+    {
+        $form = self::form(withCsrf: false);
+
+        foreach (self::CHECKBOXES as $field) {
+            $element = $form->get($field);
+
+            self::assertInstanceOf(Checkbox::class, $element, $field);
+            self::assertSame(
+                ['1', '0'],
+                [$element->getCheckedValue(), $element->getUncheckedValue()],
+                sprintf(
+                    "%s no longer posts '1'/'0', so AssociationInputFilterSpec::CHECKBOX_DOMAIN "
+                    . 'describes a domain this form does not use',
+                    $field
+                )
+            );
+        }
+    }
+
     private static function chain(\Laminas\InputFilter\InputFilterInterface $filter, string $name): array
     {
         $input = $filter->get($name);
