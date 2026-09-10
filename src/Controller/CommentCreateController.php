@@ -113,12 +113,17 @@ final class CommentCreateController
             //laminas re-renders the form with a nowMessenger error. It cannot here —
             //this controller owns no page; the form lives on whichever show page
             //rendered it. So the visitor goes back to that page, which re-renders an
-            //empty form. What is lost is the typed text on a rejected submission, and
-            //the only way to reject one today is a bad or expired CSRF token: the
-            //`comment` field has no validator at all (recorded in
-            //test/Fuzz/known-form-gaps.php, three entries) and `redirect` has none
-            //either. An expired token is a page left open past the 900-second timeout,
-            //where re-rendering the stale form would fail again on the same token.
+            //empty form, and the flash below is what carries the rejection across the
+            //redirect. What is lost is the typed text.
+            //
+            //Until 2026-09-10 the only reachable rejection was a bad or expired CSRF
+            //token, because CommentForm's filter spec named a field that did not exist
+            //and left `comment` and `redirect` with no rules at all. It now rejects an
+            //empty body and one over the column's 500 characters, both of which used to
+            //get past this line — the first inserting a published empty row, the second
+            //reaching the INSERT and failing there as a 500.
+            $this->flash(FlashMessages::NAMESPACE_ERROR, 'Error in form submission, please review.');
+
             return $this->back($request);
         }
 

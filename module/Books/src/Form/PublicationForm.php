@@ -881,12 +881,14 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'required' => true,
                 'validators' => ChoiceDomain::validators($this->get('resourceId')),
             ],
-            'isAccessibleForFree' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToBit::class]
-                ],
-            ],
+            //`isAccessibleForFree` was here with no element to fill it, which is worse
+            //than useless: laminas builds an input for a spec key regardless, getValues()
+            //returns every input, and ToBit turns the absent value into 0 — so every save
+            //of this form wrote IsAccessableForFree = 0 over whatever was there. The field
+            //is deliberately not rendered (see templates/books/publication-edit.html.twig),
+            //so the entry is gone rather than given an element, and the column is now
+            //untouched by this form. Its two siblings below keep theirs: they *are*
+            //elements, and their checkboxes always post a value.
             'isScientificWork' => [
                 'required' => false,
                 'filters' => [

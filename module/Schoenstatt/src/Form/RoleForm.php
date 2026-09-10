@@ -130,6 +130,12 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            //Explicit rather than inherited from the element. A role with no association
+            //is not a role; the domain itself stays the element's InArray over the
+            //association list its factory supplies.
+            'associationId' => [
+                'required' => true,
+            ],
             'roleTitle' => [
                 'required' => false,
                 'filters' => [

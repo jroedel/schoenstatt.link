@@ -102,6 +102,14 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
             'showEditionsSeparately' => [
                 'required' => false,
             ],
+            //Its sibling above, and for the same reason: Checkbox::getInputSpecification()
+            //declares the input **required**, which is invisible while `use_hidden_element`
+            //keeps a value in every POST and is a rejection with no message the moment
+            //anything submits this form without one. Two identical checkboxes must not
+            //disagree about that, and this one was simply left out.
+            'includeDataSources' => [
+                'required' => false,
+            ],
             'inLanguage' => [
                 'required' => false,
                 'filters' => [

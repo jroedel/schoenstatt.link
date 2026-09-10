@@ -295,6 +295,60 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
         );
     }
 
+    /**
+     * The same failure as the name day, on two fields that had no hidden input either —
+     * and no visible one, which is why nothing round-tripped them.
+     *
+     * `skypeUser` and `slackUser` were named in `PersonForm`'s input filter specification
+     * and were elements on no form. laminas builds an input for a specification key
+     * regardless, `getValues()` returns one value per input, and an unposted field's is
+     * `null` — so `updateHelper()` compared `'somehandle' == null`, found them different,
+     * and wrote NULL. **Every save of any person erased both columns**, which is 63 Skype
+     * handles and 8 Slack ones that the person page displays and no screen could set.
+     * They are elements now (2026-09-10).
+     *
+     * The value is written through the form rather than by SQL on purpose: `SionTable`
+     * caches persons in APCu, so a row edited behind its back is not the row the second
+     * render would show, and the test would pass for the wrong reason.
+     */
+    public function testASaveDoesNotEraseTheSocialHandlesItNowRenders(): void
+    {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $this->remember(['AdminNotes', 'SkypeUser', 'SlackUser', 'UpdatedOn', 'UpdatedBy']);
+
+        $form = $this->get(self::PATH, false, $jar);
+        $this->assertSame(200, $form['status']);
+
+        $written = $this->request('POST', self::PATH, [], false, $jar, [
+            'skypeUser' => 'smoketest.skype',
+            'slackUser' => 'smoketest.slack',
+        ] + $this->fieldsFromForm($form['body']));
+        $this->assertSame(302, $written['status'], 'the form refused a valid Skype and Slack name');
+        $this->assertSame('smoketest.skype', $this->column('SkypeUser'), 'the field is not writable');
+        $this->assertSame('smoketest.slack', $this->column('SlackUser'), 'the field is not writable');
+
+        //a second, unrelated edit — the save that used to wipe them
+        $again = $this->get(self::PATH, false, $jar);
+        $this->assertSame(200, $again['status']);
+
+        $marker = 'Smoke test ' . time();
+        $post   = $this->request('POST', self::PATH, [], false, $jar, [
+            'adminNotes' => $marker,
+        ] + $this->fieldsFromForm($again['body']));
+
+        $this->assertSame(302, $post['status']);
+        $this->assertSame($marker, $this->column('AdminNotes'), 'the change did not reach the database');
+        $this->assertSame(
+            'smoketest.skype',
+            $this->column('SkypeUser'),
+            'an unrelated save erased the Skype handle — the field is not being rendered and round-tripped'
+        );
+        $this->assertSame('smoketest.slack', $this->column('SlackUser'), 'an unrelated save erased the Slack handle');
+    }
+
     // -- helpers -------------------------------------------------------------
 
     private function signedInBody(): string
