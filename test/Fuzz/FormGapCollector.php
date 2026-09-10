@@ -210,6 +210,7 @@ final class FormGapCollector
             'boundsLooserThanColumn'     => [],
             'buttonsDeclaredOnlyByAttribute' => [],
             'validationSuppliedOnlyByElement' => [],
+            'filteringSuppliedOnlyByElement'  => [],
         ];
 
         foreach ($this->repository->constructionFailures() as $class => $reason) {
@@ -540,6 +541,117 @@ final class FormGapCollector
                 implode(', ', $extra)
             );
         }
+
+        $this->collectElementSuppliedFiltering($class, $assembled, $spec, $gaps);
+    }
+
+    /**
+     * The same question about **filters**, which nothing asked for months.
+     *
+     * `validationSuppliedOnlyByElement` compared validator sets and stopped there, so while
+     * that category was being driven from 120 down to 3, **74 fields were being filtered by
+     * something no specification named** and no artefact in the repository said so.
+     *
+     * It surfaced when the engine was first cut over behind the forms and the smoke suite
+     * refused to create a person. `Schoenstatt\Form\PersonForm::nameDay` is a `DateSelect`:
+     * it posts `['year' => …, 'month' => …, 'day' => …]` and
+     * `Laminas\Form\Element\DateSelect::getInputSpecification()` supplies the
+     * `Laminas\Filter\DateSelect` that turns that into `Y-m-d`. Without it the array reaches
+     * a date validator unchanged and every person save fails on a field nobody touched.
+     *
+     * The other 73 were `StringTrim`, which is not cosmetic either: a `ToNull` after a
+     * `StringTrim` turns `'   '` into `null`, and the same `ToNull` without it stores three
+     * spaces into a column that meant to be empty.
+     *
+     * ## Names are resolved, not compared as strings
+     *
+     * A specification may say `'Int'` where the chain holds a `Laminas\Filter\ToInt`; the
+     * plugin manager's aliases are the only thing that knows the two are the same, so each
+     * declared name is resolved through it and the comparison is between **classes**.
+     * Comparing short names instead reported `JUser\Form\EditUserForm::userId` as a gap when
+     * its specification declares exactly the filter it applies.
+     *
+     * @param array<string, mixed>        $spec
+     * @param array<string, list<string>> $gaps
+     */
+    private function collectElementSuppliedFiltering(
+        string $class,
+        \Laminas\InputFilter\InputFilterInterface $assembled,
+        array $spec,
+        array &$gaps
+    ): void {
+        foreach ($assembled->getInputs() as $name => $input) {
+            if (! $input instanceof \Laminas\InputFilter\InputInterface) {
+                continue;
+            }
+
+            $applied = [];
+            foreach ($input->getFilterChain()->getFilters() as $filter) {
+                if (is_object($filter)) {
+                    $applied[$filter::class] = (new \ReflectionClass($filter))->getShortName();
+                }
+            }
+
+            $declared = $this->declaredFilterClasses($spec[(string) $name] ?? null);
+            $extra    = [];
+            foreach ($applied as $filterClass => $shortName) {
+                if (! isset($declared[$filterClass])) {
+                    $extra[] = $shortName;
+                }
+            }
+
+            if ([] === $extra) {
+                continue;
+            }
+
+            $gaps['filteringSuppliedOnlyByElement'][] = sprintf(
+                '%s: %s is filtered by %s, which the input filter spec does not declare',
+                $class,
+                self::q((string) $name),
+                implode(', ', $extra)
+            );
+        }
+    }
+
+    /**
+     * The classes a specification entry's `filters` resolve to, keyed by class name.
+     *
+     * @return array<class-string, true>
+     */
+    private function declaredFilterClasses(mixed $specEntry): array
+    {
+        if (! is_array($specEntry)) {
+            return [];
+        }
+
+        $classes = [];
+        foreach ((array) ($specEntry['filters'] ?? []) as $filter) {
+            if (! is_array($filter) || ! is_string($filter['name'] ?? null)) {
+                continue;
+            }
+            try {
+                /** @var object $instance */
+                $instance = $this->filterPlugins()->get($filter['name']);
+            } catch (Throwable) {
+                //A name nothing can build is a different finding, and `throwingInputs`
+                //already reports the form it breaks. Skipping it here would hide the
+                //element-supplied filter beside it, so the name is treated as declaring
+                //nothing and the comparison stays conservative.
+                continue;
+            }
+            $classes[$instance::class] = true;
+        }
+
+        return $classes;
+    }
+
+    private ?\Laminas\Filter\FilterPluginManager $filterPlugins = null;
+
+    private function filterPlugins(): \Laminas\Filter\FilterPluginManager
+    {
+        return $this->filterPlugins ??= new \Laminas\Filter\FilterPluginManager(
+            new \Laminas\ServiceManager\ServiceManager()
+        );
     }
 
     public function dataElements(Fieldset $form): array

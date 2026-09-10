@@ -121,15 +121,20 @@ final class IdenticalTokensAreLiteralTest extends TestCase
             //The field whose name is the token. Before `literal => true` this made the
             //validator compare 'not the library name' against itself.
             'Bellavista'                  => 'not the library name',
+            //A token the form will accept, the way a browser posts one:
+            //`Csrf::getValue()` is the hash the element renders into the page. The
+            //confirmation is what is under test, so the token has to be answered rather
+            //than removed — and answering it exercises the check instead of skipping it.
+            'security'                    => $form->get('security')->getValue(),
         ]);
-        //The token is real and session-bound; the confirmation is what is under test.
-        $form->getInputFilter()->remove('security');
 
         self::assertFalse($form->isValid(), 'a wrong name was accepted because the request said so');
 
         $correct = new LibraryDeleteForm('Bellavista');
-        $correct->setData([LibraryDeleteForm::NAME_FIELD => 'Bellavista']);
-        $correct->getInputFilter()->remove('security');
+        $correct->setData([
+            LibraryDeleteForm::NAME_FIELD => 'Bellavista',
+            'security'                    => $correct->get('security')->getValue(),
+        ]);
 
         self::assertTrue($correct->isValid(), 'the right name stopped being accepted');
     }
