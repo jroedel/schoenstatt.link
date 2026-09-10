@@ -10,10 +10,14 @@ use Laminas\Filter\StripNewlines;
 use Laminas\Filter\StripTags;
 use Laminas\Filter\ToInt;
 use Laminas\Filter\ToNull;
+use Laminas\Validator\Date as DateValidator;
 use Laminas\Validator\EmailAddress;
 use Laminas\Validator\GpsPoint;
+use Laminas\Validator\GreaterThan;
 use Laminas\Validator\InArray;
+use Laminas\Validator\Regex;
 use Laminas\Validator\StringLength;
+use Laminas\Validator\Uri;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use SionModel\Filter\ToBit;
 use SionModel\Filter\ToDateTime;
@@ -160,6 +164,38 @@ final class AssociationInputFilterSpec
      * not, and there the check is the only thing standing between an arbitrary string and
      * the column.
      */
+    /**
+     * What `Laminas\\Form\\Element\\Url`, `Email` and `Date` add to a field of their own
+     * accord, restated here for the same reason as {@see CHECKBOX_DOMAIN}: this class has
+     * no elements to read, and `SionModel\\Form\\Validation\\InputFilter` reads the
+     * specification and nothing else.
+     *
+     * Every other form derives these from the element through
+     * `SionModel\\Form\\InputTypeRules`, which is where the reasoning and the citations
+     * live. Six association fields cannot, so `AssociationValidationParityTest` asserts
+     * the elements still match what is written here.
+     */
+    private const URI = [
+        'name'    => Uri::class,
+        'options' => ['allowAbsolute' => true, 'allowRelative' => false],
+    ];
+
+    /** laminas' own HTML5 pattern, which is looser than the EmailAddress beside it. */
+    private const HTML5_EMAIL = [
+        'name'    => Regex::class,
+        'options' => ['pattern' => '/^[a-zA-Z0-9.!#$%&\'*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/'],
+    ];
+
+    /**
+     * The `Date` element's format check and its `min` attribute. Note the two lower
+     * bounds differ on purpose and both already ran: 1900-01-01 is the element's, and
+     * `DateWithinRange` narrows it to the movement's founding.
+     */
+    private const HTML5_DATE = [
+        ['name' => DateValidator::class, 'options' => ['format' => 'Y-m-d']],
+        ['name' => GreaterThan::class, 'options' => ['min' => '1900-01-01', 'inclusive' => true]],
+    ];
+
     private const CHECKBOX_DOMAIN = [
         [
             'name'    => InArray::class,
@@ -282,6 +318,7 @@ final class AssociationInputFilterSpec
                     ['name' => ToDateTime::class],
                 ],
                 'validators' => [
+                    ...self::HTML5_DATE,
                     ['name' => ParseableDate::class],
                     [
                         'name'    => DateWithinRange::class,
@@ -314,6 +351,7 @@ final class AssociationInputFilterSpec
                     ],
                 ],
                 'validators' => [
+                    self::HTML5_EMAIL,
                     ['name' => EmailAddress::class],
                     self::maxLength(200),
                 ],
@@ -485,7 +523,10 @@ final class AssociationInputFilterSpec
             'filters'    => self::toNullString(),
             //varchar(1000). The element's `maxlength` attribute says 255, which is a
             //client-side courtesy; the column is what a stored value has to fit.
-            'validators' => [self::maxLength(1000)],
+            'validators' => [
+                self::URI,
+                self::maxLength(1000),
+            ],
         ];
     }
 

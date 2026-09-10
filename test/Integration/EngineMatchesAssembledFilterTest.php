@@ -79,10 +79,16 @@ final class EngineMatchesAssembledFilterTest extends TestCase
     /**
      * A floor on comparisons, not on forms. Every assertion here is inside two nested
      * loops over discovered sets, so a repository that found nothing — or a skip rule that
-     * grew to cover everything — would pass silently. 350 is comfortably below the 396 the
-     * closed checkboxes alone produced on the day this was written, and it only ever rises.
+     * grew to cover everything — would pass silently.
+     *
+     * It rises as `validationSuppliedOnlyByElement` shrinks, because a field leaving that
+     * list starts being compared here. 250 when the checkboxes closed; **2,149** once the
+     * selects, URLs, dates, numbers and emails followed, which is nine times the coverage
+     * for the same assertion. The floor sits below that and above the previous step, so it
+     * catches a collapse without pinning an exact number that every batch would have to
+     * edit.
      */
-    private const COMPARISON_FLOOR = 220;
+    private const COMPARISON_FLOOR = 1800;
 
     /**
      * The two fields where the engine and the assembled filter genuinely differ, each with

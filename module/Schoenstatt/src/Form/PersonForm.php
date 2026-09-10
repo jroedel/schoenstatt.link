@@ -7,6 +7,7 @@ use SionModel\Form\SionForm;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
+use SionModel\Form\InputTypeRules;
 
 class PersonForm extends SionForm implements InputFilterProviderInterface
 {
@@ -756,6 +757,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
                 'validators' => [
+                    ...InputTypeRules::email($this->get('email')),
                     ['name' => 'EmailAddress'],
                 ],
             ],
@@ -770,6 +772,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
                 'validators' => [
+                    ...InputTypeRules::email($this->get('email2')),
                     ['name' => 'EmailAddress'],
                 ],
             ],
@@ -796,6 +799,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url1')),
             ],
             'url1Label' => [
                 'required' => false,
@@ -819,6 +823,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url2')),
             ],
             'url2Label' => [
                 'required' => false,
@@ -842,6 +847,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url3')),
             ],
             'url3Label' => [
                 'required' => false,
@@ -865,6 +871,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('facebookUrl')),
             ],
             'skypeUser' => [
                 'required' => false,
@@ -1233,6 +1240,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
+                    ...InputTypeRules::date($this->get('birthDate')),
                     ['name' => 'SionModel\Validator\ParseableDate'],
                     [
                         'name' => 'SionModel\Validator\DateWithinRange',
@@ -1247,6 +1255,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
+                    ...InputTypeRules::date($this->get('priestDate')),
                     ['name' => 'SionModel\Validator\ParseableDate'],
                     [
                         'name' => 'SionModel\Validator\DateWithinRange',
@@ -1265,6 +1274,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
+                    ...InputTypeRules::date($this->get('bishopDate')),
                     ['name' => 'SionModel\Validator\ParseableDate'],
                     [
                         'name' => 'SionModel\Validator\DateWithinRange',
@@ -1282,6 +1292,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\DateSelectNoYear'],
                 ],
+                'validators' => InputTypeRules::date($this->get('nameDay')),
             ],
             'deathDate' => [
                 'required' => false,
@@ -1289,6 +1300,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
+                    ...InputTypeRules::date($this->get('deathDate')),
                     ['name' => 'SionModel\Validator\ParseableDate'],
                     [
                         'name' => 'SionModel\Validator\DateWithinRange',

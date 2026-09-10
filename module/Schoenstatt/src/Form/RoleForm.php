@@ -6,6 +6,7 @@ use SionModel\Form\SionForm;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\InputTypeRules;
 
 class RoleForm extends SionForm implements InputFilterProviderInterface
 {
@@ -172,6 +173,7 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::number($this->get('sort')),
             ],
             'isSinglePosition' => [
                 'required' => false,
