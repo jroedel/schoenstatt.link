@@ -7,6 +7,7 @@ use Books\Model\EventTextTable;
 use Laminas\Validator\Identical;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class TextForm extends SionForm implements InputFilterProviderInterface
 {
@@ -166,6 +167,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isDraft')),
             ],
             'markdownText' => [
                 'required' => false,

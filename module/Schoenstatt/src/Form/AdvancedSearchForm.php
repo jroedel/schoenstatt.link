@@ -4,6 +4,7 @@ namespace Schoenstatt\Form;
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CheckboxDomain;
 
 class AdvancedSearchForm extends Form implements InputFilterProviderInterface
 {
@@ -115,6 +116,7 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('onlyMainRoles')),
             ],
             'associationCountry' => [
                 'required' => false,

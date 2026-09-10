@@ -8,6 +8,7 @@ use Books\Model\LibraryOptions;
 use SionModel\Filter\ToBit;
 use Laminas\Filter\ToInt;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class BookForm extends SionForm implements InputFilterProviderInterface
 {
@@ -756,6 +757,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isActive')),
             ],
             'inactivationReason' => [
                 'required' => false,
