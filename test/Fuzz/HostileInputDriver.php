@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Fuzz;
 
 use Laminas\Form\Fieldset;
-use Laminas\Form\Form;
+use SionModel\Form\Form;
 use Throwable;
 
 /**
@@ -437,9 +437,9 @@ final class HostileInputDriver
      * Throwable captured.
      *
      * `Form::getData()` throws `DomainException` unless the form validated, and the
-     * form never validates here because of the CSRF element — so the filtered
-     * values are read off the input filter, which is the same array `getData()`
-     * would return (`getData()` is `$filter->getValues()`).
+     * form never validates here because of the CSRF element — so the answer has to
+     * be per-field, and both halves of it come from the last validation rather than
+     * from the elements. See the comment inside on why.
      *
      * @param array<string, mixed> $data
      * @return array{throwable: ?string, messages: array<string, mixed>, values: array<string, mixed>}
@@ -465,24 +465,25 @@ final class HostileInputDriver
                     ];
                 }
 
-                // Messages come from the input filter, never from
-                // `Form::getMessages()`. `Form::isValid()` ends with
-                // `if (! $result) { $this->setMessages($filter->getMessages()); }`,
-                // and `Fieldset::setMessages()` only touches the elements named in
-                // that set — so an element that failed on an earlier call and
-                // passes on this one **keeps its stale messages forever**. Driving
-                // one shared form instance through 45 corpus values therefore
-                // accumulates messages until every field looks rejected, and the
-                // bound check silently measured nothing at all (0 checks performed,
-                // 0 violations, green). `BaseInputFilter` rebuilds its
-                // invalid-input list on every `isValid()`, so it is the only
-                // trustworthy answer to "was this field accepted *this time*".
-                $filter = $form->getInputFilter();
-
+                // Never `Form::getMessages()`. `Fieldset::setMessages()` only touches
+                // the elements named in the set it is given, so an element that failed
+                // on an earlier call and passes on this one **keeps its stale messages
+                // forever**. Driving one shared form instance through 45 corpus values
+                // therefore accumulates messages until every field looks rejected, and
+                // the bound check silently measures nothing (0 checks performed, 0
+                // violations, green — which is what testTheBoundCheckActuallyMeasures
+                // Something exists to catch).
+                //
+                // This used to read `getInputFilter()->getMessages()` for that reason,
+                // because BaseInputFilter rebuilds its invalid-input list on every call.
+                // `SionModel\Form\Form` builds a fresh engine per validation and keeps
+                // its result, which is the same guarantee from the filter the application
+                // actually runs — and the laminas filter stopped being that filter when
+                // the engine was cut over, at which point this returned nothing at all.
                 return [
                     'throwable' => null,
-                    'messages'  => $filter->getMessages(),
-                    'values'    => $filter->getValues(),
+                    'messages'  => $form->validationMessages(),
+                    'values'    => $form->getData(),
                 ];
             } catch (Throwable $e) {
                 return ['throwable' => $e::class, 'messages' => [], 'values' => []];
