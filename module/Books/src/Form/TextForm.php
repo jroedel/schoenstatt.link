@@ -151,6 +151,11 @@ class TextForm extends SionForm implements InputFilterProviderInterface
                         'name' => Identical::class,
                         'options' => [
                             'token' => EventTextTable::TEXT_KIND_JK_TEXT,
+                            //Without `literal`, Identical reads the token as a key into the
+                            //submitted data — see App\Books\LibraryDeleteForm, where the same
+                            //default let a confirmation be bypassed. Here it meant a request
+                            //carrying `jk-text=other` could store any kind it liked.
+                            'literal' => true,
                         ],
                     ],
                 ]
