@@ -102,7 +102,17 @@ final class AssociationValidationParityTest extends TestCase
             //It does not weaken the CSRF claim: testCsrfIsTheOnlyDifference builds the
             //form *with* it and compares the two input sets directly, which is the
             //assertion that would catch the API skipping anything else.
-            $form->remove(AssociationValidator::SESSION_ONLY_INPUT);
+            //
+            //The **input** goes, not the element — which is what
+            //AssociationValidator::inputFilter() does, so this helper is now the same
+            //operation the API performs rather than a similar-looking one. It matters
+            //since AssociationForm's specification names `security` (2026-09-10): a form
+            //whose element had been removed could no longer describe its own rules, and
+            //every case here died on "No element by the name of [security] found in form".
+            $filter = $form->getInputFilter();
+            if ($filter->has(AssociationValidator::SESSION_ONLY_INPUT)) {
+                $filter->remove(AssociationValidator::SESSION_ONLY_INPUT);
+            }
         }
 
         return $form;

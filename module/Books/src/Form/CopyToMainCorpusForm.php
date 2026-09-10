@@ -4,6 +4,7 @@ namespace Books\Form;
 
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\CsrfSpec;
 
 /**
  * Confirms copying a data-sourced publication into the main corpus.
@@ -58,16 +59,22 @@ class CopyToMainCorpusForm extends Form implements InputFilterProviderInterface
     }
 
     /**
-     * Nothing to specify: `security` brings its own CSRF validator and `submit` is a
-     * button rather than data. Returning an empty spec is what DeleteEntityForm does,
-     * and the fuzz harness reads it — an element missing from here would silently get
-     * `['required' => false]` and no validation at all, which is the trap
-     * test/Fuzz/FormValidationContractTest exists to catch.
+     * Only the CSRF token: `submit` is a button rather than data, and this form carries
+     * no fields of its own.
+     *
+     * `security` is stated here even though `Laminas\Form\Element\Csrf` supplies the
+     * validator itself. That was the reasoning this docblock used to give for returning
+     * an empty array, and it stops being safe at step 5:
+     * `SionModel\Form\Validation\InputFilter` reads the specification and nothing else,
+     * so a check that exists only on the element is a check the cutover removes. See
+     * SionModel\Form\CsrfSpec.
      *
      * @return array<string, mixed>
      */
     public function getInputFilterSpecification()
     {
-        return [];
+        return [
+            'security' => CsrfSpec::forElement($this->get('security')),
+        ];
     }
 }
