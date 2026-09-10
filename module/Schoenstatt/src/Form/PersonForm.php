@@ -793,6 +793,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'url1' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('url1')),
                     ['name' => 'ToNull',
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
@@ -817,6 +818,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'url2' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('url2')),
                     ['name' => 'ToNull',
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
@@ -841,6 +843,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'url3' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('url3')),
                     ['name' => 'ToNull',
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
@@ -865,6 +868,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'facebookUrl' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('facebookUrl')),
                     ['name' => 'ToNull',
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
@@ -1237,6 +1241,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'birthDate' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('birthDate')),
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
@@ -1252,6 +1257,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'priestDate' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('priestDate')),
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
@@ -1271,6 +1277,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'bishopDate' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('bishopDate')),
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
@@ -1290,6 +1297,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'nameDay' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('nameDay')),
                     ['name' => 'SionModel\Filter\DateSelectNoYear'],
                 ],
                 'validators' => InputTypeRules::date($this->get('nameDay')),
@@ -1297,6 +1305,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'deathDate' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('deathDate')),
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [

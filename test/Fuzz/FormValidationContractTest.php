@@ -247,6 +247,28 @@ final class FormValidationContractTest extends TestCase
     }
 
     /**
+     * The same rule for filters, which is where the category above was blind.
+     *
+     * Added 2026-09-11, when the engine was first put behind the forms and the smoke suite
+     * refused to create a person: `PersonForm::nameDay` is a `DateSelect` whose element
+     * supplies the filter that turns three posted selects into a date string, and no
+     * specification named it. Seventy-four fields were in that state while
+     * `validationSuppliedOnlyByElement` read 3.
+     */
+    public function testNoFormLeansOnItsElementsForFilteringTheSpecificationDoesNotDeclare(): void
+    {
+        $this->assertNoNewGaps(
+            'filteringSuppliedOnlyByElement',
+            self::gaps()['filteringSuppliedOnlyByElement'],
+            'A filter that reaches the assembled filter from the element half only. It works today '
+            . 'and disappears when SionModel\Form\Validation\InputFilter takes over. Restate it in '
+            . 'the spec — SionModel\Form\InputTypeRules::filters() answers for every element type '
+            . 'that supplies one, and it must be spread FIRST, because laminas merges an element\'s '
+            . 'filters ahead of the specification\'s and a ToNull behaves differently after a trim.'
+        );
+    }
+
+    /**
      * A browser button that the server treats as an ordinary text input. Low
      * severity on its own — it lands in `getData()` and is usually discarded by
      * `updateColumns` — but it is the same wiring mistake as the rest, and giving it

@@ -187,6 +187,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
             'startDate' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('startDate')),
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
@@ -202,6 +203,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
             'endDate' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('endDate')),
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [

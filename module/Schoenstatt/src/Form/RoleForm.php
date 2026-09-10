@@ -166,6 +166,7 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
             'sort' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('sort')),
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use Laminas\Filter\FilterPluginManager;
+use Laminas\Form\Element\DateSelect;
+use Laminas\Form\Element\MonthSelect;
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\ServiceManager\ServiceManager;
@@ -239,6 +241,86 @@ final class WholeFormEngineParityTest extends TestCase
             "The engine over FormSpecification disagreed with the filter the application "
             . "validates with today:\n  " . implode("\n  ", $disagreed)
         );
+    }
+
+    /**
+     * A `DateSelect` posts three selects, and the shape only agrees if the specification
+     * declares the filter that reassembles them.
+     *
+     * The probes above are strings and `null` — the shapes a text input can hold — so they
+     * never reach this. `Laminas\Form\Element\DateSelect` renders `year`, `month` and `day`
+     * as three `<select>`s, the browser posts an array, and
+     * `DateSelect::getInputSpecification()` supplies the `Laminas\Filter\DateSelect` that
+     * turns it into `Y-m-d`.
+     *
+     * Without that filter in the specification the array reaches `Laminas\Validator\Date`
+     * unchanged and the field fails — which is exactly what happened the first time the
+     * engine was put behind the forms: the smoke suite could not create a person, on a
+     * field the form does not even render on that page. This is the assertion that would
+     * have said so first.
+     */
+    public function testADateSelectPostsThreeSelectsAndBothFiltersAgree(): void
+    {
+        $posted    = ['year' => '2026', 'month' => '3', 'day' => '17'];
+        $checked   = 0;
+        $disagreed = [];
+
+        foreach (FormRepository::instance()->forms() as $class => $form) {
+            if (! $form instanceof Form) {
+                continue;
+            }
+
+            foreach ($form->getElements() as $name => $element) {
+                if (! $element instanceof DateSelect && ! $element instanceof MonthSelect) {
+                    continue;
+                }
+                $name = (string) $name;
+
+                try {
+                    $assembled = $form->getInputFilter();
+                    $spec      = FormSpecification::of($form);
+                } catch (Throwable) {
+                    continue;
+                }
+                if (! $assembled->has($name) || ! isset($spec[$name])) {
+                    continue;
+                }
+
+                $checked++;
+
+                $laminas = self::runLaminas($assembled, [$name => $posted]);
+                $ours    = self::runEngine($spec, [$name => $posted]);
+
+                if (null === $laminas) {
+                    $disagreed[] = sprintf('%s::%s — laminas threw on a three-select post', $class, $name);
+                    continue;
+                }
+
+                $laminasFailed = isset($laminas['messages'][$name]);
+                $oursFailed    = isset($ours['messages'][$name]);
+                if ($laminasFailed !== $oursFailed) {
+                    $disagreed[] = sprintf(
+                        '%s::%s — laminas %s the three-select post, the engine %s it',
+                        $class,
+                        $name,
+                        $laminasFailed ? 'rejected' : 'accepted',
+                        $oursFailed ? 'rejected' : 'accepted'
+                    );
+                }
+                if (($laminas['values'][$name] ?? null) != ($ours['values'][$name] ?? null)) {
+                    $disagreed[] = sprintf(
+                        '%s::%s — laminas filtered it to %s, the engine to %s',
+                        $class,
+                        $name,
+                        self::describe($laminas['values'][$name] ?? null),
+                        self::describe($ours['values'][$name] ?? null)
+                    );
+                }
+            }
+        }
+
+        self::assertGreaterThanOrEqual(1, $checked, 'no DateSelect element was found to drive');
+        self::assertSame([], $disagreed, implode("\n  ", $disagreed));
     }
 
     /**

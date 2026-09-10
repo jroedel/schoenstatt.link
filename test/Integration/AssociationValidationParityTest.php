@@ -86,7 +86,7 @@ final class AssociationValidationParityTest extends TestCase
      * config. Registering just that keeps the test free of module loading — the point
      * being to compare two rule sets, not to rebuild the application around them.
      */
-    private static function form(bool $withCsrf = true): AssociationForm
+    private static function form(): AssociationForm
     {
         $elements = new FormElementManager(new ServiceManager(), [
             'invokables' => ['Phone' => Phone::class],
@@ -97,29 +97,37 @@ final class AssociationValidationParityTest extends TestCase
         $form->setFieldDomains(self::domains());
         $form->init();
 
-        if (! $withCsrf) {
-            //The behavioural tests compare *rules*, and a CSRF element with no session
-            //and no submitted token fails every payload — which would make the form
-            //invalid for a reason the API deliberately does not share, on all 32 cases
-            //at once. Dropping it here keeps those tests about the association.
-            //
-            //It does not weaken the CSRF claim: testCsrfIsTheOnlyDifference builds the
-            //form *with* it and compares the two input sets directly, which is the
-            //assertion that would catch the API skipping anything else.
-            //
-            //The **input** goes, not the element — which is what
-            //AssociationValidator::inputFilter() does, so this helper is now the same
-            //operation the API performs rather than a similar-looking one. It matters
-            //since AssociationForm's specification names `security` (2026-09-10): a form
-            //whose element had been removed could no longer describe its own rules, and
-            //every case here died on "No element by the name of [security] found in form".
-            $filter = $form->getInputFilter();
-            if ($filter->has(AssociationValidator::SESSION_ONLY_INPUT)) {
-                $filter->remove(AssociationValidator::SESSION_ONLY_INPUT);
-            }
-        }
-
         return $form;
+    }
+
+    /**
+     * The payload with a token this form will accept, the way a browser submits one.
+     *
+     * The behavioural tests below compare *rules*, and an unanswered CSRF element makes
+     * every payload invalid for a reason the API deliberately does not share — so
+     * something has to be done about it, and what is done has changed twice.
+     *
+     * It removed the **element**, which broke every case at once the day
+     * `AssociationForm`'s specification started naming `security`: a form whose element
+     * is gone cannot describe its own rules. It then removed the **input** from the
+     * assembled filter, matching what `AssociationValidator::inputFilter()` does — which
+     * worked until the form stopped validating through that filter at all.
+     *
+     * Answering the token is the version that depends on nothing: `Csrf::getValue()`
+     * returns the hash the element would render into the page, and posting it back is
+     * what a browser does. No element is removed, no filter is reached into, and the
+     * CSRF check is exercised rather than skipped.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private static function signed(AssociationForm $form, array $payload): array
+    {
+        $payload[AssociationValidator::SESSION_ONLY_INPUT] = $form
+            ->get(AssociationValidator::SESSION_ONLY_INPUT)
+            ->getValue();
+
+        return $payload;
     }
 
     /**
@@ -198,8 +206,8 @@ final class AssociationValidationParityTest extends TestCase
     #[DataProvider('payloads')]
     public function testFormAndBareFilterAgree(array $payload): void
     {
-        $form = self::form(withCsrf: false);
-        $form->setData($payload);
+        $form = self::form();
+        $form->setData(self::signed($form, $payload));
         $formValid = $form->isValid();
 
         $filter = (new AssociationValidator(self::domains()))->inputFilter();
@@ -243,8 +251,8 @@ final class AssociationValidationParityTest extends TestCase
             'publicNotes' => '<script>x</script>Notes',
         ] + self::VALID;
 
-        $form = self::form(withCsrf: false);
-        $form->setData($payload);
+        $form = self::form();
+        $form->setData(self::signed($form, $payload));
         $form->isValid();
 
         $filter = (new AssociationValidator(self::domains()))->inputFilter();
@@ -401,7 +409,7 @@ final class AssociationValidationParityTest extends TestCase
      */
     public function testTheSharedSpecificationStillDescribesTheFormsElements(): void
     {
-        $form = self::form(withCsrf: false);
+        $form = self::form();
 
         foreach (['url1', 'url2', 'url3', 'facebookUrl'] as $field) {
             self::assertInstanceOf(Url::class, $form->get($field), $field);
@@ -421,7 +429,7 @@ final class AssociationValidationParityTest extends TestCase
 
     public function testTheSharedSpecificationStillDescribesTheFormsCheckboxes(): void
     {
-        $form = self::form(withCsrf: false);
+        $form = self::form();
 
         foreach (self::CHECKBOXES as $field) {
             $element = $form->get($field);
@@ -490,8 +498,8 @@ final class AssociationValidationParityTest extends TestCase
         $spec = (new AssociationInputFilterSpec(self::domains()))->toArray();
         self::assertArrayNotHasKey('eventsJson', $spec);
 
-        $form = self::form(withCsrf: false);
-        $form->setData(self::VALID);
+        $form = self::form();
+        $form->setData(self::signed($form, self::VALID));
         $form->isValid();
 
         self::assertArrayNotHasKey(
