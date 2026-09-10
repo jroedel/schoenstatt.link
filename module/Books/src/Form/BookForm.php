@@ -376,6 +376,11 @@ class BookForm extends SionForm implements InputFilterProviderInterface
     */
     public function setLibraryOptions(LibraryOptions $libraryOptions)
     {
+        //First, not last. getInputFilterSpecification() reads it, and the old ordering
+        //assigned it on the way out — after a getInputFilter() call in this very method
+        //had already built and memoised the filter.
+        $this->libraryOptions = $libraryOptions;
+
         $this->get('collectionId')->setAttribute('disabled', ! $libraryOptions->useCollections);
         $callNumber = $this->get('callNumber');
         $newCallNumber = $this->get('newCallNumber');
@@ -403,12 +408,13 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             $collectionId->setValue($libraryOptions->mainCollectionId);
         }
 
+        //The attribute only — the browser's own hint. Whether the *server* requires a
+        //call number is stated in getInputFilterSpecification() now; see
+        //requiresCallNumber() for why the line that used to be here was a problem.
         if (is_bool($libraryOptions->requireCallNumbers)) {
             $callNumber->setAttribute('required', $libraryOptions->requireCallNumbers);
-            $this->getInputFilter()->get('callNumber')->setRequired($libraryOptions->requireCallNumbers);
         }
 
-        $this->libraryOptions = $libraryOptions;
         return $this;
     }
 
@@ -419,6 +425,42 @@ class BookForm extends SionForm implements InputFilterProviderInterface
         }
         $return = parent::setData($data);
         return $return;
+    }
+
+    /**
+     * Whether this library insists on a call number.
+     *
+     * `lib_libraries.RequireCallNumbers` is per library and really varies: Bellavista and
+     * both Austin libraries require one, Colegio Mayor and the rest do not.
+     *
+     * ## Why this is a method and not a line in setLibraryOptions()
+     *
+     * It was that line until 2026-09-11:
+     *
+     *     $this->getInputFilter()->get('callNumber')->setRequired($libraryOptions->…);
+     *
+     * which reached into the **built** input filter and patched it. Two things were wrong
+     * with it, and the second is why it had to go.
+     *
+     * It called `getInputFilter()` from inside `setLibraryOptions()`, which builds and
+     * memoises the filter then and there — while `$this->libraryOptions` was still unset,
+     * because the assignment was the last statement in the method. Anything the
+     * specification wanted to read about the library was therefore guaranteed absent at
+     * the moment the specification ran.
+     *
+     * And a rule that exists only in the assembled filter is a rule
+     * `SionModel\Form\Validation\InputFilter` cannot see. That engine reads the
+     * specification and nothing else, so this was the single field in the application
+     * whose validation the step 5 cutover could not have carried —
+     * `test/Integration/EngineMatchesAssembledFilterTest` had it as a named exception.
+     *
+     * Defaults to false, which is what the specification said before the patch was
+     * applied: a form built without library options requires nothing, exactly as it did.
+     */
+    public function requiresCallNumber(): bool
+    {
+        return isset($this->libraryOptions)
+            && true === $this->libraryOptions->requireCallNumbers;
     }
 
     public function getInputFilterSpecification()
@@ -484,8 +526,10 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
+            //Per-library, and read here rather than patched into the built filter
+            //afterwards — see requiresCallNumber().
             'callNumber' => [
-                'required' => false,
+                'required' => $this->requiresCallNumber(),
                 'filters' => [
                     ['name' => 'StripTags'],
                     ['name' => 'StripNewlines'],
