@@ -9,6 +9,8 @@ use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Laminas\Validator\Identical;
 use Laminas\Validator\NotEmpty;
+use Laminas\Validator\StringLength;
+use SionModel\Form\CsrfSpec;
 
 /**
  * The confirmation that stands between a visitor and an entire library.
@@ -104,6 +106,12 @@ final class LibraryDeleteForm extends Form implements InputFilterProviderInterfa
     public function getInputFilterSpecification(): array
     {
         return [
+            //Restated rather than left to `Laminas\Form\Element\Csrf`, for the reason in
+            //SionModel\Form\CsrfSpec: `SionModel\Form\Validation\InputFilter` reads the
+            //specification and nothing else, so a check that lives only on the element is a
+            //check that disappears the day the engine is cut over — and on this form that
+            //check is what stands between a stolen link and an entire library.
+            'security'       => CsrfSpec::forElement($this->get('security')),
             self::NAME_FIELD => [
                 'required'   => true,
                 'filters'    => [
@@ -117,6 +125,15 @@ final class LibraryDeleteForm extends Form implements InputFilterProviderInterfa
                                 NotEmpty::IS_EMPTY => 'Type the library name to confirm the deletion.',
                             ],
                         ],
+                    ],
+                    [
+                        //`lib_libraries.LibraryName` is varchar(100), so nothing longer can
+                        //be this library's name and nothing longer needs comparing. The
+                        //bound is here rather than implied by Identical because an
+                        //unbounded field accepts as much as PHP will hold before any
+                        //comparison runs.
+                        'name'    => StringLength::class,
+                        'options' => ['encoding' => 'UTF-8', 'max' => 100],
                     ],
                     [
                         'name'    => Identical::class,
