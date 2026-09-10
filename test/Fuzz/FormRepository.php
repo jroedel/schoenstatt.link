@@ -134,6 +134,28 @@ final class FormRepository
         return self::$instance ??= new self();
     }
 
+    /**
+     * A repository outside the shared one, built here and now.
+     *
+     * The singleton is built by whichever test touches it first, under whatever process
+     * state that test left — and `SchoenstattTable` reads `\Locale::getDefault()` when a
+     * form factory asks it for value options, so "whatever state" decides the labels of
+     * 136 selects. Run alone, `SchoenstattTest\Element\ElementSurface` saw 496 association
+     * options all labelled `null` (a CLI process defaults to `en_US_POSIX`, which is not a
+     * key of `nameByLocale`); run after a test that had set a real locale, it saw 496
+     * names. The baseline was recorded in the first state and the full suite produced the
+     * second.
+     *
+     * So a caller that needs the forms built under conditions it controls asks for its
+     * own, rather than reaching for a shared object whose contents depend on test order.
+     * It costs a second build — module loading and the value-option queries — which is
+     * why it is not what {@see instance()} does.
+     */
+    public static function fresh(): self
+    {
+        return new self();
+    }
+
     // ------------------------------------------------------------- discovery
 
     /**
