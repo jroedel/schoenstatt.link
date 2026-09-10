@@ -6,50 +6,44 @@ namespace App\Schoenstatt\Association;
 
 use Laminas\Form\Factory as FormFactory;
 use Laminas\Form\FormElementManager;
-use Laminas\InputFilter\InputFilterInterface;
 use Laminas\ServiceManager\ServiceManager;
 use Schoenstatt\Form\AssociationForm;
 use SionModel\Form\Element\Phone;
+use SionModel\Form\Validation\FormSpecification;
+use SionModel\Form\Validation\InputFilter as Engine;
 
 /**
- * The association rules as something an API request can run: one `InputFilter`,
- * built with no MVC, no modules, no merged config and no session.
+ * The association rules as something an API request can run, built with no MVC, no
+ * modules, no merged config and no session.
  *
- * ## Why this builds the form instead of the specification
+ * ## Why this builds the form rather than the specification directly
  *
- * The obvious implementation is `new InputFilter\Factory()` over
- * {@see AssociationInputFilterSpec}, and the first version of this class was exactly
- * that. It was wrong, and the way it was wrong is worth recording because it is
- * invisible from the specification alone.
+ * The obvious implementation is an engine over {@see AssociationInputFilterSpec}, and
+ * the first version of this class was exactly that. It was wrong for a reason that is
+ * invisible from the specification alone: `Laminas\Form\Form::getInputFilter()` built
+ * an input per **element** as well as per spec key and merged the two, so the form the
+ * moderator submitted was held to rules the specification never mentioned — twelve
+ * fields' worth on this form (a `Regex` on `email`, a `Uri` on each of the four URLs,
+ * `Date` and `GreaterThan` on `foundationDate`, an `InArray` on each of the six
+ * checkboxes). A filter over the specification alone would have been **looser than the
+ * web form**, and an agent could have stored a malformed URL that a moderator could not.
  *
- * `Laminas\InputFilter\BaseInputFilter::add()` does **not** replace an input that
- * already exists — it merges the new one into the original. `Form::getInputFilter()`
- * adds the element-derived inputs first and the form's specification second, so a
- * field ends up with the union of both validator chains, not the specification's
- * alone. Measured on this form, twelve fields carry a validator the specification
- * never mentions:
- *
- * | field                          | contributed by the element |
- * |--------------------------------|----------------------------|
- * | `email`                        | `Regex`                    |
- * | `url1`, `url2`, `url3`, `facebookUrl` | `Uri`               |
- * | `foundationDate`               | `Date`, `GreaterThan`      |
- * | the six checkboxes             | `InArray`                  |
- *
- * A bare filter over the specification would therefore have been **looser than the
- * web form** on exactly those twelve — an agent could store a malformed URL that a
- * moderator could not. Since the whole point is that the two surfaces validate
- * identically, the API takes the form's own filter and parity stops being something
- * anyone has to maintain.
+ * Since the validation cutover all twelve are stated in the specification, so that
+ * particular gap is closed — and this still goes through the form, and should.
+ * `AssociationForm` composes its specification out of `AssociationInputFilterSpec` *plus*
+ * what the form adds around it, and asking the form is what keeps "the API is held to the
+ * web form's rules" true by construction rather than by two lists someone maintains.
+ * `test/Integration/AssociationValidationParityTest` checks both halves: that the
+ * specification is still the whole of it, and that the CSRF key is the only thing the API
+ * drops.
  *
  * ## Why that costs nothing
  *
- * `laminas-form` requires `laminas-escaper`, `laminas-filter`, `laminas-hydrator`,
- * `laminas-inputfilter`, `laminas-servicemanager`, `laminas-stdlib` and
- * `laminas-validator` — and **not** `laminas-mvc`. Rendering a form needs the MVC
- * stack (view helpers, the plugin managers the layout pulls in); *validating* with
- * one does not. So a headless `AssociationForm` is available on a Symfony-served
- * route today and will still be available after laminas-mvc is removed.
+ * Validating with a form needs no MVC stack: rendering one does (view helpers, the
+ * plugin managers the layout pulls in), validating does not. So a headless
+ * `AssociationForm` is available on a Symfony-served route today, and the engine it
+ * validates through — {@see Engine} — is the same one every web form uses, resolving
+ * its rules out of a bare `ServiceManager`.
  *
  * The only thing `init()` needs beyond the defaults is SionModel's `Phone` element,
  * registered below as the single invokable rather than by loading SionModel's module
@@ -58,11 +52,11 @@ use SionModel\Form\Element\Phone;
  * ## The CSRF seam
  *
  * The form carries a `security` CSRF element, and `Laminas\Validator\Csrf` reads a
- * `Laminas\Session\Container`. An API request has no session, so leaving the input in
+ * `Laminas\Session\Container`. An API request has no session, so leaving the rule in
  * place would be a fatal rather than a validation failure — and would refuse every
- * agent regardless. It is removed here, and that removal is the *entire* difference
- * between what an agent is held to and what a moderator is held to.
- * `test/Integration/AssociationValidationParityTest` asserts it is the only one.
+ * agent regardless. Its key is dropped from the specification here, and that removal is
+ * the *entire* difference between what an agent is held to and what a moderator is held
+ * to. `AssociationValidationParityTest` asserts it is the only one.
  */
 final class AssociationValidator
 {
@@ -87,21 +81,30 @@ final class AssociationValidator
     }
 
     /**
-     * A fresh input filter. Never shared: `InputFilter` holds the data and messages of
-     * whatever was last validated through it, so handing the same instance to two
-     * requests would leak one caller's submission into another's.
+     * A fresh engine over this form's specification. Never shared: the engine holds the
+     * data and messages of whatever was last validated through it, so handing the same
+     * instance to two requests would leak one caller's submission into another's.
      *
-     * @return InputFilterInterface<array<string, mixed>>
+     * The CSRF rule is removed by dropping its key — the specification is plain data, so
+     * "hold the agent to everything except this" is an `unset`, where the laminas filter
+     * this replaced needed `has()` and `remove()` on an assembled object.
      */
-    public function inputFilter(): InputFilterInterface
+    public function inputFilter(): Engine
     {
-        $filter = $this->form()->getInputFilter();
+        $spec = $this->specification();
+        unset($spec[self::SESSION_ONLY_INPUT]);
 
-        if ($filter->has(self::SESSION_ONLY_INPUT)) {
-            $filter->remove(self::SESSION_ONLY_INPUT);
-        }
+        return Engine::withLaminasRules($spec);
+    }
 
-        return $filter;
+    /**
+     * The whole form's specification, CSRF included.
+     *
+     * @return array<string, mixed>
+     */
+    public function specification(): array
+    {
+        return FormSpecification::of($this->form());
     }
 
     /**
