@@ -32,13 +32,55 @@ US=$'\x1f'
 # one request and resets it. Used for the maintenance key, which must not travel
 # in a query string — that lands in the server's access log on every deploy.
 EXTRA_HEADERS=()
+# Retried once, and only on a timeout or a connection that produced no response at
+# all — curl's own failure, reported as status 000.
+#
+# WHY: a timeout is an ABSENT MEASUREMENT, not a failed assertion. Every check below
+# asks a question about a response; when there is no response there is nothing to
+# judge, and answering "the endpoint is broken" is a guess. On 2026-09-10 a single
+# 45-second timeout on /api/v3/schema failed a deploy of a release that was fine —
+# the very next request in the same run succeeded, and the endpoint answered in
+# 0.75 s immediately afterwards. The operator was told SMOKE CHECKS FAILED and left
+# to decide whether to roll a good release back, against destructive migrations that
+# made rolling back the more dangerous option.
+#
+# The retry is announced, not silent. A slow endpoint has to stay visible: if the
+# retry succeeds, the run says so and passes; if it times out twice, that is a
+# finding and the check fails as before. What is NOT retried is any real response —
+# a 500 is a 500 on the first try.
+RETRY_PAUSE=${SMOKE_PROD_RETRY_PAUSE:-3}
 fetch() {
-    local url=$1 follow=() meta
+    local url=$1 follow=() meta attempt=1
     [ "${2:-}" = "--follow" ] && follow=(--location)
-    meta=$(curl "${CURL_OPTS[@]}" ${follow[@]+"${follow[@]}"} \
-        ${EXTRA_HEADERS[@]+"${EXTRA_HEADERS[@]}"} -o "$BODY" -D "$HDRS" \
-        -w "%{http_code}${US}%{redirect_url}${US}%{content_type}${US}%{http_version}${US}%{num_redirects}${US}%{url_effective}" "$url") \
-        || meta="000${US}${US}${US}${US}0${US}"
+
+    while :; do
+        meta=$(curl "${CURL_OPTS[@]}" ${follow[@]+"${follow[@]}"} \
+            ${EXTRA_HEADERS[@]+"${EXTRA_HEADERS[@]}"} -o "$BODY" -D "$HDRS" \
+            -w "%{http_code}${US}%{redirect_url}${US}%{content_type}${US}%{http_version}${US}%{num_redirects}${US}%{url_effective}" "$url") \
+            || meta="000${US}${US}${US}${US}0${US}"
+
+        case "$meta" in
+            000"$US"*)
+                if [ "$attempt" -ge 2 ]; then
+                    echo "  warn  $url did not answer twice, ${RETRY_PAUSE}s apart — reporting it as a failure" >&2
+                    break
+                fi
+                echo "  warn  $url did not answer within the timeout; retrying once in ${RETRY_PAUSE}s" >&2
+                attempt=$((attempt + 1))
+                sleep "$RETRY_PAUSE"
+                ;;
+            *) break ;;
+        esac
+    done
+
+    #An `if`, not `[ … ] && …`: the latter returns non-zero when the test is false,
+    #which would make fetch() itself report failure on every ordinary request.
+    if [ "$attempt" -gt 1 ]; then
+        case "$meta" in
+            000"$US"*) ;;
+            *) echo "  warn  $url answered on the retry — slow, not broken" >&2 ;;
+        esac
+    fi
     # HOPS/EFFECTIVE are the pair that matters under --follow, where %{redirect_url} is empty
     # (curl only reports a redirect it did NOT take) and %{http_code} is the destination's.
     # Without them a URL that 301s is indistinguishable from one that answers 200.
