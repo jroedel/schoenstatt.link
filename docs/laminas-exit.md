@@ -58,6 +58,15 @@ under `module/*/src` that a Symfony-served request reaches.
   against. Three option keys become documentation the day it lands:
   `disable_inarray_validator` (63 uses), `required` (124) and `allow_empty` are read by the
   input-filter half, which no longer looks at elements.
+  `SionModel\Form\Element` holds the replacement: `Element` plus fifteen classes, none of
+  them supplying an input specification, all of them still implementing laminas' element
+  interfaces so a `Laminas\Form\Fieldset` can hold one until the form model lands. They
+  are not reached by any form yet; `test/Integration/ElementModelParityTest` builds one from
+  each real definition and compares it against the laminas element it replaces, and
+  `test/Unit/ElementModelBehaviourTest` pins the edges no definition exercises. Two things
+  are deliberately not reproduced: laminas' `hasValue` flag, which nothing in laminas-form
+  or this application reads, and `MonthSelect`, which no form has — so `DateSelect` does not
+  inherit from one here.
   A rule that lives on an element and not in a specification is a rule the engine cannot
   see, so `test/Fuzz/known-form-gaps.php` tracks two categories for it —
   `validationSuppliedOnlyByElement` (3, all harness artefacts) and
