@@ -40,10 +40,13 @@ under `module/*/src` that a Symfony-served request reaches.
   `SionModel\Form\Validation\FormSpecification` assembles — the form's
   `getInputFilterSpecification()`, an entry per element, and a nested entry per fieldset or
   collection, as plain data. `Laminas\InputFilter` is still installed and still assembles
-  `getInputFilter()`, which three non-form callers use
+  `getInputFilter()`, but **no production code calls it**: the three non-form callers
   (`App\Schoenstatt\Association\AssociationValidator`, `JTranslate\Form\PhraseValidator`,
-  `Schoenstatt\Service\PatresGatewayFactory`) and which
-  `test/Integration/WholeFormEngineParityTest` compares against the engine on every form.
+  `Schoenstatt\Service\PatresGatewayFactory`) build the engine over
+  `FormSpecification::of($form)` through `InputFilter::withLaminasRules()`, dropping the
+  CSRF rule by unsetting its key rather than by `remove()`ing an input. What still calls
+  `getInputFilter()` is `test/Integration/WholeFormEngineParityTest`, which compares
+  laminas against the engine on every form and is what the element swap retires.
   laminas-form still supplies elements and rendering; the packages leave when the element
   and form models land.
   What remains of step 5 is the element model and the form model. Measured 2026-09-11

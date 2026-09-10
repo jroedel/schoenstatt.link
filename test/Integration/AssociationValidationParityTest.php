@@ -14,7 +14,6 @@ use App\Schoenstatt\Association\AssociationValidator;
 use InvalidArgumentException;
 use Laminas\Form\Factory as FormFactory;
 use Laminas\Form\FormElementManager;
-use Laminas\InputFilter\Factory as InputFilterFactory;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -37,21 +36,23 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * That makes most of the parity structural, which is the point — but not all of it,
  * and what is left is what this test pins:
  *
- * - **The API removes the CSRF input.** It has to: `Laminas\Validator\Csrf` reads a
+ * - **The API removes the CSRF rule.** It has to: `Laminas\Validator\Csrf` reads a
  *   session an API request does not have. That removal is the entire permitted
- *   difference between the two surfaces, and `testCsrfIsTheOnlyDifference` asserts
- *   it is the *only* one — field by field, validator by validator, filter by filter.
- *   A future edit that drops another input to make something pass fails here.
+ *   difference between the two surfaces, and `testCsrfIsTheOnlyRuleTheApiDrops`
+ *   asserts it is the *only* one. A future edit that drops another key to make
+ *   something pass fails here.
  * - **Behaviour, not just wiring.** `SionForm::setData()` rewrites data before the
- *   filter sees it and `AssociationForm::setData()` mutates value options, so
- *   identical chains still do not prove identical verdicts. Both surfaces are driven
+ *   rules see it and `AssociationForm::setData()` mutates value options, so identical
+ *   specifications still do not prove identical verdicts. Both surfaces are driven
  *   with the same payloads and their verdicts, messages *and filtered values*
  *   compared.
- * - **The specification is not the whole filter.** Building an input filter straight
- *   from `AssociationInputFilterSpec` yields something looser than the form on twelve
- *   fields, because element-provided validators merge in.
- *   `testSpecificationAloneIsLooserThanTheForm` records that as a fact so nobody
- *   "simplifies" the validator back into the bug it was.
+ * - **The specification is now the whole of it.** It was not: an input filter built
+ *   straight from `AssociationInputFilterSpec` used to be *looser* than the form on
+ *   twelve fields, because `Form::getInputFilter()` merged in a validator per element
+ *   that no specification mentioned — a `Uri` on each URL, a `Regex` on the email, an
+ *   `InArray` on each checkbox. Closing that was the substance of the validation
+ *   cutover, and `testTheFormAddsNoRuleTheSpecificationDoesNotState` is what keeps it
+ *   closed: it fails the moment a rule starts living on an element again.
  *
  * No container and no database: the domains are fixtures. That the *real* form is
  * wired to the *real* domains is a different claim, and it is the fuzz suite that
@@ -311,64 +312,78 @@ final class AssociationValidationParityTest extends TestCase
     }
 
     /**
-     * The CSRF input is the only thing the API does not enforce. Compared structurally
-     * rather than behaviourally, because a validator that is never *reached* by any
-     * payload in the corpus would still slip past the behavioural tests.
+     * The CSRF rule is the only thing the API does not enforce.
+     *
+     * Compared structurally rather than behaviourally, because a rule that is never
+     * *reached* by any payload in the corpus would still slip past the behavioural tests.
+     *
+     * Weaker than it was, and better: the API's specification is now literally the form's
+     * with one key dropped, so the two cannot disagree about a field's rules. What this
+     * still catches is the thing that would matter — a second exemption, or an exemption
+     * that removes the wrong key.
      */
-    public function testCsrfIsTheOnlyDifference(): void
+    public function testCsrfIsTheOnlyRuleTheApiDrops(): void
     {
-        $formFilter = self::form()->getInputFilter();
-        $apiFilter  = (new AssociationValidator(self::domains()))->inputFilter();
+        $validator = new AssociationValidator(self::domains());
 
-        $formInputs = array_keys(iterator_to_array($formFilter->getInputs()));
-        $apiInputs  = array_keys(iterator_to_array($apiFilter->getInputs()));
+        $formSpec = $validator->specification();
+        $apiSpec  = $validator->inputFilter()->specification();
 
         self::assertSame(
             [AssociationValidator::SESSION_ONLY_INPUT],
-            array_values(array_diff($formInputs, $apiInputs)),
-            'The API is skipping an input the web form enforces. Agents would be held to looser rules '
+            array_values(array_diff(array_keys($formSpec), array_keys($apiSpec))),
+            'The API is skipping a rule the web form enforces. Agents would be held to looser rules '
             . 'than moderators.'
         );
-        self::assertSame([], array_values(array_diff($apiInputs, $formInputs)));
+        self::assertSame([], array_values(array_diff(array_keys($apiSpec), array_keys($formSpec))));
 
-        foreach ($apiInputs as $name) {
+        foreach ($apiSpec as $name => $rules) {
             self::assertSame(
-                self::chain($formFilter, (string) $name),
-                self::chain($apiFilter, (string) $name),
-                sprintf('The validator and filter chains for %s differ between the two surfaces.', $name)
+                $formSpec[$name],
+                $rules,
+                sprintf('The rules for %s differ between the two surfaces.', $name)
             );
         }
     }
 
     /**
-     * A record of the mistake AssociationValidator exists to avoid: an input filter
-     * built straight from the specification is *looser* than the web form, because the
-     * form's element-provided validators merge in on top of it.
+     * The inverse of the mistake `AssociationValidator` was written to avoid.
      *
-     * If this test ever fails because the two now agree, that is good news — but it
-     * means AssociationValidator's reason for building a form has gone, and the
-     * decision should be revisited rather than the test deleted.
+     * Until the validation cutover, an input filter built straight from
+     * `AssociationInputFilterSpec` was *looser* than the web form on exactly these twelve
+     * fields, because `Form::getInputFilter()` merged in a validator the element supplied
+     * and no specification mentioned. The API took the form's filter for that reason.
+     *
+     * Those twelve are now stated in the specification, so the two agree — and this
+     * asserts it field by field, which is the only thing that keeps them agreeing. A rule
+     * that moves back onto an element fails here, and it fails loudly on the twelve
+     * fields where it has happened before.
+     *
+     * `AssociationValidator` still builds the form rather than the specification class,
+     * and should: the form composes `security` around it and is the thing a moderator
+     * actually submits, so asking the form is what makes parity structural instead of a
+     * pair of lists someone maintains.
      */
-    public function testSpecificationAloneIsLooserThanTheForm(): void
+    public function testTheFormAddsNoRuleTheSpecificationDoesNotState(): void
     {
-        $bare = (new InputFilterFactory())->createInputFilter(
-            (new AssociationInputFilterSpec(self::domains()))->toArray()
-        );
-        $api = (new AssociationValidator(self::domains()))->inputFilter();
+        $bare = (new AssociationInputFilterSpec(self::domains()))->toArray();
+        $form = (new AssociationValidator(self::domains()))->specification();
 
-        $looser = [];
+        $differ = [];
         foreach (['email', 'url1', 'url2', 'url3', 'facebookUrl', 'foundationDate',
                   'isActive', 'isAuthor', 'isLifeCommunity', 'isNameTranslateable',
                   'overrideNameFormat', 'isInternalNameTranslateable'] as $field) {
-            if (self::chain($bare, $field) !== self::chain($api, $field)) {
-                $looser[] = $field;
+            self::assertArrayHasKey($field, $bare);
+            if (($form[$field] ?? null) !== $bare[$field]) {
+                $differ[] = $field;
             }
         }
 
-        self::assertCount(
-            12,
-            $looser,
-            'The specification alone was expected to be looser than the form on twelve fields.'
+        self::assertSame(
+            [],
+            $differ,
+            'A rule reached the form that the specification does not state. Since the elements no '
+            . 'longer supply one, that means the two surfaces have started to drift.'
         );
     }
 
@@ -445,29 +460,6 @@ final class AssociationValidationParityTest extends TestCase
                 )
             );
         }
-    }
-
-    private static function chain(\Laminas\InputFilter\InputFilterInterface $filter, string $name): array
-    {
-        $input = $filter->get($name);
-
-        $validators = [];
-        if ($input instanceof \Laminas\InputFilter\InputInterface) {
-            foreach ($input->getValidatorChain()->getValidators() as $entry) {
-                $validators[] = is_object($entry['instance']) ? $entry['instance']::class : '?';
-            }
-            $filters = [];
-            foreach ($input->getFilterChain()->getFilters() as $one) {
-                $filters[] = is_object($one) ? $one::class : '?';
-            }
-
-            sort($validators);
-            sort($filters);
-
-            return ['validators' => $validators, 'filters' => $filters];
-        }
-
-        return ['validators' => [], 'filters' => []];
     }
 
     /**
