@@ -26,8 +26,11 @@ use Laminas\InputFilter\InputFilterProviderInterface;
  * arrives as a `Symfony\Component\HttpFoundation\File\UploadedFile`, not as
  * `$_FILES` state for `Laminas\InputFilter\FileInput` to reason about. Two mechanisms
  * inspecting one upload is how a file passes one and fails the other; there is one,
- * and it is SpreadsheetUpload. `getInputFilterSpecification()` therefore says nothing
- * about `file`, and `isValid()` does not answer for it.
+ * and it is SpreadsheetUpload. `isValid()` therefore does not answer for `file`.
+ *
+ * That used to be arranged by leaving the field out of
+ * `getInputFilterSpecification()` altogether, which reads as an oversight and is
+ * indistinguishable from one. It is now written down there instead.
  */
 class ImportForm extends SionForm implements InputFilterProviderInterface
 {
@@ -164,6 +167,14 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+            ],
+            //Deliberately empty of rules, and present so that it is deliberate. The
+            //upload is judged by App\Books\Import\SpreadsheetUpload against the
+            //Symfony request — see the class docblock — so `required` here would reject
+            //every submission, since the FileInput this builds looks for `$_FILES`
+            //state that a Symfony-served route never populates.
+            'file' => [
+                'required' => false,
             ],
         ];
     }
