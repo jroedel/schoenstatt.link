@@ -472,6 +472,15 @@ final class FormGapCollector
      * once, by asking whether a specification declared *any* validator rather than
      * comparing the two sets.
      *
+     * **Second blind spot: it does not descend.** It reads the form's own inputs, so a
+     * validator supplied by an element *inside* a fieldset or a collection is invisible
+     * here — `Books\Form\MassCheckoutFieldset`'s `personId` and the nineteen selects of
+     * `App\Books\Import\ImportMappingFieldset` are both in that position. Left rather than
+     * fixed, because `SchoenstattTest\Integration\WholeFormEngineParityTest` compares
+     * nested paths directly against the assembled filter and reports exactly those, which
+     * is the stronger instrument; descending here would add twenty baseline lines that are
+     * all artefacts of a harness with no uploaded file and no reachable patres.
+     *
      * @param array<string, mixed>          $spec
      * @param array<string, list<string>>   $gaps
      */
