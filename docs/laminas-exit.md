@@ -34,6 +34,24 @@ under `module/*/src` that a Symfony-served request reaches.
   (`App\Laminas\ViewHelpers`) and the translator; messages live in
   `SionModel\Messaging` behind `App\Laminas\HostMessages`; mail renders through Twig.
   `composer.json` has no `repositories` fork entry left but the chordpro one.
+- **Form validation runs on our own engine** (step 5, in progress). Every form extends
+  `SionModel\Form\Form`, whose `isValid()`/`getData()` run
+  `SionModel\Form\Validation\InputFilter` over the specification
+  `SionModel\Form\Validation\FormSpecification` assembles — the form's
+  `getInputFilterSpecification()`, an entry per element, and a nested entry per fieldset or
+  collection, as plain data. `Laminas\InputFilter` is still installed and still assembles
+  `getInputFilter()`, which three non-form callers use
+  (`App\Schoenstatt\Association\AssociationValidator`, `JTranslate\Form\PhraseValidator`,
+  `Schoenstatt\Service\PatresGatewayFactory`) and which
+  `test/Integration/WholeFormEngineParityTest` compares against the engine on every form.
+  laminas-form still supplies elements and rendering; the packages leave when the element
+  and form models land.
+  A rule that lives on an element and not in a specification is a rule the engine cannot
+  see, so `test/Fuzz/known-form-gaps.php` tracks two categories for it —
+  `validationSuppliedOnlyByElement` (3, all harness artefacts) and
+  `filteringSuppliedOnlyByElement` (0) — and `FormValidationContractTest` fails when either
+  grows. `SionModel\Form\{CsrfSpec,ChoiceDomain,CheckboxDomain,InputTypeRules}` are how a
+  specification restates one.
 - **What laminas still does**, and therefore what this plan removes: the service
   container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`,
   `laminas-eventmanager` — direct requirements since step 0), the database layer

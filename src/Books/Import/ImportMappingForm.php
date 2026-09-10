@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Books\Import;
 
-use Laminas\Form\Form;
+use SionModel\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
