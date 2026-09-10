@@ -6,6 +6,7 @@ use Laminas\InputFilter\InputFilterProviderInterface;
 use Books\Model\EventTextTable;
 use Laminas\Validator\Identical;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CsrfSpec;
 
 class TextForm extends SionForm implements InputFilterProviderInterface
 {
@@ -115,6 +116,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'title' => [
                 'required' => true,
                 'filters' => [

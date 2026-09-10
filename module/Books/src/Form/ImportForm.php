@@ -3,6 +3,7 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\CsrfSpec;
 
 /**
  * Starting a spreadsheet import: what it is called, and the file.
@@ -115,6 +116,7 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'name' => [
                 'required' => true,
                 'filters' => [

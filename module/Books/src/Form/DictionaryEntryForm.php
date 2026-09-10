@@ -5,6 +5,7 @@ use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Books\Model\LibraryOptions;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CsrfSpec;
 
 class DictionaryEntryForm extends SionForm implements InputFilterProviderInterface
 {
@@ -126,6 +127,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'key' => [
                 'required' => true,
                 'filters' => [

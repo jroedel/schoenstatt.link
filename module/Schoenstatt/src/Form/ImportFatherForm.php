@@ -3,6 +3,7 @@ namespace Schoenstatt\Form;
 
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\CsrfSpec;
 
 class ImportFatherForm extends SionForm implements InputFilterProviderInterface
 {
@@ -34,6 +35,7 @@ class ImportFatherForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'personId' => [
                 'required' => false,
                 'filters' => [

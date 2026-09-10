@@ -5,6 +5,7 @@ use Laminas\InputFilter\InputFilterProviderInterface;
 use Laminas\Filter\ToNull;
 use SionModel\Form\SionForm;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CsrfSpec;
 
 class PersonForm extends SionForm implements InputFilterProviderInterface
 {
@@ -742,6 +743,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             return $this->filterSpec;
         }
         $this->filterSpec = [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'email' => [
                 'required' => false,
                 'filters' => [
