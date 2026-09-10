@@ -13,6 +13,7 @@ use Books\Model\LibraryTable;
 use Exception;
 use JTranslate\I18n\TranslatableMessage;
 use Schoenstatt\Service\PatresGateway;
+use Schoenstatt\Service\PatresLookupFailed;
 use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -137,11 +138,33 @@ final class LibraryCheckoutController
         if (is_object($options) && 'patres-sion' === ($options->checkoutPersonListKind ?? null)) {
             /** @var PatresGateway $gateway */
             $gateway = $this->laminas->get(PatresGateway::class);
-            $person  = $gateway->getSchoenstattPersonFromPatresPersonId(
-                $data['personId'],
-                true,
-                ['isBorrower' => true]
-            );
+
+            try {
+                $person = $gateway->getSchoenstattPersonFromPatresPersonId(
+                    $data['personId'],
+                    true,
+                    ['isBorrower' => true]
+                );
+            } catch (PatresLookupFailed $e) {
+                //The branch below handles a person patres *refused* — an invalid record.
+                //This one is a person patres could not be **asked** about, and until
+                //2026-09-11 it was not handled at all: the exception left the gateway,
+                //crossed the message written for the other case and became an error page.
+                //A librarian met it twice in twenty-one seconds on 2026-09-10, because
+                //patres served the person *list* perfectly and answered 500 for the one
+                //father on it they had selected.
+                //
+                //Caught narrowly, on purpose. `catch (Exception)` here would swallow
+                //every bug in the import path and apologise for patres instead.
+                $this->now(FlashMessages::NAMESPACE_ERROR, new TranslatableMessage(
+                    'Patres could not be reached for this person, so nothing was checked out. '
+                    . 'This is a problem at their end, not with your entry — try again in a '
+                    . 'few minutes, and tell an administrator if it keeps happening.'
+                ));
+
+                return null;
+            }
+
             if (false === $person || ! is_array($person)) {
                 //The laminas action throws here, which reaches the error page. A lending
                 //desk gets a message instead: the person really can be absent — the remote
