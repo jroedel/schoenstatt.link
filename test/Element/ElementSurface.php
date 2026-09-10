@@ -6,6 +6,7 @@ namespace SchoenstattTest\Element;
 
 use App\Locale\Locales;
 use Laminas\Form\Element\Checkbox;
+use Laminas\Form\Element\Collection;
 use Laminas\Form\Element\Csrf;
 use Laminas\Form\Element\DateSelect;
 use Laminas\Form\Element\MultiCheckbox;
@@ -14,6 +15,10 @@ use Laminas\Form\ElementInterface;
 use Laminas\Form\Fieldset;
 use Locale;
 use SchoenstattTest\Fuzz\FormRepository;
+use SionModel\Form\Element\Checkbox as OurCheckbox;
+use SionModel\Form\Element\Csrf as OurCsrf;
+use SionModel\Form\Element\DateSelect as OurDateSelect;
+use SionModel\Form\Element\Select as OurSelect;
 
 use function array_keys;
 use function array_slice;
@@ -96,6 +101,26 @@ final class ElementSurface
     public static function collect(): array
     {
         $surface = [];
+        foreach (self::elements() as $path => $element) {
+            $surface[$path] = self::describe($element)
+                + ($element instanceof Fieldset ? ['fieldset' => true] : []);
+        }
+
+        return $surface;
+    }
+
+    /**
+     * Every element in the application, keyed by `Form\Class::path/to/element`.
+     *
+     * Separate from {@see collect()} because a second reader wants the elements themselves
+     * rather than their answers: `test/Integration/ElementModelParityTest` builds a twin of
+     * each one from `SionModel\Form\Element` and asks it the same questions.
+     *
+     * @return array<string, ElementInterface>
+     */
+    public static function elements(): array
+    {
+        $elements = [];
 
         //Both halves of this matter, and neither is tidiness.
         //
@@ -120,39 +145,45 @@ final class ElementSurface
         }
 
         foreach ($forms as $class => $form) {
-            self::walk((string) $class, $form, '', $surface);
+            self::walk((string) $class, $form, '', $elements);
         }
 
-        ksort($surface);
+        ksort($elements);
 
-        return $surface;
+        return $elements;
     }
 
-    /** @param array<string, array<string, mixed>> $surface */
-    private static function walk(string $class, Fieldset $fieldset, string $prefix, array &$surface): void
+    /** @param array<string, ElementInterface> $elements */
+    private static function walk(string $class, Fieldset $fieldset, string $prefix, array &$elements): void
     {
         foreach ($fieldset->getElements() as $name => $element) {
-            $surface[$class . '::' . $prefix . (string) $name] = self::describe($element);
+            $elements[$class . '::' . $prefix . (string) $name] = $element;
         }
 
         foreach ($fieldset->getFieldsets() as $name => $child) {
-            $path                     = $prefix . (string) $name;
-            $surface[$class . '::' . $path] = self::describe($child) + [
-                'fieldset' => true,
-            ];
-            self::walk($class, $child, $path . '/', $surface);
+            $path                            = $prefix . (string) $name;
+            $elements[$class . '::' . $path] = $child;
+            self::walk($class, $child, $path . '/', $elements);
 
-            if ($child instanceof \Laminas\Form\Element\Collection) {
+            if ($child instanceof Collection) {
                 $target = $child->getTargetElement();
                 if ($target instanceof Fieldset) {
-                    self::walk($class, $target, $path . '/<target>/', $surface);
+                    self::walk($class, $target, $path . '/<target>/', $elements);
                 }
             }
         }
     }
 
-    /** @return array<string, mixed> */
-    private static function describe(ElementInterface $element): array
+    /**
+     * The twelve-odd questions the application asks an element, and its answers.
+     *
+     * Public because the parity test asks them of a replacement element; a second list
+     * written out there would drift from this one, and a baseline compared against a
+     * drifted list proves less than it appears to.
+     *
+     * @return array<string, mixed>
+     */
+    public static function describe(ElementInterface $element): array
     {
         $described = [
             //The class is recorded because the specification helpers and the renderer both
@@ -166,23 +197,28 @@ final class ElementSurface
             'options'    => self::normaliseAll($element->getOptions()),
         ];
 
-        if ($element instanceof Select || $element instanceof MultiCheckbox) {
+        //Each branch names both families: laminas' element and the SionModel one that
+        //replaces it. Not tidiness — the parity test describes one of each and compares
+        //them, so a branch that recognised only laminas would report every replacement as
+        //answering nothing at all, which is indistinguishable from a select that lost its
+        //options. The laminas half of each pair goes when the package does.
+        if ($element instanceof Select || $element instanceof MultiCheckbox || $element instanceof OurSelect) {
             $described['valueOptions'] = self::digestOptions($element->getValueOptions());
         }
-        if ($element instanceof Select) {
+        if ($element instanceof Select || $element instanceof OurSelect) {
             $described['emptyOption'] = self::scalar($element->getEmptyOption());
         }
-        if ($element instanceof Checkbox) {
-            $described['checkedValue']    = self::scalar($element->getCheckedValue());
-            $described['uncheckedValue']  = self::scalar($element->getUncheckedValue());
+        if ($element instanceof Checkbox || $element instanceof OurCheckbox) {
+            $described['checkedValue']     = self::scalar($element->getCheckedValue());
+            $described['uncheckedValue']   = self::scalar($element->getUncheckedValue());
             $described['useHiddenElement'] = $element->useHiddenElement();
         }
-        if ($element instanceof Csrf) {
+        if ($element instanceof Csrf || $element instanceof OurCsrf) {
             //The options, not the token: the options are what CsrfSpec reads to build the
             //validator, and the token is regenerated on every read.
             $described['csrfValidatorOptions'] = self::normaliseAll($element->getCsrfValidatorOptions());
         }
-        if ($element instanceof DateSelect) {
+        if ($element instanceof DateSelect || $element instanceof OurDateSelect) {
             //Two templates reach for these directly.
             $described['dayElementName']   = (string) $element->getDayElement()->getName();
             $described['monthElementName'] = (string) $element->getMonthElement()->getName();
