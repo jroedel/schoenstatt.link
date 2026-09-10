@@ -462,6 +462,16 @@ final class FormGapCollector
      * Deliberately, and for the reason in this class\'s header: the specification is half
      * the answer and the more attractive half. What ships is `Form::getInputFilter()`.
      *
+     * **One blind spot, and it is in the same direction.** This reads
+     * `getValidatorChain()`, so it sees validators that are *there*, not ones injected
+     * when validation runs. `Laminas\InputFilter\FileInput` injects
+     * `Laminas\Validator\File\UploadFile` at `isValid()` time, so `Books\Form\ImportForm`\'s
+     * `file` field carries a check this category has never reported. It is recorded in
+     * `test/Integration/EngineMatchesAssembledFilterTest::KNOWN_DIFFERENCES` instead. A
+     * category that under-reports is worth saying out loud: this one already undercounted
+     * once, by asking whether a specification declared *any* validator rather than
+     * comparing the two sets.
+     *
      * @param array<string, mixed>          $spec
      * @param array<string, list<string>>   $gaps
      */
