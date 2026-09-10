@@ -139,6 +139,16 @@ final class LibraryDeleteForm extends Form implements InputFilterProviderInterfa
                         'name'    => Identical::class,
                         'options' => [
                             'token'   => $this->expectedName,
+                            //**Required, and the reason is not obvious.** Without it,
+                            //`Identical::isValid()` treats the token as a *key into the
+                            //submitted data*: `if (! $this->getLiteral() && $context !== null)`
+                            //replaces the token with `$context[$token]` whenever that key
+                            //exists, and `BaseInputFilter::validateInputs()` passes the whole
+                            //POST as the context. So a request carrying one extra field named
+                            //after the library —
+                            //`library_name=x&Bellavista=x` — satisfied this validator and
+                            //deleted the library. Proven by running it, 2026-09-11.
+                            'literal' => true,
                             //=== rather than ==, so nothing about type juggling can make a
                             //different string compare equal to this one.
                             'strict'  => true,
