@@ -209,6 +209,7 @@ final class FormGapCollector
             'choiceFieldsWithoutDomain'  => [],
             'boundsLooserThanColumn'     => [],
             'buttonsDeclaredOnlyByAttribute' => [],
+            'validationSuppliedOnlyByElement' => [],
         ];
 
         foreach ($this->repository->constructionFailures() as $class => $reason) {
@@ -270,6 +271,8 @@ final class FormGapCollector
         $spec     = $this->specificationOf($form);
         $elements = $this->dataElements($form);
         $columns  = $this->columnWidthsFor($class);
+
+        $this->collectElementSuppliedValidation($class, $form, $spec, $gaps);
 
         foreach (array_keys($spec) as $key) {
             if (! $form->has((string) $key)) {
@@ -428,6 +431,83 @@ final class FormGapCollector
      *
      * @return array<string, ElementInterface>
      */
+    /**
+     * Validators that exist only because an element supplied them, with nothing in the
+     * form's specification saying so.
+     *
+     * ## Why this is a category and not a footnote
+     *
+     * It is the work list for step 5. `SionModel\Form\Validation\InputFilter` — the
+     * engine that will replace `Laminas\InputFilter` — is driven by
+     * `getInputFilterSpecification()` **alone**, because a specification is a value you
+     * can read, and the merge that invents the other half is what step 5 removes. Every
+     * entry below is therefore a check that would disappear on the day the engine is cut
+     * over, and the list has to reach zero first.
+     *
+     * Measured 2026-09-10: 101 fields, against 199 whose validators are declared. Thirty-one
+     * of the 101 are `Csrf`, because no form's specification names `security` — the element
+     * is added once in `SionModel\Form\SionForm` and laminas supplies the validator from
+     * it. The rest are mostly a `Select`\'s own `InArray` over its value options, plus
+     * `Uri` on `Url` elements and `Regex`/`GreaterThan`/`LessThan`/`Step` on `Number`.
+     *
+     * ## Why `InputFilterEngineParityTest` cannot see any of this
+     *
+     * It feeds `Factory::createInputFilter($spec)` and the engine the *same* specification,
+     * so both sides start where this category ends. It proves the engine matches laminas
+     * given a specification; it says nothing about what the assembled filter contains. A
+     * parity harness fed from the narrowed input can only ever agree with itself.
+     *
+     * ## Reading the assembled filter, not the specification
+     *
+     * Deliberately, and for the reason in this class\'s header: the specification is half
+     * the answer and the more attractive half. What ships is `Form::getInputFilter()`.
+     *
+     * @param array<string, mixed>          $spec
+     * @param array<string, list<string>>   $gaps
+     */
+    private function collectElementSuppliedValidation(
+        string $class,
+        Fieldset $form,
+        array $spec,
+        array &$gaps
+    ): void {
+        if (! $form instanceof \Laminas\Form\Form) {
+            return;
+        }
+
+        try {
+            $assembled = $form->getInputFilter();
+        } catch (Throwable) {
+            //An unassemblable filter is already reported by throwingInputs.
+            return;
+        }
+
+        foreach ($assembled->getInputs() as $name => $input) {
+            if (! $input instanceof \Laminas\InputFilter\InputInterface) {
+                continue;
+            }
+
+            $applied = [];
+            foreach ($input->getValidatorChain()->getValidators() as $entry) {
+                $instance = $entry['instance'] ?? null;
+                if (is_object($instance)) {
+                    $applied[] = (new \ReflectionClass($instance))->getShortName();
+                }
+            }
+
+            if ([] === $applied || [] !== self::validatorNames($spec[(string) $name] ?? null)) {
+                continue;
+            }
+
+            $gaps['validationSuppliedOnlyByElement'][] = sprintf(
+                '%s: %s is validated by %s, which the input filter spec does not declare',
+                $class,
+                self::q((string) $name),
+                implode(', ', $applied)
+            );
+        }
+    }
+
     public function dataElements(Fieldset $form): array
     {
         $elements = [];
