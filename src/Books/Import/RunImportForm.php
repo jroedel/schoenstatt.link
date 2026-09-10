@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Books\Import;
 
+use Laminas\Filter\StringTrim;
 use Laminas\Form\Form;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use Laminas\Validator\Regex;
+use SionModel\Form\CsrfSpec;
 
 /**
  * The confirmation between a librarian and several thousand book records.
@@ -28,7 +32,7 @@ use Laminas\Form\Form;
  *
  * @extends Form<array<string, mixed>>
  */
-final class RunImportForm extends Form
+final class RunImportForm extends Form implements InputFilterProviderInterface
 {
     public function __construct(string $digest, string $buttonLabel = 'Run this import')
     {
@@ -57,5 +61,35 @@ final class RunImportForm extends Form
                 'class' => 'btn-warning',
             ],
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getInputFilterSpecification(): array
+    {
+        return [
+            //Restated rather than left to the element — see SionModel\Form\CsrfSpec.
+            'security' => CsrfSpec::forElement($this->get('security')),
+            'digest'   => [
+                'required'   => true,
+                'filters'    => [
+                    ['name' => StringTrim::class],
+                ],
+                'validators' => [
+                    [
+                        //`ImportPlan::digest()` is a sha1, so the field's whole domain is
+                        //forty lowercase hex characters — a shape check rather than a length
+                        //bound because the shape is known exactly. The controller compares
+                        //the posted value against a freshly computed digest anyway, so this
+                        //changes no verdict; what it changes is that a hostile value is
+                        //refused by the form rather than reaching a string comparison, and
+                        //that the field stops reading as unvalidated to anyone auditing it.
+                        'name'    => Regex::class,
+                        'options' => ['pattern' => '/\A[0-9a-f]{40}\z/'],
+                    ],
+                ],
+            ],
+        ];
     }
 }

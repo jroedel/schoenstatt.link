@@ -34,7 +34,7 @@ namespace SchoenstattTest\Fuzz;
  * scattering comments and commented-out keys through these arrays.
  *
  * The scan covers `$this->add([...])` and `$fieldset->add([...])`. Every `add()`
- * call in `module/&ast;/src/Form/` today passes a literal array, so coverage is
+ * call in the sources FormRepository offers today passes a literal array, so coverage is
  * complete — but `unanalyzableCalls()` reports any call passing a *variable*
  * instead, so the day someone writes `$this->add($spec)` the harness says so out
  * loud rather than quietly returning a clean result.
@@ -133,6 +133,23 @@ final class ElementDefinitionScanner
             $isArrayLiteral = self::isChar($token, '[')
                 || (is_array($token) && $token[0] === T_ARRAY);
 
+            //`$this->add(new ImportMappingFieldset($options, $map))`. A constructed object
+            //is not an element definition, so there is no depth-1 array for a dead key to
+            //hide in, and the class's own `add()` calls are scanned where that class is
+            //declared. Reporting it as unanalyzable would say coverage had been lost when
+            //it had only moved to another file — and would put pressure on the wrong fix,
+            //since inlining a fieldset back into its form is what this walk exists to make
+            //visible, not to encourage.
+            //
+            //Any array literal *inside* the constructor call is still scanned, because
+            //`new Element('x', ['validators' => …])` puts a dead key in exactly the place
+            //this class is about. Nothing in the codebase does that today; the scan costs
+            //one branch and closes the shape rather than arguing that nobody will write it.
+            if (! $isArrayLiteral && is_array($token) && $token[0] === T_NEW) {
+                $this->scanConstructorArguments($tokens, $argument, $relative);
+                continue;
+            }
+
             if (! $isArrayLiteral) {
                 $line             = is_array($token) ? $token[2] : 0;
                 $this->unanalyzable[] = sprintf(
@@ -145,6 +162,92 @@ final class ElementDefinitionScanner
 
             $this->scanDefinition($tokens, $argument, $relative);
         }
+    }
+
+    /**
+     * Scan every array literal inside a `new Foo(...)` handed to `add()`.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function scanConstructorArguments(array $tokens, int $newToken, string $relative): void
+    {
+        $count = count($tokens);
+        $open  = null;
+
+        for ($i = $newToken + 1; $i < $count; $i++) {
+            if (self::isChar($tokens[$i], '(')) {
+                $open = $i;
+                break;
+            }
+            //A constructor call's name is a run of identifiers and separators; anything
+            //else means this `new` had no argument list at all (`new Foo;`).
+            if (self::isChar($tokens[$i], ';') || self::isChar($tokens[$i], ')')) {
+                return;
+            }
+        }
+
+        if (null === $open) {
+            return;
+        }
+
+        $depth = 0;
+        for ($i = $open; $i < $count; $i++) {
+            $token = $tokens[$i];
+
+            if (self::isChar($token, '(')) {
+                $depth++;
+                continue;
+            }
+            if (self::isChar($token, ')')) {
+                $depth--;
+                if ($depth <= 0) {
+                    return;
+                }
+                continue;
+            }
+            if (self::isChar($token, '[') || (is_array($token) && $token[0] === T_ARRAY)) {
+                $this->scanDefinition($tokens, $i, $relative);
+                //Past the whole literal: scanDefinition already looked inside it, and
+                //re-entering at each nested `[` would report one element several times.
+                $i = self::endOfArrayLiteral($tokens, $i);
+            }
+        }
+    }
+
+    /**
+     * The index of the bracket closing the array literal that opens at $start.
+     *
+     * @param list<array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private static function endOfArrayLiteral(array $tokens, int $start): int
+    {
+        $count = count($tokens);
+        $depth = 0;
+
+        for ($i = $start; $i < $count; $i++) {
+            $token = $tokens[$i];
+
+            if (self::isChar($token, '[')) {
+                $depth++;
+                continue;
+            }
+            if (is_array($token) && $token[0] === T_ARRAY) {
+                $paren = self::skipTrivia($tokens, $i + 1);
+                if (self::isChar($tokens[$paren] ?? null, '(')) {
+                    $i = $paren;
+                    $depth++;
+                }
+                continue;
+            }
+            if (self::isChar($token, ']') || self::isChar($token, ')')) {
+                $depth--;
+                if ($depth <= 0) {
+                    return $i;
+                }
+            }
+        }
+
+        return $count - 1;
     }
 
     /**
