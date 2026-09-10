@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Books\Import;
 
-use Laminas\Form\Fieldset;
 use Laminas\Form\Form;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CsrfSpec;
 
 use function chr;
 use function count;
@@ -27,7 +29,7 @@ use function trim;
  *
  * @extends Form<array<string, mixed>>
  */
-final class ImportMappingForm extends Form
+final class ImportMappingForm extends Form implements InputFilterProviderInterface
 {
     /** The option meaning "no column feeds this field". */
     public const UNMAPPED = '';
@@ -73,24 +75,10 @@ final class ImportMappingForm extends Form
             $columnOptions[(string) $index] = sprintf('%s — %s', self::letter($index), $label);
         }
 
-        //A Fieldset rather than nineteen top-level elements: `Form::prepare()` renames a
+        //A fieldset rather than nineteen top-level elements: `Form::prepare()` renames a
         //fieldset's children to `map[title]`, so the post arrives as one nested array and
         //`setData()` binds it without the controller unpicking a naming convention.
-        $fields = new Fieldset('map');
-        foreach (ImportColumns::all() as $column) {
-            $index = $map->indexOf($column->field);
-            $fields->add([
-                'name'    => $column->field,
-                'type'    => 'Select',
-                'options' => [
-                    'label'         => $column->heading . ($column->required ? ' *' : ''),
-                    'value_options' => $columnOptions,
-                    'help-block'    => $column->help,
-                ],
-            ]);
-            $fields->get($column->field)->setValue(null === $index ? self::UNMAPPED : (string) $index);
-        }
-        $this->add($fields);
+        $this->add(new ImportMappingFieldset($columnOptions, $map));
 
         $this->add([
             'name'       => 'submit',
@@ -101,6 +89,34 @@ final class ImportMappingForm extends Form
                 'class' => 'btn-primary',
             ],
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getInputFilterSpecification(): array
+    {
+        return [
+            //Restated rather than left to the element — see SionModel\Form\CsrfSpec.
+            'security'  => CsrfSpec::forElement($this->get('security')),
+            'worksheet' => [
+                //Both restate what the element already supplies: `Select::getInputSpecification()`
+                //declares `required => true` and an `InArray` over its own options. Written
+                //out because the domain is this file's own sheet names, so it can only be
+                //read off the element, and because the engine that replaces
+                //`Laminas\InputFilter` reads the specification and nothing else.
+                //
+                //`known-form-gaps.php` lists `worksheet` as element-validated anyway, and
+                //that entry is a property of the harness rather than of this form: nothing
+                //registers this form, so `FormRepository` builds it by shape with an empty
+                //`$worksheets`, and `ChoiceDomain` declines to constrain a field whose
+                //options it cannot see. In every request there is an uploaded file and the
+                //domain is its sheets. Same shape as `Books\Form\SearchForm::collectionId`
+                //in `EngineMatchesAssembledFilterTest::KNOWN_DIFFERENCES`.
+                'required'   => true,
+                'validators' => ChoiceDomain::validators($this->get('worksheet')),
+            ],
+        ];
     }
 
     /** Excel's own column name for a zero-based index: 0 => A, 26 => AA. */

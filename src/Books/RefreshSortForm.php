@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Books;
 
 use Laminas\Form\Form;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\CsrfSpec;
 
 /**
  * The confirmation that stands between a visitor and 16,383 UPDATE statements.
@@ -34,7 +36,7 @@ use Laminas\Form\Form;
  *
  * @extends Form<array<string, mixed>>
  */
-final class RefreshSortForm extends Form
+final class RefreshSortForm extends Form implements InputFilterProviderInterface
 {
     public function __construct()
     {
@@ -58,5 +60,24 @@ final class RefreshSortForm extends Form
                 'class' => 'btn-warning',
             ],
         ]);
+    }
+
+    /**
+     * The CSRF token, restated as data.
+     *
+     * `Laminas\Form\Element\Csrf` supplies this validator itself, so the form was
+     * protected without it — but only for as long as `Laminas\InputFilter` assembles the
+     * filter. `SionModel\Form\Validation\InputFilter` reads the specification and
+     * nothing else, and this form's entire defence is that one token: the route it guards
+     * rewrites `sort_text` for every book in a library. See SionModel\Form\CsrfSpec for
+     * why the element has to be read rather than a constant written out.
+     *
+     * @return array<string, mixed>
+     */
+    public function getInputFilterSpecification(): array
+    {
+        return [
+            'security' => CsrfSpec::forElement($this->get('security')),
+        ];
     }
 }

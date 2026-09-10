@@ -178,6 +178,7 @@ return [
     // by the specification alone, so every entry here is a check that disappears on the day it
     // replaces Laminas\InputFilter. Must reach zero before that cutover.
     'validationSuppliedOnlyByElement' => [
+        'App\\Books\\Import\\ImportMappingForm: \'worksheet\' is validated by InArray, which the input filter spec does not declare',
         'Books\\Form\\CheckoutForm: \'personId\' is validated by InArray, which the input filter spec does not declare',
         'Schoenstatt\\Form\\ImportFatherForm: \'personId\' is validated by InArray, which the input filter spec does not declare',
     ],
