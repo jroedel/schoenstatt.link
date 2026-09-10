@@ -783,6 +783,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             'defaultCheckoutTimePeriodInDays' => [
                 'required' => true,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('defaultCheckoutTimePeriodInDays')),
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
