@@ -1,7 +1,6 @@
 <?php
 namespace Books\Service;
 
-use Laminas\InputFilter\InputFilterInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use App\Json;
 use SionModel\Cache\Storage as CacheStorage;
@@ -148,29 +147,6 @@ class DriveGateway
             } //simply ignore invalid rows @todo log them somewhere
         }
         return $result;
-    }
-
-    /**
-     * Get a fresh InputFilter to test person data
-     * @return \Laminas\InputFilter\InputFilterInterface
-     */
-    public function getPersonInputFilter()
-    {
-        if (is_null($this->personInputFilter)) {
-            throw new \Exception('No person input filter set');
-        }
-        return clone $this->personInputFilter;
-    }
-
-    /**
-    *
-    * @param InputFilterInterface $personInputFilter
-    * @return self
-    */
-    public function setPersonInputFilter($personInputFilter)
-    {
-        $this->personInputFilter = $personInputFilter;
-        return $this;
     }
 
     /**

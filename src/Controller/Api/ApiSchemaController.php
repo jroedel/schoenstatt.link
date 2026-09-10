@@ -185,8 +185,8 @@ final class ApiSchemaController
      * actually needs to know here is which locales are writable, that the source
      * phrase is not, and how to ask for the subset of 6,874 phrases it should work on.
      *
-     * Built from PhraseValidator, i.e. from the translator form's own input filter, so
-     * the bound below is the bound enforced.
+     * Built from PhraseValidator, i.e. from the translator form's own rules, so the bound
+     * below is the bound enforced.
      */
     private function phrase(): Response
     {
@@ -194,19 +194,12 @@ final class ApiSchemaController
         $validator = $this->laminas->get(PhraseValidator::class);
         $languages = $validator->languages();
         $locales   = $validator->writableLocales();
-        $filter    = $validator->inputFilter();
 
-        //Read off a locale, because the *form* is keyed by locale; published as a
-        //language, because the API is.
-        $maxLength = null;
-        if ([] !== $locales && $filter->has($locales[0])) {
-            foreach ($filter->get($locales[0])->getValidatorChain()->getValidators() as $entry) {
-                $candidate = $entry['instance'] ?? null;
-                if ($candidate instanceof StringLength) {
-                    $maxLength = $candidate->getMax();
-                }
-            }
-        }
+        //Asked of the validator rather than dug out of an assembled filter's validator
+        //chain, which is what this did until the input filter became a specification.
+        //That the bound is a StringLength, and that translations are keyed by locale
+        //rather than by language, are JTranslate's business and not this endpoint's.
+        $maxLength = $validator->maxTranslationLength();
 
         return new JsonResponse([
             'version'      => 3,
