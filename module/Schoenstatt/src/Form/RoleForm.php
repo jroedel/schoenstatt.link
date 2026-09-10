@@ -5,6 +5,7 @@ use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
+use SionModel\Form\ChoiceDomain;
 
 class RoleForm extends SionForm implements InputFilterProviderInterface
 {
@@ -138,6 +139,7 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
             //association list its factory supplies.
             'associationId' => [
                 'required' => true,
+                'validators' => ChoiceDomain::validators($this->get('associationId')),
             ],
             'roleTitle' => [
                 'required' => false,
