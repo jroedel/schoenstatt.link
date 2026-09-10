@@ -476,6 +476,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'withinLibraryId' => [
                 'required' => true,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('withinLibraryId')),
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
@@ -677,6 +678,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
 //                 'allow_empty' => true,
 //                 'continue_if_empty' => true,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('numberOfPages')),
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
@@ -689,6 +691,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'publishedYear' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('publishedYear')),
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [

@@ -503,6 +503,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
             'defaultCheckoutTimePeriodInDays' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('defaultCheckoutTimePeriodInDays')),
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [

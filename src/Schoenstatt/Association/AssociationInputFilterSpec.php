@@ -315,6 +315,8 @@ final class AssociationInputFilterSpec
             'foundationDate' => [
                 'required' => false,
                 'filters'  => [
+                    //`AbstractDateTime`'s own, ahead of the specification's — see url().
+                    ['name' => StringTrim::class],
                     ['name' => ToDateTime::class],
                 ],
                 'validators' => [
@@ -422,7 +424,15 @@ final class AssociationInputFilterSpec
     {
         return [
             'required'   => false,
-            'filters'    => [['name' => ToNull::class]],
+            //StringTrim and StripNewlines are `SionModel\Form\Element\Phone`'s own, in the
+            //order it declares them — laminas merges an element's filters ahead of the
+            //specification's, and the order is load-bearing: without the trim, `ToNull`
+            //leaves '   ' as three spaces instead of null.
+            'filters'    => [
+                ['name' => StringTrim::class],
+                ['name' => StripNewlines::class],
+                ['name' => ToNull::class],
+            ],
             'validators' => [
                 self::maxLength(50),
                 ['name' => Phone::class],
@@ -520,7 +530,14 @@ final class AssociationInputFilterSpec
     {
         return [
             'required'   => false,
-            'filters'    => self::toNullString(),
+            //`Laminas\Form\Element\Url::getInputSpecification()` supplies the StringTrim,
+            //and it goes first for the reason phone()'s does. Written out here rather than
+            //folded into toNullString(), which a dozen plain-text fields also use and whose
+            //elements supply nothing.
+            'filters'    => [
+                ['name' => StringTrim::class],
+                ...self::toNullString(),
+            ],
             //varchar(1000). The element's `maxlength` attribute says 255, which is a
             //client-side courtesy; the column is what a stored value has to fit.
             'validators' => [

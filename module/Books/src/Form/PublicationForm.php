@@ -756,6 +756,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'copyrightYear' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('copyrightYear')),
                     ['name' => 'ToInt'],
                     ['name' => ToNull::class,
                         'options' => [
@@ -789,6 +790,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url1' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('url1')),
                     ['name' => ToNull::class,
                         'options' => [
                             'type' => \Laminas\Filter\ToNull::TYPE_STRING,
@@ -813,6 +815,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url2' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('url2')),
                     ['name' => ToNull::class,
                         'options' => [
                             'type' => \Laminas\Filter\ToNull::TYPE_STRING,
@@ -837,6 +840,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url3' => [
                 'required' => false,
                 'filters' => [
+                    ...InputTypeRules::filters($this->get('url3')),
                     ['name' => ToNull::class,
                         'options' => [
                             'type' => \Laminas\Filter\ToNull::TYPE_STRING,
