@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Books;
 
 use Laminas\Filter\StringTrim;
-use Laminas\Form\Form;
+use SionModel\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Laminas\Validator\Identical;
 use Laminas\Validator\NotEmpty;
