@@ -91,8 +91,14 @@ final class EngineMatchesAssembledFilterTest extends TestCase
     private const COMPARISON_FLOOR = 1800;
 
     /**
-     * The two fields where the engine and the assembled filter genuinely differ, each with
-     * the reason it is not a defect in the engine. Both were found by this test.
+     * The one field where the engine and the assembled filter genuinely differ, with the
+     * reason it is not a defect in the engine. It was found by this test.
+     *
+     * There were two. `Books\Form\BookForm::callNumber` left on 2026-09-11, when the
+     * per-library requirement moved out of a patch on the built filter and into the
+     * specification where the engine can read it — see
+     * `SchoenstattTest\Integration\CallNumberRequirementTest`. That was the only
+     * *structural* entry: the other is a property of the harness, not of the code.
      *
      * Skipping is not the same as excusing: an entry here has to say what the difference is
      * and why it is acceptable, and `BookForm::callNumber` is a step-5 work item rather than
@@ -101,19 +107,6 @@ final class EngineMatchesAssembledFilterTest extends TestCase
      * @var array<string, string>
      */
     private const KNOWN_DIFFERENCES = [
-        //BookForm::setLibraryOptions() reaches into the built filter and calls
-        //setRequired() from the library's requireCallNumbers setting:
-        //
-        //    $this->getInputFilter()->get('callNumber')->setRequired($libraryOptions->…);
-        //
-        //A specification is a value computed before any of that, so it cannot express a
-        //requirement that depends on which library is being viewed. It is the only live
-        //instance in the application (PublicationForm has a commented-out second), and it
-        //has to be answered before the engine replaces Laminas\InputFilter — probably by
-        //the form declaring the rule from the same option rather than patching the filter
-        //after the fact.
-        'Books\Form\BookForm::callNumber' => 'setLibraryOptions() mutates the built input filter',
-
         //Not a difference in production. The controller calls setValueOptions() with the
         //library's collections before validating; FormRepository builds the form with no
         //request, so the element holds none and its own InArray has an EMPTY haystack —
