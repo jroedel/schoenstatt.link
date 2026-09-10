@@ -546,6 +546,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('collectionId')),
             ],
             'bookEdition' => [
                 'required' => false,
@@ -579,6 +580,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                     ],
                     ['name' => ToInt::class],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('publicationId')),
             ],
             'category' => [
                 'required' => false,

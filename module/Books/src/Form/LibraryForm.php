@@ -612,6 +612,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('mainCollectionId')),
             ],
             'requireCallNumbers' => [
                 'required' => false,
