@@ -6,6 +6,7 @@ use Laminas\Filter\ToNull;
 use SionModel\Form\SionForm;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class PersonForm extends SionForm implements InputFilterProviderInterface
 {
@@ -777,6 +778,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('cellPhoneHasWhatsApp')),
             ],
             'cellPhone' => $this->phoneInputFilterSpec,
             'phone1' => $this->phoneInputFilterSpec,
@@ -1148,12 +1150,14 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isAuthor')),
             ],
             'isBorrower' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isBorrower')),
             ],
             'personTags' => [
                 'required' => false,
@@ -1189,6 +1193,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             ],
             'automaticTitle' => [
                 'required' => false,
+                'validators' => CheckboxDomain::validators($this->get('automaticTitle')),
             ],
             'country' => [
                 'required' => false,

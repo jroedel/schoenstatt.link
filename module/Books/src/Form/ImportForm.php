@@ -4,6 +4,7 @@ namespace Books\Form;
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 /**
  * Starting a spreadsheet import: what it is called, and the file.
@@ -169,6 +170,7 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isCompleteImport')),
             ],
             //Deliberately empty of rules, and present so that it is deliberate. The
             //upload is judged by App\Books\Import\SpreadsheetUpload against the

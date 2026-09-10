@@ -3,6 +3,7 @@ namespace Schoenstatt\Form;
 
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\CheckboxDomain;
 
 class SearchForm extends Form implements InputFilterProviderInterface
 {
@@ -59,16 +60,17 @@ class SearchForm extends Form implements InputFilterProviderInterface
         return [
             'showPhotos' => [
                 'required' => false,
-                'validators' => [],
                 'filters' => [
                     ['name' => 'Boolean'],
                 ],
+                'validators' => CheckboxDomain::validators($this->get('showPhotos')),
             ],
             'exMembers' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'Boolean'],
                 ],
+                'validators' => CheckboxDomain::validators($this->get('exMembers')),
             ],
             'search' => [
                 'required' => false,
