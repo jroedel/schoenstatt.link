@@ -6,6 +6,7 @@ use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
+use SionModel\Form\InputTypeRules;
 
 class LibraryForm extends SionForm implements InputFilterProviderInterface
 {
@@ -537,6 +538,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
                 'validators' => [
+                    ...InputTypeRules::email($this->get('contactEmail')),
                     [
                         'name' => 'StringLength',
                         'options' => [
@@ -788,6 +790,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => InputTypeRules::number($this->get('defaultCheckoutTimePeriodInDays')),
             ],
             'adminNotes' => [
                 'required' => false,

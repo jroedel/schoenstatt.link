@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use Laminas\Form\Element\Checkbox;
+use Laminas\Form\Element\Date as DateElement;
+use Laminas\Form\Element\Email;
+use Laminas\Form\Element\Url;
 use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use App\Schoenstatt\Association\AssociationValidator;
@@ -381,6 +384,41 @@ final class AssociationValidationParityTest extends TestCase
      * `SionModel\Form\CheckboxDomain` is what every other form uses, and it reads the
      * element precisely so that no such assertion is needed. Six fields here cannot.
      */
+    /**
+     * The element-derived literals in `AssociationInputFilterSpec` still describe the
+     * form's actual elements.
+     *
+     * `URI`, `HTML5_EMAIL` and `HTML5_DATE` restate what `Laminas\\Form\\Element\\Url`,
+     * `Email` and `Date` contribute of their own accord. Every other form in the
+     * application derives those from the element through
+     * `SionModel\\Form\\InputTypeRules`; these six cannot, because this specification is
+     * shared with the API and the API builds no form.
+     *
+     * So the check is that the elements are still the types those literals were written
+     * for, and that the one attribute the literals encode — the date's lower bound — has
+     * not moved. Change the element and this fails instead of the specification quietly
+     * describing rules the form no longer applies.
+     */
+    public function testTheSharedSpecificationStillDescribesTheFormsElements(): void
+    {
+        $form = self::form(withCsrf: false);
+
+        foreach (['url1', 'url2', 'url3', 'facebookUrl'] as $field) {
+            self::assertInstanceOf(Url::class, $form->get($field), $field);
+        }
+
+        self::assertInstanceOf(Email::class, $form->get('email'));
+
+        $foundationDate = $form->get('foundationDate');
+        self::assertInstanceOf(DateElement::class, $foundationDate);
+        self::assertSame('Y-m-d', $foundationDate->getFormat());
+        self::assertSame(
+            '1900-01-01',
+            $foundationDate->getAttribute('min'),
+            "the date element's lower bound moved; AssociationInputFilterSpec::HTML5_DATE still says 1900-01-01"
+        );
+    }
+
     public function testTheSharedSpecificationStillDescribesTheFormsCheckboxes(): void
     {
         $form = self::form(withCsrf: false);
