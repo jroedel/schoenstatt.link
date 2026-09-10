@@ -10,6 +10,7 @@ use App\Laminas\ServiceBridge;
 use JTranslate\I18n\TranslatableMessage;
 use Schoenstatt\Form\ImportFatherForm;
 use Schoenstatt\Service\PatresGateway;
+use Schoenstatt\Service\PatresLookupFailed;
 use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -105,7 +106,23 @@ final class ImportFatherController
         $gateway = $this->laminas->get(PatresGateway::class);
 
         $overwroteExisting = false;
-        $result = $gateway->importRemotePerson($personId, [], $overwroteExisting);
+
+        try {
+            $result = $gateway->importRemotePerson($personId, [], $overwroteExisting);
+        } catch (PatresLookupFailed $e) {
+            //The same gap the checkout page had: the branch below answers a record patres
+            //*refused*, and said nothing about a record patres could not be **asked**
+            //about. The picker is built from a different patres endpoint and empties
+            //itself silently when that one is unreachable, so this page can offer a person
+            //it then cannot fetch — which is exactly what happened at a lending desk on
+            //2026-09-10, on the checkout side, as a 500.
+            $this->messages->now(FlashMessages::NAMESPACE_ERROR, new TranslatableMessage(
+                'Patres could not be reached for this person, so nothing was imported. '
+                . 'This is a problem at their end — try again in a few minutes.'
+            ));
+
+            return;
+        }
 
         if (false === $result) {
             $fields = array_keys($gateway->getLastRemotePersonMessages());
