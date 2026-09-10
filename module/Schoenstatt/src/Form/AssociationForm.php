@@ -6,6 +6,7 @@ use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use SionModel\Form\SionForm;
 use Schoenstatt\Validator\TimeZone;
+use SionModel\Form\CsrfSpec;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -718,7 +719,13 @@ so users can double-check. Warning: this field is not translated.',
             );
         }
 
-        $this->filterSpec = (new AssociationInputFilterSpec($this->fieldDomains))->toArray();
+        //`security` is the form's, not the field set's: AssociationInputFilterSpec
+        //describes an association's data and is shared with the API, which carries no
+        //CSRF token. Added here so the rule lives in the specification rather than only
+        //on the element — see SionModel\Form\CsrfSpec.
+        $this->filterSpec = ['security' => CsrfSpec::forElement($this->get('security'))]
+            + (new AssociationInputFilterSpec($this->fieldDomains))->toArray();
+
         return $this->filterSpec;
     }
 

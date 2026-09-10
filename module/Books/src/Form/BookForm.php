@@ -7,6 +7,7 @@ use Laminas\InputFilter\InputFilterProviderInterface;
 use Books\Model\LibraryOptions;
 use SionModel\Filter\ToBit;
 use Laminas\Filter\ToInt;
+use SionModel\Form\CsrfSpec;
 
 class BookForm extends SionForm implements InputFilterProviderInterface
 {
@@ -421,6 +422,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'libraryId' => [
                 'required' => true,
                 'filters' => [

@@ -3,6 +3,7 @@ namespace Schoenstatt\Form;
 
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
+use SionModel\Form\CsrfSpec;
 
 class RoleForm extends SionForm implements InputFilterProviderInterface
 {
@@ -130,6 +131,7 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             //Explicit rather than inherited from the element. A role with no association
             //is not a role; the domain itself stays the element's InArray over the
             //association list its factory supplies.

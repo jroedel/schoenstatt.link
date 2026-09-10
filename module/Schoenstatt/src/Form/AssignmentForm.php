@@ -5,6 +5,7 @@ use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\SionForm;
 use App\Json;
+use SionModel\Form\CsrfSpec;
 
 class AssignmentForm extends SionForm implements InputFilterProviderInterface
 {
@@ -147,6 +148,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'associationId' => [
                 'required' => true,
                 'filters' => [
