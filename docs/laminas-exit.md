@@ -46,6 +46,18 @@ under `module/*/src` that a Symfony-served request reaches.
   `test/Integration/WholeFormEngineParityTest` compares against the engine on every form.
   laminas-form still supplies elements and rendering; the packages leave when the element
   and form models land.
+  What remains of step 5 is the element model and the form model. Measured 2026-09-11
+  across all 36 forms: **441 elements, 15 laminas element classes, 24 option keys, 29
+  attribute keys**, and the distribution is what decides the shape — `Select` 136, `Text`
+  73, `Checkbox` 42, `Textarea` 39, `Csrf` 35, `Submit` 35, `Hidden` 15 is 85% of them.
+  Most of those classes differ only in a `type` attribute and an input specification, and
+  the input specification is ours now, so they collapse. What genuinely differs is the
+  option list (Select), the two values (Checkbox), the token (Csrf), the three sub-selects
+  (DateSelect) and nesting (Fieldset, Collection). `test/Element/element-surface.php`
+  records what all 441 answer today and is the contract the replacement is written
+  against. Three option keys become documentation the day it lands:
+  `disable_inarray_validator` (63 uses), `required` (124) and `allow_empty` are read by the
+  input-filter half, which no longer looks at elements.
   A rule that lives on an element and not in a specification is a rule the engine cannot
   see, so `test/Fuzz/known-form-gaps.php` tracks two categories for it —
   `validationSuppliedOnlyByElement` (3, all harness artefacts) and
