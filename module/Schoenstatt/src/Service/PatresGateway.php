@@ -6,9 +6,35 @@ use Laminas\InputFilter\InputFilterInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use App\Json;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 class PatresGateway
 {
+    /**
+     * The HTTP client, so a test can supply one.
+     *
+     * `HttpClient::create()` was called inline at both call sites, which made the two
+     * failure paths below unreachable from a test — and one of them was wrong for years
+     * without anybody able to demonstrate it cheaply. Defaulted rather than required, so
+     * every existing construction site is unchanged.
+     *
+     * @var HttpClientInterface|null
+     */
+    protected $httpClient;
+
+    public function setHttpClient(HttpClientInterface $client): self
+    {
+        $this->httpClient = $client;
+
+        return $this;
+    }
+
+    protected function getHttpClient(): HttpClientInterface
+    {
+        return $this->httpClient ??= HttpClient::create();
+    }
+
 
     /**
     * @var mixed[] $schoenstattConfig
@@ -101,7 +127,7 @@ class PatresGateway
         $key = $this->getApiKey();
         $listUrl = $this->getPersonListUri();
         try {
-            $response = HttpClient::create()->request('GET', $listUrl, ['query' => ['key' => $key]]);
+            $response = $this->getHttpClient()->request('GET', $listUrl, ['query' => ['key' => $key]]);
             //Symfony's client is lazy — nothing is sent until the response is read — so the
             //status is asked for here, inside the catch that logs a failed request.
             $status   = $response->getStatusCode();
@@ -219,19 +245,37 @@ class PatresGateway
     {
         $key = $this->getApiKey();
         $getPersonUrl = $this->getPersonUri($personId);
-        $response = HttpClient::create()->request('GET', $getPersonUrl, ['query' => ['key' => $key]]);
-        $status   = $response->getStatusCode();
+
+        //Symfony's client is lazy: nothing is sent until the response is read, so a
+        //connection refused, a DNS failure or a timeout surfaces at getStatusCode() — and
+        //as a TransportException, not as a status. getPersonList() above has guarded that
+        //since it was written; this method did not, so a patres *outage* left a raw
+        //transport exception here and became an error page. An outage is the likelier
+        //failure of the two, so it was the bigger hole.
+        try {
+            $response = $this->getHttpClient()->request('GET', $getPersonUrl, ['query' => ['key' => $key]]);
+            $status   = $response->getStatusCode();
+        } catch (TransportExceptionInterface $e) {
+            $this->logRemoteFailure($personId, 'the request could not be completed: ' . $e->getMessage());
+
+            throw PatresLookupFailed::unreachable($personId, $e);
+        }
 
         if (200 != $status) {
-            throw new \Exception('Request for information on father \'' . $personId . '\' failed. Status code: '
-                . $status);
+            //Typed, and logged here rather than left to whoever catches it: this is the
+            //one failure the caller cannot do anything about, so the record of *why*
+            //has to be made at the place that knows. See PatresLookupFailed.
+            $this->logRemoteFailure($personId, 'status code ' . $status);
+
+            throw PatresLookupFailed::status($personId, (int) $status);
         }
         //`false`: the status is checked above, so the client must not throw over it and
         //replace that message with a transport exception.
         $data = Json::decodeToArray($response->getContent(false));
         if (! isset($data['data'])) {
-            throw new \Exception('Request for information on father \'' . $personId
-                . '\' failed. No information returned.');
+            $this->logRemoteFailure($personId, 'a 200 carrying no record');
+
+            throw PatresLookupFailed::noRecord($personId);
         }
         $person = $data['data'];
         $this->lastRemotePersonMessages = [];
@@ -268,6 +312,28 @@ class PatresGateway
             ));
         }
         return false;
+    }
+
+    /**
+     * Record a failed remote lookup.
+     *
+     * The twin of the logging just above for an invalid record, and it exists for the
+     * same reason that one was added on 2026-08-17: without it the only thing anybody
+     * ever learned about a failed import was whatever the caller chose to say, which was
+     * usually wrong and always unactionable.
+     */
+    private function logRemoteFailure(string|int $personId, string $reason): void
+    {
+        $logger = $this->getLogger();
+        if (! isset($logger)) {
+            return;
+        }
+
+        $logger->error(sprintf(
+            'Patres could not be asked about person %s: %s. Nothing was imported.',
+            $personId,
+            $reason
+        ));
     }
 
     /**
