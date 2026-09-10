@@ -11,6 +11,7 @@ use Laminas\Db\Adapter\Adapter;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use SionModel\Form\Validation\FormSpecification;
 use Throwable;
 
 use function array_diff;
@@ -126,19 +127,24 @@ final class PhraseValidationParityTest extends TestCase
     }
 
     /**
-     * The set of inputs is the same on both sides, save the one documented difference.
+     * The set of rules is the same on both sides, save the one documented difference.
      *
      * This is the assertion that catches the API quietly dropping a field. Comparing
      * *names* rather than behaviour, because a field the API never validates at all is
      * the failure mode a payload-by-payload comparison misses: it would simply never
      * produce a payload for it.
+     *
+     * Both sides are read off a specification now rather than off an assembled
+     * `Laminas\InputFilter`, so the API's is the form's with one key dropped. That makes
+     * the two unable to disagree about a *field's rules*, which is the point; what is left
+     * to catch here is a second exemption, or an exemption that drops the wrong key.
      */
     public function testCsrfIsTheOnlyInputTheApiDoesNotEnforce(): void
     {
         self::requireDatabase();
 
-        $formInputs = array_keys(self::form()->getInputFilter()->getInputs());
-        $apiInputs  = array_keys(self::validator()->inputFilter()->getInputs());
+        $formInputs = array_keys(FormSpecification::of(self::form()));
+        $apiInputs  = array_keys(self::validator()->inputFilter()->specification());
 
         sort($formInputs);
         sort($apiInputs);

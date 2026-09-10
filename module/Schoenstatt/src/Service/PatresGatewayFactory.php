@@ -4,6 +4,7 @@ namespace Schoenstatt\Service;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\PersonForm;
+use SionModel\Form\Validation\FormSpecification;
 use Schoenstatt\Model\SchoenstattTable;
 
 /**
@@ -27,9 +28,13 @@ class PatresGatewayFactory implements FactoryInterface
 
         $patresGateway = new PatresGateway();
 
-        $inputFilter = clone $personForm->getInputFilter();
-        $inputFilter->remove('security');
-        $patresGateway->setPersonInputFilter($inputFilter);
+        //The specification, not a built filter, and `security` dropped by unsetting its
+        //key: an import has no session, so leaving the CSRF rule in place would be a fatal
+        //rather than a validation failure. Same seam, and for the same reason, as
+        //App\Schoenstatt\Association\AssociationValidator.
+        $personSpec = FormSpecification::of($personForm);
+        unset($personSpec['security']);
+        $patresGateway->setPersonInputFilterSpecification($personSpec);
         $patresGateway->setSchoenstattConfig($config);
         $patresGateway->setSchoenstattTable($table);
 

@@ -2,7 +2,7 @@
 namespace Schoenstatt\Service;
 
 use Schoenstatt\Model\SchoenstattTable;
-use Laminas\InputFilter\InputFilterInterface;
+use SionModel\Form\Validation\InputFilter as Engine;
 use Symfony\Component\HttpClient\HttpClient;
 use App\Json;
 use Psr\Log\LoggerInterface;
@@ -57,9 +57,16 @@ class PatresGateway
     protected $schoenstattTable;
 
     /**
-     * @var InputFilterInterface $personInputFilter
+     * The rules a person record from Patres is held to, as plain data.
+     *
+     * The specification rather than a built filter, because the engine that runs it holds
+     * the data and messages of the last thing validated through it. This used to be a
+     * `Laminas\InputFilter` that `getPersonInputFilter()` cloned for exactly that reason;
+     * a specification is immutable, so a fresh engine per call is both cheaper and safer.
+     *
+     * @var array<string, mixed>|null
      */
-    protected $personInputFilter;
+    protected $personInputFilterSpec;
 
     /**
      * @var string $personListUri
@@ -214,25 +221,25 @@ class PatresGateway
     }
 
     /**
-     * Get a fresh InputFilter to test person data
-     * @return \Laminas\InputFilter\InputFilterInterface
+     * A fresh engine to test person data with.
+     *
+     * @return Engine
      */
     public function getPersonInputFilter()
     {
-        if (is_null($this->personInputFilter)) {
-            throw new \Exception('No person input filter set');
+        if (is_null($this->personInputFilterSpec)) {
+            throw new \Exception('No person input filter specification set');
         }
-        return clone $this->personInputFilter;
+        return Engine::withLaminasRules($this->personInputFilterSpec);
     }
 
     /**
-    *
-    * @param InputFilterInterface $personInputFilter
+    * @param array<string, mixed> $personInputFilterSpec PersonForm's specification, CSRF removed
     * @return self
     */
-    public function setPersonInputFilter($personInputFilter)
+    public function setPersonInputFilterSpecification(array $personInputFilterSpec)
     {
-        $this->personInputFilter = $personInputFilter;
+        $this->personInputFilterSpec = $personInputFilterSpec;
         return $this;
     }
 
