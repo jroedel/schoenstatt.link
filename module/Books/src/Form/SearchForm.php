@@ -127,6 +127,29 @@ class SearchForm extends Form implements InputFilterProviderInterface
                     ],
                 ],
             ],
+            //Was the one field on this form with no filter, no validator and no length
+            //bound — a raw query-string value going to LibraryTable::searchBooks(). The
+            //shape is `search`'s and `inLanguage`'s above; the bound is lib_books.category
+            //varchar(500). It also means a `category[]=a&category[]=b` query is now
+            //rejected rather than reaching searchBooks()' multi-value branch: nothing
+            //renders such a link, the element is a single Text, and `search[]=` has always
+            //failed the same way.
+            'category' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'max' => 500,
+                            'encoding' => 'UTF-8',
+                        ],
+                    ],
+                ],
+            ],
             'libraryId' => [
                 'required' => false,
                 'filters' => [

@@ -185,6 +185,37 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '30',
             ],
         ]);
+        //Skype and Slack were validated but never offered. Their spec entries below are
+        //as complete as Twitter's and Instagram's — dedicated validators, filters, a
+        //`contactInfo` many-to-one stamp — and `sch_persons.SkypeUser` holds 63 live
+        //values that the person page displays. Only the elements were missing, so the
+        //fields were editable by a hand-made POST and by nothing else.
+        $this->add([
+            'name' => 'skypeUser',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Skype user',
+                'required' => false,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. fr_johnsmith',
+                //SionModel\Validator\Skype caps the name at 32; the column holds 50.
+                //The browser bound is the one a value can actually pass.
+                'maxlength' => '32',
+            ],
+        ]);
+        $this->add([
+            'name' => 'slackUser',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Slack user',
+                'required' => false,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. fr.johnsmith',
+                'maxlength' => '50',
+            ],
+        ]);
         $this->add([
             'name' => 'facebookUrl',
             'type' => 'Url',
@@ -845,6 +876,15 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\Skype'],
+                    //sch_persons.SkypeUser is varchar(50). The regex above already caps
+                    //the name at 32, so this bound is what the *column* asks for rather
+                    //than a second opinion about Skype.
+                    ['name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 50,
+                        ],
+                    ],
                 ],
             ],
             'twitterUser' => [
@@ -885,6 +925,16 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\Slack'],
+                    //Unlike Skype's, the Slack pattern has no length ceiling of its own,
+                    //so without this the field is bounded by nothing but
+                    //sch_persons.SlackUser varchar(50) — which under STRICT_TRANS_TABLES
+                    //means an over-long name is a 500, not a validation message.
+                    ['name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 50,
+                        ],
+                    ],
                 ],
             ],
             'postStreet1' => [
@@ -1251,78 +1301,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'lifeCommunity' => [
                 'required' => false,
                 'validators' => ChoiceDomain::validators($this->get('lifeCommunity')),
-            ],
-            'street1' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 70,
-                        ],
-                    ],
-                ],
-            ],
-            'street2' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 70,
-                        ],
-                    ],
-                ],
-            ],
-            'cityState' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 40,
-                        ],
-                    ],
-                ],
-            ],
-            'zip' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 15,
-                        ],
-                    ],
-                ],
             ],
             'adminNotes' => [
                 'required' => false,

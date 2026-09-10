@@ -90,20 +90,12 @@ return [
     // filters/validators keys in an element definition, which Laminas\Form\Factory discards without a
     // word. The field looks protected in the source and is completely unvalidated.
     'deadElementKeys' => [
-        'module/Schoenstatt/src/Form/PersonForm.php:472 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
+        'module/Schoenstatt/src/Form/PersonForm.php:503 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
     ],
 
     // Data elements the input filter spec never names. A plain Text/Textarea/Hidden in this state is
     // total pass-through: no filter, no validator, no length bound.
     'elementsMissingFromSpec' => [
-        'Books\\Form\\CheckoutForm: \'personId\' is not named in the input filter spec (element-provided validation only, no filters)',
-        'Books\\Form\\ImportForm: \'file\' is not named in the input filter spec (element-provided validation only, no filters)',
-        'Books\\Form\\PublicationsSearchForm: \'includeDataSources\' is not named in the input filter spec (element-provided validation only, no filters)',
-        'Books\\Form\\SearchForm: \'category\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
-        'JUser\\Form\\EditUserForm: \'rolesList\' is not named in the input filter spec (element-provided validation only, no filters)',
-        'Schoenstatt\\Form\\RoleForm: \'associationId\' is not named in the input filter spec (element-provided validation only, no filters)',
-        'SionModel\\Form\\CommentForm: \'comment\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
-        'SionModel\\Form\\CommentForm: \'redirect\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
     ],
 
     // Entries in open-ended-choice-fields.php that matched no field this run. Either the field is
@@ -121,14 +113,6 @@ return [
     // Spec keys naming no element. The field the entry was meant to protect is unvalidated, and
     // getData() gains a key holding null.
     'specKeysWithoutElement' => [
-        'Books\\Form\\PublicationForm: input filter spec names \'isAccessibleForFree\', which is not an element on this form',
-        'Schoenstatt\\Form\\PersonForm: input filter spec names \'cityState\', which is not an element on this form',
-        'Schoenstatt\\Form\\PersonForm: input filter spec names \'skypeUser\', which is not an element on this form',
-        'Schoenstatt\\Form\\PersonForm: input filter spec names \'slackUser\', which is not an element on this form',
-        'Schoenstatt\\Form\\PersonForm: input filter spec names \'street1\', which is not an element on this form',
-        'Schoenstatt\\Form\\PersonForm: input filter spec names \'street2\', which is not an element on this form',
-        'Schoenstatt\\Form\\PersonForm: input filter spec names \'zip\', which is not an element on this form',
-        'SionModel\\Form\\CommentForm: input filter spec names \'text\', which is not an element on this form',
     ],
 
     // Proved by running it: places where isValid() throws instead of answering. A 500 in a controller
@@ -164,7 +148,6 @@ return [
         'Books\\Form\\PublicationForm: \'url1\' (url) has no length bound',
         'Books\\Form\\PublicationForm: \'url2\' (url) has no length bound',
         'Books\\Form\\PublicationForm: \'url3\' (url) has no length bound',
-        'Books\\Form\\SearchForm: \'category\' (text) has no length bound',
         'Books\\Form\\SearchForm: \'libraryId\' (hidden) has no length bound',
         'Books\\Form\\TextForm: \'kind\' (hidden) has no length bound',
         'Books\\Form\\TextForm: \'markdownText\' (textarea) has no length bound',
@@ -186,8 +169,6 @@ return [
         'Schoenstatt\\Form\\PersonForm: \'url2\' (url) has no length bound',
         'Schoenstatt\\Form\\PersonForm: \'url3\' (url) has no length bound',
         'Schoenstatt\\Form\\SearchForm: \'search\' (text) has no length bound',
-        'SionModel\\Form\\CommentForm: \'comment\' (textarea) has no length bound',
-        'SionModel\\Form\\CommentForm: \'redirect\' (hidden) has no length bound',
     ],
 
     // Forms no test in this suite can examine, because nothing can build them.

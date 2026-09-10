@@ -29,7 +29,7 @@ use Throwable;
  * be invisible — a green suite that silently stopped covering the newest form is
  * worse than no suite. So `module/&ast;/src/Form/` is walked, every concrete
  * `Laminas\Form\Fieldset` descendant is a subject, and nothing here knows how
- * many there should be. (`countSanityFloor()` guards the opposite failure: a
+ * many there should be. (`COUNT_SANITY_FLOOR` guards the opposite failure: a
  * renamed directory making every assertion pass vacuously.)
  *
  * ## Why the container, and why it can be built without bootstrapping
