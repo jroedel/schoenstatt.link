@@ -13,6 +13,7 @@ use Laminas\Filter\StringToLower;
 use SionModel\Filter\SortArray;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CsrfSpec;
 
 class CompositionForm extends SionForm implements InputFilterProviderInterface
 {
@@ -354,6 +355,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'name' => [
                 'required' => true,
                 'filters' => [

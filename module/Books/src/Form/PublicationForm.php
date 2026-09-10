@@ -14,6 +14,7 @@ use Laminas\Filter\StringTrim;
 use Laminas\Validator\Regex;
 use Laminas\Validator\NotEmpty;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CsrfSpec;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -505,6 +506,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
     {
 //         $this->getInputFilter()->get('numberOfPages')->setValidatorChain(new ValidatorChain());
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'title' => [
                 'required' => true,
                 'filters' => [

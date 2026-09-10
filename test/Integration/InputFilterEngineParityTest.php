@@ -41,6 +41,20 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * merges messages from every failing validator while this engine reports the first failing
  * one, which is the same verdict with a shorter list. A field that one engine considers
  * valid and the other does not is the failure this test exists to catch.
+ *
+ * ## What this test does not prove, and cannot
+ *
+ * **Both sides are fed the same specification**, so the comparison starts where the
+ * specification does. The filter the application actually validates against is
+ * `Form::getInputFilter()`, which also builds an input per element and merges the two —
+ * and 101 fields across these forms are validated *only* by that element half, 31 of them
+ * by `Csrf`. None of that is visible here, and widening this test to cover it would only
+ * turn it red: the engine is not meant to carry those yet.
+ *
+ * They are enumerated instead, in `test/Fuzz/known-form-gaps.php` under
+ * `validationSuppliedOnlyByElement`, and that list must reach zero before
+ * {@see InputFilter} replaces `Laminas\InputFilter`. Read this test as "the engine agrees
+ * with laminas about a specification", never as "the engine is a safe replacement".
  */
 class InputFilterEngineParityTest extends TestCase
 {

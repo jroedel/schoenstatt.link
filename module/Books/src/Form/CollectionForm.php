@@ -5,6 +5,7 @@ use Books\Model\LibraryTable;
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CsrfSpec;
 
 class CollectionForm extends SionForm implements InputFilterProviderInterface
 {
@@ -238,6 +239,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
+            'security' => CsrfSpec::forElement($this->get('security')),
             'libraryId' => [
                 'required' => true,
             ],
