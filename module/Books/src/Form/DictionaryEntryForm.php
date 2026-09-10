@@ -6,6 +6,7 @@ use Laminas\InputFilter\InputFilterProviderInterface;
 use Books\Model\LibraryOptions;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class DictionaryEntryForm extends SionForm implements InputFilterProviderInterface
 {
@@ -212,6 +213,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isActive')),
             ],
         ];
     }

@@ -6,6 +6,7 @@ use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class CollectionForm extends SionForm implements InputFilterProviderInterface
 {
@@ -401,6 +402,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('requireCallNumbers')),
             ],
             'callNumberRegex' => [
                 'required' => false,
@@ -429,6 +431,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('enforceCallNumberRegex')),
             ],
             'labelLine1' => [
                 'required' => false,
@@ -523,6 +526,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isActive')),
             ],
         ];
     }

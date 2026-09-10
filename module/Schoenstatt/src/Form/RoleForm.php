@@ -4,6 +4,7 @@ namespace Schoenstatt\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class RoleForm extends SionForm implements InputFilterProviderInterface
 {
@@ -175,24 +176,28 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isSinglePosition')),
             ],
             'isMainRole' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isMainRole')),
             ],
             'isMainContact' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isMainContact')),
             ],
             'isActive' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isActive')),
             ],
         ];
     }

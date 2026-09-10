@@ -15,6 +15,7 @@ use Laminas\Validator\Regex;
 use Laminas\Validator\NotEmpty;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -582,6 +583,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToBit::class]
                 ],
+                'validators' => CheckboxDomain::validators($this->get('hasNoExplictEditionNumber')),
             ],
             'description' => [
                 'required' => false,
@@ -896,24 +898,28 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToBit::class]
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isScientificWork')),
             ],
             'hasNoISBN' => [
                 'required' => false,
                 'filters' => [
                     ['name' => ToBit::class]
                 ],
+                'validators' => CheckboxDomain::validators($this->get('hasNoISBN')),
             ],
             'isRevisedWithBookInHand' => [
                 'required' => false,
                 'filters' => [
                     ['name' => ToBit::class]
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isRevisedWithBookInHand')),
             ],
             'isFormallyPublished' => [
                 'required' => false,
                 'filters' => [
                     ['name' => ToBit::class]
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isFormallyPublished')),
             ],
             'editionNotes' => [
                 'required' => false,

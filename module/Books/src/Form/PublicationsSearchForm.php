@@ -4,6 +4,7 @@ namespace Books\Form;
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
+use SionModel\Form\CheckboxDomain;
 
 class PublicationsSearchForm extends Form implements InputFilterProviderInterface
 {
@@ -101,6 +102,7 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
             ],
             'showEditionsSeparately' => [
                 'required' => false,
+                'validators' => CheckboxDomain::validators($this->get('showEditionsSeparately')),
             ],
             //Its sibling above, and for the same reason: Checkbox::getInputSpecification()
             //declares the input **required**, which is invisible while `use_hidden_element`
@@ -109,6 +111,7 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
             //disagree about that, and this one was simply left out.
             'includeDataSources' => [
                 'required' => false,
+                'validators' => CheckboxDomain::validators($this->get('includeDataSources')),
             ],
             'inLanguage' => [
                 'required' => false,
