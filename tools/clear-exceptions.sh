@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Delete recorded exception fingerprints from the SERVER's
-# data/exceptions/. This is the "I fixed this, tell me if it comes back"
+# Delete recorded exception fingerprints from the SERVER's exception store
+# (shared/data/exceptions — see tools/exception-store.sh). This is the "I fixed this, tell me if it comes back"
 # button: the PHP exception recorder's email throttling keys off a
 # fingerprint's on-disk record, so removing a fingerprint re-arms its
 # notification threshold — the next occurrence is treated as brand new.
@@ -12,14 +12,18 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-APP_PATH=public_html/schoenstatt.link
-REMOTE_EXC_DIR="$APP_PATH/data/exceptions"
+# The store path and the SSH endpoint, shared with fetch-exceptions.sh. This script
+# had the same stale copy of the path: $APP_PATH/data/exceptions has not existed
+# since the atomic deploy moved the store under shared/ in August 2026, so every
+# fingerprint named here would have been reported as already gone.
+# shellcheck source=tools/exception-store.sh
+. "$(dirname "$0")/exception-store.sh"
 
 YES=0
 NO_ARCHIVE=0
 OLDER_THAN=""
-REMOTE="ourlink@dedi2934.your-server.de"
-PORT=222
+REMOTE="$EXC_REMOTE"
+PORT="$EXC_PORT"
 FPS=()
 
 FP_RE='^[0-9a-f]{8}$'
@@ -111,8 +115,7 @@ fi
 # "<fp>\t<base64 meta.json or empty>"; base64 keeps embedded newlines from
 # a JSON file out of the line-oriented protocol.
 REMOTE_LIST_SCRIPT='set -eu
-app="$1"
-dir="$app/data/exceptions"
+dir="$1"
 if [ ! -d "$dir" ]; then
     echo "__NO_DIR__"
     exit 0
@@ -132,7 +135,7 @@ for d in */; do
 done
 '
 
-if ! OUTPUT=$(ssh -p "$PORT" "$REMOTE" bash -s -- "$APP_PATH" <<REMOTE_EOF
+if ! OUTPUT=$(ssh -p "$PORT" "$REMOTE" bash -s -- "$REMOTE_EXC_DIR" <<REMOTE_EOF
 $REMOTE_LIST_SCRIPT
 REMOTE_EOF
 ); then
@@ -284,26 +287,31 @@ if [ "$YES" -ne 1 ]; then
     exit 1
 fi
 
-# Build the remote delete command from validated fingerprints only. Every
-# path is data/exceptions/<fp> under the app dir — never a bare or
-# user-supplied path — and fp has already been checked against FP_RE.
+# Build the remote delete command from validated fingerprints only. Every path is
+# ./<fp> inside the resolved store directory — never a bare or user-supplied path —
+# and fp has already been checked against FP_RE.
+#
+# The `cd` is what makes this safe AND what makes it honest: `rm -rf` on a path that
+# does not exist succeeds silently, so when this script was pointed at the pre-atomic
+# $APP_PATH/data/exceptions it would have deleted nothing and then reported success.
+# Refusing to enter a directory that is not there turns that into an error.
 RM_CMDS=""
 for fp in "${TARGET_FPS[@]}"; do
     if [[ ! "$fp" =~ $FP_RE ]]; then
         echo "INTERNAL ERROR: refusing to delete invalid fingerprint '$fp'" >&2
         exit 1
     fi
-    RM_CMDS+="rm -rf 'data/exceptions/${fp}'; "
+    RM_CMDS+="rm -rf './${fp}'; "
 done
 if [ "$CLEAR_ALL" -eq 1 ]; then
     # .emails is the hourly send ledger and the transport circuit breaker;
     # .overflow is the breadcrumb the recorder leaves when the fingerprint
     # ceiling forced it to drop something. Both are only meaningful next to
     # the records being removed.
-    RM_CMDS+="rm -rf 'data/exceptions/.emails' 'data/exceptions/.overflow'; "
+    RM_CMDS+="rm -rf './.emails' './.overflow'; "
 fi
 
-REMOTE_DELETE_CMD="cd '$APP_PATH' && { $RM_CMDS } && echo CLEARED-OK"
+REMOTE_DELETE_CMD="cd '$REMOTE_EXC_DIR' && { $RM_CMDS } && echo CLEARED-OK"
 if ! ssh -p "$PORT" "$REMOTE" "$REMOTE_DELETE_CMD" >/dev/null; then
     echo "ERROR: remote deletion failed or was incomplete — check $REMOTE:$REMOTE_EXC_DIR by hand." >&2
     exit 1
