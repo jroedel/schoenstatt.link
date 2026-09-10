@@ -27,9 +27,9 @@ use Throwable;
  * without anyone remembering to check it. A list of 43 class names would be
  * correct on the day it was written and wrong thereafter, and its wrongness would
  * be invisible — a green suite that silently stopped covering the newest form is
- * worse than no suite. So `module/&ast;/src/Form/` is walked, every concrete
- * `Laminas\Form\Fieldset` descendant is a subject, and nothing here knows how
- * many there should be. (`COUNT_SANITY_FLOOR` guards the opposite failure: a
+ * worse than no suite. So the source tree is walked (see formSourceFiles() for the
+ * two rules), every concrete `Laminas\Form\Fieldset` descendant is a subject, and
+ * nothing here knows how many there should be. (`COUNT_SANITY_FLOOR` guards the opposite failure: a
  * renamed directory making every assertion pass vacuously.)
  *
  * ## Why the container, and why it can be built without bootstrapping
@@ -90,8 +90,12 @@ final class FormRepository
     /** The library the four library-scoped forms are built for. A real id from the capsule's production data. */
     private const LIBRARY_ID = 1;
 
-    /** A renamed module directory must fail loudly, not silently cover nothing. */
-    public const COUNT_SANITY_FLOOR = 35;
+    /**
+     * A renamed directory must fail loudly, not silently cover nothing. 35 while only
+     * `module/` was walked; 40 once `src/` joined it, which is four forms below the 41
+     * discovered — a floor, not a count, so adding a form needs no edit here.
+     */
+    public const COUNT_SANITY_FLOOR = 40;
 
     private static ?self $instance = null;
 
@@ -131,8 +135,8 @@ final class FormRepository
     // ------------------------------------------------------------- discovery
 
     /**
-     * Every concrete form/fieldset class under `module/&ast;/src/Form/`, keyed by
-     * class name and pointing at the file that declares it.
+     * Every concrete form/fieldset class in the files formSourceFiles() offers, keyed
+     * by class name and pointing at the file that declares it.
      *
      * Abstract classes are skipped (nothing instantiates them), as is anything
      * that is not a `Fieldset` descendant — `Form/Element/Phone.php` and
@@ -181,36 +185,76 @@ final class FormRepository
 
     /**
      * The source files discovery considered — also the input to
-     * ElementDefinitionScanner, which must see *every* file under `Form/`,
-     * including the ones discovery rejects.
+     * ElementDefinitionScanner, which must see *every* candidate file, including
+     * the ones discovery rejects.
+     *
+     * ## Why two roots and two rules
+     *
+     * The module tree keeps its forms in one place, so `module/&ast;/src/Form/` is a
+     * complete rule there. `src/` does not: the Symfony-side forms sit beside the
+     * code that uses them — `App\Books\LibraryDeleteForm` next to `LibraryDelete`,
+     * `App\Books\Import\ImportMappingForm` next to the importer — which is the
+     * right place for them and the reason a directory rule found none of them.
+     *
+     * They were invisible to this harness until 2026-09-11, and invisibility is not
+     * a small thing here: `RefreshSortForm`, `RunImportForm` and `ImportMappingForm`
+     * declare **no input filter specification at all**, so every check they have —
+     * the CSRF token on all three, nineteen `InArray` domains on the mapping selects
+     * — came from the element half that `SionModel\Form\Validation\InputFilter`
+     * cannot see. `validationSuppliedOnlyByElement` read 2 while those three forms
+     * were entirely element-validated.
+     *
+     * So the second rule is by name — `&ast;Form.php` and `&ast;Fieldset.php` anywhere
+     * under `src/` — which is a convention the whole tree already follows and which
+     * costs nothing to keep. A form named otherwise is still missed; `discover()`
+     * cannot help with that, but `FormValidationContractTest` pins the count so a
+     * form that stops being seen is a failure rather than a silence.
      *
      * @return list<string>
      */
     public function formSourceFiles(): array
     {
-        $files = [];
-        $root  = dirname(__DIR__, 2) . '/module';
+        $files      = [];
+        $repository = dirname(__DIR__, 2);
 
-        if (! is_dir($root)) {
-            return [];
-        }
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
-        );
-        foreach ($iterator as $file) {
-            if (! $file->isFile() || $file->getExtension() !== 'php') {
+        foreach ([$repository . '/module', $repository . '/src'] as $root) {
+            if (! is_dir($root)) {
                 continue;
             }
-            if (! str_contains(str_replace('\\', '/', $file->getPathname()), '/src/Form/')) {
-                continue;
+
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
+            );
+            foreach ($iterator as $file) {
+                if (! $file->isFile() || $file->getExtension() !== 'php') {
+                    continue;
+                }
+                if (self::looksLikeAFormSource($file->getPathname())) {
+                    $files[] = $file->getPathname();
+                }
             }
-            $files[] = $file->getPathname();
         }
 
         sort($files);
 
         return $files;
+    }
+
+    /**
+     * Under `module/`, position decides; under `src/`, the file name does. See
+     * formSourceFiles() for why the two roots cannot share one rule.
+     */
+    private static function looksLikeAFormSource(string $path): bool
+    {
+        $path = str_replace('\\', '/', $path);
+
+        if (str_contains($path, '/src/Form/')) {
+            return true;
+        }
+
+        $name = basename($path);
+
+        return str_ends_with($name, 'Form.php') || str_ends_with($name, 'Fieldset.php');
     }
 
     // ---------------------------------------------------------- instantiation
@@ -314,11 +358,23 @@ final class FormRepository
      */
     private function constructDirectly(string $class): Fieldset
     {
+        /** @var Fieldset */
+        return $this->constructByShape($class, 0);
+    }
+
+    /**
+     * How deep argumentFor() may recurse into a constructor's own arguments. One
+     * level is all any form has needed; the limit exists so a cycle is a reported
+     * failure rather than a stack overflow.
+     */
+    private const ARGUMENT_DEPTH_LIMIT = 3;
+
+    private function constructByShape(string $class, int $depth): object
+    {
         $constructor = (new ReflectionClass($class))->getConstructor();
         $required    = $constructor?->getNumberOfRequiredParameters() ?? 0;
 
         if (0 === $required) {
-            /** @var Fieldset */
             return new $class();
         }
 
@@ -328,10 +384,9 @@ final class FormRepository
                 break;
             }
 
-            $arguments[] = $this->argumentFor($parameter);
+            $arguments[] = $this->argumentFor($parameter, $depth);
         }
 
-        /** @var Fieldset */
         return new $class(...$arguments);
     }
 
@@ -341,7 +396,7 @@ final class FormRepository
      * @throws \RuntimeException when the shape is not one this harness can supply,
      *                           which build() records as a construction failure.
      */
-    private function argumentFor(\ReflectionParameter $parameter): mixed
+    private function argumentFor(\ReflectionParameter $parameter, int $depth = 0): mixed
     {
         $type = $parameter->getType();
 
@@ -368,16 +423,39 @@ final class FormRepository
         }
 
         $service = $type->getName();
-        if (! $this->container()->has($service)) {
-            throw new \RuntimeException(sprintf(
-                'parameter $%s wants %s, which is not a registered service, and the class'
-                . ' has no registered factory',
-                $parameter->getName(),
-                $service
-            ));
+        if ($this->container()->has($service)) {
+            return $this->container()->get($service);
         }
 
-        return $this->container()->get($service);
+        //Not a service, so try the shape rules again one level down. This is what
+        //`App\Books\Import\ImportMappingForm` needs: its third argument is a
+        //`ColumnMap`, a value object holding two arrays, which nothing registers and
+        //nothing should. Recursing is the same rule applied again rather than a new
+        //one, and `$depth` stops a constructor that wants its own type from looping.
+        if ($depth < self::ARGUMENT_DEPTH_LIMIT && $this->isPlainlyConstructable($service)) {
+            return $this->constructByShape($service, $depth + 1);
+        }
+
+        throw new \RuntimeException(sprintf(
+            'parameter $%s wants %s, which is not a registered service, cannot be built'
+            . ' from its own constructor, and the class has no registered factory',
+            $parameter->getName(),
+            $service
+        ));
+    }
+
+    /**
+     * A concrete class whose constructor this harness can try. Interfaces, abstracts
+     * and enums are not: nothing here can choose an implementation, and guessing one
+     * would make a construction failure look like a success.
+     */
+    private function isPlainlyConstructable(string $class): bool
+    {
+        if (! class_exists($class)) {
+            return false;
+        }
+
+        return (new ReflectionClass($class))->isInstantiable();
     }
 
     /**

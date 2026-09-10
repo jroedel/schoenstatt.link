@@ -126,7 +126,7 @@ final class FormValidationContractTest extends TestCase
         self::assertGreaterThanOrEqual(
             FormRepository::COUNT_SANITY_FLOOR,
             count($repository->discover()),
-            'the form discovery walk found almost nothing — module/*/src/Form/ has probably moved, '
+            'the form discovery walk found almost nothing — a form directory has probably moved, '
             . 'which would make every other assertion in this file pass vacuously'
         );
     }
@@ -216,6 +216,33 @@ final class FormValidationContractTest extends TestCase
             'An element the spec does not name keeps only what it provides for itself. For a plain '
             . 'Text/Textarea/Hidden that is ["required" => false] — no filter, no validator, no length '
             . 'bound, straight through to getData(). Add a spec entry for it.'
+        );
+    }
+
+    /**
+     * The step-5 work list, which must shrink and never grow.
+     *
+     * `FormGapCollector` has collected this category since 2026-09-10 and nothing asserted
+     * it, so the list could grow in silence — and did: widening discovery to `src/` on
+     * 2026-09-11 took it from 2 to 7 without a single test going red, because four
+     * confirmation and mapping forms outside `module/` were entirely element-validated,
+     * CSRF included.
+     *
+     * Every entry is a check that `SionModel\Form\Validation\InputFilter` would drop the
+     * day it replaces `Laminas\InputFilter`, because that engine reads the specification
+     * and nothing else. A new entry is therefore not a style complaint: it is a validator
+     * that is scheduled to disappear.
+     */
+    public function testNoFormLeansOnItsElementsForValidationTheSpecificationDoesNotDeclare(): void
+    {
+        $this->assertNoNewGaps(
+            'validationSuppliedOnlyByElement',
+            self::gaps()['validationSuppliedOnlyByElement'],
+            'A validator that reaches the assembled filter from the element half only. It works '
+            . 'today and disappears when SionModel\Form\Validation\InputFilter takes over, since '
+            . 'that engine is driven by getInputFilterSpecification() alone. Restate it in the spec '
+            . '— SionModel\Form\CsrfSpec, ChoiceDomain, CheckboxDomain and InputTypeRules exist to '
+            . 'make that one expression rather than a copied literal.'
         );
     }
 
