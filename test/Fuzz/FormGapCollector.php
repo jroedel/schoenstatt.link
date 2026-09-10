@@ -495,7 +495,22 @@ final class FormGapCollector
                 }
             }
 
-            if ([] === $applied || [] !== self::validatorNames($spec[(string) $name] ?? null)) {
+            //Set difference, not emptiness. Asking only whether the spec declares *any*
+            //validator misses the partial case — AssociationForm's `url1` declares a
+            //StringLength and gets `Uri` from its element on top — and a field that is
+            //half declared loses exactly as much on the cutover as one that is not
+            //declared at all. That undercount was live until 2026-09-10, when
+            //EngineMatchesAssembledFilterTest disagreed with laminas on four association
+            //fields this category had never listed.
+            $declared = self::validatorNames($spec[(string) $name] ?? null);
+            $extra    = [];
+            foreach ($applied as $shortName) {
+                if (! in_array(strtolower($shortName), $declared, true)) {
+                    $extra[] = $shortName;
+                }
+            }
+
+            if ([] === $extra) {
                 continue;
             }
 
@@ -503,7 +518,7 @@ final class FormGapCollector
                 '%s: %s is validated by %s, which the input filter spec does not declare',
                 $class,
                 self::q((string) $name),
-                implode(', ', $applied)
+                implode(', ', $extra)
             );
         }
     }

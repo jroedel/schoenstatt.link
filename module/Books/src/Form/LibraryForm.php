@@ -5,6 +5,7 @@ use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\CheckboxDomain;
 
 class LibraryForm extends SionForm implements InputFilterProviderInterface
 {
@@ -593,12 +594,14 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('useCollections')),
             ],
             'allowCollectionlessBooks' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('allowCollectionlessBooks')),
             ],
             'mainCollectionId' => [
                 'required' => false,
@@ -615,6 +618,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('requireCallNumbers')),
             ],
             'callNumberRegex' => [
                 'required' => false,
@@ -643,6 +647,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('enforceCallNumberRegex')),
             ],
             'checkoutBooksRole' => [
                 'required' => false,
@@ -759,6 +764,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('createCheckoutsIfCheckingInANonCheckedOutBook')),
             ],
             'defaultCheckoutPersonId' => [
                 'required' => false,
@@ -798,12 +804,14 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('isActive')),
             ],
             'enableCheckouts' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
+                'validators' => CheckboxDomain::validators($this->get('enableCheckouts')),
             ],
             'checkoutPersonListKind' => [
                 'required' => true,
