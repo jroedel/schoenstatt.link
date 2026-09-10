@@ -6,6 +6,7 @@ use SionModel\Form\ChoiceDomain;
 use SionModel\Form\SionForm;
 use App\Json;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\InputTypeRules;
 
 class AssignmentForm extends SionForm implements InputFilterProviderInterface
 {
@@ -189,6 +190,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
+                    ...InputTypeRules::date($this->get('startDate')),
                     ['name' => 'SionModel\Validator\ParseableDate'],
                     [
                         'name' => 'SionModel\Validator\DateWithinRange',
@@ -203,6 +205,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
                 'validators' => [
+                    ...InputTypeRules::date($this->get('endDate')),
                     ['name' => 'SionModel\Validator\ParseableDate'],
                     [
                         'name' => 'SionModel\Validator\DateWithinRange',

@@ -14,6 +14,7 @@ use SionModel\Filter\SortArray;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
+use SionModel\Form\InputTypeRules;
 
 class CompositionForm extends SionForm implements InputFilterProviderInterface
 {
@@ -480,6 +481,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
                 'validators' => [
+                    ...InputTypeRules::email($this->get('copyrightContactEmail')),
                     ['name' => EmailAddress::class],
                 ],
             ],
@@ -537,6 +539,8 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+
+                'validators' => InputTypeRules::url($this->get('url1')),
             ],
             'url1Label' => [
                 'required' => false,
@@ -560,6 +564,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url2')),
             ],
             'url2Label' => [
                 'required' => false,
@@ -583,6 +588,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url3')),
             ],
             'url3Label' => [
                 'required' => false,
