@@ -91,8 +91,8 @@ final class EngineMatchesAssembledFilterTest extends TestCase
     private const COMPARISON_FLOOR = 1800;
 
     /**
-     * The one field where the engine and the assembled filter genuinely differ, with the
-     * reason it is not a defect in the engine. It was found by this test.
+     * The fields where the engine and the assembled filter genuinely differ, each with the
+     * reason it is not a defect in the engine.
      *
      * There were two. `Books\Form\BookForm::callNumber` left on 2026-09-11, when the
      * per-library requirement moved out of a patch on the built filter and into the
@@ -115,6 +115,24 @@ final class EngineMatchesAssembledFilterTest extends TestCase
         //engine is the more correct of the two. Comparing them in this state would pin a
         //harness artefact.
         'Books\Form\SearchForm::collectionId' => 'element options are populated per request, not at construction',
+
+        //A `File` element becomes a Laminas\InputFilter\FileInput, which delegates a
+        //present, non-empty value to an implementation that injects
+        //Laminas\Validator\File\UploadFile — a check that the value really arrived
+        //through an HTTP upload. So laminas REJECTS a well-formed $_FILES array that PHP
+        //did not put there, and the engine, which has only the specification's
+        //`required => false`, accepts it.
+        //
+        //Unreachable in production, and that is the form's design rather than luck: the
+        //pages using it are Symfony-served, an upload arrives in $request->files and never
+        //in the data the form is given, so `file` is always absent and FileInput returns
+        //at its first branch. App\Books\Import\SpreadsheetUpload is what actually judges
+        //the file — see the ImportForm docblock.
+        //
+        //Not visible to test/Fuzz/FormGapCollector either, which reads getValidatorChain()
+        //and so cannot see a validator injected at isValid() time. It is recorded here
+        //because this is the file that asks what the engine would carry.
+        'Books\Form\ImportForm::file' => 'FileInput injects an upload validator the specification cannot state',
     ];
 
     /**
