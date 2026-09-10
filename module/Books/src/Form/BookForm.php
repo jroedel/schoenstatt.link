@@ -9,6 +9,7 @@ use SionModel\Filter\ToBit;
 use Laminas\Filter\ToInt;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
+use SionModel\Form\InputTypeRules;
 
 class BookForm extends SionForm implements InputFilterProviderInterface
 {
@@ -440,6 +441,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::number($this->get('withinLibraryId')),
             ],
             'title' => [
                 'required' => true,
@@ -638,6 +640,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => InputTypeRules::number($this->get('numberOfPages')),
             ],
             'publishedYear' => [
                 'required' => false,
@@ -649,6 +652,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::number($this->get('publishedYear')),
             ],
             'publisher' => [
                 'required' => false,

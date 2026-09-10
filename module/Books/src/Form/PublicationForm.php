@@ -16,6 +16,7 @@ use Laminas\Validator\NotEmpty;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
+use SionModel\Form\InputTypeRules;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -762,6 +763,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::number($this->get('copyrightYear')),
             ],
             'copyrightInfo' => [
                 'required' => false,
@@ -793,6 +795,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url1')),
             ],
             'url1Label' => [
                 'required' => false,
@@ -816,6 +819,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url2')),
             ],
             'url2Label' => [
                 'required' => false,
@@ -839,6 +843,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => InputTypeRules::url($this->get('url3')),
             ],
             'url3Label' => [
                 'required' => false,
