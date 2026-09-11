@@ -15,7 +15,7 @@ use PDO;
  * status-code assertion:
  *
  * - **CSRF spanning both front controllers.** The token is minted by
- *   `Laminas\Validator\Csrf` out of the laminas session, which on a Symfony-served
+ *   `SionModel\Validator\Csrf` out of the laminas session, which on a Symfony-served
  *   route exists only because App\Http\SessionListener started it. If that stopped
  *   working the page would still render and every save would fail, which looks like a
  *   validation bug rather than a session one.

@@ -36,11 +36,12 @@ require_once __DIR__ . '/FormData.php';
  * decisive in the database. `getValues()` is the array a controller hands to
  * `SionTable::updateEntity()`.
  *
- * It is recorded now because the instruments that measure this today —
- * `WholeFormEngineParityTest`, `EngineMatchesAssembledFilterTest` and
- * `InputFilterEngineParityTest` — all work by running laminas' assembled input filter
- * beside the engine and comparing. They stop existing when `Laminas\Form\Form` does, which
- * is this iteration. A recording outlives its subject; a parity test does not.
+ * It exists because everything that measured this before it worked by running laminas'
+ * assembled input filter beside the engine and comparing — `WholeFormEngineParityTest`,
+ * `EngineMatchesAssembledFilterTest`, `InputFilterEngineParityTest` — and all three died
+ * with the packages they measured against. A recording outlives its subject; a parity test
+ * does not. This file was written while they still passed, which is the only moment at
+ * which it could be written at all.
  *
  * ## What is recorded
  *

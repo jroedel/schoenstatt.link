@@ -219,7 +219,7 @@ final class EntityDelete
      * port inherits it rather than reimplementing it, and `EntityDeleteController` refuses a
      * POST naming `cancel` for the same belt-and-braces reason the laminas action now does.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     public function form(): FormInterface
     {

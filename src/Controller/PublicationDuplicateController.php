@@ -198,8 +198,6 @@ final class PublicationDuplicateController
      * Both forms declare `security` and `submit` and nothing else, so validity *is* the
      * CSRF check. Read through `isValid()` rather than the validator directly so that the
      * form is what decides — which is also what the fuzz harness measures.
-     *
-     * @param Form<array<string, mixed>> $form
      */
     private function confirmed(Form $form, Request $request): bool
     {

@@ -204,7 +204,7 @@ final class LiteratureController
     /**
      * The variables all three pages share: the search form and the three URLs around it.
      *
-     * @param FormInterface<array<string, mixed>>|null $form the search page's own,
+     * @param FormInterface|null $form the search page's own,
      *        already populated with the query; the other two get a fresh one
      * @return array<string, mixed>
      */
@@ -439,7 +439,7 @@ final class LiteratureController
         return $marked;
     }
 
-    /** @return FormInterface<array<string, mixed>> */
+    /** @return FormInterface */
     private function form(): FormInterface
     {
         $form = $this->laminas->get(PublicationsSearchForm::class);

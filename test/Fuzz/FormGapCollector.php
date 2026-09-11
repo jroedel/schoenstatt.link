@@ -7,8 +7,9 @@ namespace SchoenstattTest\Fuzz;
 use SionModel\Form\Collection;
 use SionModel\Form\ElementInterface;
 use SionModel\Form\Fieldset;
-use Laminas\InputFilter\InputFilterProviderInterface;
-use Laminas\Validator\Explode;
+use SionModel\Filter\Registry as FilterRegistry;
+use SionModel\Form\InputFilterProviderInterface;
+use SionModel\Validator\Explode;
 use SionModel\Entity\Entity;
 use SionModel\Form\Element;
 use SionModel\Service\EntitiesService;
@@ -24,55 +25,39 @@ use Throwable;
  * that never quite matches, and the usual response to that is to stop trusting the
  * suite.
  *
- * ## The laminas-form mechanics every check below depends on
+ * ## The one mechanic every check below depends on
  *
- * `Form::attachInputFilterDefaults()` builds an input for each element first — from
- * `InputProviderInterface::getInputSpecification()`, which is where `Select` gets its
- * `InArray`, `Email` its `EmailAddress`, `Url` its `Uri`, `Date` its `Date` and
- * `Number` its `Step`/`GreaterThan`/`LessThan`. It then walks the form's
- * `getInputFilterSpecification()` calling `$inputFilter->add($input, $name)`.
+ * **The specification is the whole of it.** {@see \SionModel\Form\Validation\InputFilter}
+ * reads `getInputFilterSpecification()` and nothing else, so a field the spec does not
+ * name is filtered by nothing and validated by nothing, whatever its element is.
  *
- * **That call merges; it does not replace.** `BaseInputFilter::add()` ends with
+ * That was not true until iteration A. `Laminas\Form\Form::attachInputFilterDefaults()`
+ * built an input per element first — from `InputProviderInterface::getInputSpecification()`,
+ * which is where `Select` got its `InArray`, `Email` its `EmailAddress`, `Url` its `Uri`,
+ * `Date` its `Date` and `Number` its `Step`/`GreaterThan`/`LessThan` — and then *merged*
+ * the spec into it rather than replacing it. This file asserted the opposite until
+ * 2026-08-15 and every choice-field finding it produced was computed wrong, which is why
+ * `LibraryForm::mainCollectionId` sat in the baseline as an unconstrained gap while
+ * rejecting `999` end-to-end. Measured 2026-09-10, 120 fields were validated *only* by
+ * that element half; they were written into the specifications before the merge went away.
  *
- *     // The element already exists, so merge the config. Please note
- *     // that this merges the new input into the original.
- *     $original = $this->inputs[$name];
- *     $original->merge($input);
+ * Two consequences still drive the checks:
  *
- * so a field named in the spec keeps the element's validators *and* gains the spec's.
- * This file asserted the opposite until 2026-08-15 and every choice-field finding it
- * produced was computed from that, which is why `LibraryForm::mainCollectionId` sat in
- * the baseline as an unconstrained gap while rejecting `999` end-to-end. Read the built
- * `getInputFilter()` before believing anything here about what does or does not apply.
- *
- * Three consequences drive the checks:
- *
- *  - A `Select` keeps its own `InArray` unless the element sets
- *    `disable_inarray_validator => true`. That option, not the spec, is what makes a
- *    choice field's domain disappear — and 35 elements in this application set it. So
- *    the choice-field category asks about the option, and treats a spec-side `InArray`
- *    (`SionModel\Form\ChoiceDomain`) as the thing that puts the domain back.
- *  - An element *not* named in the spec keeps whatever it provides for itself — which
- *    for a plain `Text`, `Textarea` or `Hidden` (base `SionModel\Form\Element\Element`, no
- *    `InputProviderInterface`) is `['name' => …, 'required' => false]`. No filter, no
- *    validator, no length bound: total pass-through.
- *  - A spec key naming no element still becomes an input, and `getData()` (which
- *    returns `$filter->getValues()`) emits `null` for it. So the typo is silent in
- *    both directions: the field it was meant to protect is naked, and a phantom key
- *    appears in the data.
- *
- * The merge does *not* rescue a filter. `Input::merge()` takes the incoming input's
- * filter chain too, so a spec that names a field adds to what the element does rather
- * than overriding it — which is why the batch-10 `spousePersonId` defect (an empty
- * string reaching an integer column) was real even though the element was untouched.
+ *  - `disable_inarray_validator => true` on a choice element is now the *statement* that
+ *    the domain comes from the spec rather than the thing that removes it — 35 elements
+ *    set it. The choice-field category asks about the option, and treats a spec-side
+ *    `InArray` ({@see \SionModel\Form\ChoiceDomain}) as the domain.
+ *  - A spec key naming no element still becomes an input and emits `null` into the
+ *    values. So a typo is silent in both directions: the field it was meant to protect
+ *    is naked, and a phantom key appears in the data.
  *
  * ## Scope: one class, its own elements
  *
  * Each discovered class is examined against its own elements and its own spec.
  * Elements contributed by a nested fieldset are checked when that fieldset class is
  * itself the subject — every fieldset in this codebase is its own discovered class,
- * so nothing goes unexamined, and this avoids having to model how laminas nests spec
- * keys under fieldset names (where a mistake would manufacture false findings).
+ * so nothing goes unexamined, and this avoids having to model how {@see FormSpecification}
+ * nests spec keys under fieldset names (where a mistake would manufacture false findings).
  *
  * ## Scope: construction-time state
  *
@@ -293,14 +278,17 @@ final class FormGapCollector
             }
 
             if (! $inSpec) {
-                $selfValidating = $element instanceof \Laminas\InputFilter\InputProviderInterface;
+                //Unconditional now. This used to ask whether the element implemented
+                //`Laminas\InputFilter\InputProviderInterface`, because such an element
+                //contributed its own validators and a field missing from the spec was
+                //still checked. Nothing does: the interface left with the package, and
+                //what those elements contributed is written out in the specifications —
+                //so a field the spec does not name is validated by nothing at all.
                 $gaps['elementsMissingFromSpec'][] = sprintf(
-                    '%s: %s is not named in the input filter spec (%s)',
+                    '%s: %s is not named in the input filter spec '
+                    . '(PASS-THROUGH: no filter, no validator, no length bound)',
                     $class,
-                    self::q($name),
-                    $selfValidating
-                        ? 'element-provided validation only, no filters'
-                        : 'PASS-THROUGH: no filter, no validator, no length bound'
+                    self::q($name)
                 );
             }
 
@@ -445,7 +433,7 @@ final class FormGapCollector
             }
             try {
                 /** @var object $instance */
-                $instance = $this->filterPlugins()->get($filter['name']);
+                $instance = FilterRegistry::get($filter['name']);
             } catch (Throwable) {
                 //A name nothing can build is a different finding, and `throwingInputs`
                 //already reports the form it breaks. Skipping it here would hide the
@@ -457,15 +445,6 @@ final class FormGapCollector
         }
 
         return $classes;
-    }
-
-    private ?\Laminas\Filter\FilterPluginManager $filterPlugins = null;
-
-    private function filterPlugins(): \Laminas\Filter\FilterPluginManager
-    {
-        return $this->filterPlugins ??= new \Laminas\Filter\FilterPluginManager(
-            new \Laminas\ServiceManager\ServiceManager()
-        );
     }
 
     public function dataElements(Fieldset $form): array
@@ -572,7 +551,7 @@ final class FormGapCollector
 
         $max = null;
         foreach ((array) ($specEntry['validators'] ?? []) as $validator) {
-            if (is_object($validator) && $validator instanceof \Laminas\Validator\StringLength) {
+            if (is_object($validator) && $validator instanceof \SionModel\Validator\StringLength) {
                 $candidate = $validator->getMax();
             } elseif (
                 is_array($validator)

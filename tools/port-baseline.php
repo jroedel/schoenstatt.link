@@ -918,7 +918,7 @@ function normalize(string $html, string $account): string
     $html = str_replace($account, '{{ACCOUNT}}', $html);
     $html = preg_replace('/' . preg_quote(EMAIL_PREFIX, '/') . '[0-9a-z]+/', '{{ACCOUNT}}', $html);
     // ...and the CSRF token, which is the same kind of value and was missing until the
-    // comment form arrived on three ported pages. Laminas\Validator\Csrf mints
+    // comment form arrived on three ported pages. SionModel\Validator\Csrf mints
     // `<hash>-<salted hash>` per session per request, so two captures of one URL never
     // agree and every page carrying a form compared as drift no matter what it rendered.
     // Anonymous pages hid this: the comment form only renders for a signed-in visitor,

@@ -1,112 +1,102 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Books\InputFilter;
 
-use Laminas\InputFilter\InputFilter;
+use SionModel\Filter\StripNewlines;
+use SionModel\Filter\StripTags;
+use SionModel\Form\Validation\InputFilter;
+use SionModel\Validator\Digits;
+use SionModel\Validator\StringLength;
+use SionModel\Validator\Uri;
 
-class DriveFileFilter extends InputFilter
+/**
+ * What a row of Google Drive's file listing has to look like before it is shown.
+ *
+ * The data is a third party's JSON, so this is the only thing standing between the API's
+ * answer and a publication page. `Books\Service\DriveGateway::getPublicationFiles()` drops
+ * a row that fails rather than reporting it.
+ *
+ * It was a `Laminas\InputFilter\InputFilter` subclass until iteration A, which is why it
+ * reads as a specification rather than as a chain of `add()` calls: the engine that
+ * replaced that package — {@see InputFilter} — takes the whole specification at once, the
+ * way `getInputFilterSpecification()` always described a form's.
+ */
+final class DriveFileFilter
 {
-    public function __construct()
+    /**
+     * @return array<string, mixed>
+     */
+    public static function specification(): array
     {
-        $this->add([
-            'name'       => 'eventId',
-            'required'   => false,
-            'validators' => [
-                ['name' => \Laminas\Validator\Digits::class ],
+        $text = [
+            ['name' => StripNewlines::class],
+            ['name' => StripTags::class],
+        ];
+
+        return [
+            'eventId'       => [
+                'required'   => false,
+                'validators' => [['name' => Digits::class]],
             ],
-            'filters' => [],
-        ]);
-        $this->add([
-            'name'       => 'publicationId',
-            'required'   => false,
-            'validators' => [
-                ['name' => \Laminas\Validator\Digits::class ],
+            'publicationId' => [
+                'required'   => false,
+                'validators' => [['name' => Digits::class]],
             ],
-            'filters' => [],
-        ]);
-        $this->add([
-            'name'       => 'fileId',
-            'required'   => false,
-            'validators' => [],
-            'filters' => [],
-        ]);
-        $this->add([
-            'name'       => 'fileName',
-            'required'   => true,
-            'validators' => [],
-            'filters' => [
-                ['name' => \Laminas\Filter\StripNewlines::class],
-                ['name' => \Laminas\Filter\StripTags::class],
+            'fileId'        => ['required' => false],
+            'fileName'      => [
+                'required' => true,
+                'filters'  => $text,
             ],
-        ]);
-        $this->add([
-            'name'       => 'url',
-            'required'   => true,
-            'validators' => [
-                [
-                    'name' => \Laminas\Validator\Uri::class,
-                    'options' => [
-                        'allowRelative' => false,
-                    ],
-                ]
-            ],
-            'filters' => [],
-        ]);
-        $this->add([
-            'name'       => 'size',
-            'required'   => false,
-            'validators' => [
-                ['name' => \Laminas\Validator\Digits::class ],
-            ],
-            'filters' => [
-            ],
-        ]);
-        $this->add([
-            'name'       => 'description',
-            'required'   => false,
-            'validators' => [
-                [
-                    'name' => \Laminas\Validator\StringLength::class,
-                    'options' => [
-                        'max' => 300
+            'url'           => [
+                'required'   => true,
+                'validators' => [
+                    [
+                        'name'    => Uri::class,
+                        'options' => ['allowRelative' => false],
                     ],
                 ],
             ],
-            'filters' => [
-                ['name' => \Laminas\Filter\StripNewlines::class],
-                ['name' => \Laminas\Filter\StripTags::class],
+            'size'          => [
+                'required'   => false,
+                'validators' => [['name' => Digits::class]],
             ],
-        ]);
-        $this->add([
-            'name'       => 'mimeType',
-            'required'   => false,
-            'validators' => [
-                [
-                    'name' => \Laminas\Validator\StringLength::class,
-                    'options' => [
-                        'max' => 70
+            'description'   => [
+                'required'   => false,
+                'validators' => [
+                    [
+                        'name'    => StringLength::class,
+                        'options' => ['max' => 300],
                     ],
                 ],
+                'filters'    => $text,
             ],
-            'filters' => [
-                ['name' => \Laminas\Filter\StripNewlines::class],
-                ['name' => \Laminas\Filter\StripTags::class],
-            ],
-        ]);
-        $this->add([
-            'name'       => 'tags',
-            'required'   => false,
-            'validators' => [
-                [
-                    'name' => \Laminas\Validator\StringLength::class,
-                    'options' => [
-                        'max' => 255
+            'mimeType'      => [
+                'required'   => false,
+                'validators' => [
+                    [
+                        'name'    => StringLength::class,
+                        'options' => ['max' => 70],
                     ],
                 ],
+                'filters'    => $text,
             ],
-            'filters' => [
-                ['name' => \Laminas\Filter\StripNewlines::class],
-                ['name' => \Laminas\Filter\StripTags::class],
+            'tags'          => [
+                'required'   => false,
+                'validators' => [
+                    [
+                        'name'    => StringLength::class,
+                        'options' => ['max' => 255],
+                    ],
+                ],
+                'filters'    => $text,
             ],
-        ]);
+        ];
+    }
+
+    public static function engine(): InputFilter
+    {
+        return InputFilter::withRules(self::specification());
     }
 }

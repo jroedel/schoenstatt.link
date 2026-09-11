@@ -2,7 +2,7 @@
 namespace Schoenstatt\Form;
 
 use SionModel\Form\SionForm;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\ChoiceDomain;
 

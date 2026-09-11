@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Books;
 
 use SionModel\Form\Form;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\CsrfSpec;
 
 /**
@@ -33,8 +33,6 @@ use SionModel\Form\CsrfSpec;
  *
  * The 900-second CSRF timeout matches `SionModel\Form\DeleteEntityForm`, which is the
  * other confirmation form in the application and the one this is modelled on.
- *
- * @extends Form<array<string, mixed>>
  */
 final class RefreshSortForm extends Form implements InputFilterProviderInterface
 {

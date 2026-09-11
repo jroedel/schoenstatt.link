@@ -48,7 +48,7 @@ use SionModel\Form\Validation\InputFilter as Engine;
  *
  * ## The CSRF seam
  *
- * The form carries a `security` CSRF element, and `Laminas\Validator\Csrf` reads a
+ * The form carries a `security` CSRF element, and `SionModel\Validator\Csrf` reads a
  * `Laminas\Session\Container`. An API request has no session, so leaving the rule in
  * place would be a fatal rather than a validation failure — and would refuse every
  * agent regardless. Its key is dropped from the specification here, and that removal is
@@ -91,7 +91,7 @@ final class AssociationValidator
         $spec = $this->specification();
         unset($spec[self::SESSION_ONLY_INPUT]);
 
-        return Engine::withLaminasRules($spec);
+        return Engine::withRules($spec);
     }
 
     /**

@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Validator;
 
-use Laminas\Validator\AbstractValidator;
+use SionModel\Validator\AbstractValidator;
 use App\Json;
 
 class EventsJson extends AbstractValidator
@@ -24,9 +24,9 @@ class EventsJson extends AbstractValidator
     /**
      *
      * {@inheritDoc}
-     * @see \Laminas\Validator\ValidatorInterface::isValid()
+     * @see \SionModel\Validator\ValidatorInterface::isValid()
      */
-    public function isValid($value)
+    public function isValid($value, $context = null)
     {
         if (! isset($value) || '' === $value) {
             return true;

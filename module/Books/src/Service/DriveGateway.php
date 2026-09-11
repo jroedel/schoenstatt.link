@@ -138,7 +138,7 @@ class DriveGateway
             throw new \Exception('Failed to retrieve list of files from Google Drive. No data returned');
         }
         $result = [];
-        $fileInputFilter = new DriveFileFilter();
+        $fileInputFilter = DriveFileFilter::engine();
         foreach ($data as $file) {
             $fileInputFilter->setData($file);
             if ($fileInputFilter->isValid()) {

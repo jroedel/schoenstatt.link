@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Filter;
 
-use Laminas\Filter\AbstractFilter;
+use SionModel\Filter\AbstractFilter;
 
 class ToSchoenstattLinkIdentifier extends AbstractFilter
 {

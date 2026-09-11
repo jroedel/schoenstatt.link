@@ -2,7 +2,7 @@
 namespace Schoenstatt\Form;
 
 use SionModel\Form\Form;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\CheckboxDomain;
 
 class SearchForm extends Form implements InputFilterProviderInterface

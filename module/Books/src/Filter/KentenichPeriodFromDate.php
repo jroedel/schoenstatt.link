@@ -1,7 +1,7 @@
 <?php
 namespace Books\Filter;
 
-use Laminas\Filter\AbstractFilter;
+use SionModel\Filter\AbstractFilter;
 
 class KentenichPeriodFromDate extends AbstractFilter
 {
@@ -53,7 +53,7 @@ class KentenichPeriodFromDate extends AbstractFilter
 
     /**
      * {@inheritDoc}
-     * @see \Laminas\Filter\FilterInterface::filter()
+     * @see \SionModel\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {

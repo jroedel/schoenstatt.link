@@ -8,7 +8,7 @@ use JTranslate\I18n\Translator\Translator;
 use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
 use Laminas\ServiceManager\Factory\DelegatorFactoryInterface;
-use Laminas\Validator\AbstractValidator;
+use SionModel\Validator\AbstractValidator;
 use Locale;
 use Psr\Container\ContainerInterface;
 
@@ -172,10 +172,16 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //translate the finished message are off in step with this — see
         //SionModel\Form\BootstrapFormRenderer::errors().
         //
-        //The static setter is what laminas-validator itself offers. It wants its own
-        //TranslatorInterface, which our translator implements directly — the adapter that
-        //used to wrap it went with laminas-i18n, and both it and the interface it took are
-        //@deprecated in laminas-validator 2.61.
+        //The static setter is the one seam a validator built inside a form specification
+        //has: no container, no request, nowhere to inject. `SionModel\Validator\AbstractValidator`
+        //keeps laminas' shape for exactly that reason.
+        //
+        //Missing this line does not fail: it renders. Every validation message comes out in
+        //its source English while the rest of the page is translated, which is what the
+        //rendered-markup baseline caught when the rule library landed — laminas' static was
+        //still being set and ours was not, so 35 forms said "The form submitted did not
+        //originate from the expected site" where the catalog says "The form submitted was
+        //expired, please resubmit".
         AbstractValidator::setDefaultTranslator($inner, 'default');
 
         //The same map the writer side gets from App\Laminas\TranslationsTableConfigurator,
