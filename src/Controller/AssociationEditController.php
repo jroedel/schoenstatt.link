@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use RuntimeException;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier as IdentifierFilter;
 use Schoenstatt\Form\AssociationForm;

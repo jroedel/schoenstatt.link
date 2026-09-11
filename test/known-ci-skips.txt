@@ -69,6 +69,7 @@ SchoenstattTest\Integration\AssociationLinkingTest            # compares an asso
 SchoenstattTest\Integration\ConstrainedChoiceFieldsFitTheirDataTest  # every choice field's haystack vs stored values
 SchoenstattTest\Integration\EmptyStringToTypedColumnTest      # reads the information_schema column types
 SchoenstattTest\Integration\FormMarkupTest                   # renders every form, whose value options come from real rows
+SchoenstattTest\Integration\EngineSurfaceTest                # validates every form, whose value options come from real rows
 SchoenstattTest\Integration\PortedTemplatesRenderEveryNotNullFieldTest  # reads the schema for NOT NULL columns
 SchoenstattTest\Integration\ProvenanceStoreTest               # reads and writes the provenance rows
 BooksTest\Integration\PublicationLinkingTest                  # sub-edition linking, on real publications. NOTE the namespace: this file is BooksTest, not SchoenstattTest

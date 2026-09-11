@@ -46,18 +46,20 @@ under `module/*/src` that a Symfony-served request reaches.
   (`App\Schoenstatt\Association\AssociationValidator`, `JTranslate\Form\PhraseValidator`,
   `Schoenstatt\Service\PatresGatewayFactory`) build the engine over
   `FormSpecification::of($form)` through `InputFilter::withLaminasRules()`, dropping the
-  CSRF rule by unsetting its key rather than by `remove()`ing an input. What still calls
-  `getInputFilter()` is `test/Integration/WholeFormEngineParityTest` and
-  `EngineMatchesAssembledFilterTest`, which compare laminas against the engine on every
-  form; they stay until laminas-form goes.
+  CSRF rule by unsetting its key rather than by `remove()`ing an input. Nothing calls
+  `getInputFilter()` any more: it left with `Laminas\Form\Form`, and the parity tests that
+  read it — `WholeFormEngineParityTest`, `EngineMatchesAssembledFilterTest` — went with the
+  form model, replaced by `test/Form/engine-surface.php`, which records the engine's own
+  verdict, values and messages for every form.
 - **Every element is ours** (step 5, element model, 2026-09-11). `SionModel\Form\Element`
   holds `Element` plus fifteen classes — `Text`, `Textarea`, `Hidden`, `Submit`, `Button`,
   `File`, `Url`, `Email`, `Number`, `AbstractDateTime`, `Date`, `Checkbox`, `Select`,
   `Csrf`, `DateSelect`, and `Phone` beside them — none supplying an input specification,
-  all still implementing laminas' element interfaces so a `Laminas\Form\Fieldset` can hold
-  one until the form model lands. `SionModel\Form\Element\Registry` is the single list
-  that swaps them in: it feeds SionModel's `form_elements` config, the `Factory`
-  `SionModel\Form\Form::getFormFactory()` installs, and the two fieldsets built with `new`.
+  all implementing `SionModel\Form\ElementInterface` since the form model landed.
+  `SionModel\Form\Element\Registry` is the single list that swaps them in, read by
+  `SionModel\Form\Factory` — which every fieldset reaches through `getFormFactory()`, so a
+  form built with `new`, one built by a service factory and the associations API all build
+  the same classes with nothing to configure.
   Measured across all 41 forms: **441 elements**, of which **432 changed class and nothing
   else**. `test/Element/element-surface.php` records what each one answers to every question
   the application asks of it; regenerating it after the swap changed 432 lines, every one of
@@ -67,26 +69,34 @@ under `module/*/src` that a Symfony-served request reaches.
   `Laminas\Form\Element\Collection` left in the application, which belongs to the form model.
   `MultiCheckbox`, `Radio` and `MonthSelect` are deliberately not reproduced — the census
   found none in any form — and neither is laminas' `hasValue` flag, which nothing reads.
-  `test/Integration/ElementModelParityTest` still runs, inverted: for every element a form
-  really builds it constructs the laminas element that used to stand there and asserts ours
-  answers the same. `test/Unit/ElementModelBehaviourTest` pins the edges no definition
-  exercises.
+  `test/Unit/ElementModelBehaviourTest` pins the edges no definition exercises;
+  `ElementModelParityTest`, which built the laminas twin of every element and compared, went
+  with laminas' elements.
   A rule that lives on an element and not in a specification is a rule the engine cannot
-  see, so `test/Fuzz/known-form-gaps.php` tracks two categories for it —
-  `validationSuppliedOnlyByElement` and `filteringSuppliedOnlyByElement`, **both 0 since the
-  swap**, because an element that supplies no input specification cannot hide a rule — and
-  `FormValidationContractTest` fails when either grows.
+  see. `test/Fuzz/known-form-gaps.php` tracked two categories for it —
+  `validationSuppliedOnlyByElement` and `filteringSuppliedOnlyByElement` — which reached 0
+  at the element swap and were retired with the form model: both were read off laminas'
+  assembled filter, and an element that supplies no input specification cannot hide a rule.
   `SionModel\Form\{CsrfSpec,ChoiceDomain,CheckboxDomain,InputTypeRules}` are how a
   specification restates one; three option keys are documentation only now —
   `disable_inarray_validator` (63 uses), `required` (124) and `allow_empty`, read by the
   input-filter half, which no longer looks at elements.
-  What remains of step 5 is the form model: `Form`, `Fieldset`, `Collection` and the
-  rendering, with rendered-HTML parity as the contract.
+- **The form model is ours** (2026-09-11). `SionModel\Form\{Form, Fieldset, Collection,
+  Factory}` over `ElementInterface`, `FieldsetInterface`, `FormInterface` and
+  `PrepareAwareInterface`, with no object binding, no hydrator, no priorities, no
+  `wrapElements()` and no input-filter assembly — each measured absent across every call
+  site first. `Laminas\Form` left `config/modules.config.php` with the `form_elements` key
+  and the `FormElementManager` it configured. Rendered-HTML parity was the contract and it
+  held: `test/Form/form-markup.php` records 491 surfaces in four states and **not one byte
+  moved**; `test/Form/engine-surface.php` records every form's verdict, values and messages
+  and none moved either; `test/Element/element-surface.php` changed one line, the
+  collection's class name.
 - **What laminas still does**, and therefore what this plan removes: the service
   container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`,
   `laminas-eventmanager` — direct requirements since step 0), the database layer
   (`laminas-db`, under `SionModel\Db\Model\SionTable`), forms and validation
-  (`laminas-form`, `inputfilter`, `validator`, `filter`), session, and URL generation from
+  (`laminas-inputfilter`, `validator`, `filter` — laminas-form itself is unused since the
+  form model landed and leaves with them), session, and URL generation from
   the laminas router config. laminas-i18n went at step 3 and laminas-view at step 4.
 - `App\Laminas\ServiceBridge` is the seam: a lazily built laminas `ServiceManager` a
   Symfony controller asks for laminas-side services. It disappears at step 7.
@@ -177,7 +187,7 @@ deletes.
 | 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
 | 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours, implementing `Laminas\Translator\TranslatorInterface`. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. **laminas-escaper does not leave here** — laminas-form (`^2`) and laminas-uri (`^2.9`) require it, so it goes with steps 5 and 6; no code of ours uses it any more |
-| 5 ◐ | laminas-form, inputfilter, filter, hydrator — and validator + escaper **only if laminas-uri goes with it** | form 77 files, inputfilter 60, validator 65, filter 49; 41 forms, 441 elements | **validation cutover and element model done 2026-09-11**, both ours; the form model and the validator/filter library are what is left. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and `SionModel\Form\Element`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
+| 5 ◐ | laminas-form, inputfilter, filter, hydrator — and validator + escaper **only if laminas-uri goes with it** | form 77 files, inputfilter 60, validator 65, filter 49; 41 forms, 441 elements | **validation cutover, element model and form model all done 2026-09-11**, all ours; the validator/filter library is what is left, and laminas-form is installed with nothing using it. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and `SionModel\Form\Element`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
 | 7 | laminas-servicemanager, modulemanager, eventmanager, config, loader — and laminas-session with them | servicemanager 91 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`); session 14; eventmanager 4; modulemanager 3 | **Our own PSR-11 container** (§6), not Symfony DI. `stdlib` does *not* leave here: laminas-db holds it |
 | 8 | laminas-db, and `stdlib` and `translator` with it | db 94 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; translator 30 files; stdlib 5 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after |

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Form\Form as LaminasForm;
-use Laminas\Form\FormInterface;
-use LogicException;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Fuzz\FormRepository;
+use SionModel\Form\CommentForm;
+use SionModel\Form\Exception\DomainException;
 use SionModel\Form\Form as EngineForm;
+use SionModel\Form\FormInterface;
 use SionModel\Form\Validation\FormSpecification;
 
 use function array_keys;
@@ -20,53 +20,48 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Fuzz/FormRepository.php';
 
 /**
- * The cutover is in force, and stays in force.
+ * Every form validates through the engine, and the engine is what answers.
  *
- * ## Why this is asserted rather than assumed
+ * ## Why this outlived its reason for existing
  *
- * A form joins the engine by extending `SionModel\Form\Form` instead of
- * `Laminas\Form\Form` — one line in one `use` statement, and the two class names differ
- * by a namespace. A form that goes back to laminas' keeps compiling, keeps rendering,
- * keeps validating, and keeps passing every test in the repository, because
- * `WholeFormEngineParityTest` proves the two agree. The whole apparatus that makes the
- * cutover safe is also what makes a silent revert invisible.
+ * It was written when `SionModel\Form\Form` was one line — `extends Laminas\Form\Form` —
+ * away from silently reverting the whole cutover: delete that line and the site keeps
+ * validating, through `Laminas\InputFilter` instead, and passes every test in the
+ * repository because `WholeFormEngineParityTest` proved the two agree. The apparatus that
+ * made the cutover safe is what would have made the revert invisible.
  *
- * So the arrangement itself is the assertion: every form the harness can find extends the
- * engine's base class, and the engine is demonstrably what answers.
- *
- * ## The tell-tale
- *
- * `getData(VALUES_RAW)` is the one question the two answer differently on purpose.
- * `Laminas\Form\Form` returns `$filter->getRawValues()`; the engine keeps no raw values
- * and refuses. It is a behavioural check on a real instance rather than a `instanceof`
- * that a class declaration alone can satisfy.
+ * That line is gone with the form model, so the revert it guarded against is no longer
+ * spellable. What is left is worth keeping and is the same shape: every form the harness
+ * can find is a `SionModel\Form\Form`, and a real instance answers the way the engine
+ * answers — `getData()` returns a value for every key the specification describes, which
+ * is the contract a controller reading `$data['x']` for an unsubmitted optional field
+ * depends on.
  */
 final class FormsValidateThroughTheEngineTest extends TestCase
 {
     public function testEveryFormExtendsTheEnginesBaseClass(): void
     {
-        $laminas = [];
-        $checked = 0;
+        $strangers = [];
+        $checked   = 0;
 
         foreach (FormRepository::instance()->forms() as $class => $form) {
-            if (! $form instanceof LaminasForm) {
-                continue;
+            if (! $form instanceof FormInterface) {
+                continue; //a bare fieldset is not submitted on its own
             }
 
             $checked++;
             if (! $form instanceof EngineForm) {
-                $laminas[] = $class;
+                $strangers[] = $class;
             }
         }
 
         self::assertGreaterThanOrEqual(35, $checked, 'almost no form was examined');
         self::assertSame(
             [],
-            $laminas,
-            "These forms still extend Laminas\\Form\\Form, so they validate through "
-            . "Laminas\\InputFilter and not through SionModel\\Form\\Validation\\InputFilter. "
-            . "Nothing else in the suite would notice, because the two agree:\n  "
-            . implode("\n  ", $laminas)
+            $strangers,
+            "These forms implement FormInterface without extending SionModel\\Form\\Form, so "
+            . "nothing says they validate through SionModel\\Form\\Validation\\InputFilter:\n  "
+            . implode("\n  ", $strangers)
         );
     }
 
@@ -95,9 +90,11 @@ final class FormsValidateThroughTheEngineTest extends TestCase
             'getData() no longer matches the assembled specification'
         );
 
-        //The tell-tale: laminas answers this from getRawValues(); the engine refuses.
-        $this->expectException(LogicException::class);
-        $form->getData(FormInterface::VALUES_RAW);
+        //The other half of the contract: data before validation is refused rather than
+        //answered with an empty array, which is what a controller reading getData() on a
+        //GET would otherwise write to the database.
+        $this->expectException(DomainException::class);
+        (new CommentForm())->getData();
     }
 
     /**
@@ -108,7 +105,7 @@ final class FormsValidateThroughTheEngineTest extends TestCase
     {
         $forms = 0;
         foreach (FormRepository::instance()->forms() as $form) {
-            if ($form instanceof LaminasForm) {
+            if ($form instanceof FormInterface) {
                 $forms++;
             }
         }

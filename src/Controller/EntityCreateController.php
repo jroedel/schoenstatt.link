@@ -13,7 +13,7 @@ use App\Sion\EntityCreate;
 use App\Sion\FormViewVariables;
 use Laminas\Filter\StripTags;
 use SionModel\Form\Element\Select;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use Locale;
 use RuntimeException;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;

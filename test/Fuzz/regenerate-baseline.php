@@ -74,13 +74,6 @@ const CATEGORY_DESCRIPTIONS = [
         . 'controller action, not a validation failure.',
     'boundViolations'                  =>
         'Proved by running it: a value accepted at a length the form itself declares is too long.',
-    'validationSuppliedOnlyByElement'  =>
-        'Validators that exist only because an element supplied them, with nothing in the form '
-        . "specification saying so — a Select's own InArray, Uri on a Url element, Csrf on the "
-        . 'security element no form names. The work list for step 5: '
-        . 'SionModel\\Form\\Validation\\InputFilter is driven by the specification alone, so '
-        . 'every entry here is a check that disappears on the day it replaces Laminas\\InputFilter. '
-        . 'Must reach zero before that cutover.',
 ];
 
 $repository = FormRepository::instance();

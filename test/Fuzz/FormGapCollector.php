@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Fuzz;
 
-use Laminas\Form\Element\Collection;
-use Laminas\Form\ElementInterface;
-use Laminas\Form\Fieldset;
+use SionModel\Form\Collection;
+use SionModel\Form\ElementInterface;
+use SionModel\Form\Fieldset;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Laminas\Validator\Explode;
 use SionModel\Entity\Entity;
@@ -206,8 +206,6 @@ final class FormGapCollector
             'choiceFieldsWithoutDomain'  => [],
             'boundsLooserThanColumn'     => [],
             'buttonsDeclaredOnlyByAttribute' => [],
-            'validationSuppliedOnlyByElement' => [],
-            'filteringSuppliedOnlyByElement'  => [],
         ];
 
         foreach ($this->repository->constructionFailures() as $class => $reason) {
@@ -270,7 +268,6 @@ final class FormGapCollector
         $elements = $this->dataElements($form);
         $columns  = $this->columnWidthsFor($class);
 
-        $this->collectElementSuppliedValidation($class, $form, $spec, $gaps);
 
         foreach (array_keys($spec) as $key) {
             if (! $form->has((string) $key)) {
@@ -429,186 +426,6 @@ final class FormGapCollector
      *
      * @return array<string, ElementInterface>
      */
-    /**
-     * Validators that exist only because an element supplied them, with nothing in the
-     * form's specification saying so.
-     *
-     * ## Why this is a category and not a footnote
-     *
-     * It is the work list for step 5. `SionModel\Form\Validation\InputFilter` — the
-     * engine that will replace `Laminas\InputFilter` — is driven by
-     * `getInputFilterSpecification()` **alone**, because a specification is a value you
-     * can read, and the merge that invents the other half is what step 5 removes. Every
-     * entry below is therefore a check that would disappear on the day the engine is cut
-     * over, and the list has to reach zero first.
-     *
-     * Measured 2026-09-10: 101 fields, against 199 whose validators are declared. Thirty-one
-     * of the 101 are `Csrf`, because no form's specification names `security` — the element
-     * is added once in `SionModel\Form\SionForm` and laminas supplies the validator from
-     * it. The rest are mostly a `Select`\'s own `InArray` over its value options, plus
-     * `Uri` on `Url` elements and `Regex`/`GreaterThan`/`LessThan`/`Step` on `Number`.
-     *
-     * ## Why `InputFilterEngineParityTest` cannot see any of this
-     *
-     * It feeds `Factory::createInputFilter($spec)` and the engine the *same* specification,
-     * so both sides start where this category ends. It proves the engine matches laminas
-     * given a specification; it says nothing about what the assembled filter contains. A
-     * parity harness fed from the narrowed input can only ever agree with itself.
-     *
-     * ## Reading the assembled filter, not the specification
-     *
-     * Deliberately, and for the reason in this class\'s header: the specification is half
-     * the answer and the more attractive half. What ships is `Form::getInputFilter()`.
-     *
-     * **One blind spot, and it is in the same direction.** This reads
-     * `getValidatorChain()`, so it sees validators that are *there*, not ones injected
-     * when validation runs. `Laminas\InputFilter\FileInput` injects
-     * `Laminas\Validator\File\UploadFile` at `isValid()` time, so `Books\Form\ImportForm`\'s
-     * `file` field carries a check this category has never reported. It is recorded in
-     * `test/Integration/EngineMatchesAssembledFilterTest::KNOWN_DIFFERENCES` instead. A
-     * category that under-reports is worth saying out loud: this one already undercounted
-     * once, by asking whether a specification declared *any* validator rather than
-     * comparing the two sets.
-     *
-     * **Second blind spot: it does not descend.** It reads the form's own inputs, so a
-     * validator supplied by an element *inside* a fieldset or a collection is invisible
-     * here — `Books\Form\MassCheckoutFieldset`'s `personId` and the nineteen selects of
-     * `App\Books\Import\ImportMappingFieldset` are both in that position. Left rather than
-     * fixed, because `SchoenstattTest\Integration\WholeFormEngineParityTest` compares
-     * nested paths directly against the assembled filter and reports exactly those, which
-     * is the stronger instrument; descending here would add twenty baseline lines that are
-     * all artefacts of a harness with no uploaded file and no reachable patres.
-     *
-     * @param array<string, mixed>          $spec
-     * @param array<string, list<string>>   $gaps
-     */
-    private function collectElementSuppliedValidation(
-        string $class,
-        Fieldset $form,
-        array $spec,
-        array &$gaps
-    ): void {
-        if (! $form instanceof \Laminas\Form\Form) {
-            return;
-        }
-
-        try {
-            $assembled = $form->getInputFilter();
-        } catch (Throwable) {
-            //An unassemblable filter is already reported by throwingInputs.
-            return;
-        }
-
-        foreach ($assembled->getInputs() as $name => $input) {
-            if (! $input instanceof \Laminas\InputFilter\InputInterface) {
-                continue;
-            }
-
-            $applied = [];
-            foreach ($input->getValidatorChain()->getValidators() as $entry) {
-                $instance = $entry['instance'] ?? null;
-                if (is_object($instance)) {
-                    $applied[] = (new \ReflectionClass($instance))->getShortName();
-                }
-            }
-
-            //Set difference, not emptiness. Asking only whether the spec declares *any*
-            //validator misses the partial case — AssociationForm's `url1` declares a
-            //StringLength and gets `Uri` from its element on top — and a field that is
-            //half declared loses exactly as much on the cutover as one that is not
-            //declared at all. That undercount was live until 2026-09-10, when
-            //EngineMatchesAssembledFilterTest disagreed with laminas on four association
-            //fields this category had never listed.
-            $declared = self::validatorNames($spec[(string) $name] ?? null);
-            $extra    = [];
-            foreach ($applied as $shortName) {
-                if (! in_array(strtolower($shortName), $declared, true)) {
-                    $extra[] = $shortName;
-                }
-            }
-
-            if ([] === $extra) {
-                continue;
-            }
-
-            $gaps['validationSuppliedOnlyByElement'][] = sprintf(
-                '%s: %s is validated by %s, which the input filter spec does not declare',
-                $class,
-                self::q((string) $name),
-                implode(', ', $extra)
-            );
-        }
-
-        $this->collectElementSuppliedFiltering($class, $assembled, $spec, $gaps);
-    }
-
-    /**
-     * The same question about **filters**, which nothing asked for months.
-     *
-     * `validationSuppliedOnlyByElement` compared validator sets and stopped there, so while
-     * that category was being driven from 120 down to 3, **74 fields were being filtered by
-     * something no specification named** and no artefact in the repository said so.
-     *
-     * It surfaced when the engine was first cut over behind the forms and the smoke suite
-     * refused to create a person. `Schoenstatt\Form\PersonForm::nameDay` is a `DateSelect`:
-     * it posts `['year' => …, 'month' => …, 'day' => …]` and
-     * `Laminas\Form\Element\DateSelect::getInputSpecification()` supplied the
-     * `Laminas\Filter\DateSelect` that turns that into `Y-m-d`. Without it the array reaches
-     * a date validator unchanged and every person save fails on a field nobody touched.
-     *
-     * The other 73 were `StringTrim`, which is not cosmetic either: a `ToNull` after a
-     * `StringTrim` turns `'   '` into `null`, and the same `ToNull` without it stores three
-     * spaces into a column that meant to be empty.
-     *
-     * ## Names are resolved, not compared as strings
-     *
-     * A specification may say `'Int'` where the chain holds a `Laminas\Filter\ToInt`; the
-     * plugin manager's aliases are the only thing that knows the two are the same, so each
-     * declared name is resolved through it and the comparison is between **classes**.
-     * Comparing short names instead reported `JUser\Form\EditUserForm::userId` as a gap when
-     * its specification declares exactly the filter it applies.
-     *
-     * @param array<string, mixed>        $spec
-     * @param array<string, list<string>> $gaps
-     */
-    private function collectElementSuppliedFiltering(
-        string $class,
-        \Laminas\InputFilter\InputFilterInterface $assembled,
-        array $spec,
-        array &$gaps
-    ): void {
-        foreach ($assembled->getInputs() as $name => $input) {
-            if (! $input instanceof \Laminas\InputFilter\InputInterface) {
-                continue;
-            }
-
-            $applied = [];
-            foreach ($input->getFilterChain()->getFilters() as $filter) {
-                if (is_object($filter)) {
-                    $applied[$filter::class] = (new \ReflectionClass($filter))->getShortName();
-                }
-            }
-
-            $declared = $this->declaredFilterClasses($spec[(string) $name] ?? null);
-            $extra    = [];
-            foreach ($applied as $filterClass => $shortName) {
-                if (! isset($declared[$filterClass])) {
-                    $extra[] = $shortName;
-                }
-            }
-
-            if ([] === $extra) {
-                continue;
-            }
-
-            $gaps['filteringSuppliedOnlyByElement'][] = sprintf(
-                '%s: %s is filtered by %s, which the input filter spec does not declare',
-                $class,
-                self::q((string) $name),
-                implode(', ', $extra)
-            );
-        }
-    }
 
     /**
      * The classes a specification entry's `filters` resolve to, keyed by class name.

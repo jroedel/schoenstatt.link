@@ -46,7 +46,9 @@ So each iteration opens the same way: **record what laminas answers as a data fi
 replace it, then diff the recording.** `test/Element/element-surface.php` is the worked
 example — it recorded what all 441 elements answer before the element swap, and the swap
 then showed 432 changed lines, every one of them a class name, and nothing else.
-`test/Form/form-markup.php` is the second recording, and A's first step. A parity test
+`test/Form/form-markup.php` is the second recording and `test/Form/engine-surface.php` the
+third — the markup a form produces, and the verdict, values and messages its engine
+returns. A parity test
 that outlives its subject is worth more than one that dies with it, and the recording is
 what makes that possible.
 
@@ -63,7 +65,7 @@ Validation already runs on our engine and every element is already ours. What is
 the form itself and the rules' implementations.
 
 1. **The rendered-markup baseline** is `test/Form/form-markup.php`, recorded 2026-09-11
-   through `SionModel\Form\BootstrapFormRenderer` over the laminas form model: 492
+   through `SionModel\Form\BootstrapFormRenderer` over the laminas form model: 491
    surfaces — every element of the 43 forms `test/Fuzz/FormRepository` builds, plus each
    form's open tag — in the four states a controller puts a form in (`pristine`,
    `populated`, `invalid`, `prepared`), and under each one every helper
@@ -74,8 +76,16 @@ the form itself and the rules' implementations.
    digest — which is what keeps 2.2 MB of `<option>` tags out of the repository. The
    `invalid` state is the only recording of the twenty laminas validator classes' message
    text that will survive their removal.
-2. **The form model**: `SionModel\Form\{Form, Fieldset, Collection}`, implementing what the
-   **77 files** naming `Laminas\Form` actually use, and the renderer moved onto it.
+2. **The form model** is `SionModel\Form\{Form, Fieldset, Collection, Factory}` over four
+   interfaces of ours (2026-09-11). No object binding, no hydrator, no priorities, no
+   `wrapElements()`, no input-filter assembly — each measured absent across every call site
+   before it was left out. `Laminas\Form` left `config/modules.config.php` with the
+   `form_elements` key and the `FormElementManager` it configured; `Registry::classFor()`
+   is the lookup now, reached by every fieldset's own factory. Not one byte of the 491
+   recorded surfaces moved, no form's verdict or values moved, and the element surface
+   changed one line — the collection's class name. `WholeFormEngineParityTest`,
+   `EngineMatchesAssembledFilterTest` and `ElementModelParityTest` were deleted with their
+   subject, and `test/Form/engine-surface.php` was recorded first to replace them.
 3. **The validator classes.** About twenty are used: `Regex` 19 references, `StringLength`
    14, `Csrf` 10, `NotEmpty` 8, `InArray` 8, `GpsPoint` 7, `Db\NoRecordExists` 6, `Date` 6,
    `Digits` 5, then `Identical`, `Explode`, `EmailAddress`, `Db\RecordExists` at 4 each,
@@ -152,7 +162,7 @@ Beyond `./tools/ci-local.sh`, which every PR runs:
 
 | iteration | the check that would catch the real failure |
 |---|---|
-| A | `test/Integration/FormMarkupTest` against `test/Form/form-markup.php`; `known-form-gaps.php` still 0/0; smoke create+edit on every entity |
+| A | `test/Integration/FormMarkupTest` against `test/Form/form-markup.php` and `EngineSurfaceTest` against `test/Form/engine-surface.php`; `known-form-gaps.php` no worse; smoke create+edit on every entity |
 | B | sign in on the old release, deploy, still signed in; a flash written before the deploy still renders; `bin/console` writes no `data/config/*` |
 | C | MariaDB general-log statement diff across a full smoke run, before and after |
 

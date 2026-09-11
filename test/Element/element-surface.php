@@ -4764,7 +4764,7 @@ return array (
   ),
   'Books\\Form\\MassCheckoutForm::checkout' => 
   array (
-    'class' => 'Laminas\\Form\\Element\\Collection',
+    'class' => 'SionModel\\Form\\Collection',
     'name' => 'checkout',
     'label' => 'Book Ids',
     'value' => NULL,
