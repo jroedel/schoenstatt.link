@@ -2,11 +2,11 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Filter\FilterPluginManager;
 use Laminas\ServiceManager\ServiceManager;
 use Laminas\Validator\ValidatorPluginManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use SionModel\Filter\Registry as FilterRegistry;
 use SionModel\Filter\ToDateTime;
 use SionModel\Validator\ParseableDate;
 
@@ -265,7 +265,7 @@ class ParseableDateValidatorContractTest extends TestCase
     #[DataProvider('filterThenValidateCases')]
     public function testFilteredValueIsAcceptedOrRejectedAsExpected($value, bool $expected): void
     {
-        $filter    = (new FilterPluginManager(new ServiceManager()))->get(ToDateTime::class);
+        $filter    = FilterRegistry::get(ToDateTime::class);
         $validator = $this->validator();
 
         self::assertSame($expected, $validator->isValid($filter->filter($value)));

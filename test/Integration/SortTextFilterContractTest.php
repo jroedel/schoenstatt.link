@@ -119,7 +119,7 @@ class SortTextFilterContractTest extends TestCase
      */
     public function testPatternWithEModifierIsRejected(): void
     {
-        $this->expectException(\Laminas\Filter\Exception\InvalidArgumentException::class);
+        $this->expectException(\SionModel\Filter\Exception\InvalidArgumentException::class);
         $this->expectExceptionMessage('may not contain the "e" pattern modifier');
 
         new SortText('/^(\d)$/e', '%1$s');

@@ -2,13 +2,13 @@
 
 namespace Books\Filter;
 
-use Laminas\Filter\AbstractFilter;
-use Laminas\Filter\Exception\InvalidArgumentException;
+use SionModel\Filter\AbstractFilter;
+use SionModel\Filter\Exception\InvalidArgumentException;
 
 /**
  * Builds a library book's sort text from its call number plus book metadata.
  *
- * Extends Laminas\Filter\AbstractFilter rather than Laminas\Filter\PregReplace,
+ * Extends SionModel\Filter\AbstractFilter rather than SionModel\Filter\PregReplace,
  * which laminas marked `@final`. PregReplace only ever supplied
  * setPattern()/getPattern() here — filter() was overridden wholesale and the
  * replacement API is refused outright — so those two methods are now local.
@@ -232,7 +232,7 @@ class SortText extends AbstractFilter
     }
 
     /**
-     * Reproduced from Laminas\Filter\PregReplace, which this filter used to
+     * Reproduced from PregReplace, which this filter used to
      * extend. Note it checks only for the "e" modifier — it does not verify
      * that the pattern compiles — and that leniency is preserved deliberately.
      *
