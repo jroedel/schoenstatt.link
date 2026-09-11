@@ -122,9 +122,11 @@ laminas components **at their latest releases**, each requiring `laminas-service
 
 So servicemanager 4, laminas-cache 4 (and with it `psr/cache` 2/3 and FrameworkBundle)
 are unreachable by upgrading. They become reachable only by **removing** the packages,
-which is this plan. The PHP 8.5 pin (`config.platform.php` 8.4.24) had eleven blockers;
-step 0 removed six and **five remain** — `laminas-math`, `laminas-serializer` and the
-three cache adapters — so the platform stays 8.4.24 until steps 1 and 2.
+which is this plan — and by the time they are gone there is no servicemanager left to
+upgrade, which is the point. The PHP pin moved for the same reason: eleven packages capped
+PHP below 8.5, step 0 removed six and steps 1 and 2 the other five, so
+`config.platform.php` is **8.5.9** since 2026-09-11 and states the runtime rather than a
+ceiling.
 
 **Measure, never assume.** Before and after every step: `why-not php 8.5.0`,
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
@@ -177,8 +179,8 @@ deletes.
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. **laminas-escaper does not leave here** — laminas-form (`^2`) and laminas-uri (`^2.9`) require it, so it goes with steps 5 and 6; no code of ours uses it any more |
 | 5 ◐ | laminas-form, inputfilter, filter, hydrator — and validator + escaper **only if laminas-uri goes with it** | form 77 files, inputfilter 60, validator 65, filter 49; 41 forms, 441 elements | **validation cutover and element model done 2026-09-11**, both ours; the form model and the validator/filter library are what is left. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and `SionModel\Form\Element`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
-| 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
-| 8 | laminas-db (96 files; `SionTable` is 2,413 lines over `TableGateway`/`Sql`) | the largest | Doctrine DBAL (decision pending, §6) |
+| 7 | laminas-servicemanager, modulemanager, eventmanager, config, loader — and laminas-session with them | servicemanager 91 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`); session 14; eventmanager 4; modulemanager 3 | **Our own PSR-11 container** (§6), not Symfony DI. `stdlib` does *not* leave here: laminas-db holds it |
+| 8 | laminas-db, and `stdlib` and `translator` with it | db 94 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; translator 30 files; stdlib 5 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after |
 
 **Step 4 is not gated on step 5, though it looks it.** Every `Laminas\Form\View\Helper\*`
 class extends `Laminas\I18n\View\Helper\AbstractTranslatorHelper`, so it is tempting to
@@ -212,6 +214,19 @@ neither: it is a zero-dependency interface package we chose, named in **30 files
 leaves only when we declare the interface ourselves — the cheapest package in the tree and
 the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodules**
 (SionModel, JUser, JTranslate); see §6 before starting any of them.
+
+### What is left, and in what order it ships
+
+Steps 0, 1a, 1b, 3, 4 and 6 are done; 1c (only `uri` left), 2 (only `session` left) and 5
+(only the form model left) are part done, and **16 packages remain**. The numbering above
+is the order the work was *planned* in; three of its steps being part done makes it a poor
+map of what is left, so the remainder regroups into three shippable iterations — the form
+stack, then the session and the container, then the database.
+
+**[laminas-exit-iterations.md](laminas-exit-iterations.md) is that plan**: what each
+iteration removes, which orderings the dependency graph forces and which one is chosen, and
+the rule all three share — every iteration deletes the parity tests that prove it, so every
+iteration opens by recording laminas' answers as data first.
 
 ## 4. Step 0 in detail: removing laminas-mvc
 
@@ -377,11 +392,20 @@ Settled since:
   41 forms and their rendering against a different model to reach the same place.
 - **Mail templates: Twig**, at step 0.
 
-Still open:
+Taken 2026-09-11, and together they mean the exit adds **no dependency at all** — 16
+packages out, none in:
 
-1. **Database layer**: Doctrine DBAL (recommended) or a thin PDO wrapper of our own.
-   `SionModel\Db\Model\SionTable` is 2,412 lines over `TableGateway`/`Sql` and 94 files
-   name `Laminas\Db`, so this is the one remaining decision with real weight.
+- **The container is ours**, not Symfony DI and not FrameworkBundle. A PSR-11 container
+  reading factories, aliases and invokables from the merged config; the 58
+  `FactoryInterface` classes become `__invoke($container)`; the `data/config/` merge cache
+  is unchanged. FrameworkBundle would also have wanted to own the kernel
+  `App\Kernel` hand-wires, which is a second cost on top of the dependency.
+- **The database layer is a thin PDO wrapper of ours**, not Doctrine DBAL.
+  `SionModel\Db\Model\SionTable` is 2,412 lines that already hold the query logic; what
+  laminas-db supplies underneath it is largely a parameter binder and a result iterator.
+  DBAL is heavier than that seam needs, and 94 files would have to learn its abstractions.
+
+Nothing is open.
 
 ## 7. How the Symfony side is built (reference)
 
