@@ -428,8 +428,11 @@ evaluates it on every request, so a release whose lock requires the newer PHP
 hard-fatals every page on the older server. The reverse (new PHP running the
 previous release) is a combination the capsule verifies before the rung lands.
 Then copy the tuned `php.ini` values across — the new version reads a different
-file — and confirm from `/en/sm/phpinfo`. `config.platform.php` stays at 8.4.24: it
-is the ceiling the locked packages impose, not a claim about any runtime.
+file — and confirm from `/en/sm/phpinfo`. `config.platform.php` is **8.5.9** since
+2026-09-11, the version production runs; it read 8.4.24 while locked packages
+capped PHP there and none does any more. That is a statement about what composer
+resolves against, and it did **not** change the gate: `platform_check.php` is
+written from the packages' own requirements and still reads `>= 8.4.1`.
 
 ## The front controller
 

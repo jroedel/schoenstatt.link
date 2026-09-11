@@ -1,14 +1,15 @@
 # CI for the modernization era. PHP 8.5 = production.
 #
 # Every job runs the version production executes, and since 2026-08-11 that is
-# 8.5, not the 8.4 of rung 4b. Do not read `config.platform.php` as a
-# contradiction: it stays at 8.4.24 and is not a statement about the runtime.
-# Twelve locked packages — laminas-mvc 3.8.0 first among them, and no released
-# or dev version of it admits 8.5 — cap PHP at `~8.4.0`, so the pin is the
-# ceiling composer must resolve *against*, while the runtime underneath is
-# free to be newer. `composer install` verifies the lock against that recorded
-# override, which is exactly why the install below still passes here and on the
-# server. docs/DEPLOY.md has the ceiling in full.
+# 8.5, not the 8.4 of rung 4b. `config.platform.php` says 8.5.9 too, and has
+# since 2026-09-11: it read 8.4.24 for as long as locked packages capped PHP
+# there — twelve of them, laminas-mvc 3.8.0 first among them — and every one of
+# those packages has since been removed, so the pin states the runtime instead
+# of a ceiling. `composer install` verifies the lock against that recorded
+# override, which is why the install below passes here and on the server.
+# What did NOT move is vendor/composer/platform_check.php, still `>= 8.4.1`:
+# composer writes it from the packages' own requirements, so no release demands
+# 8.5 of a server. docs/DEPLOY.md has the detail.
 #
 # The consequence for these jobs is the point: linting and testing on 8.5 is
 # now the only thing standing between an 8.5-only fatal and production, because

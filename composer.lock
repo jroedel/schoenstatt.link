@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9de9483242bab3cca3c3eace6823cd96",
+    "content-hash": "b16d2e381364770d20430d666bfddeda",
     "packages": [
         {
             "name": "brick/varexporter",
@@ -6120,26 +6120,26 @@
     },
     "platform-dev": {},
     "platform-overrides": {
-        "php": "8.4.24",
-        "ext-intl": "8.4.24",
-        "ext-pdo": "8.4.24",
-        "ext-pdo_mysql": "8.4.24",
-        "ext-dom": "8.4.24",
-        "ext-simplexml": "8.4.24",
-        "ext-xmlwriter": "8.4.24",
-        "ext-gd": "8.4.24",
+        "php": "8.5.9",
+        "ext-intl": "8.5.9",
+        "ext-pdo": "8.5.9",
+        "ext-pdo_mysql": "8.5.9",
+        "ext-dom": "8.5.9",
+        "ext-simplexml": "8.5.9",
+        "ext-xmlwriter": "8.5.9",
+        "ext-gd": "8.5.9",
         "lib-icu": "72.1",
         "ext-apcu": "5.1.24",
-        "ext-xml": "8.4.24",
-        "ext-mbstring": "8.4.24",
-        "ext-ctype": "8.4.24",
-        "ext-fileinfo": "8.4.24",
-        "ext-filter": "8.4.24",
-        "ext-iconv": "8.4.24",
-        "ext-libxml": "8.4.24",
-        "ext-xmlreader": "8.4.24",
+        "ext-xml": "8.5.9",
+        "ext-mbstring": "8.5.9",
+        "ext-ctype": "8.5.9",
+        "ext-fileinfo": "8.5.9",
+        "ext-filter": "8.5.9",
+        "ext-iconv": "8.5.9",
+        "ext-libxml": "8.5.9",
+        "ext-xmlreader": "8.5.9",
         "ext-zip": "1.22.8",
-        "ext-zlib": "8.4.24"
+        "ext-zlib": "8.5.9"
     },
     "plugin-api-version": "2.9.0"
 }
