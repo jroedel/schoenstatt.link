@@ -65,3 +65,7 @@ module/JTranslate/src/I18n/MessageRenderer.php
 module/JTranslate/src/Controller/PhraseIndexController.php
 module/JTranslate/src/Controller/PhraseEditController.php
 module/JTranslate/src/Controller/PhraseDeleteController.php
+
+# The ctx navigation tool (2026-09-11). Level 8 and PSR-12 from its first commit;
+# it is new code and there is no legacy to grandfather.
+tools/ctx
