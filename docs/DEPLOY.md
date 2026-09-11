@@ -4,10 +4,12 @@
 make prod-deploy
 ```
 
-`make prod-deploy` proves the tree is the one you think it is, then hands over to
-`./tools/deploy.sh`, which is the whole thing: preflight, build, migrate, warm, swap,
-verify. That runs `rsync` over your own shell account on **port 222** and needs no local
-PHP — only `git`, `rsync`, `ssh`, `curl` and (strongly recommended) `timeout`/`gtimeout`.
+`make prod-deploy` builds the release in **a checkout of its own**, proves it is the tree
+you think it is, and hands over to `./tools/deploy.sh`, which is the whole thing:
+preflight, build, migrate, warm, swap, verify. That runs `rsync` over your own shell
+account on **port 222** and needs no local PHP — only `git`, `rsync`, `ssh`, `curl` and
+(strongly recommended) `timeout`/`gtimeout`. **Your working tree is only ever read**, so a
+deploy and an afternoon's work can share a machine.
 
 **Deployment is atomic.** A release is built, composer-installed and warmed in a
 directory nothing is serving, and goes live when one symlink is replaced by a
@@ -26,8 +28,9 @@ a bogus API key would fail the smoke run and roll back a release that was fine.
 ```bash
 make prod-deploy                # checks, then hands over to tools/deploy.sh
 make prod-deploy DRY_RUN=1      # checks, then deploy.sh --dry-run (server untouched)
-make prod-deploy CI=1           # run ci-local.sh first, and refuse if it fails
+make prod-deploy CI=1           # full ci-local first, and refuse if it fails
 make prod-deploy CHECKS_ONLY=1  # run the checks and stop; never reaches deploy.sh
+make prod-deploy DEPLOY_TREE=…  # put the deploy checkout somewhere else
 ```
 
 `tools/deploy.sh` is careful about *how* it ships a tree. What it cannot check is whether
@@ -35,23 +38,85 @@ the tree it is about to package is the tree you think it is. That is `tools/prod
 and it refuses rather than repairs — every repair here is a judgement a script should not
 make on its own.
 
-It answers six questions, in this order:
+### The deploy checkout
 
-1. **Is the working tree clean?** A release is built from the working tree, so anything
-   uncommitted would ship. Submodule pointer differences are excluded and handled by 3.
-2. **Are we on master, and synced with origin?** Both halves matter. `git merge --ff-only`
-   exits 0 when HEAD is *ahead*, so it is no answer on its own; the commits are compared
-   directly. Deploying a local-only commit ships code no rollback can reproduce.
-3. **Do the submodule checkouts match what master pins?** The one that matters — see below.
+A release is built from a **working tree** (see below), so this script used to take yours
+over: `git checkout master`, `git merge --ff-only`, and a refusal whenever you had
+uncommitted work. A deploy and a working day could not share a machine, and a branch
+switch *during* a deploy corrupted the deploy — the script is read incrementally by bash,
+so rewriting the file underneath it resumes execution inside the other branch's copy.
+
+Since 2026-09-11 it maintains a second checkout instead:
+
+```
+${XDG_CACHE_HOME:-~/.cache}/schoenstatt.link-deploy      # override with DEPLOY_TREE
+```
+
+cloned from your repository once (hardlinked objects, so it costs neither network nor
+disk), then on every run fetched, hard-reset to `origin/master`, and brought to the pinned
+submodule commits with `git submodule update --init --recursive --force`. That tree is
+what `tools/deploy.sh` packages. Two things are **linked** back to your tree rather than
+duplicated: `.deploy.local`, so the DDL password exists once on disk, and `data/deploy/`,
+so the table snapshots a migration takes stay in one place across deploys. Both links are
+excluded per-checkout in its `.git/info/exclude`, because `deploy.sh` refuses to package a
+tree with anything untracked in it.
+
+Consequences worth knowing:
+
+- The submodules in the deploy checkout are **detached** at what master pins. That is
+  correct there and wrong in yours, where the workflow in CLAUDE.md needs them on
+  `modernization`. Nothing in a deploy runs in your tree.
+- Everything from `tools/deploy.sh` onwards is **master's copy**, read from the deploy
+  checkout. Only `tools/prod-deploy.sh` comes from your working tree, so a change to the
+  deploy machinery is exercised by `make prod-deploy` only once it is merged.
+- `tools/ci-local.sh` **cannot** run there — see "Verification" below.
+
+### The checks
+
+1. **Is `.deploy.local` present?** Asked before anything slow.
+2. **Is the deploy checkout at `origin/master`?** By construction: fetched and hard-reset
+   every run. Two old refusals disappear with it — the tree cannot be dirty, and master
+   cannot be *ahead* of origin, so a local-only commit can no longer reach production even
+   by accident.
+3. **Do the submodule checkouts match what master pins?** The one that matters — see
+   below. In your tree this had to refuse, because the correct repair depends on which
+   side is right; in a checkout that exists to hold exactly what master pins, `--force` is
+   the whole answer, and the status check after it is a post-condition.
 4. **Is every pinned submodule commit merged into `origin/modernization`?** That is the
    same question as "has this submodule's PR been pulled". A commit merely *pushed* to a
    feature branch is unreviewed and may yet be rebased or abandoned.
-5. **Is `.deploy.local` present?** Asked before anything slow.
-6. **Optionally, is it green?** `CI=1` runs `tools/ci-local.sh` first.
+5. **Is the deploy checkout clean?** The post-condition `deploy.sh` will insist on, asked
+   where the answer is still comprehensible rather than three steps into a deploy.
+6. **Which open pull requests are not in this tree?** A warning, never a refusal.
+7. **Can this build be verified at all?** See below.
 
 `CHECKS_ONLY=1` exists because the checks are the part worth exercising, and every other
 way of doing that ends one step away from a live deploy. Piping the script through `head`
-or `sed` truncates what you see and does **not** stop it running.
+or `sed` truncates what you see and does **not** stop it running. Without `CI=1` it stops
+before verification, so it costs a fetch and nothing else.
+
+### Verification: why it stays in your tree
+
+Nothing else verifies a build — GitHub Actions is out of minutes, so `ci-local` is the
+only check there is. It runs in the capsule, and `docker-compose.yml` bind-mounts **your**
+tree into the capsule: running it from the deploy checkout would test your tree while
+reporting on the release. So it runs where the capsule is, under one condition.
+
+| your tree | what happens |
+|---|---|
+| clean, on the deployed commit, submodules matching | `ci-local` runs here; `deploy.sh` is told the revision is proven and does not repeat it |
+| anything else | nothing can verify this build; `deploy.sh` is told that instead, counts it an unusual deploy and asks before the swap |
+
+`CI=1` refuses rather than warns, and runs the **full** `ci-local` (smoke, fuzz and
+`smoke-prod` as well as the seven CI jobs) rather than the `--ci` subset — which it no
+longer runs twice, because `deploy.sh` now honours the handover.
+
+That handover is two environment variables, `DEPLOY_VERIFIED_SHA` and
+`DEPLOY_UNVERIFIED_REASON`, set by nothing but `tools/prod-deploy.sh`. Getting it wrong in
+the lenient direction ships an unverified build without the prompt that exists for exactly
+that, and the deploy succeeds either way — so `test/Deploy/deploy-checkout-test.sh` drives
+the real block out of `tools/deploy.sh` through all six of its paths, and checks that
+every mutating `git` command in `tools/prod-deploy.sh` names the deploy checkout.
 
 ### Why check 3 is the one that matters
 
@@ -98,19 +163,23 @@ the branch `ci-local` ran against.
 
 **A routine deploy asks nothing** — the preflight, the revision gate and the smoke
 rollback protect it, not a `y`. It prompts only for an unusual run (`--ref`,
-`--skip-tests`, `--stash`, a first swap, `.deploy.local` not mode 600/400). It pulls
-master itself, so the unattended form is:
+`--skip-tests`, `--stash`, a first swap, `.deploy.local` not mode 600/400, or a build
+nothing could verify). `make prod-deploy` needs no `git` of its own at all, so the
+unattended form is:
 
 ```bash
-gh pr merge <n> --merge && git checkout master && git pull --ff-only && ./tools/deploy.sh
+gh pr merge <n> --merge && make prod-deploy
 ```
+
+That deploys `origin/master` whatever branch you happen to be on. Being on master
+yourself, clean, is what lets `ci-local` verify it first.
 
 ## The steps
 
 | # | step | where | notes |
 |---|---|---|---|
-| 1 | Preflight | local | on `master`; tree clean; `pull --ff-only`; local master not ahead of origin; the three submodules clean, **at the commit the superproject pins, and pushed** |
-| 2 | Verification | local | `tools/ci-local.sh --ci` (lint, `composer --no-dev` rehearsal, PHPStan, PSR-12, unit, integration, `test/Deploy/*`) |
+| 1 | Preflight | local | on `master`; tree clean; `pull --ff-only`; local master not ahead of origin; the three submodules clean, **at the commit the superproject pins, and pushed**. Under `make prod-deploy` all of this is true by construction of the deploy checkout |
+| 2 | Verification | local | `tools/ci-local.sh --ci` (lint, `composer --no-dev` rehearsal, PHPStan, PSR-12, unit, integration, `test/Deploy/*`) — skipped here when `make prod-deploy` already ran it in the capsule's tree |
 | 3 | Back up `public/.htaccess` | server | to `shared/data/htaccess-backups/` |
 | 4 | Build | server | `rsync` into `releases/<ts>-<sha>/`, `--link-dest` hardlinked against the previous release; `.revision` written; `public/index.php` broken out of its hardlink (`cp -p` + `mv -f`) |
 | 5 | Link shared | server | `shared/data/*`, `shared/public/*`, `shared/config-autoload/*` symlinked in; `data/config` and `data/cache` created empty, per-release |

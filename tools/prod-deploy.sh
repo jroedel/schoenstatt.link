@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Get onto a clean, current master and deploy it.
+# Deploy master, from a checkout of this repository that nothing else touches.
 #
 # WHY THIS EXISTS: the deploy itself is already careful — tools/deploy.sh builds a release
 # in a directory nothing is serving, swaps one symlink, resets every opcode-cache segment
@@ -7,7 +7,7 @@
 # it is about to package is the tree you think it is. That is this script's whole job, and
 # it is worth a script rather than a shell alias because of one hazard in particular.
 #
-# ## The submodule hazard, which has bitten this session
+# ## The submodule hazard, which is why the checks exist at all
 #
 # **A release is `git ls-files --recurse-submodules` over the WORKING TREE.** Not over
 # HEAD. So the submodule code that ships is whatever is checked out inside module/*, and
@@ -16,27 +16,63 @@
 # ahead of what master pins.
 #
 # Deploying in that state ships the application from master and its shared libraries from
-# somewhere else. The failure is not subtle and it is not caught by anything else: on
-# 2026-09-09 the same mismatch, in the capsule, produced an empty 200 on every page —
-# `git submodule status` showed `+` on two modules and ci-local reported fatal-200
-# site-wide. In production it would be that, live, on a tree no branch can reproduce.
+# somewhere else. The failure is not subtle: on 2026-09-09 the same mismatch, in the
+# capsule, produced an empty 200 on every page — `git submodule status` showed `+` on two
+# modules and ci-local reported fatal-200 site-wide. In production it would be that, live,
+# on a tree no branch can reproduce.
 #
-# `git submodule status` marks it: a leading `+` means the checkout differs from the
-# pinned commit, `-` means it was never initialised. Either refuses here.
+# ## The deploy checkout
 #
-# **It refuses rather than fixing.** The correct repair depends on which side is right: if
-# master pins the older commit, the submodule needs `git checkout modernization && git
-# merge --ff-only origin/modernization` and a pointer bump (`make dev-bump-submodules`);
-# if master is right, the submodule checkout is stale. A script cannot know which, and
-# guessing here means deploying something nobody chose.
+# Because the release is the working tree, this script used to take over YOURS: `git
+# checkout master`, `git merge --ff-only`, and a refusal whenever you had uncommitted
+# work. A deploy and an afternoon's work could not share a machine, and a branch switch
+# during a deploy corrupted the deploy.
+#
+# It no longer touches your tree. It maintains a second checkout —
+#
+#     $DEPLOY_TREE   (default: ${XDG_CACHE_HOME:-~/.cache}/schoenstatt.link-deploy)
+#
+# hard-reset to origin/master with the pinned submodule commits checked out inside it, and
+# hands THAT to tools/deploy.sh. Your tree is only ever read.
+#
+# Four consequences worth knowing:
+#
+#  · Two of the old checks are gone because the state they refused is now impossible
+#    rather than merely detected: the tree cannot be dirty (it is reset every run), and
+#    master cannot be ahead of origin (it is not your master — it is origin/master, just
+#    fetched). A local-only commit can no longer reach production even by accident.
+#  · The submodules in the deploy checkout are DETACHED at what master pins. That is
+#    correct there and wrong in your tree, where CLAUDE.md's workflow needs them on
+#    `modernization`; nothing here changes that rule, and nothing here runs in your tree.
+#  · Everything from tools/deploy.sh onwards is master's copy, read from the deploy
+#    checkout. Only this file comes from your working tree, so a change to the deploy
+#    machinery is exercised by `make prod-deploy` only after it is merged.
+#  · ci-local cannot run in the deploy checkout — see below.
+#
+# ## Verification
+#
+# Nothing else verifies a build: GitHub Actions is out of minutes, so ci-local is the only
+# check there is. It runs in the capsule, and docker-compose.yml bind-mounts YOUR tree
+# into the capsule — running it from the deploy checkout would test your tree while
+# reporting on the release. So verification stays where the capsule is, under one
+# condition:
+#
+#  · your tree clean, on the same commit, submodules matching → ci-local runs here, and
+#    tools/deploy.sh is told this revision is proven and does not repeat it;
+#  · anything else → nothing can verify this build. tools/deploy.sh is told that instead,
+#    counts it an unusual deploy, and asks before the swap.
+#
+# CI=1 refuses rather than warns, and runs the FULL ci-local (smoke, fuzz and smoke-prod
+# as well as the seven CI jobs) rather than the --ci subset.
 #
 # Usage:
 #   make prod-deploy                # checks, then hands over to tools/deploy.sh
 #   make prod-deploy DRY_RUN=1      # checks, then deploy.sh --dry-run (server untouched)
-#   make prod-deploy CI=1           # run ci-local.sh first, and refuse if it fails
+#   make prod-deploy CI=1           # full ci-local first, and refuse if it fails
 #   make prod-deploy CHECKS_ONLY=1  # run the checks and stop; never reaches deploy.sh
+#   make prod-deploy DEPLOY_TREE=…  # put the deploy checkout somewhere else
 #
-# The last check is the only one that warns rather than refuses: it lists open pull
+# The open-PR check is the only one that warns rather than refuses: it lists open pull
 # requests whose head is not in the tree being deployed. Twice a deploy has shipped the
 # previous release because the PR the operator had in mind had not merged, and every other
 # check passed — correctly, because master really was clean, synced and consistent.
@@ -45,20 +81,22 @@
 # or when changing this script — and every other way of doing that ends one step away from
 # a live deploy. Piping this script's output through `head` or `sed` truncates what you
 # see and does NOT stop it running, which is a foot-gun this flag removes rather than
-# documents.
+# documents. Without CI=1 it stops before verification, so it costs a fetch and nothing
+# else.
 #
 # Everything after the checks is tools/deploy.sh, which has its own confirmation for an
 # unusual run and its own rollback. See docs/DEPLOY.md.
 
 # ## Why the brace around everything below
 #
-# Check 2 runs `git checkout master`, which REWRITES THIS FILE while bash is reading it.
-# Bash reads a script incrementally and seeks by byte offset, so without this it resumes
-# inside whatever master's copy happens to have at that offset: measured 2026-09-09, a
-# script that replaces itself mid-run executes the replacement's remaining lines at every
-# size tried (1 KB to 60 KB, growing or shrinking). Two consequences, both bad — a syntax
-# error mid-deploy, and checks that silently come from the branch you just left rather
-# than the one you are deploying.
+# This file is read from YOUR working tree, and the whole point of the deploy checkout is
+# that you carry on working in it — including `git checkout`, which REWRITES THIS FILE
+# while bash is reading it. Bash reads a script incrementally and seeks by byte offset, so
+# without this it resumes inside whatever the other branch's copy happens to have at that
+# offset: measured 2026-09-09, a script that is replaced mid-run executes the
+# replacement's remaining lines at every size tried (1 KB to 60 KB, growing or shrinking).
+# Two consequences, both bad — a syntax error mid-deploy, and checks that silently come
+# from a branch nobody chose.
 #
 # A brace group is one compound command, so bash parses all of it before running any of
 # it. Nothing may be added after the closing brace.
@@ -76,83 +114,71 @@ warn() { printf '  %swarn%s  %s\n' "$YELLOW" "$OFF" "$1"; }
 die()  { printf '\n%sRefused:%s %s\n' "$RED" "$OFF" "$1" >&2; exit 1; }
 
 cd "$(dirname "$0")/.." || die "cannot reach the project root"
+REPO_ROOT="$(pwd -P)"
 
-printf '%sPreparing to deploy master%s\n\n' "$BOLD" "$OFF"
+DEPLOY_TREE="${DEPLOY_TREE:-${XDG_CACHE_HOME:-$HOME/.cache}/schoenstatt.link-deploy}"
+case "$DEPLOY_TREE" in
+    "$REPO_ROOT" | "$REPO_ROOT"/*)
+        die "DEPLOY_TREE is $DEPLOY_TREE, which is inside the working tree.
 
-# --- 1. nothing uncommitted, because the working tree is what ships ----------------
-# deploy.sh has --stash for the case where you know you have local work. Reaching that
-# accidentally is how an experiment ends up in production.
-#
-# Submodule pointer differences are excluded here and handled by check 3, which knows
-# what they mean. They surface in `git status` as a plain ' M module/X', and telling
-# someone to "commit or stash" that is actively wrong advice: committing it MOVES THE
-# POINTER, which is the opposite of what a deploy wants.
-DIRTY="$(git status --porcelain --untracked-files=no | grep -v '^.M module/' || true)"
-[ -n "$DIRTY" ] && die "the working tree has uncommitted changes:
-$DIRTY
-A release is built from the working tree, so these would ship. Commit, stash, or use
-./tools/deploy.sh --stash if you meant to."
-ok "working tree is clean (submodule pointers checked separately)"
+It has to be outside it. Everything under the project root is either tracked, deliberately
+ignored, or swept by the test and search tooling — a second copy of the application there
+would be found by all three." ;;
+esac
 
-# --- 2. get onto master, fast-forward only ----------------------------------------
-BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-if [ "$BRANCH" != "master" ]; then
-    git checkout -q master || die "cannot check out master"
-    ok "switched from $BRANCH to master"
-else
-    ok "already on master"
+printf '%sPreparing to deploy master%s\n' "$BOLD" "$OFF"
+printf '  built in %s\n' "$DEPLOY_TREE"
+printf '  this working tree is only read\n\n'
+
+# --- 1. credentials, before anything slow -----------------------------------------
+[ -f "$REPO_ROOT/.deploy.local" ] || die "no .deploy.local. Seed it from .deploy.local.dist with ./config.sh.
+It is gitignored and mode 0600; credentials never reach the server."
+ok ".deploy.local is present"
+
+# --- 2. the deploy checkout, at origin/master -------------------------------------
+ORIGIN_URL="$(git remote get-url origin 2>/dev/null)" || die "this clone has no 'origin' remote"
+
+if [ ! -d "$DEPLOY_TREE/.git" ]; then
+    [ -e "$DEPLOY_TREE" ] && die "$DEPLOY_TREE exists and is not a git checkout. Move it aside."
+    printf '  %screating the deploy checkout (first run only)%s\n' "$BOLD" "$OFF"
+    # Cloned from here rather than from GitHub: a local clone hardlinks the object
+    # store, so the superproject's ~99 MB costs neither network nor disk. The remote
+    # is corrected immediately below and everything after that fetches from origin.
+    git clone --quiet "$REPO_ROOT" "$DEPLOY_TREE" || die "could not clone into $DEPLOY_TREE"
 fi
 
-git fetch -q origin || die "fetch failed"
-git merge --ff-only origin/master -q 2>/dev/null || die "master will not fast-forward to origin/master.
-It has diverged from the remote. Sort that out before deciding to deploy it."
-
-# `merge --ff-only` is NOT enough on its own, and the difference is the whole point of
-# this check. When HEAD is *ahead* of origin/master it prints "Already up to date." and
-# exits 0 — a local commit nobody else has would sail straight through to production,
-# which is the exact failure this script exists to stop. Comparing the two commits is
-# what actually answers "are we synced".
-HEAD_SHA="$(git rev-parse HEAD)"
-ORIGIN_SHA="$(git rev-parse origin/master)"
-if [ "$HEAD_SHA" != "$ORIGIN_SHA" ]; then
-    AHEAD="$(git rev-list --count origin/master..HEAD)"
-    die "master is $AHEAD commit(s) ahead of origin/master:
-
-$(git log --oneline origin/master..HEAD)
-
-Deploying would ship code that is on no remote — unreviewable, and unreproducible by
-anyone else or by a rollback. Push it and let it merge, or reset to origin/master."
-fi
-ok "master is synced with origin at $(git log --oneline -1)"
+git -C "$DEPLOY_TREE" remote set-url origin "$ORIGIN_URL" \
+    || die "could not point the deploy checkout's origin at $ORIGIN_URL"
+git -C "$DEPLOY_TREE" fetch --quiet --prune origin \
+    || die "the deploy checkout cannot fetch origin. Whether it holds current master
+cannot be established, so it is not deployed."
+git -C "$DEPLOY_TREE" checkout --quiet -B master origin/master \
+    || die "could not put the deploy checkout on origin/master"
+git -C "$DEPLOY_TREE" reset --hard --quiet origin/master \
+    || die "could not reset the deploy checkout to origin/master"
+ok "deploy checkout is origin/master at $(git -C "$DEPLOY_TREE" log --oneline -1)"
 
 # --- 3. THE ONE THAT MATTERS: submodule checkouts must match the pinned commits ----
-MISMATCH="$(git submodule status --recursive | grep -E '^[+-]' || true)"
+# In your tree this is a refusal, because the correct repair depends on which side is
+# right and a script must not guess. Here it is simply done: the checkout exists to hold
+# what master pins and nothing else, so --force is the whole answer. The status check
+# after it is a post-condition, not a question.
+git -C "$DEPLOY_TREE" submodule sync --quiet --recursive \
+    || die "could not sync the submodule URLs in the deploy checkout"
+git -C "$DEPLOY_TREE" submodule update --init --recursive --force --quiet \
+    || die "could not check out the pinned submodule commits in the deploy checkout.
+The first run clones them from GitHub, so this needs network and, over SSH, a key that has
+been unlocked in this desktop session."
+
+MISMATCH="$(git -C "$DEPLOY_TREE" submodule status --recursive | grep -E '^[+-]' || true)"
 if [ -n "$MISMATCH" ]; then
-    printf '\n'
-    while read -r line; do
-        MARK="${line:0:1}"
-        SUB="$(printf '%s' "$line" | awk '{print $2}')"
-        case "$MARK" in
-            +) warn "$SUB is checked out at a DIFFERENT commit than master pins" ;;
-            -) warn "$SUB is not initialised" ;;
-        esac
-    done <<< "$MISMATCH"
-    die "submodule checkouts do not match what master pins.
+    printf '\n%s\n' "$MISMATCH"
+    die "the deploy checkout's submodules still do not match what master pins, after a
+--force update. That should not be possible; do not deploy past it.
 
-A release is 'git ls-files --recurse-submodules' over the WORKING TREE, so this would
-ship the application from master and its libraries from wherever they happen to sit.
-That is an empty 200 on every page, live, on a tree no branch can reproduce.
-
-  git submodule status        # '+' marks each one that differs
-
-Then decide which side is right — do not let a script choose:
-  · master pins an older commit than the submodule has?  The pointers were never
-    bumped: run 'make dev-bump-submodules' on the branch whose PR is open, or bump
-    them by hand, and merge that first.
-  · the submodule checkout is stale?  Inside it:
-        git fetch && git checkout modernization && git merge --ff-only origin/modernization
-    Never a bare 'git submodule update' — it detaches HEAD, which this project's
-    workflow (CLAUDE.md) relies on not happening."
+A release is 'git ls-files --recurse-submodules' over the WORKING TREE, so this would ship
+the application from master and its libraries from wherever they happen to sit. That is an
+empty 200 on every page, live, on a tree no branch can reproduce."
 fi
 ok "submodule checkouts match the pinned commits"
 
@@ -171,18 +197,18 @@ ok "submodule checkouts match the pinned commits"
 # A deliberate exception has a door: ./tools/deploy.sh --ref REF says out loud that it is
 # deploying something other than master.
 while read -r _KEY SUB; do
-    [ -d "$SUB" ] || continue
-    PINNED="$(git rev-parse "HEAD:$SUB" 2>/dev/null)" || continue
-    git -C "$SUB" fetch -q origin 2>/dev/null \
+    [ -d "$DEPLOY_TREE/$SUB" ] || continue
+    PINNED="$(git -C "$DEPLOY_TREE" rev-parse "HEAD:$SUB" 2>/dev/null)" || continue
+    git -C "$DEPLOY_TREE/$SUB" fetch -q origin 2>/dev/null \
         || die "$SUB: cannot fetch origin, so whether the pinned commit is merged cannot be
 established. Refusing rather than assuming."
 
-    if ! git -C "$SUB" rev-parse --verify -q "refs/remotes/origin/$INTEGRATION_BRANCH" >/dev/null; then
+    if ! git -C "$DEPLOY_TREE/$SUB" rev-parse --verify -q "refs/remotes/origin/$INTEGRATION_BRANCH" >/dev/null; then
         die "$SUB: no origin/$INTEGRATION_BRANCH to check the pinned commit against."
     fi
 
-    if ! git -C "$SUB" merge-base --is-ancestor "$PINNED" "origin/$INTEGRATION_BRANCH" 2>/dev/null; then
-        WHERE="$(git -C "$SUB" branch -r --contains "$PINNED" 2>/dev/null | tr -d ' ' | paste -sd, - )"
+    if ! git -C "$DEPLOY_TREE/$SUB" merge-base --is-ancestor "$PINNED" "origin/$INTEGRATION_BRANCH" 2>/dev/null; then
+        WHERE="$(git -C "$DEPLOY_TREE/$SUB" branch -r --contains "$PINNED" 2>/dev/null | tr -d ' ' | paste -sd, - )"
         die "$SUB: master pins $PINNED, which is NOT on origin/$INTEGRATION_BRANCH.
 
 ${WHERE:+It is on: $WHERE
@@ -193,21 +219,51 @@ still be rebased or abandoned. Merge that submodule's PR, then re-pin with
 
 To deploy something other than master deliberately, ./tools/deploy.sh --ref REF says so."
     fi
-done < <(git config --file .gitmodules --get-regexp '^submodule\..*\.path$')
+done < <(git config --file "$DEPLOY_TREE/.gitmodules" --get-regexp '^submodule\..*\.path$')
 ok "every pinned submodule commit is merged into origin/$INTEGRATION_BRANCH"
 
-# --- 5. credentials, before anything slow -----------------------------------------
-[ -f .deploy.local ] || die "no .deploy.local. Seed it from .deploy.local.dist with ./config.sh.
-It is gitignored and mode 0600; credentials never reach the server."
-ok ".deploy.local is present"
+# --- 5. the two things that must not exist twice ----------------------------------
+# Both are links, so both are untracked, and deploy.sh refuses to package a tree with
+# anything untracked in it. They are this script's doing rather than the repository's, so
+# they are excluded per-checkout in .git/info/exclude — which no reset touches and which
+# master's .gitignore therefore never has to know about.
+EXCLUDE="$DEPLOY_TREE/.git/info/exclude"
+mkdir -p "$(dirname "$EXCLUDE")"
+grep -qx '/data/deploy' "$EXCLUDE" 2>/dev/null \
+    || printf '\n# Written by tools/prod-deploy.sh; both are links back to the working tree.\n/.deploy.local\n/data/deploy\n' >> "$EXCLUDE"
 
-# --- 6. optional: prove it green first --------------------------------------------
-if [ "$CI" = "1" ]; then
-    printf '\n%sRunning ci-local.sh first%s\n' "$BOLD" "$OFF"
-    ./tools/ci-local.sh || die "ci-local failed. Not deploying."
+# .deploy.local holds the full-DDL database password. One copy on disk, not two: the
+# deploy checkout reaches the same file, and `stat` follows the link, so deploy.sh still
+# sees mode 600.
+ln -sfn "$REPO_ROOT/.deploy.local" "$DEPLOY_TREE/.deploy.local" \
+    || die "could not link .deploy.local into the deploy checkout"
+
+# data/deploy/ is where tools/migrate.sh dumps the production tables a migration is about
+# to change, and where the migration plan is written. That is the operator's material and
+# real production data — it belongs in one known place, not scattered across whatever
+# checkout happened to run the deploy.
+mkdir -p "$REPO_ROOT/data/deploy" || die "could not create $REPO_ROOT/data/deploy"
+[ -L "$DEPLOY_TREE/data/deploy" ] || rm -rf "$DEPLOY_TREE/data/deploy"
+ln -sfn "$REPO_ROOT/data/deploy" "$DEPLOY_TREE/data/deploy" \
+    || die "could not link data/deploy/ into the deploy checkout"
+ok "linked .deploy.local and data/deploy/ from this tree"
+
+# The post-condition deploy.sh will insist on, asked here where the answer is still
+# comprehensible. Its preflight refuses a tree with ANY untracked file in it, and this is
+# the check that finds out — measured: `.gitignore`'s `/data/deploy/` has a trailing
+# slash, which matches a directory and not the symlink above, so without the exclude
+# written just now the deploy aborted three steps into tools/deploy.sh.
+RESIDUE="$(git -C "$DEPLOY_TREE" status --porcelain --ignore-submodules=dirty)"
+if [ -n "$RESIDUE" ]; then
+    printf '\n%s\n' "$RESIDUE"
+    die "the deploy checkout is not clean after being reset to origin/master.
+
+tools/deploy.sh packages a working tree and refuses a dirty one, so this would abort the
+deploy halfway. Anything listed above is either an ignore rule that does not cover what
+this script puts there, or a file something else wrote into $DEPLOY_TREE."
 fi
 
-# --- 7. open pull requests that are not in this tree -------------------------------
+# --- 6. open pull requests that are not in this tree -------------------------------
 # **A warning, never a refusal.** Deploying while PRs are open is normal and most of them
 # are nobody's intention to ship. This exists because of the one case that is: twice now a
 # deploy has shipped the previous release because the PR the operator had in mind had not
@@ -218,6 +274,7 @@ fi
 #
 # Submodule PRs are deliberately not listed: an unmerged one shows up as a pointer that is
 # not on the integration branch, which check 4 already refuses over.
+DEPLOY_SHA="$(git -C "$DEPLOY_TREE" rev-parse HEAD)"
 if command -v gh >/dev/null 2>&1; then
     # `|| true` twice over: gh is optional, may be unauthenticated, and may be offline.
     # None of that is a reason to stand between someone and a deploy.
@@ -227,10 +284,10 @@ if command -v gh >/dev/null 2>&1; then
     NOT_HERE=""
     while IFS=$'\t' read -r PR_NUM PR_SHA PR_TITLE; do
         [ -n "${PR_NUM:-}" ] || continue
-        # A head commit this clone has never fetched is certainly not in the tree; one it
-        # has is in the tree only if it is an ancestor of what we are about to ship.
-        if git cat-file -e "${PR_SHA}^{commit}" 2>/dev/null \
-           && git merge-base --is-ancestor "$PR_SHA" HEAD 2>/dev/null; then
+        # A head commit the deploy checkout has never fetched is certainly not in the
+        # tree; one it has is in the tree only if it is an ancestor of what ships.
+        if git -C "$DEPLOY_TREE" cat-file -e "${PR_SHA}^{commit}" 2>/dev/null \
+           && git -C "$DEPLOY_TREE" merge-base --is-ancestor "$PR_SHA" "$DEPLOY_SHA" 2>/dev/null; then
             continue
         fi
         NOT_HERE="${NOT_HERE}  #${PR_NUM} ${PR_TITLE}"$'\n'
@@ -246,6 +303,62 @@ if command -v gh >/dev/null 2>&1; then
     fi
 fi
 
+# --- 7. can this build be verified at all? ----------------------------------------
+# ci-local needs the capsule, and docker-compose.yml bind-mounts THIS tree into it. So the
+# only revision the capsule can speak for is the one checked out here, undisturbed. Asking
+# it about anything else would test this tree and report on the release.
+HERE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+HERE_SHA="$(git rev-parse HEAD)"
+HERE_DIRTY="$(git status --porcelain --untracked-files=no)"
+HERE_UNINIT="$(git submodule status --recursive | grep -E '^-' || true)"
+
+UNVERIFIABLE=""
+if [ "$HERE_SHA" != "$DEPLOY_SHA" ]; then
+    UNVERIFIABLE="the capsule serves this working tree, which is on $HERE_BRANCH at $(git rev-parse --short HEAD), not the ${DEPLOY_SHA:0:7} being deployed"
+elif [ -n "$HERE_DIRTY" ] || [ -n "$HERE_UNINIT" ]; then
+    # A ' M module/X' counts: the submodule working tree is what a release is made of, so
+    # a moved pointer there is a different application, not a cosmetic difference.
+    UNVERIFIABLE="the capsule serves this working tree, which has uncommitted changes"
+fi
+
+if [ "$CHECKS_ONLY" = "1" ] && [ "$CI" != "1" ]; then
+    printf '\n%sAll checks passed. CHECKS_ONLY is set, so stopping here.%s\n' "$GREEN" "$OFF"
+    if [ -n "$UNVERIFIABLE" ]; then
+        printf 'A real run would deploy unverified: %s.\n' "$UNVERIFIABLE"
+    else
+        printf 'A real run would verify it first: ci-local.sh --ci in this tree.\n'
+    fi
+    printf 'Run without CHECKS_ONLY to deploy.\n'
+    exit 0
+fi
+
+VERIFIED=""
+if [ "$DRY_RUN" = "1" ]; then
+    ok "dry run — not verifying (tools/deploy.sh skips ci-local for a dry run too)"
+elif [ -n "$UNVERIFIABLE" ]; then
+    if [ "$CI" = "1" ]; then
+        die "CI=1 asks for this build to be proven green, and nothing can prove it:
+$UNVERIFIABLE.
+
+Either get this tree onto the revision being deployed —
+    git checkout master && git pull --ff-only && git submodule update --init --recursive
+(the last one detaches, so re-checkout 'modernization' in each submodule afterwards; see
+CLAUDE.md) — or drop CI=1 and decide at tools/deploy.sh's prompt."
+    fi
+    warn "nothing can verify this build: $UNVERIFIABLE"
+    warn "tools/deploy.sh will count it an unusual deploy and ask before the swap"
+else
+    printf '\n%sVerifying %s in this tree — the capsule holds exactly it%s\n' \
+        "$BOLD" "${DEPLOY_SHA:0:7}" "$OFF"
+    if [ "$CI" = "1" ]; then
+        ./tools/ci-local.sh || die "ci-local failed. Not deploying."
+    else
+        ./tools/ci-local.sh --ci || die "ci-local --ci failed. Not deploying."
+    fi
+    VERIFIED="$DEPLOY_SHA"
+    ok "verified — tools/deploy.sh will not run ci-local again"
+fi
+
 # --- hand over ---------------------------------------------------------------------
 if [ "$CHECKS_ONLY" = "1" ]; then
     printf '\n%sAll checks passed. CHECKS_ONLY is set, so stopping here.%s\n' "$GREEN" "$OFF"
@@ -253,7 +366,15 @@ if [ "$CHECKS_ONLY" = "1" ]; then
     exit 0
 fi
 
-printf '\n%sChecks passed. Handing over to tools/deploy.sh%s\n\n' "$GREEN" "$OFF"
+printf '\n%sChecks passed. Handing over to %s/tools/deploy.sh%s\n\n' "$GREEN" "$DEPLOY_TREE" "$OFF"
+cd "$DEPLOY_TREE" || die "cannot enter the deploy checkout"
+
+# The contract deploy.sh reads: one of these two is set, never both. Exported empty
+# rather than left unset so a stale value from the environment cannot masquerade as this
+# run's answer.
+export DEPLOY_VERIFIED_SHA="$VERIFIED"
+export DEPLOY_UNVERIFIED_REASON="$UNVERIFIABLE"
+
 if [ "$DRY_RUN" = "1" ]; then
     exec ./tools/deploy.sh --dry-run
 fi
