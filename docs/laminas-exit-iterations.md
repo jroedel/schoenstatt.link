@@ -45,9 +45,10 @@ package does. The same is true of anything written for B and C.
 So each iteration opens the same way: **record what laminas answers as a data file, then
 replace it, then diff the recording.** `test/Element/element-surface.php` is the worked
 example — it recorded what all 441 elements answer before the element swap, and the swap
-then showed 432 changed lines, every one of them a class name, and nothing else. A parity
-test that outlives its subject is worth more than one that dies with it, and the recording
-is what makes that possible.
+then showed 432 changed lines, every one of them a class name, and nothing else.
+`test/Form/form-markup.php` is the second recording, and A's first step. A parity test
+that outlives its subject is worth more than one that dies with it, and the recording is
+what makes that possible.
 
 The second half of the rule: **a verification fed the same narrowed input as the thing it
 tests will always agree with itself.** That is how 101 element-supplied validators went
@@ -61,14 +62,18 @@ laminas-hydrator, laminas-escaper, laminas-uri.
 Validation already runs on our engine and every element is already ours. What is left is
 the form itself and the rules' implementations.
 
-1. **The rendered-markup baseline, first, because none exists.** `test/Fuzz/FormRepository`
-   builds every form in the application, and 42 classes own the 441 elements: the forms,
-   two fieldset subclasses (`Books\Form\MassCheckoutFieldset`,
-   `App\Books\Import\ImportMappingFieldset`) and the one `Collection`.
-   `SionModel\Form\BootstrapFormRenderer` is 1,154 lines. The contract is rendered-HTML
-   parity, so the baseline is the markup each form produces in each state the application
-   renders it. `tools/port-baseline.php` is retired but holds the normalization rules such
-   a capture needs.
+1. **The rendered-markup baseline** is `test/Form/form-markup.php`, recorded 2026-09-11
+   through `SionModel\Form\BootstrapFormRenderer` over the laminas form model: 483
+   surfaces — every element of the 43 forms `test/Fuzz/FormRepository` builds, plus each
+   form's open tag — in the four states a controller puts a form in (`pristine`,
+   `populated`, `invalid`, `prepared`), and under each one every helper
+   `SionModel\Twig\FormExtension` can call on it. `SchoenstattTest\Form\FormMarkup` records
+   it, `composer form-markup-baseline` regenerates it, and
+   `test/Integration/FormMarkupTest` compares it. A state after the first stores only what
+   differs from the state it follows, and an option run longer than four collapses to a
+   digest — which is what keeps 2.2 MB of `<option>` tags out of the repository. The
+   `invalid` state is the only recording of the twenty laminas validator classes' message
+   text that will survive their removal.
 2. **The form model**: `SionModel\Form\{Form, Fieldset, Collection}`, implementing what the
    **77 files** naming `Laminas\Form` actually use, and the renderer moved onto it.
 3. **The validator classes.** About twenty are used: `Regex` 19 references, `StringLength`
@@ -147,7 +152,7 @@ Beyond `./tools/ci-local.sh`, which every PR runs:
 
 | iteration | the check that would catch the real failure |
 |---|---|
-| A | the rendered-markup baseline diff; `known-form-gaps.php` still 0/0; smoke create+edit on every entity |
+| A | `test/Integration/FormMarkupTest` against `test/Form/form-markup.php`; `known-form-gaps.php` still 0/0; smoke create+edit on every entity |
 | B | sign in on the old release, deploy, still signed in; a flash written before the deploy still renders; `bin/console` writes no `data/config/*` |
 | C | MariaDB general-log statement diff across a full smoke run, before and after |
 
