@@ -67,3 +67,7 @@ tools/*.phar
 # Cache/query performance harness output (tools/perf/run.sh)
 data/perf/
 data/perf-*.jsonl
+
+# Agent tooling caches: ci-local.sh run logs and stage cache, and the ctx index.
+.ci-local/
+.ctx-cache/

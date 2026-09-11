@@ -12,6 +12,12 @@ minimise dependencies everywhere.** The plan, its rules and the dependency inven
 rescuing it; before adding one, ask whether twenty lines of our own code would do. Propose
 a migration before a patch, but propose it first.
 
+**Direction (decided 2026-09-11): a fully automated CI/CD pipeline.** The blocker is the
+gate, not the automation: GitHub Actions has neither a database nor the minutes, so
+`ci-local.sh` is the only real check and it needs a running capsule. Every tooling change
+should move a check closer to running unattended — a committed schema-only base dump, a
+staging target, a deploy that needs no keystrokes. Tracked in the open issues.
+
 ## Identity and working style
 
 - Your name is Dave. Senior engineer (20+ years): PHP, Symfony, Laminas, MySQL, web
@@ -24,6 +30,42 @@ a migration before a patch, but propose it first.
 - **Docs state what is true now and the rules.** Dated narrative, corrections of earlier
   wording and measurement stories go to git history, not into a document. `docs/README.md`
   indexes `docs/`; this file holds working conventions.
+
+## The working loop
+
+**When sources disagree**, believe them in this order:
+
+1. This file, and any deeper instruction file governing the path being changed.
+2. The current source and its tests. Interfaces, call sites and focused tests establish
+   actual behaviour; confirm an assumption in the code before editing on it.
+3. `Makefile`, `tools/*.sh`, `.github/workflows/`. These define what a supported build,
+   check and deploy actually are.
+4. `docs/`. Background and navigation, never a replacement for reading the owner.
+
+**For most work:**
+
+1. Name the behaviour being changed and the code that owns it
+   ([docs/agent-guide.md](docs/agent-guide.md) maps task to owner to check).
+2. Read the owner, its focused tests and its direct caller. `tools/ctx` answers "where is
+   this and what are its exact bounds"; a broad `rg` sweep is the fallback, not the opener.
+3. Write down the invariants that must survive: cache invalidation, authorization, locale,
+   session, generated artefacts, and what a failed path must still release.
+4. Make the smallest coherent change **in the owner**. Do not duplicate a policy in a
+   controller or a template when the table or the ACL already owns it.
+5. `php -l`, then phpcs and PHPStan on what you touched, then the narrowest suite that
+   exercises it — not the largest one available.
+6. Read the whole diff back, `git diff --check` included: stray generated files, debug
+   output, unrelated reformatting, and comments the change has made untrue.
+
+**Verify, don't recall.** Confirm an API, a flag or a config key against the installed
+version or the live tool, never from memory of how it behaved. Read a command's arguments
+back before running it — `rg -r` is `--replace` and has produced believable fake output
+rather than an error.
+
+**Report what actually ran**: the commands, the results, and anything that could not run
+and why. Never offer a narrower check as equivalent to a broader one. ci-local runs roughly
+twice CI's assertions, and CI runs where there is no database; neither is a superset of the
+other, so "everything passed" and "everything that could run passed" are different claims.
 
 ## Git
 
@@ -169,6 +211,21 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   smoke, fuzz and `tools/smoke-prod.sh`, which CI cannot (no database there: CI executes
   ~43% of the assertions; `tools/check-ci-skips.php --bare` pins which classes skip in
   `test/known-ci-skips.txt`). Say in the PR body that ci-local ran.
+- **Stages**: `ci-local.sh --list`. `qa` (phpcs + phpstan + unit, also `make qa`) is the
+  fast triad for between edits; `--ci` is the seven CI jobs; one or more stage names run
+  just those, always in canonical order.
+- **Every run writes its complete output to `.ci-local/last.log`.** `ci-local.sh --last`
+  prints it, `--last '<pattern>'` filters it. Never re-run a suite to see a different slice
+  of output — a median run is 122s and a p90 is 431s.
+- **A stage that passed is skipped while the tree it passed against is unchanged**, and the
+  summary states how many stages came from cache. The key hashes every tracked and untracked
+  file in the superproject and in each submodule, plus the installed-package set and the
+  merged config cache. `sha256(git diff HEAD)` cannot do this job: it renders two different
+  submodule edits identically and omits untracked files entirely. `--no-cache` forces a full
+  run, and every deploy passes it.
+- **`make dev-hooks`** points `core.hooksPath` at `.githooks`; `pre-push` then runs
+  `ci-local.sh qa`. Per-clone on purpose, and it warns rather than blocks when the capsule
+  is down.
 - Suites (all run in the capsule): `php composer.phar unit | integration | smoke | fuzz |
   test`. **Smoke: one process at a time, never in parallel.** A run where every response is
   a ~800-byte 200 is the fatal-200 wedge, not a test failure. `php composer.phar stan`.
@@ -203,6 +260,43 @@ command. A release is exactly `git ls-files --recurse-submodules`. Credentials l
 
 ## Tools
 
-- Prefer `rg`. **`rg -r` is `--replace`**, `-h` is help: `rg -o --no-filename` for counts.
+- **`tools/ctx` before `rg`.** `ctx def <Symbol>` prints a declaration with exact bounds,
+  `ctx outline <file>` orients a large file in one screen, `ctx show <pattern>` expands every
+  hit to its enclosing declaration and merges overlapping regions so each prints once. The
+  bounds come from the AST (nikic/php-parser), not from brace-matching, which fails silently
+  on heredocs, `match` arms and attributes. A region already shown is reported as such rather
+  than repeated; `ctx reset` forgets that, `ctx index` rebuilds.
+- Then `rg`. **`rg -r` is `--replace`**, `-h` is help: `rg -o --no-filename` for counts.
 - Capture exit status immediately: `EXIT_CODE=$?` on the next line; chain with `&&`.
 - `php composer.phar`, never a global composer. `git ls-files --eol` for line endings.
+
+## Checklists
+
+The focused list is for ordinary work. The deploy list is for the moment you hand the user
+a command, and only then — the point of both is to protect the contracts, not to turn every
+patch into a release.
+
+**Before opening a PR**
+
+- [ ] The owner changed, not a facade or a template that duplicates it.
+- [ ] `php -l` on every touched file; phpcs and PHPStan on the paths you touched.
+- [ ] The focused check for every row of [docs/agent-guide.md](docs/agent-guide.md) the
+      change crosses: the ACL diff for anything authorization touches, `fuzz` for a form,
+      `smoke` for anything a visitor sees, the cache-status page for anything cached.
+- [ ] `./tools/ci-local.sh`, and say in the PR body that it ran — naming anything that
+      SKIPped and why.
+- [ ] The whole diff read back: no stray generated file, no debug output, no comment the
+      change has made untrue.
+- [ ] Submodule PRs opened first, against `modernization`, same branch name everywhere;
+      the superproject PR body says to merge them first.
+
+**Before asking for a deploy**
+
+- [ ] Every submodule PR merged, each pointer pinned to a pushed **merge commit**, and a
+      stacked PR checked with `git merge-base --is-ancestor` before any pointer bump.
+- [ ] `make prod-deploy CI=1`, which runs the full ci-local with `--no-cache`.
+- [ ] Each migration carries `@phase`, `@kind` and `@tables`, and each `@verify` selects
+      what is still **wrong** so a success returns zero rows. Rehearsed through
+      `tools/migrate.sh`, never by piping into `mysql`.
+- [ ] Anything that must be reversible has a `@destructive` migration, or rollback refuses.
+- [ ] Give the user the command. Never run a deploy, never merge, never push to `master`.
