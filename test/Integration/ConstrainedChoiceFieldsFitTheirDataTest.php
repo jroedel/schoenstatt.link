@@ -8,16 +8,17 @@ use Laminas\Db\Adapter\AdapterInterface;
 use SionModel\Form\Element\Select;
 use Laminas\Form\Fieldset;
 use Laminas\Form\Form;
-use Laminas\InputFilter\InputInterface;
 use Laminas\Validator\Explode;
 use Laminas\Validator\InArray;
 use PHPUnit\Framework\TestCase;
+use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormGapCollector;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Service\EntitiesService;
 use Throwable;
 
 use function array_diff;
+use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_intersect;
@@ -161,11 +162,7 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
                 continue;
             }
 
-            try {
-                $filter = $form->getInputFilter();
-            } catch (Throwable) {
-                continue;
-            }
+            $formSpec = Engine::specificationOf($form);
 
             foreach ($form->getElements() as $element) {
                 //`MultiCheckbox` stood beside `Select` here. The element model has neither
@@ -175,18 +172,23 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
                 }
 
                 $name = (string) $element->getName();
-                if (! isset($spec->updateColumns[$name]) || ! $filter->has($name)) {
+                if (! isset($spec->updateColumns[$name]) || ! array_key_exists($name, $formSpec)) {
                     continue;
                 }
 
-                //The built input filter, not the specification and not the element. Those two
-                //each answer half the question: laminas merges the element's own InArray with
-                //the spec's rather than replacing it, so a field can be constrained by either,
-                //by both with different haystacks, or by neither. Reading the assembled chain
-                //is the only version that cannot be wrong — and reading the specification was
-                //wrong, which is how three publication selects sat in docs/BACKLOG.md as
-                //"unconstrained, do not touch" while rejecting 484 books' stored values.
-                $options = $this->effectiveHaystack($filter->get($name));
+                //**The specification, which is now the only half there is.** This read
+                //laminas' assembled filter, and had to: laminas merged the element's own
+                //InArray with the spec's rather than replacing it, so a field could be
+                //constrained by either, by both with different haystacks, or by neither —
+                //and reading the specification alone was wrong, which is how three
+                //publication selects sat in docs/BACKLOG.md as "unconstrained, do not
+                //touch" while rejecting 484 books' stored values. The element model of
+                //#243 has no `getInputSpecification()`, so no element supplies a
+                //validator any more; `validationSuppliedOnlyByElement` in
+                //`test/Fuzz/known-form-gaps.php` is the measurement of that, and it is
+                //empty. Verified field by field when this changed: every haystack read
+                //here matched the one the assembled filter answered.
+                $options = $this->effectiveHaystack($formSpec[$name]);
                 if (null === $options) {
                     continue;
                 }
@@ -309,31 +311,29 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
     }
 
     /**
-     * The values an assembled input will actually accept, or null when it constrains nothing.
+     * The values the specification will actually accept, or null when it constrains nothing.
      *
      * Two unwrappings are needed. A multiple select's validator is an `Explode` wrapping the
      * `InArray` — what `Laminas\Form\Element\Select::getInputSpecification()` produced and
-     * therefore what `ChoiceDomain` reproduces — so the haystack sits one level down. And a
-     * field can carry *more than one* `InArray`, because the element's survives the merge with
-     * the spec's; a value has to pass every validator in the chain, so the effective domain is
-     * their intersection rather than either one.
+     * therefore what `ChoiceDomain` reproduces — so the haystack sits one level down, as an
+     * *instance* rather than as a nested specification, which is how `ChoiceDomain` writes
+     * it. And a field can carry more than one `InArray`; a value has to pass every one, so
+     * the effective domain is their intersection rather than either one.
      *
      * An empty haystack is returned as an empty list, not as null: an `InArray([])` rejects
      * every non-empty value, which is a real constraint and a finding worth reporting, not an
      * absent one.
      *
+     * @param array<string, mixed> $rules one field's entry in the form specification
      * @return list<string>|null
      */
-    private function effectiveHaystack(InputInterface $input): ?array
+    private function effectiveHaystack(array $rules): ?array
     {
         $haystacks = [];
-        foreach ($input->getValidatorChain()->getValidators() as $entry) {
-            $validator = $entry['instance'] ?? null;
-            if ($validator instanceof Explode) {
-                $validator = $validator->getValidator();
-            }
-            if ($validator instanceof InArray) {
-                $haystacks[] = array_map(static fn(mixed $v): string => (string) $v, $validator->getHaystack());
+        foreach (Engine::validatorsFor(['field' => $rules], 'field') as $validator) {
+            $haystack = self::haystackOf($validator);
+            if (null !== $haystack) {
+                $haystacks[] = $haystack;
             }
         }
 
@@ -346,6 +346,42 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
             $effective = array_values(array_intersect($effective, $further));
         }
         return $effective;
+    }
+
+    /**
+     * One validator specification's haystack, whichever of the three shapes it is written in.
+     *
+     * `ChoiceDomain` writes an `InArray` by class name with a `haystack` option, and wraps a
+     * multiple select's in an `Explode` whose `validator` option is an **instance**. A
+     * specification elsewhere may name either by short name, which is what the plugin
+     * managers accept, so both spellings are matched.
+     *
+     * @param array<string, mixed> $validator
+     * @return list<string>|null
+     */
+    private static function haystackOf(array $validator): ?array
+    {
+        $name    = (string) ($validator['name'] ?? '');
+        $options = is_array($validator['options'] ?? null) ? $validator['options'] : [];
+
+        if (Explode::class === $name || 'Explode' === $name) {
+            $inner = $options['validator'] ?? null;
+            if ($inner instanceof InArray) {
+                return array_map(static fn (mixed $v): string => (string) $v, $inner->getHaystack());
+            }
+
+            return is_array($inner) ? self::haystackOf($inner) : null;
+        }
+
+        if (InArray::class !== $name && 'InArray' !== $name) {
+            return null;
+        }
+
+        $haystack = $options['haystack'] ?? null;
+
+        return is_array($haystack)
+            ? array_map(static fn (mixed $v): string => (string) $v, array_values($haystack))
+            : null;
     }
 
     /**

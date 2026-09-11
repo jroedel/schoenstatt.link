@@ -9,6 +9,7 @@ use SionModel\Form\Element\Checkbox;
 use SionModel\Form\Element\Select;
 use Laminas\Form\Fieldset;
 use PHPUnit\Framework\TestCase;
+use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Service\EntitiesService;
 use Throwable;
@@ -24,6 +25,7 @@ use function strtolower;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Fuzz/FormRepository.php';
+require_once __DIR__ . '/../Form/Engine.php';
 
 /**
  * No form may hand an empty string to a column that cannot hold one.
@@ -167,20 +169,22 @@ final class EmptyStringToTypedColumnTest extends TestCase
 
                 $checked++;
 
-                try {
-                    $input = $form->getInputFilter()->get($property);
-                } catch (Throwable) {
-                    //An element with no input at all is a different finding, and the fuzz
-                    //harness is the file that reports it.
-                    continue;
-                }
+                //One field through the engine, with a validation group so that the other
+                //hundred fields' rules — and the CSRF token no test process holds — do not
+                //decide this field's verdict. It read `getInputFilter()->get($property)`
+                //until 2026-09-11; that filter is laminas' and has decided nothing since
+                //the cutover, and its per-input `setValue()`/`isValid()` pair has no
+                //equivalent here because the engine validates a submission rather than an
+                //input.
+                $engine = Engine::of($form, ['security']);
+                $engine->setData([$property => '']);
+                $engine->setValidationGroup([$property]);
 
-                $input->setValue('');
-                if (! $input->isValid()) {
+                if (! $engine->isValid()) {
                     continue; //refusing the empty string is a perfectly good answer
                 }
 
-                $filtered = $input->getValue();
+                $filtered = $engine->getValues()[$property] ?? null;
                 if (! is_string($filtered)) {
                     continue; //null, 0, a DateTime — anything the column can hold
                 }
