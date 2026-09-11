@@ -64,7 +64,7 @@ foreach ($markup as $entry) {
 
 printf("Recorded %d rendered surfaces across the application.\n", count($markup));
 foreach ($states as $state => $count) {
-    $against = ['populated' => 'pristine', 'invalid' => 'pristine', 'prepared' => 'invalid'][$state] ?? null;
+    $against = SchoenstattTest\Form\FormMarkup::BASELINE_STATE[$state] ?? null;
     printf(
         "  %-10s %d helper outputs%s\n",
         $state,
