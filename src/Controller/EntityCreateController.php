@@ -12,7 +12,7 @@ use App\Laminas\ServiceBridge;
 use App\Sion\EntityCreate;
 use App\Sion\FormViewVariables;
 use Laminas\Filter\StripTags;
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Select;
 use Laminas\Form\FormInterface;
 use Locale;
 use RuntimeException;

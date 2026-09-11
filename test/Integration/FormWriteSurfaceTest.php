@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Form\Element\Csrf;
+use SionModel\Form\Element\Csrf;
 use Laminas\Form\Form;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Fuzz\FormRepository;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Sion;
 
 use Books\Form\BookForm;
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Select;
 use Laminas\Form\FormInterface;
 
 use function is_array;

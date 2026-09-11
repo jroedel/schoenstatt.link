@@ -10,7 +10,7 @@ use Books\Form\CollectionForm;
 use Books\Form\LibraryForm;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Select;
 use Laminas\Form\FormInterface;
 use Locale;
 use RuntimeException;

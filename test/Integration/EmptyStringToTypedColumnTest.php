@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Form\Element\Checkbox;
-use Laminas\Form\Element\Radio;
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Checkbox;
+use SionModel\Form\Element\Select;
 use Laminas\Form\Fieldset;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Fuzz\FormRepository;
@@ -61,7 +60,7 @@ require_once __DIR__ . '/../Fuzz/FormRepository.php';
  *
  * ## What is in scope, and the one exclusion
  *
- * Checkboxes are excluded, and they are 38 of the 74. A `Laminas\Form\Element\Checkbox`
+ * Checkboxes are excluded, and they are 38 of the 74. A `SionModel\Form\Element\Checkbox`
  * renders a hidden companion input carrying its unchecked value, so a browser posts `'0'` or
  * `'1'` and never `''` — an unfiltered checkbox over a `tinyint` is therefore not reachable
  * the way an unfiltered select is. Several of them do accept `''` when handed it directly
@@ -232,10 +231,8 @@ final class EmptyStringToTypedColumnTest extends TestCase
                 || array_key_exists('', $element->getValueOptions());
         }
 
-        if ($element instanceof Radio) {
-            return array_key_exists('', $element->getValueOptions());
-        }
-
+        //A `Radio` branch stood here. The element model has no Radio — the census found
+        //none in any form — so `Select` is the whole of the choice family now.
         return true;
     }
 

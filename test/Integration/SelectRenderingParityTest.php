@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Select;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Form\BootstrapFormRenderer;

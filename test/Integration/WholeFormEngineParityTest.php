@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use Laminas\Filter\FilterPluginManager;
-use Laminas\Form\Element\DateSelect;
-use Laminas\Form\Element\MonthSelect;
+use SionModel\Form\Element\DateSelect;
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\ServiceManager\ServiceManager;
@@ -84,7 +83,7 @@ final class WholeFormEngineParityTest extends TestCase
      * The set is small on purpose. This test's subject is the filter as a whole — key
      * shape, nesting, which fields failed — and forty corpus values would multiply the
      * run time without reaching a different code path. Per-value depth over a single field
-     * is `EngineMatchesAssembledFilterTest`'s job, and it uses seven probes over 2,149
+     * is `EngineMatchesAssembledFilterTest`'s job, and it uses seven probes over 2,184
      * comparisons to do it.
      */
     private const PROBES = [null, '', '0', '1', 'wat', '2026-01-01', '<script>alert(1)</script>'];
@@ -248,16 +247,20 @@ final class WholeFormEngineParityTest extends TestCase
      * declares the filter that reassembles them.
      *
      * The probes above are strings and `null` — the shapes a text input can hold — so they
-     * never reach this. `Laminas\Form\Element\DateSelect` renders `year`, `month` and `day`
-     * as three `<select>`s, the browser posts an array, and
-     * `DateSelect::getInputSpecification()` supplies the `Laminas\Filter\DateSelect` that
-     * turns it into `Y-m-d`.
+     * never reach this. `SionModel\Form\Element\DateSelect` renders `year`, `month` and `day`
+     * as three `<select>`s and the browser posts an array; `Laminas\Filter\DateSelect` is
+     * what turns it back into `Y-m-d`.
      *
-     * Without that filter in the specification the array reaches `Laminas\Validator\Date`
-     * unchanged and the field fails — which is exactly what happened the first time the
-     * engine was put behind the forms: the smoke suite could not create a person, on a
-     * field the form does not even render on that page. This is the assertion that would
-     * have said so first.
+     * laminas used to supply that filter from the element, through
+     * `Laminas\Form\Element\DateSelect::getInputSpecification()`. The element model supplies
+     * nothing — no `SionModel\Form\Element\*` implements `InputProviderInterface` — so both
+     * sides now read it from the specification, where `SionModel\Form\InputTypeRules::filters()`
+     * states it. That makes this a weaker comparison than it was and a more important
+     * assertion than it was: the filter is now declared in exactly one place, and without it
+     * the array reaches `Laminas\Validator\Date` unchanged and the field fails. Which is
+     * exactly what happened the first time the engine was put behind the forms — the smoke
+     * suite could not create a person, on a field the form does not even render on that
+     * page. This is the assertion that would have said so first.
      */
     public function testADateSelectPostsThreeSelectsAndBothFiltersAgree(): void
     {
@@ -271,7 +274,8 @@ final class WholeFormEngineParityTest extends TestCase
             }
 
             foreach ($form->getElements() as $name => $element) {
-                if (! $element instanceof DateSelect && ! $element instanceof MonthSelect) {
+                //`MonthSelect` stood beside it; the element model has none, because no form does.
+                if (! $element instanceof DateSelect) {
                     continue;
                 }
                 $name = (string) $name;

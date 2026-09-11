@@ -175,7 +175,7 @@ final class AssociationEditController
             $zones = TimeZone::getTimeZoneValueOptions($country);
             if ([] !== $zones) {
                 $element = $form->get('timeZoneId');
-                if ($element instanceof \Laminas\Form\Element\Select) {
+                if ($element instanceof \SionModel\Form\Element\Select) {
                     $element->setValueOptions($zones);
                 }
             }

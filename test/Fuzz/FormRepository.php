@@ -140,9 +140,9 @@ final class FormRepository
      * The singleton is built by whichever test touches it first, under whatever process
      * state that test left — and `SchoenstattTable` reads `\Locale::getDefault()` when a
      * form factory asks it for value options, so "whatever state" decides the labels of
-     * 136 selects. Run alone, `SchoenstattTest\Element\ElementSurface` saw 496 association
-     * options all labelled `null` (a CLI process defaults to `en_US_POSIX`, which is not a
-     * key of `nameByLocale`); run after a test that had set a real locale, it saw 496
+     * 136 selects. Run alone, `SchoenstattTest\Element\ElementSurface` saw every one of the
+     * association options labelled `null` (a CLI process defaults to `en_US_POSIX`, which is
+     * not a key of `nameByLocale`); run after a test that had set a real locale, it saw the
      * names. The baseline was recorded in the first state and the full suite produced the
      * second.
      *

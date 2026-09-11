@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Fuzz;
 
-use Laminas\Form\Element;
+use Laminas\Form\Element\Collection;
 use Laminas\Form\ElementInterface;
 use Laminas\Form\Fieldset;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Laminas\Validator\Explode;
 use SionModel\Entity\Entity;
+use SionModel\Form\Element;
 use SionModel\Service\EntitiesService;
 use Throwable;
 
@@ -52,7 +53,7 @@ use Throwable;
  *    the choice-field category asks about the option, and treats a spec-side `InArray`
  *    (`SionModel\Form\ChoiceDomain`) as the thing that puts the domain back.
  *  - An element *not* named in the spec keeps whatever it provides for itself — which
- *    for a plain `Text`, `Textarea` or `Hidden` (base `Laminas\Form\Element`, no
+ *    for a plain `Text`, `Textarea` or `Hidden` (base `SionModel\Form\Element\Element`, no
  *    `InputProviderInterface`) is `['name' => …, 'required' => false]`. No filter, no
  *    validator, no length bound: total pass-through.
  *  - A spec key naming no element still becomes an input, and `getData()` (which
@@ -93,8 +94,6 @@ final class FormGapCollector
         Element\Submit::class,
         Element\Button::class,
         Element\Csrf::class,
-        Element\Captcha::class,
-        Element\Image::class,
     ];
 
     /**
@@ -102,39 +101,37 @@ final class FormGapCollector
      * wrong tool for them.
      *
      * The classification is stated as an exclusion list rather than an inclusion
-     * list, and that is deliberate. Every laminas form element extends
-     * `Laminas\Form\Element`, so an inclusion list containing the base class
+     * list, and that is deliberate. Every element extends
+     * `SionModel\Form\Element\Element`, so an inclusion list containing the base class
      * matches `Select`, `Checkbox` and `Number` too — the first version of this
      * file did exactly that and reported 249 "unbounded text fields", most of
      * them dropdowns. More importantly, an exclusion list fails *safe*: an element
      * type nobody here anticipated is treated as free text and demands a bound,
-     * rather than slipping through unchecked.
+     * rather than slipping through unchecked. That is also why the types the element
+     * model dropped — Radio, MultiCheckbox, Range, Time, Week, Month, the DateTime
+     * family — are simply gone from these lists rather than kept as laminas class
+     * names: nothing can be an instance of them any more, and a form that somehow
+     * grew one would be reported rather than waved through.
      */
     private const NON_TEXT_ELEMENT_TYPES = [
         Element\Select::class,
-        Element\Radio::class,
-        Element\MultiCheckbox::class,
         Element\Checkbox::class,
         Element\Number::class,
-        Element\Range::class,
-        Element\DateTimeSelect::class,
         Element\DateSelect::class,
-        Element\MonthSelect::class,
         Element\Date::class,
-        Element\DateTimeLocal::class,
-        Element\Time::class,
-        Element\Week::class,
-        Element\Month::class,
         Element\File::class,
-        Element\Collection::class,
+        Collection::class,
         Fieldset::class,
     ];
 
-    /** Element types whose value must come from a fixed set of options. */
+    /**
+     * Element types whose value must come from a fixed set of options.
+     *
+     * `Select` alone. laminas' `Radio` and `MultiCheckbox` stood here too; the element
+     * model has neither, because the census found none in any form on this site.
+     */
     private const CHOICE_ELEMENT_TYPES = [
         Element\Select::class,
-        Element\Radio::class,
-        Element\MultiCheckbox::class,
     ];
 
     /**
@@ -143,7 +140,7 @@ final class FormGapCollector
      *
      * Several forms here write `['name' => 'submit', 'attributes' => ['type' =>
      * 'submit']]` with no `'type'` key, which produces a base
-     * `Laminas\Form\Element` — a browser button that the *server* treats as an
+     * `SionModel\Form\Element\Element` — a browser button that the *server* treats as an
      * ordinary text input, present in `getData()` and validated by nothing. That is
      * a genuine (if usually harmless) hole, so these are reported in their own
      * category rather than either failing the main checks as unbounded text or
@@ -555,7 +552,7 @@ final class FormGapCollector
      * It surfaced when the engine was first cut over behind the forms and the smoke suite
      * refused to create a person. `Schoenstatt\Form\PersonForm::nameDay` is a `DateSelect`:
      * it posts `['year' => …, 'month' => …, 'day' => …]` and
-     * `Laminas\Form\Element\DateSelect::getInputSpecification()` supplies the
+     * `Laminas\Form\Element\DateSelect::getInputSpecification()` supplied the
      * `Laminas\Filter\DateSelect` that turns that into `Y-m-d`. Without it the array reaches
      * a date validator unchanged and every person save fails on a field nobody touched.
      *
@@ -675,7 +672,7 @@ final class FormGapCollector
      *
      * A validator **wrapped in `Explode` counts as itself**, and that is not a convenience:
      * `Explode` is how laminas applies a scalar validator to a multiple select's array, and
-     * `Laminas\Form\Element\Select::getInputSpecification()` wraps its own `InArray` in one for
+     * `Laminas\Form\Element\Select::getInputSpecification()` wrapped its own `InArray` in one for
      * exactly that reason. Without this, a multiple select constrained correctly reads as
      * unconstrained forever — measured 2026-08-15 on `DictionaryEntryForm::links` and
      * `PublicationForm::inLanguage`, which stayed in the baseline after being fixed.
@@ -892,12 +889,12 @@ final class FormGapCollector
     // ----------------------------------------------------------------- helpers
 
     /**
-     * True for an element that is a plain `Laminas\Form\Element` whose only claim
+     * True for an element that is a plain `SionModel\Form\Element\Element` whose only claim
      * to being a button is `attributes.type`. See BUTTON_ATTRIBUTE_TYPES.
      */
     public static function isButtonByAttributeOnly(ElementInterface $element): bool
     {
-        if ($element::class !== Element::class) {
+        if ($element::class !== Element\Element::class) {
             return false;
         }
 
