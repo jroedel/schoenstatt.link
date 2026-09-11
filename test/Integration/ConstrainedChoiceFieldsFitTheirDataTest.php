@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Form\Element\MultiCheckbox;
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Select;
 use Laminas\Form\Fieldset;
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputInterface;
@@ -169,7 +168,9 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
             }
 
             foreach ($form->getElements() as $element) {
-                if (! $element instanceof Select && ! $element instanceof MultiCheckbox) {
+                //`MultiCheckbox` stood beside `Select` here. The element model has neither
+                //it nor `Radio`, because no form on this site uses one.
+                if (! $element instanceof Select) {
                     continue;
                 }
 
@@ -311,7 +312,7 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
      * The values an assembled input will actually accept, or null when it constrains nothing.
      *
      * Two unwrappings are needed. A multiple select's validator is an `Explode` wrapping the
-     * `InArray` — what `Laminas\Form\Element\Select::getInputSpecification()` produces and
+     * `InArray` — what `Laminas\Form\Element\Select::getInputSpecification()` produced and
      * therefore what `ChoiceDomain` reproduces — so the haystack sits one level down. And a
      * field can carry *more than one* `InArray`, because the element's survives the merge with
      * the spec's; a value has to pass every validator in the chain, so the effective domain is

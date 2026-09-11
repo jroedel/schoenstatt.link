@@ -24,6 +24,7 @@ config/symfony
 # phpcs.xml covers them, which is exactly why they are easy to forget here.
 module/SionModel/src/Cache
 module/SionModel/src/Form/BootstrapFormRenderer.php
+module/SionModel/src/Form/Element
 module/SionModel/src/Twig
 module/SionModel/src/Messaging
 module/SionModel/src/Mailing/TemplateRendererInterface.php

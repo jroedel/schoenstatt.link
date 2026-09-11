@@ -2,7 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Select;
 use PHPUnit\Framework\TestCase;
 use SionModel\Form\BootstrapFormRenderer;
 

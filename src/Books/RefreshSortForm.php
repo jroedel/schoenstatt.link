@@ -65,7 +65,7 @@ final class RefreshSortForm extends Form implements InputFilterProviderInterface
     /**
      * The CSRF token, restated as data.
      *
-     * `Laminas\Form\Element\Csrf` supplies this validator itself, so the form was
+     * `SionModel\Form\Element\Csrf` supplies this validator itself, so the form was
      * protected without it — but only for as long as `Laminas\InputFilter` assembles the
      * filter. `SionModel\Form\Validation\InputFilter` reads the specification and
      * nothing else, and this form's entire defence is that one token: the route it guards

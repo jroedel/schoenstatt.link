@@ -10,7 +10,7 @@ use App\Laminas\SionResult;
 use Books\Form\SearchForm;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
-use Laminas\Form\Element\Select;
+use SionModel\Form\Element\Select;
 use JTranslate\Model\TranslationsTable;
 use Laminas\Translator\TranslatorInterface;
 use SionModel\Problem\EntityProblem;

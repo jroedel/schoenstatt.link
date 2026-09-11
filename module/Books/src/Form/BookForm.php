@@ -397,7 +397,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             $callNumber->setOption('help-block', $libraryOptions->callNumberHelpText);
         }
         //control the empty option and the default collection
-        /** @var \Laminas\Form\Element\Select $collectionId */
+        /** @var \SionModel\Form\Element\Select $collectionId */
         $collectionId = $this->get('collectionId');
         if (false === $libraryOptions->allowCollectionlessBooks) { //disable the empty option
             $collectionId->setEmptyOption(null);

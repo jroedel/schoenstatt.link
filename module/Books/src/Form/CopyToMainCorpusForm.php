@@ -62,7 +62,7 @@ class CopyToMainCorpusForm extends Form implements InputFilterProviderInterface
      * Only the CSRF token: `submit` is a button rather than data, and this form carries
      * no fields of its own.
      *
-     * `security` is stated here even though `Laminas\Form\Element\Csrf` supplies the
+     * `security` is stated here even though `SionModel\Form\Element\Csrf` supplies the
      * validator itself. That was the reasoning this docblock used to give for returning
      * an empty array, and it stops being safe at step 5:
      * `SionModel\Form\Validation\InputFilter` reads the specification and nothing else,
