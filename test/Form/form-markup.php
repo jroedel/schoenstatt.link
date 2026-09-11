@@ -468,12 +468,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Admin notes</label><select name="map&#x5B;adminNotes&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Visible only to library administrators. Markdown.</p></div>',
-      'element' => '<select name="map&#x5B;adminNotes&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Admin notes</label><select name="map&#x5B;adminNotes&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Visible only to library administrators. Markdown.</p></div>',
+      'element' => '<select name="map&#x5B;adminNotes&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;adminNotes&#x5D;">Admin notes</label>',
-      'select_without_options' => '<select name="map&#x5B;adminNotes&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;adminNotes&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/adminTags' => 
@@ -504,12 +505,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Admin tags</label><select name="map&#x5B;adminTags&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Administrator-only tags, separated by a vertical bar.</p></div>',
-      'element' => '<select name="map&#x5B;adminTags&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Admin tags</label><select name="map&#x5B;adminTags&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Administrator-only tags, separated by a vertical bar.</p></div>',
+      'element' => '<select name="map&#x5B;adminTags&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;adminTags&#x5D;">Admin tags</label>',
-      'select_without_options' => '<select name="map&#x5B;adminTags&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;adminTags&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/authorsText' => 
@@ -540,12 +542,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Author</label><select name="map&#x5B;authorsText&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">One name, or several separated by a vertical bar: Kentenich, Josef | Schlickmann, Anna.</p></div>',
-      'element' => '<select name="map&#x5B;authorsText&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Author</label><select name="map&#x5B;authorsText&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">One name, or several separated by a vertical bar: Kentenich, Josef | Schlickmann, Anna.</p></div>',
+      'element' => '<select name="map&#x5B;authorsText&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;authorsText&#x5D;">Author</label>',
-      'select_without_options' => '<select name="map&#x5B;authorsText&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;authorsText&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/bookEdition' => 
@@ -576,12 +579,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Edition</label><select name="map&#x5B;bookEdition&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Which edition or printing this copy is — the field that tells two copies of the same work apart when nothing else does.</p></div>',
-      'element' => '<select name="map&#x5B;bookEdition&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Edition</label><select name="map&#x5B;bookEdition&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Which edition or printing this copy is — the field that tells two copies of the same work apart when nothing else does.</p></div>',
+      'element' => '<select name="map&#x5B;bookEdition&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;bookEdition&#x5D;">Edition</label>',
-      'select_without_options' => '<select name="map&#x5B;bookEdition&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;bookEdition&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/callNumber' => 
@@ -612,12 +616,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Call number</label><select name="map&#x5B;callNumber&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Where the copy stands on the shelf, as printed on its label.</p></div>',
-      'element' => '<select name="map&#x5B;callNumber&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Call number</label><select name="map&#x5B;callNumber&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Where the copy stands on the shelf, as printed on its label.</p></div>',
+      'element' => '<select name="map&#x5B;callNumber&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;callNumber&#x5D;">Call number</label>',
-      'select_without_options' => '<select name="map&#x5B;callNumber&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;callNumber&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/category' => 
@@ -648,12 +653,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Category</label><select name="map&#x5B;category&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">One classification for the copy. For several subject terms use Keywords instead.</p></div>',
-      'element' => '<select name="map&#x5B;category&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Category</label><select name="map&#x5B;category&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">One classification for the copy. For several subject terms use Keywords instead.</p></div>',
+      'element' => '<select name="map&#x5B;category&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;category&#x5D;">Category</label>',
-      'select_without_options' => '<select name="map&#x5B;category&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;category&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/collection' => 
@@ -684,12 +690,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Collection</label><select name="map&#x5B;collection&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">The collection within this library. A name that does not exist yet is created by the import. Ignored entirely by libraries that do not use collections.</p></div>',
-      'element' => '<select name="map&#x5B;collection&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Collection</label><select name="map&#x5B;collection&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">The collection within this library. A name that does not exist yet is created by the import. Ignored entirely by libraries that do not use collections.</p></div>',
+      'element' => '<select name="map&#x5B;collection&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;collection&#x5D;">Collection</label>',
-      'select_without_options' => '<select name="map&#x5B;collection&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;collection&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/inLanguage' => 
@@ -720,12 +727,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Language</label><select name="map&#x5B;inLanguage&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Two-letter code: en, es, de, pt, it, fr, la, pl.</p></div>',
-      'element' => '<select name="map&#x5B;inLanguage&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Language</label><select name="map&#x5B;inLanguage&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Two-letter code: en, es, de, pt, it, fr, la, pl.</p></div>',
+      'element' => '<select name="map&#x5B;inLanguage&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;inLanguage&#x5D;">Language</label>',
-      'select_without_options' => '<select name="map&#x5B;inLanguage&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;inLanguage&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/isbn' => 
@@ -756,12 +764,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>ISBN</label><select name="map&#x5B;isbn&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul></div>',
-      'element' => '<select name="map&#x5B;isbn&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>ISBN</label><select name="map&#x5B;isbn&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select></div>',
+      'element' => '<select name="map&#x5B;isbn&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;isbn&#x5D;">ISBN</label>',
-      'select_without_options' => '<select name="map&#x5B;isbn&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;isbn&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/keywords' => 
@@ -792,12 +801,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Keywords</label><select name="map&#x5B;keywords&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Subject terms shown to readers, separated by a vertical bar.</p></div>',
-      'element' => '<select name="map&#x5B;keywords&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Keywords</label><select name="map&#x5B;keywords&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Subject terms shown to readers, separated by a vertical bar.</p></div>',
+      'element' => '<select name="map&#x5B;keywords&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;keywords&#x5D;">Keywords</label>',
-      'select_without_options' => '<select name="map&#x5B;keywords&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;keywords&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/newCallNumber' => 
@@ -828,12 +838,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>New call number</label><select name="map&#x5B;newCallNumber&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Only when the printed call number should change. It goes onto the next labels printed.</p></div>',
-      'element' => '<select name="map&#x5B;newCallNumber&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>New call number</label><select name="map&#x5B;newCallNumber&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Only when the printed call number should change. It goes onto the next labels printed.</p></div>',
+      'element' => '<select name="map&#x5B;newCallNumber&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;newCallNumber&#x5D;">New call number</label>',
-      'select_without_options' => '<select name="map&#x5B;newCallNumber&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;newCallNumber&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/numberOfPages' => 
@@ -864,12 +875,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Pages</label><select name="map&#x5B;numberOfPages&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">A whole number.</p></div>',
-      'element' => '<select name="map&#x5B;numberOfPages&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Pages</label><select name="map&#x5B;numberOfPages&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">A whole number.</p></div>',
+      'element' => '<select name="map&#x5B;numberOfPages&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;numberOfPages&#x5D;">Pages</label>',
-      'select_without_options' => '<select name="map&#x5B;numberOfPages&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;numberOfPages&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/publicNotes' => 
@@ -900,12 +912,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Public notes</label><select name="map&#x5B;publicNotes&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Shown to readers. Markdown.</p></div>',
-      'element' => '<select name="map&#x5B;publicNotes&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Public notes</label><select name="map&#x5B;publicNotes&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Shown to readers. Markdown.</p></div>',
+      'element' => '<select name="map&#x5B;publicNotes&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;publicNotes&#x5D;">Public notes</label>',
-      'select_without_options' => '<select name="map&#x5B;publicNotes&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;publicNotes&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/publicationId' => 
@@ -936,12 +949,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Literature ID</label><select name="map&#x5B;publicationId&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Links this copy to a record in the site-wide literature catalogue. When it names an existing record, that record supplies the title, author, year, publisher, place, pages, language and ISBN — whatever those columns say in the spreadsheet is ignored for that row.</p></div>',
-      'element' => '<select name="map&#x5B;publicationId&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Literature ID</label><select name="map&#x5B;publicationId&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Links this copy to a record in the site-wide literature catalogue. When it names an existing record, that record supplies the title, author, year, publisher, place, pages, language and ISBN — whatever those columns say in the spreadsheet is ignored for that row.</p></div>',
+      'element' => '<select name="map&#x5B;publicationId&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;publicationId&#x5D;">Literature ID</label>',
-      'select_without_options' => '<select name="map&#x5B;publicationId&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;publicationId&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/publishedYear' => 
@@ -972,12 +986,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Year published</label><select name="map&#x5B;publishedYear&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">A four-digit year.</p></div>',
-      'element' => '<select name="map&#x5B;publishedYear&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Year published</label><select name="map&#x5B;publishedYear&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">A four-digit year.</p></div>',
+      'element' => '<select name="map&#x5B;publishedYear&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;publishedYear&#x5D;">Year published</label>',
-      'select_without_options' => '<select name="map&#x5B;publishedYear&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;publishedYear&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/publisher' => 
@@ -1008,12 +1023,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Publisher</label><select name="map&#x5B;publisher&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul></div>',
-      'element' => '<select name="map&#x5B;publisher&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Publisher</label><select name="map&#x5B;publisher&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select></div>',
+      'element' => '<select name="map&#x5B;publisher&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;publisher&#x5D;">Publisher</label>',
-      'select_without_options' => '<select name="map&#x5B;publisher&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;publisher&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/publishingPlace' => 
@@ -1044,12 +1060,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Place of publication</label><select name="map&#x5B;publishingPlace&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul></div>',
-      'element' => '<select name="map&#x5B;publishingPlace&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Place of publication</label><select name="map&#x5B;publishingPlace&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select></div>',
+      'element' => '<select name="map&#x5B;publishingPlace&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;publishingPlace&#x5D;">Place of publication</label>',
-      'select_without_options' => '<select name="map&#x5B;publishingPlace&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;publishingPlace&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/title' => 
@@ -1080,12 +1097,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Title *</label><select name="map&#x5B;title&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">Required, unless the row carries a Literature ID that names an existing record.</p></div>',
-      'element' => '<select name="map&#x5B;title&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Title *</label><select name="map&#x5B;title&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">Required, unless the row carries a Literature ID that names an existing record.</p></div>',
+      'element' => '<select name="map&#x5B;title&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;title&#x5D;">Title *</label>',
-      'select_without_options' => '<select name="map&#x5B;title&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;title&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::map/withinLibraryId' => 
@@ -1116,12 +1134,13 @@ return array (
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Barcode *</label><select name="map&#x5B;withinLibraryId&#x5D;" class="form-control"><option value="">— not imported —</option>
-</select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">The library&#039;s own number for this copy. Required, must be a whole number, and must be unique within the library — it is what an import matches a row to an existing book by.</p></div>',
-      'element' => '<select name="map&#x5B;withinLibraryId&#x5D;" class="form-control"><option value="">— not imported —</option>
+      'row' => '<div class="form-group "><label>Barcode *</label><select name="map&#x5B;withinLibraryId&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
+</select><p class="help-block">The library&#039;s own number for this copy. Required, must be a whole number, and must be unique within the library — it is what an import matches a row to an existing book by.</p></div>',
+      'element' => '<select name="map&#x5B;withinLibraryId&#x5D;" class="form-control"><option value="" selected>— not imported —</option>
 </select>',
       'label' => '<label for="map&#x5B;withinLibraryId&#x5D;">Barcode *</label>',
-      'select_without_options' => '<select name="map&#x5B;withinLibraryId&#x5D;"></select>',
+      'select_without_options' => '<select name="map&#x5B;withinLibraryId&#x5D;"><option value="" selected>— not imported —</option>
+</select>',
     ),
   ),
   'App\\Books\\Import\\ImportMappingForm::security' => 
@@ -5743,11 +5762,13 @@ second line</textarea>',
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Checked out on</label><input type="date" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="not-a-date"><ul class="help-block"><li>This does not look like a date. Please enter one like 2020-03-15.</li></ul></div>',
-      'element' => '<input type="date" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="not-a-date">',
+      'row' => '<div class="form-group "><label>Checked out on</label><input type="date" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>"></div>',
+      'element' => '<input type="date" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>">',
       'label' => '<label for="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;">Checked out on</label>',
-      'text' => '<input type="text" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" value="not-a-date">',
-      'hidden' => '<input type="hidden" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" value="not-a-date">',
+      'errors' => '',
+      'help_block' => '',
+      'text' => '<input type="text" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;0&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
     ),
   ),
   'Books\\Form\\MassCheckoutForm::checkout/0/personId' => 
@@ -5782,6 +5803,8 @@ second line</textarea>',
       'element' => '<select name="checkout&#x5B;0&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
 </select>',
       'label' => '<label for="checkout&#x5B;0&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
+      'errors' => '',
+      'help_block' => '',
       'select_without_options' => '<select name="checkout&#x5B;0&#x5D;&#x5B;personId&#x5D;"></select>',
     ),
   ),
@@ -5809,11 +5832,133 @@ second line</textarea>',
     ),
     'prepared' => 
     array (
-      'row' => '<div class="form-group "><label>Book Ids</label><input type="text" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value="&lt;script&gt;alert&#x28;1&#x29;&lt;&#x2F;script&gt;"><p class="help-block">One barcode per line</p></div>',
-      'element' => '<input type="text" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value="&lt;script&gt;alert&#x28;1&#x29;&lt;&#x2F;script&gt;">',
+      'row' => '<div class="form-group "><label>Book Ids</label><input type="text" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value=""><p class="help-block">One barcode per line</p></div>',
+      'element' => '<input type="text" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value="">',
       'label' => '<label for="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;">Book Ids</label>',
-      'text' => '<input type="text" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" value="&lt;script&gt;alert&#x28;1&#x29;&lt;&#x2F;script&gt;">',
-      'hidden' => '<input type="hidden" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" value="&lt;script&gt;alert&#x28;1&#x29;&lt;&#x2F;script&gt;">',
+      'errors' => '',
+      'help_block' => '<p class="help-block">One barcode per line</p>',
+      'text' => '<input type="text" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;0&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/1/checkedOutOn' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Checked out on</label><input type="date" name="checkout&#x5B;1&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>"></div>',
+      'element' => '<input type="date" name="checkout&#x5B;1&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>">',
+      'label' => '<label for="checkout&#x5B;1&#x5D;&#x5B;checkedOutOn&#x5D;">Checked out on</label>',
+      'errors' => '',
+      'help_block' => '',
+      'text' => '<input type="text" name="checkout&#x5B;1&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;1&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/1/personId' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="checkout&#x5B;1&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+</select></div>',
+      'element' => '<select name="checkout&#x5B;1&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+</select>',
+      'label' => '<label for="checkout&#x5B;1&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
+      'errors' => '',
+      'help_block' => '',
+      'select_without_options' => '<select name="checkout&#x5B;1&#x5D;&#x5B;personId&#x5D;"></select>',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/1/withinLibraryIds' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Book Ids</label><input type="text" name="checkout&#x5B;1&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value=""><p class="help-block">One barcode per line</p></div>',
+      'element' => '<input type="text" name="checkout&#x5B;1&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value="">',
+      'label' => '<label for="checkout&#x5B;1&#x5D;&#x5B;withinLibraryIds&#x5D;">Book Ids</label>',
+      'errors' => '',
+      'help_block' => '<p class="help-block">One barcode per line</p>',
+      'text' => '<input type="text" name="checkout&#x5B;1&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;1&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/2/checkedOutOn' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Checked out on</label><input type="date" name="checkout&#x5B;2&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>"></div>',
+      'element' => '<input type="date" name="checkout&#x5B;2&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>">',
+      'label' => '<label for="checkout&#x5B;2&#x5D;&#x5B;checkedOutOn&#x5D;">Checked out on</label>',
+      'errors' => '',
+      'help_block' => '',
+      'text' => '<input type="text" name="checkout&#x5B;2&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;2&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/2/personId' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="checkout&#x5B;2&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+</select></div>',
+      'element' => '<select name="checkout&#x5B;2&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+</select>',
+      'label' => '<label for="checkout&#x5B;2&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
+      'errors' => '',
+      'help_block' => '',
+      'select_without_options' => '<select name="checkout&#x5B;2&#x5D;&#x5B;personId&#x5D;"></select>',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/2/withinLibraryIds' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Book Ids</label><input type="text" name="checkout&#x5B;2&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value=""><p class="help-block">One barcode per line</p></div>',
+      'element' => '<input type="text" name="checkout&#x5B;2&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value="">',
+      'label' => '<label for="checkout&#x5B;2&#x5D;&#x5B;withinLibraryIds&#x5D;">Book Ids</label>',
+      'errors' => '',
+      'help_block' => '<p class="help-block">One barcode per line</p>',
+      'text' => '<input type="text" name="checkout&#x5B;2&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;2&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/3/checkedOutOn' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Checked out on</label><input type="date" name="checkout&#x5B;3&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>"></div>',
+      'element' => '<input type="date" name="checkout&#x5B;3&#x5D;&#x5B;checkedOutOn&#x5D;" min="<today>" step="any" class="form-control" value="<today>">',
+      'label' => '<label for="checkout&#x5B;3&#x5D;&#x5B;checkedOutOn&#x5D;">Checked out on</label>',
+      'errors' => '',
+      'help_block' => '',
+      'text' => '<input type="text" name="checkout&#x5B;3&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;3&#x5D;&#x5B;checkedOutOn&#x5D;" value="<today>">',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/3/personId' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="checkout&#x5B;3&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+</select></div>',
+      'element' => '<select name="checkout&#x5B;3&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+</select>',
+      'label' => '<label for="checkout&#x5B;3&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
+      'errors' => '',
+      'help_block' => '',
+      'select_without_options' => '<select name="checkout&#x5B;3&#x5D;&#x5B;personId&#x5D;"></select>',
+    ),
+  ),
+  'Books\\Form\\MassCheckoutForm::checkout/3/withinLibraryIds' => 
+  array (
+    'prepared' => 
+    array (
+      'row' => '<div class="form-group "><label>Book Ids</label><input type="text" name="checkout&#x5B;3&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value=""><p class="help-block">One barcode per line</p></div>',
+      'element' => '<input type="text" name="checkout&#x5B;3&#x5D;&#x5B;withinLibraryIds&#x5D;" class="form-control" value="">',
+      'label' => '<label for="checkout&#x5B;3&#x5D;&#x5B;withinLibraryIds&#x5D;">Book Ids</label>',
+      'errors' => '',
+      'help_block' => '<p class="help-block">One barcode per line</p>',
+      'text' => '<input type="text" name="checkout&#x5B;3&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
+      'hidden' => '<input type="hidden" name="checkout&#x5B;3&#x5D;&#x5B;withinLibraryIds&#x5D;" value="">',
     ),
   ),
   'Books\\Form\\MassCheckoutForm::checkout/<target>/checkedOutOn' => 
