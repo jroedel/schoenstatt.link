@@ -1067,7 +1067,7 @@ elif [ "$SKIP_TESTS" = 1 ]; then
 else
     step "Verification (tools/ci-local.sh --ci)"
     dim "lint, composer --no-dev rehearsal, PHPStan level 0, unit, integration"
-    bash tools/ci-local.sh --ci || fail "verification failed. Fix it, or re-run with --skip-tests if you know why."
+    bash tools/ci-local.sh --ci --no-cache || fail "verification failed. Fix it, or re-run with --skip-tests if you know why."
     ok "all five CI jobs green"
 fi
 # <<< verification handover

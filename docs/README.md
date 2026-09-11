@@ -6,6 +6,7 @@ history. Working conventions (capsule, test suites, coding standard, git) are in
 
 | document | what it covers |
 | --- | --- |
+| [agent-guide.md](agent-guide.md) | who owns which behaviour, what to read beside it, and the narrowest check that proves a change of that kind; how to choose an effective check |
 | [laminas-exit.md](laminas-exit.md) | **the plan**: removing every `laminas/*` package, in order, with the dependency picture measured; step 0 (laminas-mvc) in detail; the rules every step follows; how a Symfony route, its authorization and its Twig template are built |
 | [laminas-exit-iterations.md](laminas-exit-iterations.md) | the three iterations that finish the exit: what each removes, why the order is what it is, and the recording each one has to make before it deletes the tests that prove it |
 | [BACKLOG.md](BACKLOG.md) | open work, open bugs, open product decisions |

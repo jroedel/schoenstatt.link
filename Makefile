@@ -23,6 +23,18 @@ help: ## Show this help
 ci: ## Run everything CI runs, plus smoke, fuzz and the post-deploy script
 	@./tools/ci-local.sh
 
+## The fast triad: phpcs + phpstan + unit. What the pre-push hook runs, and what to
+## reach for between edits — the full suite has a 122s median and a 431s p90.
+qa: ## phpcs + phpstan + unit, nothing else
+	@./tools/ci-local.sh qa
+
+## Opt this clone into .githooks/pre-push. Per-clone on purpose: a hook committed into
+## a shared repo that everyone must run is a hook someone will --no-verify around.
+dev-hooks: ## Enable the repository git hooks in this clone
+	@git config core.hooksPath .githooks
+	@printf 'core.hooksPath = .githooks — pre-push now runs `ci-local.sh qa`.\n'
+	@printf 'Undo with: git config --unset core.hooksPath\n'
+
 ## After the submodule PRs merge: verify the merges by ancestry, fast-forward each
 ## submodule, pin the pointers to the merged commits and push to the superproject PR.
 ## Refuses rather than guesses — see the script header for the three failures it prevents.

@@ -1,0 +1,789 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * tools/ctx — AST-backed symbol lookup.
+ *
+ * WHY THIS EXISTS: locating code was the single largest cost in this repository's agent
+ * sessions. Measured across 36 local sessions (16,479 tool calls), `rg`/`grep` plus
+ * `sed -n A,Bp` were 45% of all shell calls and 72% of all shell output — 12.68 MB. The
+ * loop was always the same: search, guess a line range, read it, discover the range was
+ * wrong, search again. 90% of range reads followed a search within three calls, and 28%
+ * re-read a region already read in the same session.
+ *
+ * The cheap version of this tool brace-matches to find where a declaration ends. That
+ * heuristic breaks on strings containing braces, heredocs, `match` arms, attributes and
+ * enums — and it breaks SILENTLY, returning a body of subtly the wrong length, which is
+ * worse than `sed`, because `sed` does not claim to know. nikic/php-parser gives
+ * getStartLine()/getEndLine() per node, so the bounds are exact by construction.
+ *
+ * php-parser is a `require-dev` dependency (composer.json). It reached vendor/ only
+ * transitively before 2026-09-11 — laminas-modulemanager → brick/varexporter → php-parser
+ * — and laminas-modulemanager leaves in step 7 of the laminas exit, which would have taken
+ * this tool with it. `--no-dev` is what the server installs, so nothing here ships.
+ *
+ *   tools/ctx def SionTable::getCache      one declaration, exact bounds
+ *   tools/ctx outline src/Kernel.php       every declaration in a file, one line each
+ *   tools/ctx show 'linkAssociations'      every hit, expanded to its declaration, merged
+ *   tools/ctx index                        rebuild the index (it is otherwise automatic)
+ *   tools/ctx reset                        forget what this session has already been shown
+ *
+ * Runs on the host or in the capsule; it only needs vendor/autoload.php.
+ */
+
+const CTX_ROOTS = ['src', 'config', 'module', 'templates', 'test', 'tools', 'bin', 'public', 'database'];
+
+/** Directories that are build output, dependencies or data — never navigation targets. */
+const CTX_EXCLUDE = '#(^|/)(vendor|node_modules|\.git|data|\.ci-local|\.ctx-cache)(/|$)#';
+
+/** Indexed for declarations. Templates are searchable but declare nothing. */
+const CTX_PARSE_EXT = ['php'];
+const CTX_SEARCH_EXT = ['php', 'phtml', 'twig', 'sql'];
+
+/** A region already shown is suppressed for this long. Long enough to span one task. */
+const CTX_DEDUPE_SECONDS = 7200;
+
+/** Adjacent regions closer than this many lines are merged rather than printed twice. */
+const CTX_MERGE_GAP = 3;
+
+/** Output ceiling. A navigation tool that returns a megabyte has not helped. */
+const CTX_MAX_BYTES = 120000;
+
+/** Past this, `def` prints the outline instead of the body. SchoenstattTable is 3,278 lines. */
+const CTX_DEF_MAX_LINES = 400;
+
+/** A hit is never expanded to a declaration bigger than this; the context window is used. */
+const CTX_ENCLOSING_MAX_LINES = 250;
+
+$root = dirname(__DIR__);
+chdir($root);
+
+if (! is_file($root . '/vendor/autoload.php')) {
+    fwrite(STDERR, "vendor/autoload.php is missing. Run `php composer.phar install`.\n");
+    exit(2);
+}
+require $root . '/vendor/autoload.php';
+
+if (! class_exists(PhpParser\ParserFactory::class)) {
+    fwrite(STDERR, "nikic/php-parser is not installed. It is a require-dev dependency:\n"
+        . "    php composer.phar install            (with dev dependencies)\n");
+    exit(2);
+}
+
+// The dispatch happens at the FOOT of this file: a class that extends a not-yet-loaded
+// parent is declared when execution reaches it, not hoisted, so CtxVisitor does not exist
+// until the parser classes below have been read.
+
+// -----------------------------------------------------------------------------------
+
+final class CtxCommand
+{
+    private string $cacheDir;
+    private bool $dedupe = true;
+    private bool $ignoreCase = false;
+    private int $context = 6;
+
+    public function __construct(private string $root)
+    {
+        $this->cacheDir = $root . '/.ctx-cache';
+    }
+
+    /** @param list<string> $argv */
+    public function run(array $argv): int
+    {
+        $args = [];
+        foreach ($argv as $arg) {
+            switch (true) {
+                case $arg === '--again' || $arg === '-a': $this->dedupe = false; break;
+                case $arg === '-i': $this->ignoreCase = true; break;
+                case str_starts_with($arg, '--context='): $this->context = max(0, (int) substr($arg, 10)); break;
+                case $arg === '-h' || $arg === '--help': $this->usage(); return 0;
+                default: $args[] = $arg;
+            }
+        }
+
+        $command = array_shift($args) ?? '';
+
+        return match ($command) {
+            'def'     => $this->def($args),
+            'outline' => $this->outline($args),
+            'show'    => $this->show($args),
+            'index'   => $this->rebuild(),
+            'reset'   => $this->reset(),
+            ''        => $this->usage(2),
+            default   => $this->fail("unknown command '$command'"),
+        };
+    }
+
+    private function usage(int $code = 0): int
+    {
+        $out = $code === 0 ? STDOUT : STDERR;
+        fwrite($out, <<<TXT
+        tools/ctx — AST-backed symbol lookup
+
+          ctx def <Symbol>        Class, Class::method, Namespace\\Class, or function name.
+                                  Prints the exact declaration with line numbers.
+          ctx outline <file>      One line per declaration, with its line range.
+          ctx show <pattern> [path...]
+                                  Search, expand every hit to its enclosing declaration,
+                                  merge overlapping regions, print each one once.
+          ctx index               Rebuild the index (normally automatic and incremental).
+          ctx reset               Forget which regions have already been shown.
+
+        Options
+          -a, --again             Print regions already shown this session.
+          -i                      Case-insensitive search.
+          --context=N             Lines around a hit with no enclosing declaration (6).
+
+        TXT);
+
+        return $code;
+    }
+
+    private function fail(string $message): int
+    {
+        fwrite(STDERR, "ctx: $message\n");
+
+        return 2;
+    }
+
+    // --- commands ------------------------------------------------------------------
+
+    /** @param list<string> $args */
+    private function def(array $args): int
+    {
+        if ($args === []) {
+            return $this->fail('def needs a symbol');
+        }
+
+        $index = $this->index();
+        $matches = $index->resolve($args[0]);
+
+        if ($matches === []) {
+            fwrite(STDERR, "ctx: no declaration named '{$args[0]}'\n");
+
+            return 1;
+        }
+
+        if (count($matches) > 1) {
+            printf("%d declarations match '%s':\n", count($matches), $args[0]);
+            foreach ($matches as $d) {
+                printf("  %s:%d  %s\n", $d['file'], $d['line'], $d['sig']);
+            }
+            printf("\nAsk for one by its full name, e.g. `ctx def '%s'`.\n", $matches[0]['key']);
+
+            return 0;
+        }
+
+        $d = $matches[0];
+        $span = (int) $d['end'] - (int) $d['line'];
+
+        if ($span > CTX_DEF_MAX_LINES) {
+            printf("%s:%d-%d  %s\n", $d['file'], $d['line'], $d['end'], $d['sig']);
+            printf("%d lines — too large to print. Its members:\n\n", $span + 1);
+            foreach ($index->forFile((string) $d['file']) as $member) {
+                if ($member['owner'] !== null) {
+                    printf("  %5d-%-5d %s\n", $member['line'], $member['end'], $member['sig']);
+                }
+            }
+            printf("\nAsk for one, e.g. `ctx def '%s::<method>'`.\n", $d['name']);
+
+            return 0;
+        }
+
+        $this->emit($d['file'], $d['line'], $d['end'], $d['sig']);
+
+        return 0;
+    }
+
+    /** @param list<string> $args */
+    private function outline(array $args): int
+    {
+        if ($args === []) {
+            return $this->fail('outline needs a file');
+        }
+
+        $file = $this->relative($args[0]);
+        if (! is_file($file)) {
+            return $this->fail("no such file: {$args[0]}");
+        }
+
+        $decls = $this->index()->forFile($file);
+        if ($decls === []) {
+            $lines = @file($file);
+            printf("%s declares nothing (%d lines).\n", $file, $lines === false ? 0 : count($lines));
+
+            return 0;
+        }
+
+        printf("%s\n", $file);
+        foreach ($decls as $d) {
+            $indent = $d['owner'] === null ? '  ' : '      ';
+            printf("%s%5d-%-5d %s\n", $indent, $d['line'], $d['end'], $d['sig']);
+        }
+
+        return 0;
+    }
+
+    /** @param list<string> $args */
+    private function show(array $args): int
+    {
+        if ($args === []) {
+            return $this->fail('show needs a pattern');
+        }
+
+        $pattern = "\x01" . array_shift($args) . "\x01" . ($this->ignoreCase ? 'i' : '');
+        if (@preg_match($pattern, '') === false) {
+            return $this->fail("not a valid regular expression: {$pattern}");
+        }
+
+        $paths = $args === [] ? CTX_ROOTS : $args;
+        $index = $this->index();
+        $hits = 0;
+        $bytes = 0;
+
+        foreach ($this->walk($paths, CTX_SEARCH_EXT) as $file) {
+            $lines = @file($file, FILE_IGNORE_NEW_LINES);
+            if ($lines === false) {
+                continue;
+            }
+
+            /** @var list<array{int, int, string}> $regions */
+            $regions = [];
+            foreach ($lines as $i => $line) {
+                if (preg_match($pattern, $line) !== 1) {
+                    continue;
+                }
+                $hits++;
+                $enclosing = $index->enclosing($file, $i + 1);
+                $regions[] = $enclosing ?? [
+                    max(1, $i + 1 - $this->context),
+                    min(count($lines), $i + 1 + $this->context),
+                    '',
+                ];
+            }
+
+            foreach ($this->merge($regions) as [$start, $end, $label]) {
+                $bytes += $this->emit($file, $start, $end, $label);
+                if ($bytes > CTX_MAX_BYTES) {
+                    printf("\n… output ceiling reached (%d KB). Narrow the pattern or name a path.\n", (int) (CTX_MAX_BYTES / 1024));
+
+                    return 0;
+                }
+            }
+        }
+
+        if ($hits === 0) {
+            fwrite(STDERR, "ctx: no matches\n");
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private function rebuild(): int
+    {
+        @unlink($this->cacheDir . '/index.json');
+        $index = $this->index();
+        printf("indexed %d files, %d declarations\n", $index->fileCount(), $index->declCount());
+
+        return 0;
+    }
+
+    private function reset(): int
+    {
+        @unlink($this->cacheDir . '/shown.json');
+        printf("ctx: forgot which regions have been shown\n");
+
+        return 0;
+    }
+
+    // --- output --------------------------------------------------------------------
+
+    /** Print a region once, numbered. Returns the bytes printed (0 when suppressed). */
+    private function emit(string $file, int $start, int $end, string $label): int
+    {
+        $key = "$file:$start-$end";
+
+        if ($this->dedupe && ($seen = $this->alreadyShown($file, $start, $end)) !== null) {
+            printf("%s  (shown above as %s)\n", $key, $seen);
+
+            return 0;
+        }
+
+        $lines = @file($file, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            return 0;
+        }
+
+        $header = $label === '' ? $key : "$key  $label";
+        $out = "\n$header\n";
+        $width = strlen((string) $end);
+        for ($n = $start; $n <= $end && $n <= count($lines); $n++) {
+            $out .= sprintf("%{$width}d  %s\n", $n, $lines[$n - 1]);
+        }
+
+        echo $out;
+        $this->remember($file, $start, $end);
+
+        return strlen($out);
+    }
+
+    /** @return string|null the region that already covers this one, if any */
+    private function alreadyShown(string $file, int $start, int $end): ?string
+    {
+        $shown = $this->shown();
+        $cutoff = time() - CTX_DEDUPE_SECONDS;
+
+        foreach ($shown[$file] ?? [] as $region => $at) {
+            if ($at < $cutoff) {
+                continue;
+            }
+            [$s, $e] = array_map('intval', explode('-', $region));
+            if ($s <= $start && $e >= $end) {
+                return "$file:$region";
+            }
+        }
+
+        return null;
+    }
+
+    private function remember(string $file, int $start, int $end): void
+    {
+        $shown = $this->shown();
+        $shown[$file]["$start-$end"] = time();
+        $this->write('shown.json', $shown);
+    }
+
+    /** @return array<string, array<string, int>> */
+    private function shown(): array
+    {
+        /** @var array<string, array<string, int>> $data */
+        $data = $this->read('shown.json');
+
+        return $data;
+    }
+
+    // --- regions -------------------------------------------------------------------
+
+    /**
+     * Merge overlapping and adjacent regions. This is the whole point of `show`: three
+     * hits inside one method are one region, not three overlapping reads of it.
+     *
+     * @param  list<array{int, int, string}> $regions
+     * @return list<array{int, int, string}>
+     */
+    private function merge(array $regions): array
+    {
+        if ($regions === []) {
+            return [];
+        }
+
+        usort($regions, static fn(array $a, array $b): int => $a[0] <=> $b[0]);
+
+        $merged = [array_shift($regions)];
+        foreach ($regions as $region) {
+            $last = count($merged) - 1;
+            if ($region[0] <= $merged[$last][1] + CTX_MERGE_GAP) {
+                $merged[$last][1] = max($merged[$last][1], $region[1]);
+                if ($merged[$last][2] === '') {
+                    $merged[$last][2] = $region[2];
+                }
+                continue;
+            }
+            $merged[] = $region;
+        }
+
+        return $merged;
+    }
+
+    // --- index ---------------------------------------------------------------------
+
+    private ?CtxIndex $index = null;
+
+    private function index(): CtxIndex
+    {
+        if ($this->index instanceof CtxIndex) {
+            return $this->index;
+        }
+
+        /** @var array{files?: array<string, array{mtime: int, size: int, decls: list<array<string, mixed>>}>} $cached */
+        $cached = $this->read('index.json');
+        $files = $cached['files'] ?? [];
+
+        $fresh = [];
+        $changed = false;
+        foreach ($this->walk(CTX_ROOTS, CTX_PARSE_EXT) as $file) {
+            $mtime = (int) filemtime($file);
+            $size = (int) filesize($file);
+            $known = $files[$file] ?? null;
+            if ($known !== null && $known['mtime'] === $mtime && $known['size'] === $size) {
+                $fresh[$file] = $known;
+                continue;
+            }
+            $fresh[$file] = ['mtime' => $mtime, 'size' => $size, 'decls' => CtxParser::declarations($file)];
+            $changed = true;
+        }
+
+        if ($changed || count($fresh) !== count($files)) {
+            $this->write('index.json', ['files' => $fresh]);
+        }
+
+        return $this->index = new CtxIndex($fresh);
+    }
+
+    // --- filesystem ----------------------------------------------------------------
+
+    /**
+     * @param  list<string> $paths
+     * @param  list<string> $extensions
+     * @return list<string>
+     */
+    private function walk(array $paths, array $extensions): array
+    {
+        $found = [];
+        foreach ($paths as $path) {
+            $path = $this->relative($path);
+            if (is_file($path)) {
+                $found[] = $path;
+                continue;
+            }
+            if (! is_dir($path)) {
+                continue;
+            }
+
+            $it = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+            /** @var SplFileInfo $entry */
+            foreach ($it as $entry) {
+                $relative = $this->relative($entry->getPathname());
+                if (preg_match(CTX_EXCLUDE, $relative) === 1) {
+                    continue;
+                }
+                if ($entry->isFile() && in_array(strtolower($entry->getExtension()), $extensions, true)) {
+                    $found[] = $relative;
+                }
+            }
+        }
+
+        sort($found);
+
+        return array_values(array_unique($found));
+    }
+
+    /** Paths are stored and printed relative to the repository root, so they stay clickable. */
+    private function relative(string $path): string
+    {
+        $absolute = str_starts_with($path, '/') ? $path : $this->root . '/' . $path;
+        $real = realpath($absolute);
+        $absolute = $real === false ? $absolute : $real;
+
+        return str_starts_with($absolute, $this->root . '/')
+            ? substr($absolute, strlen($this->root) + 1)
+            : $path;
+    }
+
+    /** @return array<string, mixed> */
+    private function read(string $name): array
+    {
+        $file = $this->cacheDir . '/' . $name;
+        if (! is_file($file)) {
+            return [];
+        }
+        /** @var array<string, mixed>|null $data */
+        $data = json_decode((string) file_get_contents($file), true);
+
+        return is_array($data) ? $data : [];
+    }
+
+    private function write(string $name, mixed $data): void
+    {
+        if (! is_dir($this->cacheDir) && ! @mkdir($this->cacheDir, 0o775, true) && ! is_dir($this->cacheDir)) {
+            return;
+        }
+        @file_put_contents($this->cacheDir . '/' . $name, json_encode($data));
+    }
+}
+
+// -----------------------------------------------------------------------------------
+
+final class CtxIndex
+{
+    /** @var list<array<string, mixed>> */
+    private array $decls = [];
+
+    /** @param array<string, array{mtime: int, size: int, decls: list<array<string, mixed>>}> $files */
+    public function __construct(private array $files)
+    {
+        foreach ($files as $file => $entry) {
+            foreach ($entry['decls'] as $decl) {
+                $decl['file'] = $file;
+                $this->decls[] = $decl;
+            }
+        }
+    }
+
+    public function fileCount(): int
+    {
+        return count($this->files);
+    }
+
+    public function declCount(): int
+    {
+        return count($this->decls);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function forFile(string $file): array
+    {
+        return array_values(array_filter($this->decls, static fn(array $d): bool => $d['file'] === $file));
+    }
+
+    /**
+     * Resolve a symbol, most specific match first. `Foo\Bar::baz`, `Bar::baz`, `Bar`,
+     * `baz` all work; an ambiguous short name returns every candidate rather than
+     * guessing, because guessing is what this tool exists to stop.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function resolve(string $symbol): array
+    {
+        $symbol = ltrim(str_replace('/', '\\', $symbol), '\\');
+        $symbol = rtrim($symbol, '()');
+
+        $exact = $this->where(static fn(array $d): bool => strcasecmp((string) $d['key'], $symbol) === 0);
+        if ($exact !== []) {
+            return $exact;
+        }
+
+        if (str_contains($symbol, '::')) {
+            [$owner, $member] = explode('::', $symbol, 2);
+            $short = $this->shortName($owner);
+
+            return $this->where(static fn(array $d): bool => $d['owner'] !== null
+                && strcasecmp((string) $d['name'], $member) === 0
+                && strcasecmp(self::tail((string) $d['owner']), $short) === 0);
+        }
+
+        $byFqn = $this->where(static fn(array $d): bool => $d['owner'] === null
+            && strcasecmp((string) $d['name'], self::tail($symbol)) === 0
+            && str_ends_with(strtolower((string) $d['key']), strtolower($symbol)));
+        if ($byFqn !== []) {
+            return $byFqn;
+        }
+
+        return $this->where(static fn(array $d): bool => strcasecmp((string) $d['name'], $symbol) === 0);
+    }
+
+    /**
+     * The innermost declaration containing a line, as a printable region.
+     *
+     * @return array{int, int, string}|null
+     */
+    public function enclosing(string $file, int $line): ?array
+    {
+        $best = null;
+        foreach ($this->forFile($file) as $d) {
+            if ($d['line'] > $line || $d['end'] < $line) {
+                continue;
+            }
+            if ((int) $d['end'] - (int) $d['line'] > CTX_ENCLOSING_MAX_LINES) {
+                continue;
+            }
+            if ($best === null || ($d['end'] - $d['line']) < ($best['end'] - $best['line'])) {
+                $best = $d;
+            }
+        }
+
+        return $best === null ? null : [(int) $best['line'], (int) $best['end'], (string) $best['sig']];
+    }
+
+    /**
+     * @param  callable(array<string, mixed>): bool $predicate
+     * @return list<array<string, mixed>>
+     */
+    private function where(callable $predicate): array
+    {
+        return array_values(array_filter($this->decls, $predicate));
+    }
+
+    private function shortName(string $name): string
+    {
+        return self::tail($name);
+    }
+
+    private static function tail(string $name): string
+    {
+        $pos = strrpos($name, '\\');
+
+        return $pos === false ? $name : substr($name, $pos + 1);
+    }
+}
+
+// -----------------------------------------------------------------------------------
+
+final class CtxParser
+{
+    /**
+     * Exact bounds, by construction: getStartLine()/getEndLine() come from the token
+     * positions, not from counting braces.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function declarations(string $file): array
+    {
+        $code = @file_get_contents($file);
+        if ($code === false) {
+            return [];
+        }
+
+        $parser = (new PhpParser\ParserFactory())->createForNewestSupportedVersion();
+
+        try {
+            $ast = $parser->parse($code);
+        } catch (PhpParser\Error) {
+            // An unparseable file is a fact about the file, not a reason to fail the
+            // whole index — the legacy tree still holds a few.
+            return [];
+        }
+
+        if ($ast === null) {
+            return [];
+        }
+
+        $visitor = new CtxVisitor();
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor(new PhpParser\NodeVisitor\NameResolver());
+        $traverser->addVisitor($visitor);
+        $traverser->traverse($ast);
+
+        return $visitor->declarations;
+    }
+}
+
+final class CtxVisitor extends PhpParser\NodeVisitorAbstract
+{
+    /** @var list<array<string, mixed>> */
+    public array $declarations = [];
+
+    private PhpParser\PrettyPrinter\Standard $printer;
+
+    /** @var list<string> */
+    private array $stack = [];
+
+    public function __construct()
+    {
+        $this->printer = new PhpParser\PrettyPrinter\Standard();
+    }
+
+    public function enterNode(PhpParser\Node $node): null
+    {
+        $isType = $node instanceof PhpParser\Node\Stmt\Class_
+            || $node instanceof PhpParser\Node\Stmt\Interface_
+            || $node instanceof PhpParser\Node\Stmt\Trait_
+            || $node instanceof PhpParser\Node\Stmt\Enum_;
+
+        if ($isType) {
+            // An anonymous class has no name and nothing can look it up by one.
+            $name = $node->namespacedName ?? null;
+            if ($name === null) {
+                return null;
+            }
+            $fqn = $name->toString();
+            $this->stack[] = $fqn;
+            $this->record($node, self::tail($fqn), $fqn, null);
+
+            return null;
+        }
+
+        if ($node instanceof PhpParser\Node\Stmt\Function_) {
+            $fqn = $node->namespacedName?->toString() ?? $node->name->toString();
+            $this->record($node, $node->name->toString(), $fqn, null);
+
+            return null;
+        }
+
+        if ($node instanceof PhpParser\Node\Stmt\ClassMethod) {
+            $owner = end($this->stack);
+            if ($owner === false) {
+                return null;
+            }
+            $this->record($node, $node->name->toString(), $owner . '::' . $node->name->toString(), $owner);
+        }
+
+        return null;
+    }
+
+    public function leaveNode(PhpParser\Node $node): null
+    {
+        $isType = $node instanceof PhpParser\Node\Stmt\Class_
+            || $node instanceof PhpParser\Node\Stmt\Interface_
+            || $node instanceof PhpParser\Node\Stmt\Trait_
+            || $node instanceof PhpParser\Node\Stmt\Enum_;
+
+        if ($isType && ($node->namespacedName ?? null) !== null) {
+            array_pop($this->stack);
+        }
+
+        return null;
+    }
+
+    private function record(PhpParser\Node\Stmt $node, string $name, string $key, ?string $owner): void
+    {
+        // The region starts at the doc comment, not at the `function` keyword. A search
+        // hit on `@param bool $objectsAreEveryAssociation` is a hit on the method that
+        // documents it; without this it resolves to the enclosing class instead, and
+        // "expand to the enclosing declaration" prints three thousand lines.
+        $start = $node->getDocComment()?->getStartLine() ?? $node->getStartLine();
+
+        $this->declarations[] = [
+            'name'  => $name,
+            'key'   => $key,
+            'owner' => $owner,
+            'line'  => $start,
+            'end'   => $node->getEndLine(),
+            'sig'   => $this->signature($node),
+        ];
+    }
+
+    /**
+     * The declaration header, printed from the AST rather than sliced out of the source,
+     * so a multi-line parameter list collapses to one accurate line.
+     */
+    private function signature(PhpParser\Node\Stmt $node): string
+    {
+        $clone = clone $node;
+        $clone->setAttribute('comments', []);
+        if (property_exists($clone, 'stmts')) {
+            $clone->stmts = [];
+        }
+        if (property_exists($clone, 'attrGroups')) {
+            $clone->attrGroups = [];
+        }
+
+        $printed = $this->printer->prettyPrint([$clone]);
+        $first = strtok($printed, "\n");
+        $signature = $first === false ? '' : $first;
+
+        return rtrim(trim($signature), '{');
+    }
+
+    private static function tail(string $name): string
+    {
+        $pos = strrpos($name, '\\');
+
+        return $pos === false ? $name : substr($name, $pos + 1);
+    }
+}
+
+// -----------------------------------------------------------------------------------
+
+/** @var list<string> $arguments */
+$arguments = $_SERVER['argv'];
+
+exit((new CtxCommand($root))->run(array_slice($arguments, 1)));

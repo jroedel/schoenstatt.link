@@ -351,9 +351,9 @@ else
     printf '\n%sVerifying %s in this tree — the capsule holds exactly it%s\n' \
         "$BOLD" "${DEPLOY_SHA:0:7}" "$OFF"
     if [ "$CI" = "1" ]; then
-        ./tools/ci-local.sh || die "ci-local failed. Not deploying."
+        ./tools/ci-local.sh --no-cache || die "ci-local failed. Not deploying."
     else
-        ./tools/ci-local.sh --ci || die "ci-local --ci failed. Not deploying."
+        ./tools/ci-local.sh --ci --no-cache || die "ci-local --ci failed. Not deploying."
     fi
     VERIFIED="$DEPLOY_SHA"
     ok "verified — tools/deploy.sh will not run ci-local again"
