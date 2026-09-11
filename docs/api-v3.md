@@ -170,7 +170,7 @@ curl -X PATCH https://schoenstatt.link/api/v3/associations/SL100319A \
 #### Validation is the moderator form's
 
 The patch is **merged onto the stored record and the whole record validated** with the edit
-form's own `InputFilter` (`App\Schoenstatt\AssociationValidator`, rules in
+form's own engine (`App\Schoenstatt\Association\AssociationValidator`, rules in
 `AssociationInputFilterSpec`): an agent is refused exactly what a moderator is refused, with
 the same messages; only the CSRF rule is skipped (`test/Integration/AssociationValidationParityTest`).
 
