@@ -72,6 +72,7 @@ SchoenstattTest\Integration\FormMarkupTest                   # renders every for
 SchoenstattTest\Integration\EngineSurfaceTest                # validates every form, whose value options come from real rows
 SchoenstattTest\Integration\PortedTemplatesRenderEveryNotNullFieldTest  # reads the schema for NOT NULL columns
 SchoenstattTest\Integration\ProvenanceStoreTest               # reads and writes the provenance rows
+SchoenstattTest\Integration\RuleSurfaceTest                   # every filter and validator answers what the baseline recorded, and two of them query
 BooksTest\Integration\PublicationLinkingTest                  # sub-edition linking, on real publications. NOTE the namespace: this file is BooksTest, not SchoenstattTest
 SchoenstattTest\Integration\ShrineCachingTest                 # asserts what the shrine cache holds
 

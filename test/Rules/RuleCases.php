@@ -52,6 +52,13 @@ require_once __DIR__ . '/../Fuzz/HostileInputCorpus.php';
  * - **`Db\RecordExists` and `Db\NoRecordExists`** carry a live adapter and answer a question
  *   about the capsule's rows, not about themselves. What is recorded of them is the SQL they
  *   build; see {@see RuleSurface::databaseQueries()}.
+ *
+ * And one case that was here and should not have been: a `Uri` validator with **no**
+ * options. laminas resolved that to the generic `Laminas\Uri\Uri`, which accepts
+ * `javascript:` and `mailto:` and does not force a path, where every real use passed
+ * `uriHandler => Laminas\Uri\Http` and got neither. Recording the default was recording a
+ * configuration nothing has, and its five answers would have read as regressions of a rule
+ * nothing applies.
  */
 final class RuleCases
 {
@@ -69,7 +76,7 @@ final class RuleCases
     {
         return [
             'StringTrim'                  => ['name' => 'StringTrim', 'options' => []],
-            'StringTrim (fully qualified)' => ['name' => 'Laminas\Filter\StringTrim', 'options' => []],
+            'StringTrim (fully qualified)' => ['name' => 'SionModel\Filter\StringTrim', 'options' => []],
             'StripTags'                   => ['name' => 'StripTags', 'options' => []],
             'StripNewlines'               => ['name' => 'StripNewlines', 'options' => []],
             'StringToLower'               => ['name' => 'StringToLower', 'options' => []],
@@ -80,7 +87,7 @@ final class RuleCases
             'ToNull type=2 (integer)'     => ['name' => 'ToNull', 'options' => ['type' => 2]],
             'ToNull type=8 (string)'      => ['name' => 'ToNull', 'options' => ['type' => 8]],
             'Boolean'                     => ['name' => 'Boolean', 'options' => []],
-            'DateSelect'                  => ['name' => 'Laminas\Filter\DateSelect', 'options' => []],
+            'DateSelect'                  => ['name' => 'SionModel\Filter\DateSelect', 'options' => []],
             'Callback (strrev)'           => ['name' => 'Callback', 'options' => ['callback' => 'strrev']],
 
             //Ours, and re-parented by this iteration: what they answer must not move either.
@@ -115,7 +122,7 @@ final class RuleCases
             'StringLength min=3 UTF-8'    => ['name' => 'StringLength', 'options' => ['min' => 3, 'encoding' => 'UTF-8']],
             'StringLength min=4 max=40'   => ['name' => 'StringLength', 'options' => ['min' => 4, 'max' => 40]],
             'StringLength max=255 (fully qualified)' => [
-                'name'    => 'Laminas\Validator\StringLength',
+                'name'    => 'SionModel\Validator\StringLength',
                 'options' => ['encoding' => 'UTF-8', 'max' => 255],
             ],
 
@@ -123,7 +130,7 @@ final class RuleCases
             'Regex (decimal)'             => ['name' => 'Regex', 'options' => ['pattern' => '(^-?\d*(\.\d+)?$)']],
             'Regex (email pattern)'       => ['name' => 'Regex', 'options' => ['pattern' => $emailPattern]],
             'Regex with own message'      => [
-                'name'    => 'Laminas\Validator\Regex',
+                'name'    => 'SionModel\Validator\Regex',
                 'options' => [
                     'pattern'          => '/^(?:18|19|20)\d{2,2}(?:-[0-3]\d)?(?:-[0-3]\d)?$/',
                     'messageTemplates' => [
@@ -158,7 +165,7 @@ final class RuleCases
                 'options' => ['validator' => ['name' => 'Regex', 'options' => ['pattern' => $emailPattern]]],
             ],
             'Explode over InArray'        => [
-                'name'    => 'Laminas\Validator\Explode',
+                'name'    => 'SionModel\Validator\Explode',
                 'options' => ['validator' => ['name' => 'InArray', 'options' => ['haystack' => ['alpha', 'beta'], 'strict' => 0]]],
             ],
 
@@ -184,9 +191,12 @@ final class RuleCases
             ],
             'Uri absolute only'           => [
                 'name'    => 'Uri',
+                //`uriHandler` is gone from the options and the answers did not move.
+                //laminas needed it — without one it validated through the generic
+                //`Laminas\Uri\Uri`, which accepts `javascript:` and `mailto:` — and
+                //`SionModel\Validator\Uri` has no generic mode to fall into.
                 'options' => ['allowAbsolute' => true, 'allowRelative' => false],
             ],
-            'Uri (defaults)'              => ['name' => 'Laminas\Validator\Uri', 'options' => []],
 
             //Ours, and re-parented by this iteration.
             'SionModel ParseableDate'     => ['name' => 'SionModel\Validator\ParseableDate', 'options' => []],

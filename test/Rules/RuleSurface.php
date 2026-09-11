@@ -8,12 +8,13 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
-use Laminas\Validator\AbstractValidator;
+use SionModel\Validator\AbstractValidator;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Form\Validation\InputFilter;
 use Throwable;
 
 use function abs;
+use function error_reporting;
 use function get_debug_type;
 use function implode;
 use function is_array;
@@ -43,7 +44,7 @@ require_once __DIR__ . '/../Fuzz/FormRepository.php';
  *
  * ## Why each rule is driven through the engine rather than constructed
  *
- * `new Laminas\Filter\StripTags()` would measure laminas. What matters is what happens when
+ * `new SionModel\Filter\StripTags()` would measure laminas. What matters is what happens when
  * a **specification names a rule**, because that — a string and an options array — is the
  * whole of what a form declares, and the resolver in the middle is the piece this iteration
  * replaces. So each case is turned into a one-field specification and run through a real
@@ -120,6 +121,11 @@ final class RuleSurface
         $translator = AbstractValidator::getDefaultTranslator();
         AbstractValidator::setDefaultTranslator(null);
 
+        //PHPUnit and the regeneration script start from different `error_reporting()`
+        //settings, and the handler below consults it to detect `@`. Pinning it here is what
+        //makes the file the test compares against the file the script wrote.
+        $reporting = error_reporting(E_ALL);
+
         try {
             foreach (RuleCases::filters() as $label => $case) {
                 $surface['filter'][$label] = self::answersFor('filters', $case, $inputs);
@@ -130,6 +136,7 @@ final class RuleSurface
             }
         } finally {
             AbstractValidator::setDefaultTranslator($translator);
+            error_reporting($reporting);
         }
 
         $surface['database-query'] = self::databaseQueries();
@@ -176,13 +183,32 @@ final class RuleSurface
         $diagnostics = [];
 
         set_error_handler(static function (int $severity, string $message) use (&$diagnostics): bool {
+            //`@` is honoured, which any correct error handler does and which this one did
+            //not: a validator that compiles its pattern behind `@preg_match()` and reports
+            //a bad one as an exception was having the suppressed warning recorded as if a
+            //caller could see it. `collect()` forces `E_ALL` first, so this tests the
+            //suppression and not the ambient setting — the regeneration script and PHPUnit
+            //do not agree about the latter.
+            if (0 === (error_reporting() & $severity)) {
+                return true;
+            }
+
+            //Deprecations are not recorded. Every one seen here came from a **compile-time**
+            //check in a third-party file — an implicitly nullable parameter in spatie or
+            //parsedown — which PHP raises when it compiles the file and never again, so
+            //whether it appears depends on what OPcache already holds. A recording that
+            //changes with the state of a cache is not an oracle.
+            if (E_DEPRECATED === $severity || E_USER_DEPRECATED === $severity) {
+                return true;
+            }
+
             $diagnostics[] = sprintf('%s: %s', self::severityName($severity), $message);
 
             return true;
         });
 
         try {
-            $filter = InputFilter::withLaminasRules($spec);
+            $filter = InputFilter::withRules($spec);
             $filter->setData(['value' => $value]);
             $valid = $filter->isValid();
 
@@ -193,7 +219,7 @@ final class RuleSurface
                 $answer   = $valid ? 'valid' : 'invalid — ' . self::describeMessages($messages);
             }
         } catch (Throwable $e) {
-            //A rule that throws is a real answer — `Laminas\Validator\GpsPoint` raises a
+            //A rule that throws is a real answer — `SionModel\Validator\GpsPoint` raises a
             //TypeError on a non-string, and `SionModel\Filter\ToDateTime` lets DateTime's
             //own exception out. Recording the class and the message is what makes a
             //replacement that throws something else, or nothing, visible.
@@ -294,8 +320,8 @@ final class RuleSurface
 
         foreach (
             [
-                'NoRecordExists' => \Laminas\Validator\Db\NoRecordExists::class,
-                'RecordExists'   => \Laminas\Validator\Db\RecordExists::class,
+                'NoRecordExists' => \SionModel\Validator\Db\NoRecordExists::class,
+                'RecordExists'   => \SionModel\Validator\Db\RecordExists::class,
             ] as $label => $class
         ) {
             $validator = new $class([

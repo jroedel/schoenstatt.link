@@ -13,7 +13,7 @@
 # phpcs.xml or fixing the 421 auto-fixable violations are decisions nobody has
 # taken. Until one of them is, "clean" has to be a list.
 #
-# Measured 2026-09-11: 280 files, zero errors, zero warnings.
+# Measured 2026-09-11: 352 files, zero errors, zero warnings.
 
 # Symfony-side application code. Holds itself to PHPStan level 8 as well.
 src
@@ -37,6 +37,19 @@ module/SionModel/src/Form/FieldsetInterface.php
 module/SionModel/src/Form/Form.php
 module/SionModel/src/Form/FormInterface.php
 module/SionModel/src/Form/PrepareAwareInterface.php
+# The rule library and the pieces of the form layer that feed it (2026-09-11).
+# `Form/Validation` is the engine and the specification assembler; the four files
+# beside it are what the elements used to contribute and now state for themselves.
+module/SionModel/src/Filter
+module/SionModel/src/Validator
+module/SionModel/src/Uri
+module/SionModel/src/Form/Validation
+module/SionModel/src/Form/CheckboxDomain.php
+module/SionModel/src/Form/ChoiceDomain.php
+module/SionModel/src/Form/CsrfSpec.php
+module/SionModel/src/Form/InputFilterProviderInterface.php
+module/SionModel/src/Form/InputTypeRules.php
+module/SionModel/src/View/Escape.php
 module/SionModel/src/Twig
 module/SionModel/src/Messaging
 module/SionModel/src/Mailing/TemplateRendererInterface.php

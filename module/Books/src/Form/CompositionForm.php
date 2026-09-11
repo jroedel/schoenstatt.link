@@ -2,16 +2,16 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Laminas\Validator\EmailAddress;
-use Laminas\Validator\Regex;
-use Laminas\Filter\StringTrim;
-use Laminas\Filter\ToNull;
-use Laminas\Validator\StringLength;
-use Laminas\Filter\StripTags;
-use Laminas\Filter\StripNewlines;
-use Laminas\Filter\StringToLower;
+use SionModel\Validator\EmailAddress;
+use SionModel\Validator\Regex;
+use SionModel\Filter\StringTrim;
+use SionModel\Filter\ToNull;
+use SionModel\Validator\StringLength;
+use SionModel\Filter\StripTags;
+use SionModel\Filter\StripNewlines;
+use SionModel\Filter\StringToLower;
 use SionModel\Filter\SortArray;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\InputTypeRules;
@@ -243,7 +243,6 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Url',
             'options' => [
                 'label' => 'URL 1',
-                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -272,7 +271,6 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Url',
             'options' => [
                 'label' => 'URL 2',
-                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -301,7 +299,6 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Url',
             'options' => [
                 'label' => 'URL 3',
-                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -444,7 +441,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \SionModel\Filter\ToNull::TYPE_INTEGER,
                         ],
                     ],
                 ],

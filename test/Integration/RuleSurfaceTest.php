@@ -30,7 +30,7 @@ require_once __DIR__ . '/../Rules/UriSurface.php';
  * ## What these two files are for
  *
  * Iteration A replaces the twenty laminas validator classes, the twelve filter classes and
- * `Laminas\Uri\Http` with our own. `test/Rules/rule-surface.php` is what says a
+ * `SionModel\Uri\Http` with our own. `test/Rules/rule-surface.php` is what says a
  * replacement decides the same way about the same value, and `test/Rules/uri-surface.php`
  * is what says a URL column receives the same bytes.
  *

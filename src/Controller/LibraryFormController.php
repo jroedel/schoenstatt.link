@@ -116,7 +116,7 @@ final class LibraryFormController
     /**
      * The POST branch: a RedirectResponse on success, null to re-render with errors.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      */
     private function handle(string $which, FormInterface $form, Request $request, int $libraryId): ?RedirectResponse
     {

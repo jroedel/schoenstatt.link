@@ -71,7 +71,7 @@ final class EntityCreate
      * `if (isset($libraryId))` and simply leaves `mainCollectionId` without options, because
      * a library that does not exist yet has no collections.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     public function form(string $entity, ?int $libraryId = null): FormInterface
     {
@@ -92,7 +92,7 @@ final class EntityCreate
             throw new RuntimeException("The container did not return a form for '$entity'.");
         }
 
-        /** @var FormInterface<array<string, mixed>> $instance */
+        /** @var FormInterface $instance */
         return $instance;
     }
 

@@ -1,7 +1,7 @@
 <?php
 namespace Books\Form;
 
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use Carbon\Carbon;
 use SionModel\Form\Fieldset;
 
@@ -59,7 +59,7 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
     /**
      * @todo Ideally validation would fail if personId is set but withinLibraryIds isn't or withinLibraryIds is set, but personId not
      * {@inheritDoc}
-     * @see \Laminas\InputFilter\InputFilterProviderInterface::getInputFilterSpecification()
+     * @see \SionModel\Form\InputFilterProviderInterface::getInputFilterSpecification()
      */
     public function getInputFilterSpecification()
     {

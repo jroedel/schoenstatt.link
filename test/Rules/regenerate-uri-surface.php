@@ -22,7 +22,7 @@ $header = <<<'PHP_HEADER'
 <?php
 
 /**
- * What `Laminas\Uri\Http` answers, and what `SionTable::filterUrl()` stores because of it.
+ * What `SionModel\Uri\Http` answers, and what `SionTable::filterUrl()` stores because of it.
  *
  * GENERATED FILE — regenerate with:
  *

@@ -52,7 +52,7 @@ final class FormViewVariables
      * form cannot answer, which renders a button that clears the field instead of one that
      * throws a syntax error into the page.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @return array{next_within_library_id: int}
      */
     public function nextWithinLibraryId(FormInterface $form): array
@@ -85,7 +85,7 @@ final class FormViewVariables
      * and `createAction()` passes the view's `entityId`, which is null on a create.
      *
      * @param array<string, mixed>                $object
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @return array<string, mixed>
      */
     public function publicationValueOptions(array $object, FormInterface $form): array
@@ -137,7 +137,7 @@ final class FormViewVariables
      * select. Absent rather than fatal because a form's element set is data here — the
      * factory builds it — and a missing element should not take the page down.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @return array<array-key, mixed>
      */
     private function valueOptions(FormInterface $form, string $element): array

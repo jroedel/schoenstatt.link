@@ -3227,7 +3227,6 @@ return array (
     array (
       'allowRelative' => false,
       'label' => 'URL 1',
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Books\\Form\\CompositionForm::url1Label' => 
@@ -3292,7 +3291,6 @@ return array (
     array (
       'allowRelative' => false,
       'label' => 'URL 2',
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Books\\Form\\CompositionForm::url2Label' => 
@@ -3357,7 +3355,6 @@ return array (
     array (
       'allowRelative' => false,
       'label' => 'URL 3',
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Books\\Form\\CompositionForm::url3Label' => 
@@ -5737,7 +5734,6 @@ return array (
       'allowRelative' => false,
       'label' => 'URL 1',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Books\\Form\\PublicationForm::url1Label' => 
@@ -5793,7 +5789,6 @@ return array (
       'allowRelative' => false,
       'label' => 'URL 2',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Books\\Form\\PublicationForm::url2Label' => 
@@ -5849,7 +5844,6 @@ return array (
       'allowRelative' => false,
       'label' => 'URL 3',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Books\\Form\\PublicationForm::url3Label' => 
@@ -8558,7 +8552,6 @@ so users can double-check. Warning: this field is not translated.',
       'allowRelative' => false,
       'label' => 'Facebook URL',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\AssociationForm::foundationDate' => 
@@ -9483,7 +9476,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'allowRelative' => false,
       'label' => 'Other URL 1',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\AssociationForm::url1Label' => 
@@ -9550,7 +9542,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'allowRelative' => false,
       'label' => 'Other URL 2',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\AssociationForm::url2Label' => 
@@ -9617,7 +9608,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'allowRelative' => false,
       'label' => 'Other URL 3',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\AssociationForm::url3Label' => 
@@ -10482,7 +10472,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'allowRelative' => false,
       'label' => 'Facebook URL',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\PersonForm::firstName' => 
@@ -11244,7 +11233,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'allowRelative' => false,
       'label' => 'Other URL 1',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\PersonForm::url1Label' => 
@@ -11308,7 +11296,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'allowRelative' => false,
       'label' => 'Other URL 2',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\PersonForm::url2Label' => 
@@ -11372,7 +11359,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'allowRelative' => false,
       'label' => 'Other URL 3',
       'required' => false,
-      'uriHandler' => 'Laminas\\Uri\\Http',
     ),
   ),
   'Schoenstatt\\Form\\PersonForm::url3Label' => 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Books\Import;
 
 use SionModel\Form\Fieldset;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 
 /**

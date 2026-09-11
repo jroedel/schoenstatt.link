@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Books\LibraryDeleteForm;
 use SionModel\Form\Form;
-use Laminas\Validator\Identical;
+use SionModel\Validator\Identical;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Fuzz\FormRepository;
 
@@ -24,7 +24,7 @@ require_once __DIR__ . '/../Fuzz/FormRepository.php';
  *
  * ## The default, and what it cost
  *
- * `Laminas\Validator\Identical::isValid()` begins:
+ * `SionModel\Validator\Identical::isValid()` begins:
  *
  *     if (! $this->getLiteral() && $context !== null) {
  *         ...

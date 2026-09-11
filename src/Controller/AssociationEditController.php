@@ -60,7 +60,7 @@ use function is_string;
  * `test/Integration/AssociationValidationParityTest` is what keeps it honest.
  *
  * CSRF works for the same reason it works on laminas: App\Http\SessionListener has
- * already started the laminas session, so `Laminas\Validator\Csrf` finds its
+ * already started the laminas session, so `SionModel\Validator\Csrf` finds its
  * container. A token minted by the laminas rendering is therefore accepted by this
  * one and vice versa — which matters while production serves one and the capsule the
  * other.
@@ -155,7 +155,7 @@ final class AssociationEditController
      * after `SionController` hands it back.
      *
      * @param array<string, mixed> $entity
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     private function form(array $entity): FormInterface
     {

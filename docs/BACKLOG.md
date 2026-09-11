@@ -9,20 +9,14 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
 - **The goal is a laminas-free application**: every `laminas/*` package removed, no
   exceptions, via a second strangler. Plan, order, per-step rules and open decisions are in
   [laminas-exit.md](laminas-exit.md); this file does not repeat them.
-- **Step 0 is removing laminas-mvc** (the former "Phase C"). Nothing has dispatched through
-  laminas-mvc since 2026-09-08: every page is Symfony-served, `LegacyBridge` and the
-  `SYMFONY_KERNEL` canary are deleted; laminas-mvc survives only as the container bootstrap
-  and the service ids `App\Laminas\ServiceBridge` still hands out.
-- **Removing laminas-mvc did not unlock servicemanager 4 or FrameworkBundle**, and the
-  remaining components still cap servicemanager at 3.x at their latest releases (form,
-  session, router, view, validator, filter, inputfilter). Only removing them makes it
-  reachable. FrameworkBundle's own blocker is gone: laminas-cache held `psr/cache` at `^1`
-  and left with step 2.
-- Progress metric: `composer show --locked | grep laminas` (37 on 2026-09-09); also run
-  `why-not php 8.5.0` and `why-not laminas/laminas-servicemanager 4.0.0` around each step.
-  No deadline panic: laminas-mvc and PHP 8.4 both have security fixes to 2028-12-31.
+- **Removing laminas-mvc did not unlock servicemanager 4 or FrameworkBundle.** Nine of the
+  ten components that capped servicemanager at 3.x are gone; `laminas-session` is the last,
+  and our own direct `^3.24` line goes with the container. FrameworkBundle's own blocker is
+  already gone: laminas-cache held `psr/cache` at `^1` and left with step 2.
+- Progress metric: `composer show --locked | grep laminas` (37 on 2026-09-09, **9** on
+  2026-09-11); also run `why-not php 8.5.0` and
+  `why-not laminas/laminas-servicemanager 4.0.0` around each step.
 - The parked ~102-factory Interop→Psr sweep stays parked; the factories leave with step 7.
-  For form ports (step 5) `test/Fuzz` is the safety net, not `tools/form-regression.php`.
 
 ## Now
 
@@ -54,9 +48,15 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   (`src/Controller/LibraryDeleteController.php`, `src/Controller/Api/PhrasesV3Controller.php`,
   `src/Kernel.php`, `src/Twig/ForgivingCache.php`, `JTranslate\Model\TranslationsTable`). Turn
   `log_errors` on in `docker/php-limits.ini` and/or move them to `Psr\Log\LoggerInterface`.
-- **Two PHPStan level-8 errors in `src/Controller/Api/ApiSchemaController.php:203-204`**
-  (`getValidatorChain()` on a union; a `??` whose left side always exists). `src` is meant
-  to be level-8 clean: fix or baseline, not silence.
+- **`SionModel\Filter\ToBit`'s `null_defaults_to` option has never done anything.** The
+  constructor takes no argument; 32 specifications pass the option. Recorded as-is in
+  `test/Rules/rule-surface.php` rather than fixed, because making it work changes what
+  those 32 fields store. Decide what the columns should hold, then change both together.
+- **A `messageTemplates` option replaces the message set rather than merging into it**, so
+  the two `Regex` specifications that pass one delete `regexInvalid` and let arrays and
+  booleans through those fields silently. Reproduced exactly in
+  `SionModel\Validator\AbstractValidator::setMessageTemplates()` because it was laminas'
+  behaviour and the recordings pin it; it is still a hole.
 - **The cookie explainer's paragraph is untranslated**
   (`module/JUser/templates/sign-in-no-cookies.html.twig`, raw English literal beside a
   translated `<h1>`). One `translate()`; the phrase is not yet in the table.
