@@ -14,7 +14,7 @@ use Books\Model\DictionaryTable;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\DriveGateway;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use Locale;
 use RuntimeException;
 use SionModel\Messaging\FlashMessages;

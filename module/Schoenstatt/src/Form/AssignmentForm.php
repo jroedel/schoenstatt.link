@@ -241,7 +241,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
      * @param  array<string, mixed>|\Traversable $data
      * @return self
      */
-    public function setData($data)
+    public function setData(iterable $data): static
     {
         $associationId = is_array($data) && key_exists('associationId', $data)
             ? $data['associationId']

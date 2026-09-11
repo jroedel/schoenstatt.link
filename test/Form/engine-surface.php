@@ -2728,29 +2728,6 @@ second line',
       ),
     ),
   ),
-  'SionModel\\Form\\Form' => 
-  array (
-    'accepted' => 
-    array (
-      'valid' => true,
-      'values' => 
-      array (
-      ),
-      'messages' => 
-      array (
-      ),
-    ),
-    'rejected' => 
-    array (
-      'valid' => true,
-      'values' => 
-      array (
-      ),
-      'messages' => 
-      array (
-      ),
-    ),
-  ),
   'SionModel\\Form\\SionForm' => 
   array (
     'accepted' => 

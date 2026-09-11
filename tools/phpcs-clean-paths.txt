@@ -13,7 +13,7 @@
 # phpcs.xml or fixing the 421 auto-fixable violations are decisions nobody has
 # taken. Until one of them is, "clean" has to be a list.
 #
-# Measured 2026-09-08: 211 files, zero errors, zero warnings.
+# Measured 2026-09-11: 280 files, zero errors, zero warnings.
 
 # Symfony-side application code. Holds itself to PHPStan level 8 as well.
 src
@@ -25,6 +25,18 @@ config/symfony
 module/SionModel/src/Cache
 module/SionModel/src/Form/BootstrapFormRenderer.php
 module/SionModel/src/Form/Element
+# The form model (2026-09-11). Named file by file rather than as the directory,
+# because `module/SionModel/src/Form/` also holds SionForm, CommentForm and the
+# rest of the 2020 forms, which are level-0 legacy and would never pass.
+module/SionModel/src/Form/Collection.php
+module/SionModel/src/Form/ElementInterface.php
+module/SionModel/src/Form/Exception
+module/SionModel/src/Form/Factory.php
+module/SionModel/src/Form/Fieldset.php
+module/SionModel/src/Form/FieldsetInterface.php
+module/SionModel/src/Form/Form.php
+module/SionModel/src/Form/FormInterface.php
+module/SionModel/src/Form/PrepareAwareInterface.php
 module/SionModel/src/Twig
 module/SionModel/src/Messaging
 module/SionModel/src/Mailing/TemplateRendererInterface.php

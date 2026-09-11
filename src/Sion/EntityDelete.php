@@ -6,7 +6,7 @@ namespace App\Sion;
 
 use App\Laminas\ServiceBridge;
 use App\Acl\IsAllowed;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use SionModel\Form\DeleteEntityForm;
 
 use function is_array;

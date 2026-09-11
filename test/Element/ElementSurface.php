@@ -5,20 +5,15 @@ declare(strict_types=1);
 namespace SchoenstattTest\Element;
 
 use App\Locale\Locales;
-use Laminas\Form\Element\Checkbox;
-use Laminas\Form\Element\Collection;
-use Laminas\Form\Element\Csrf;
-use Laminas\Form\Element\DateSelect;
-use Laminas\Form\Element\MultiCheckbox;
-use Laminas\Form\Element\Select;
-use Laminas\Form\ElementInterface;
-use Laminas\Form\Fieldset;
 use Locale;
 use SchoenstattTest\Fuzz\FormRepository;
-use SionModel\Form\Element\Checkbox as OurCheckbox;
-use SionModel\Form\Element\Csrf as OurCsrf;
-use SionModel\Form\Element\DateSelect as OurDateSelect;
-use SionModel\Form\Element\Select as OurSelect;
+use SionModel\Form\Collection;
+use SionModel\Form\Element\Checkbox;
+use SionModel\Form\Element\Csrf;
+use SionModel\Form\Element\DateSelect;
+use SionModel\Form\Element\Select;
+use SionModel\Form\ElementInterface;
+use SionModel\Form\Fieldset;
 
 use function array_keys;
 use function array_slice;
@@ -197,28 +192,24 @@ final class ElementSurface
             'options'    => self::normaliseAll($element->getOptions()),
         ];
 
-        //Each branch names both families: laminas' element and the SionModel one that
-        //replaces it. Not tidiness — the parity test describes one of each and compares
-        //them, so a branch that recognised only laminas would report every replacement as
-        //answering nothing at all, which is indistinguishable from a select that lost its
-        //options. The laminas half of each pair goes when the package does.
-        if ($element instanceof Select || $element instanceof MultiCheckbox || $element instanceof OurSelect) {
+        //Each branch named two classes — laminas' element and the SionModel one replacing
+        //it — while both families were live, so that the parity test could describe one of
+        //each and compare them. The laminas halves went with the package.
+        if ($element instanceof Select) {
             $described['valueOptions'] = self::digestOptions($element->getValueOptions());
+            $described['emptyOption']  = self::scalar($element->getEmptyOption());
         }
-        if ($element instanceof Select || $element instanceof OurSelect) {
-            $described['emptyOption'] = self::scalar($element->getEmptyOption());
-        }
-        if ($element instanceof Checkbox || $element instanceof OurCheckbox) {
+        if ($element instanceof Checkbox) {
             $described['checkedValue']     = self::scalar($element->getCheckedValue());
             $described['uncheckedValue']   = self::scalar($element->getUncheckedValue());
             $described['useHiddenElement'] = $element->useHiddenElement();
         }
-        if ($element instanceof Csrf || $element instanceof OurCsrf) {
+        if ($element instanceof Csrf) {
             //The options, not the token: the options are what CsrfSpec reads to build the
             //validator, and the token is regenerated on every read.
             $described['csrfValidatorOptions'] = self::normaliseAll($element->getCsrfValidatorOptions());
         }
-        if ($element instanceof DateSelect || $element instanceof OurDateSelect) {
+        if ($element instanceof DateSelect) {
             //Two templates reach for these directly.
             $described['dayElementName']   = (string) $element->getDayElement()->getName();
             $described['monthElementName'] = (string) $element->getMonthElement()->getName();

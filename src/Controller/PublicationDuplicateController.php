@@ -12,7 +12,7 @@ use App\Sion\SiteWideIdentifier;
 use Books\Form\CopyToMainCorpusForm;
 use Books\Form\CreateNewEditionForm;
 use Books\Model\PublicationsTable;
-use Laminas\Form\Form;
+use SionModel\Form\Form;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier as IdentifierValidator;
 use SionModel\Messaging\FlashMessages;

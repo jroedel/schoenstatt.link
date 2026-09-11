@@ -11,7 +11,7 @@ use Books\Form\LibraryForm;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use SionModel\Form\Element\Select;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use Locale;
 use RuntimeException;
 use Schoenstatt\Model\SchoenstattTable;

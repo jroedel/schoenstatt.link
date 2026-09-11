@@ -6,7 +6,7 @@ namespace App\Sion;
 
 use Books\Form\BookForm;
 use SionModel\Form\Element\Select;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 
 use function is_array;
 use function is_int;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Unit;
 
 use InvalidArgumentException;
-use Laminas\Form\Form as LaminasForm;
+use SionModel\Form\Form;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Form\Element\Checkbox;
@@ -154,7 +154,7 @@ final class ElementModelBehaviourTest extends TestCase
      */
     public function testAFileInputPutsTheFormIntoMultipartEncoding(): void
     {
-        $form    = new LaminasForm('import');
+        $form    = new Form('import');
         $element = new File('file');
 
         self::assertNull($form->getAttribute('enctype'));
