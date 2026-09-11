@@ -7,7 +7,7 @@ namespace SchoenstattTest\Integration;
 use Laminas\Db\Adapter\AdapterInterface;
 use SionModel\Form\Element\Checkbox;
 use SionModel\Form\Element\Select;
-use Laminas\Form\Fieldset;
+use SionModel\Form\Fieldset;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormRepository;

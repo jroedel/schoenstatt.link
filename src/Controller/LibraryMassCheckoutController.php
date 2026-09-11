@@ -10,7 +10,7 @@ use App\Laminas\HostMessages;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
-use Laminas\Form\Element\Collection;
+use SionModel\Form\Collection;
 use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;

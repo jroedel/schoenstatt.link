@@ -2,7 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Form\Form;
+use SionModel\Form\Form;
 use Laminas\InputFilter\Factory as InputFilterFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

@@ -12,7 +12,7 @@ use Books\Form\CheckinForm;
 use Books\Form\InactivationForm;
 use Books\Model\LibraryTable;
 use Exception;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use RuntimeException;
 use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;

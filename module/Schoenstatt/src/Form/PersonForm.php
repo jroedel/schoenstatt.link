@@ -15,7 +15,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     {
         parent::__construct('edit_person');
     }
-    public function init()
+    public function init(): void
     {
         $this->add([
             'name' => 'email',
@@ -503,9 +503,10 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'data-parser' => 'CommonMark',
                 'rows' => 8,
             ],
-            'filters' => [
-                ['name' => 'StripTags'],
-            ],
+            //A `filters` key sat here and did nothing: an element specification carries
+            //name, type, options and attributes, and laminas' factory discarded the rest
+            //in silence. The StripTags it named is real and is in
+            //getInputFilterSpecification() below, where the engine reads it.
         ]);
 
         $this->add([

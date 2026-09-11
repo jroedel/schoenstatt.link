@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Schoenstatt\Association;
 
-use Laminas\Form\Factory as FormFactory;
-use Laminas\Form\FormElementManager;
-use Laminas\ServiceManager\ServiceManager;
 use Schoenstatt\Form\AssociationForm;
 use SionModel\Form\Element\Registry;
 use SionModel\Form\Validation\FormSpecification;
@@ -45,9 +42,9 @@ use SionModel\Form\Validation\InputFilter as Engine;
  * validates through — {@see Engine} — is the same one every web form uses, resolving
  * its rules out of a bare `ServiceManager`.
  *
- * The element manager below is configured from {@see Registry}, the same list the merged
- * `form_elements` config carries — SionModel's `Phone` among them — rather than by loading
- * SionModel's module config.
+ * The elements come from {@see Registry} — the one list every path that builds an element
+ * reads, SionModel's `Phone` among them — which the form's own factory reaches without
+ * being told, so this path needs no module config and no container.
  *
  * ## The CSRF seam
  *
@@ -123,13 +120,11 @@ final class AssociationValidator
      */
     private function form(): AssociationForm
     {
-        //The same list the merged `form_elements` config carries, because this path never
-        //sees that config: three places build elements and a private copy of the list here
-        //would silently keep building laminas elements after everything else stopped.
-        $elements = new FormElementManager(new ServiceManager(), Registry::config());
-
+        //Nothing to wire: `SionModel\Form\Fieldset::getFormFactory()` reaches
+        //`SionModel\Form\Element\Registry` on its own, and that is the one list every path
+        //reads. It took a hand-built `FormElementManager` over a `ServiceManager` here
+        //until the form model landed, for the single purpose of naming the same classes.
         $form = new AssociationForm();
-        $form->setFormFactory(new FormFactory($elements));
         $form->setFieldDomains($this->domains);
         $form->init();
 

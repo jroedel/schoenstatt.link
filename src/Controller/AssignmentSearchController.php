@@ -6,7 +6,7 @@ namespace App\Controller;
 
 use App\Laminas\HostMessages;
 use App\Laminas\ServiceBridge;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use Schoenstatt\Form\AdvancedSearchForm;
 use Schoenstatt\Form\SearchForm;
 use Schoenstatt\Model\SchoenstattTable;

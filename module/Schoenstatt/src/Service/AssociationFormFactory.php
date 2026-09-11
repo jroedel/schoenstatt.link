@@ -32,10 +32,11 @@ class AssociationFormFactory implements FactoryInterface
 
         $countryNames = $container->get('CountryValueOptions');
 
-        /** @var \Laminas\Form\FormElementManager $formManager */
-        $formManager = $container->get('FormElementManager');
-        /** @var \Schoenstatt\Form\AssociationForm $form */
-        $form = $formManager->get(AssociationForm::class);
+        //`new`, not a plugin manager: `SionModel\Form\Fieldset::getFormFactory()`
+        //reaches the element registry on its own, so there is nothing a container
+        //could inject that the form does not already find.
+        $form = new AssociationForm();
+        $form->init();
 
         $form->get('parentId')->setValueOptions($associations);
         $form->get('kind')->setValueOptions($kinds);

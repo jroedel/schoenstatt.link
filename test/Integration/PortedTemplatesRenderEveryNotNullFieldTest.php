@@ -8,6 +8,7 @@ use App\Controller\EntityCreateController;
 use App\Controller\EntityEditController;
 use Laminas\Db\Adapter\AdapterInterface;
 use PHPUnit\Framework\TestCase;
+use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Service\EntitiesService;
 use Symfony\Component\Routing\Route;
@@ -30,6 +31,7 @@ use function strtolower;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Fuzz/FormRepository.php';
+require_once __DIR__ . '/../Form/Engine.php';
 
 /**
  * A ported form's template must render, or carry, every field its table insists on.
@@ -133,8 +135,15 @@ final class PortedTemplatesRenderEveryNotNullFieldTest extends TestCase
             //What the form yields when the browser posts nothing at all. Not a realistic
             //submission — it is the *worst case per field*, which is what an unrendered field
             //produces on an otherwise complete submission.
-            $filter = $form->getInputFilter();
+            //
+            //The engine, not `Laminas\Form\Form::getInputFilter()`: the assembled filter has
+            //decided nothing since #239 and does not exist since the form model landed. The
+            //verdict is asked for and discarded because the engine fills its values during
+            //validation rather than on demand.
+            $filter   = Engine::of($form);
+            $formSpec = $filter->specification();
             $filter->setData([]);
+            $filter->isValid();
             $values = $filter->getValues();
 
             foreach ($spec->updateColumns as $property => $column) {
@@ -144,7 +153,7 @@ final class PortedTemplatesRenderEveryNotNullFieldTest extends TestCase
                 if (! isset($required[$table][strtolower((string) $column)])) {
                     continue; //nullable, or auto_increment
                 }
-                if ($filter->has($property) && $filter->get($property)->isRequired()) {
+                if (Engine::requires($formSpec, $property)) {
                     continue; //the moderator gets a validation message, not a write
                 }
                 if ($this->mentions($markup, $property)) {

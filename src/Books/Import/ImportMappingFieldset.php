@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Books\Import;
 
-use Laminas\Form\Fieldset;
+use SionModel\Form\Fieldset;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
-use SionModel\Form\Element\Registry;
 
 /**
  * One select per importable field, each offering the uploaded file's own columns.
@@ -46,14 +45,6 @@ final class ImportMappingFieldset extends Fieldset implements InputFilterProvide
     public function __construct(array $columnOptions, ColumnMap $map)
     {
         parent::__construct(self::NAME);
-
-        //A fieldset is not a form, so nothing gives it the application's element manager:
-        //`Laminas\Form\Fieldset::getFormFactory()` would make a bare one whose aliases are
-        //laminas' own, and every element below would be a laminas element beside the
-        //replacements everywhere else. SionModel\Form\Form does this for forms; this is the
-        //same line for the two fieldsets that stand on their own, and it goes away when the
-        //form model takes Fieldset too.
-        $this->setFormFactory(Registry::formFactory());
 
         foreach (ImportColumns::all() as $column) {
             $index = $map->indexOf($column->field);

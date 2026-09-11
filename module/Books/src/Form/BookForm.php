@@ -418,7 +418,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
         return $this;
     }
 
-    public function setData($data)
+    public function setData(iterable $data): static
     {
         if (isset($this->libraryOptions) && isset($this->libraryOptions->libraryId)) {
             $data['libraryId'] = $this->libraryOptions->libraryId;

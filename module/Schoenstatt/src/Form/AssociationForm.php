@@ -36,7 +36,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
         $this->fieldDomains = $domains;
     }
 
-    public function init()
+    public function init(): void
     {
         $urlLabels = [
             'Blog' => 'Blog',
@@ -729,7 +729,7 @@ so users can double-check. Warning: this field is not translated.',
         return $this->filterSpec;
     }
 
-    public function setData($data)
+    public function setData(iterable $data): static
     {
         $phoneLabels = self::PHONE_LABEL_VALUE_OPTIONS;
         $hasChanged = false;

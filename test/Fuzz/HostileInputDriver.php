@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Fuzz;
 
-use Laminas\Form\Fieldset;
+use SionModel\Form\Fieldset;
 use SionModel\Form\Form;
 use Throwable;
 

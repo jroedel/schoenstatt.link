@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace SchoenstattTest\Form;
 
 use App\Locale\Locales;
-use Laminas\Form\Element\Collection;
-use Laminas\Form\Fieldset;
-use Laminas\Form\ElementInterface;
-use Laminas\Form\FormInterface;
+use SionModel\Form\Collection;
+use SionModel\Form\Fieldset;
+use SionModel\Form\ElementInterface;
+use SionModel\Form\FormInterface;
 use Locale;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Form\BootstrapFormRenderer;

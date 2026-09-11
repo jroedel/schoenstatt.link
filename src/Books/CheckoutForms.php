@@ -8,9 +8,9 @@ use App\Laminas\ServiceBridge;
 use Books\Form\CheckoutForm;
 use Books\Form\MassCheckoutForm;
 use Books\Model\LibraryTable;
-use Laminas\Form\Element\Collection;
+use SionModel\Form\Collection;
 use SionModel\Form\Element\Select;
-use Laminas\Form\Fieldset;
+use SionModel\Form\Fieldset;
 use RuntimeException;
 
 use function array_key_exists;

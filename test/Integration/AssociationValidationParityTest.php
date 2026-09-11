@@ -8,9 +8,6 @@ use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use App\Schoenstatt\Association\AssociationValidator;
 use InvalidArgumentException;
-use Laminas\Form\Factory as FormFactory;
-use Laminas\Form\FormElementManager;
-use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -18,7 +15,6 @@ use Schoenstatt\Form\AssociationForm;
 use SionModel\Form\Element\Checkbox;
 use SionModel\Form\Element\Date as DateElement;
 use SionModel\Form\Element\Email;
-use SionModel\Form\Element\Registry;
 use SionModel\Form\Element\Url;
 use SionModel\Form\SionForm;
 
@@ -80,23 +76,18 @@ final class AssociationValidationParityTest extends TestCase
     }
 
     /**
-     * A form that can be built without the application.
+     * A form that can be built without the application — the same three lines
+     * `App\Schoenstatt\Association\AssociationValidator` uses, which is the point: the two
+     * are compared below, so building this one differently would compare two things neither
+     * of which is what the API runs.
      *
-     * `init()` needs one thing the default `FormElementManager` does not have: the
-     * `Phone` element, which `SionModel` registers as an invokable in its module
-     * config. Registering just that keeps the test free of module loading — the point
-     * being to compare two rule sets, not to rebuild the application around them.
+     * It took a hand-configured `FormElementManager` until the form model landed, so that
+     * `'type' => 'Phone'` would not silently resolve to something else here.
+     * `SionModel\Form\Fieldset::getFormFactory()` reaches the one registry by itself now.
      */
     private static function form(): AssociationForm
     {
-        //`Registry::config()`, not a private list of one: AssociationValidator builds this
-        //form the same way, and a manager configured with only `Phone` would hand this test
-        //laminas elements while the application gets ours — which is exactly the drift the
-        //assertions below exist to catch.
-        $elements = new FormElementManager(new ServiceManager(), Registry::config());
-
         $form = new AssociationForm();
-        $form->setFormFactory(new FormFactory($elements));
         $form->setFieldDomains(self::domains());
         $form->init();
 
