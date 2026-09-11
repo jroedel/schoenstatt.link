@@ -368,11 +368,20 @@ Taken 2026-09-09:
 - **Dependencies are minimised everywhere**, not only laminas: see §8.
 - `slm/locale` and `laminas-twb-bundle` go in step 0; the `RestApi` module is deleted.
 
+Settled since:
+
+- **Forms: an own minimal layer, not Symfony Form + Validator.** Decided by measurement
+  during the step 5 cutover — `SionModel\Form\Validation\InputFilter` reads a
+  specification that is plain data, `FormSpecification::of($form)` assembles it, and
+  `SionModel\Form\Element` replaced the elements. Symfony Form would have meant rewriting
+  41 forms and their rendering against a different model to reach the same place.
+- **Mail templates: Twig**, at step 0.
+
 Still open:
 
 1. **Database layer**: Doctrine DBAL (recommended) or a thin PDO wrapper of our own.
-2. **Forms**: Symfony Form + Validator (recommended) or an own minimal layer.
-3. **Mail templates in step 0**: Twig (recommended) or a PhpRenderer factory.
+   `SionModel\Db\Model\SionTable` is 2,412 lines over `TableGateway`/`Sql` and 94 files
+   name `Laminas\Db`, so this is the one remaining decision with real weight.
 
 ## 7. How the Symfony side is built (reference)
 
