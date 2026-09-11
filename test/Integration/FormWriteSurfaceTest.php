@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use SionModel\Form\Element\Csrf;
 use Laminas\Form\Form;
 use PHPUnit\Framework\TestCase;
+use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Form\CommentForm;
 
@@ -20,17 +20,20 @@ use function strlen;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Fuzz/FormRepository.php';
+require_once __DIR__ . '/../Form/Engine.php';
 
 /**
  * A form's write surface is its elements, and nothing else.
  *
  * ## The rule
  *
- * `Laminas\Form\Form::getInputFilter()` builds an input for **every element** and for
- * **every key of `getInputFilterSpecification()`**, and merges the two. `getValues()`
- * then returns a value for every input it holds — present, not absent — and controllers
- * hand that array straight to `SionTable::createEntity()`/`updateEntity()`, which writes
- * whatever the entity's `updateColumns` map recognises.
+ * `SionModel\Form\Validation\FormSpecification::of()` writes a rule set for **every
+ * element** and for **every key of `getInputFilterSpecification()`**, and the engine's
+ * `getValues()` then returns a value for every one of them — present, not absent — and
+ * controllers hand that array straight to `SionTable::createEntity()`/`updateEntity()`,
+ * which writes whatever the entity's `updateColumns` map recognises. (laminas'
+ * `getInputFilter()` assembled the same two halves, and was what this file read until the
+ * engine became the thing that runs.)
  *
  * So a specification key naming no element is not the harmless dead weight it looks
  * like. It is a column the form writes and no visitor can see.
@@ -91,9 +94,9 @@ final class FormWriteSurfaceTest extends TestCase
             $compared++;
 
             //`has()`, not `getElements()`: the latter excludes fieldsets and collections,
-            //and a Collection's input filter key is exactly as legitimate as an element's.
+            //and a Collection's specification key is exactly as legitimate as an element's.
             //Books\Form\MassCheckoutForm's `checkout` collection is what proved it.
-            foreach (array_keys($form->getInputFilter()->getInputs()) as $name) {
+            foreach (array_keys(Engine::specificationOf($form)) as $name) {
                 if (! $form->has((string) $name)) {
                     $offenders[] = sprintf('%s: %s', $class, $name);
                 }
@@ -121,10 +124,10 @@ final class FormWriteSurfaceTest extends TestCase
      */
     public function testTheCommentBodyIsRequiredFilteredAndBoundedByItsColumn(): void
     {
-        $filter = (new CommentForm())->getInputFilter();
-        $filter->remove('security');
+        $form = new CommentForm();
+        $spec = Engine::specificationOf($form, ['security']);
 
-        self::assertFalse($filter->has('text'), "the phantom key is back");
+        self::assertArrayNotHasKey('text', $spec, 'the phantom key is back');
 
         $cases = [
             //value                                    valid   expected output
@@ -136,6 +139,10 @@ final class FormWriteSurfaceTest extends TestCase
         ];
 
         foreach ($cases as $value => [$expectedValid, $expectedOutput]) {
+            //A new engine per case: it holds the data, the values and the messages of one
+            //validation, and reusing one would compare a case against its predecessor's
+            //verdict.
+            $filter = Engine::of($form, ['security']);
             $filter->setData(['comment' => (string) $value, 'redirect' => '/en/SL500001C']);
 
             self::assertSame(
@@ -165,9 +172,9 @@ final class FormWriteSurfaceTest extends TestCase
 
         //The association entity's columns, which this form never wrote and which its
         //specification nevertheless carried rules for.
-        $inputs = $form->getInputFilter();
+        $spec = Engine::specificationOf($form);
         foreach (['street1', 'street2', 'cityState', 'zip'] as $name) {
-            self::assertFalse($inputs->has($name), sprintf("%s is an association column, not a person one", $name));
+            self::assertArrayNotHasKey($name, $spec, sprintf('%s is an association column, not a person one', $name));
         }
     }
 
@@ -177,15 +184,17 @@ final class FormWriteSurfaceTest extends TestCase
     public function testSavingAPublicationDoesNotTouchIsAccessibleForFree(): void
     {
         $form   = FormRepository::instance()->forms()['Books\Form\PublicationForm'];
-        $filter = $form->getInputFilter();
+        $filter = Engine::of($form);
 
-        //**The CSRF input is deliberately left in place.** This form comes from
-        //FormRepository, which builds each one once and hands the same object to every
-        //test in the process, so `$filter->remove('security')` here removed it for
-        //everybody — and WholeFormEngineParityTest duly reported PublicationForm as the
-        //one form whose assembled inputs disagreed with FormSpecification's, in a run
-        //where it passed on its own. Nothing below needs it gone: getValues() returns a
-        //value for every input whatever the verdict, and the verdict is not asserted.
+        //**The CSRF rule is deliberately left in place.** Nothing below needs it gone:
+        //getValues() returns a value for every rule whatever the verdict, and the verdict
+        //is not asserted. Dropping it mattered while this read the form's own assembled
+        //filter — FormRepository builds each form once and hands the same object to every
+        //test, so `remove('security')` removed it for everybody, and
+        //WholeFormEngineParityTest duly reported PublicationForm as the one form whose
+        //inputs disagreed, in a run where it passed alone. An engine is built per call
+        //from a copy of the specification, so that particular trap is gone; the reasoning
+        //is kept because the trap it describes is about shared subjects, not about CSRF.
         //a save that never mentions the field, which is every save: no element renders it
         $filter->setData(['title' => 'A publication', 'resourceId' => null]);
         $filter->isValid();
