@@ -6,7 +6,7 @@ namespace App\Sion;
 
 use App\Books\LibraryScopedForms;
 use App\Laminas\ServiceBridge;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use RuntimeException;
 
 use function count;

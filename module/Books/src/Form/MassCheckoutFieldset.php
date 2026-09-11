@@ -3,8 +3,7 @@ namespace Books\Form;
 
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Carbon\Carbon;
-use Laminas\Form\Fieldset;
-use SionModel\Form\Element\Registry;
+use SionModel\Form\Fieldset;
 
 class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterface
 {
@@ -12,13 +11,6 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
     {
         parent::__construct('checkout');
 
-        //A fieldset is not a form, so nothing gives it the application's element manager:
-        //`Laminas\Form\Fieldset::getFormFactory()` would make a bare one whose aliases are
-        //laminas' own, and every element below would be a laminas element beside the
-        //replacements everywhere else. SionModel\Form\Form does this for forms; this is the
-        //same line for the two fieldsets that stand on their own, and it goes away when the
-        //form model takes Fieldset too.
-        $this->setFormFactory(Registry::formFactory());
         $today = new Carbon();
         $todayText = $today->format('Y-m-d');
         $this->add([

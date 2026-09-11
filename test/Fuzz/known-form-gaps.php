@@ -90,15 +90,11 @@ return [
     // filters/validators keys in an element definition, which Laminas\Form\Factory discards without a
     // word. The field looks protected in the source and is completely unvalidated.
     'deadElementKeys' => [
-        'module/Schoenstatt/src/Form/PersonForm.php:506 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
     ],
 
     // Data elements the input filter spec never names. A plain Text/Textarea/Hidden in this state is
     // total pass-through: no filter, no validator, no length bound.
     'elementsMissingFromSpec' => [
-    ],
-
-    'filteringSuppliedOnlyByElement' => [
     ],
 
     // Entries in open-ended-choice-fields.php that matched no field this run. Either the field is
@@ -173,13 +169,5 @@ return [
 
     // Forms no test in this suite can examine, because nothing can build them.
     'unconstructableForms' => [
-    ],
-
-    // Validators that exist only because an element supplied them, with nothing in the form
-    // specification saying so — a Select's own InArray, Uri on a Url element, Csrf on the security
-    // element no form names. The work list for step 5: SionModel\Form\Validation\InputFilter is driven
-    // by the specification alone, so every entry here is a check that disappears on the day it
-    // replaces Laminas\InputFilter. Must reach zero before that cutover.
-    'validationSuppliedOnlyByElement' => [
     ],
 ];

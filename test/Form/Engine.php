@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Form;
 
-use Laminas\Form\Fieldset;
+use SionModel\Form\Fieldset;
 use SionModel\Form\Validation\FormSpecification;
 use SionModel\Form\Validation\InputFilter;
 

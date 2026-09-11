@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Form\Form;
+use SionModel\Form\Form;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormRepository;

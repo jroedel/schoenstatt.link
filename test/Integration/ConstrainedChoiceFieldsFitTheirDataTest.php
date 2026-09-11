@@ -6,8 +6,8 @@ namespace SchoenstattTest\Integration;
 
 use Laminas\Db\Adapter\AdapterInterface;
 use SionModel\Form\Element\Select;
-use Laminas\Form\Fieldset;
-use Laminas\Form\Form;
+use SionModel\Form\Fieldset;
+use SionModel\Form\Form;
 use Laminas\Validator\Explode;
 use Laminas\Validator\InArray;
 use PHPUnit\Framework\TestCase;

@@ -28,10 +28,11 @@ class RoleFormFactory implements FactoryInterface
         $associations = $table->getAssociationValueOptions();
         $roleTitles = $table->getRoleTitleValueOptions($translator);
 
-        /** @var \Laminas\Form\FormElementManager $formManager */
-        $formManager = $container->get('FormElementManager');
-        /** @var RoleForm $form */
-        $form = $formManager->get(RoleForm::class);
+        //`new`, not a plugin manager: `SionModel\Form\Fieldset::getFormFactory()`
+        //reaches the element registry on its own, so there is nothing a container
+        //could inject that the form does not already find.
+        $form = new RoleForm();
+        $form->init();
 
         $form->get('associationId')->setValueOptions($associations);
         $form->get('roleTitle')->setValueOptions($roleTitles);

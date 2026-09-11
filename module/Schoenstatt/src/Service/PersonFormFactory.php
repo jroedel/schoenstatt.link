@@ -31,10 +31,11 @@ class PersonFormFactory implements FactoryInterface
         $personTags = $container->get('Schoenstatt\PersonTagsValueOptions');
 //      $adminTags = $table->getPersonAdminTags();
 
-        /** @var \Laminas\Form\FormElementManager $formManager */
-        $formManager = $container->get('FormElementManager');
-        /** @var \Schoenstatt\Form\PersonForm $form */
-        $form = $formManager->get(PersonForm::class);
+        //`new`, not a plugin manager: `SionModel\Form\Fieldset::getFormFactory()`
+        //reaches the element registry on its own, so there is nothing a container
+        //could inject that the form does not already find.
+        $form = new PersonForm();
+        $form->init();
 
         $form->get('spousePersonId')->setValueOptions($persons);
         $form->get('country')->setValueOptions($countryNames);

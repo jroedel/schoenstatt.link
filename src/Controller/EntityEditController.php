@@ -10,7 +10,7 @@ use App\Sion\Entities;
 use App\Sion\EntityEdit;
 use App\Sion\FormViewVariables;
 use App\Sion\SiteWideIdentifier;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use Locale;
 use RuntimeException;
 use SionModel\Messaging\FlashMessages;

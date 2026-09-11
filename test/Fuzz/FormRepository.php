@@ -8,7 +8,8 @@ use App\Books\CheckoutForms;
 use App\Books\LibraryScopedForms;
 use App\Laminas\ContainerFactory;
 use App\Laminas\ServiceBridge;
-use Laminas\Form\Fieldset;
+use SionModel\Form\Element\Registry;
+use SionModel\Form\Fieldset;
 use Laminas\ServiceManager\ServiceManager;
 use Laminas\Session\Config\ConfigInterface as SessionConfigInterface;
 use Laminas\Session\Config\StandardConfig;
@@ -199,6 +200,18 @@ final class FormRepository
                 continue;
             }
 
+            //The form model itself is not a form of this application. `Collection` and
+            //`Form` are element *types* — `SionModel\Form\Element\Registry` names them, and
+            //a form writes `'type' => 'Collection'` the way it writes `'type' => 'Select'` —
+            //and they live under `module/SionModel/src/Form/` because that is where the
+            //model lives, which is the only reason the scan sees them. Driving them as
+            //subjects means fuzzing an unnamed, empty collection: `HostileInputDriver` wraps
+            //a bare fieldset in a throwaway form, and `add()` refuses an element with no
+            //name. They arrived here when the model stopped being laminas'.
+            if (in_array($fqcn, Registry::types(), true)) {
+                continue;
+            }
+
             $found[$fqcn] = $file;
         }
 
@@ -241,6 +254,19 @@ final class FormRepository
         $files      = [];
         $repository = dirname(__DIR__, 2);
 
+        //Every file that declares an element type, which the scan must not read: they are
+        //the model, not forms of this application, and their own `add()` calls are the
+        //model adding a cloned collection row — which `ElementDefinitionScanner` reports as
+        //an add() it cannot analyse, because it is not an array literal and never will be.
+        //Same rule as discover()'s, applied to files rather than classes.
+        $model = [];
+        foreach (Registry::types() as $class) {
+            $file = (new ReflectionClass($class))->getFileName();
+            if (false !== $file) {
+                $model[$file] = true;
+            }
+        }
+
         foreach ([$repository . '/module', $repository . '/src'] as $root) {
             if (! is_dir($root)) {
                 continue;
@@ -251,6 +277,9 @@ final class FormRepository
             );
             foreach ($iterator as $file) {
                 if (! $file->isFile() || $file->getExtension() !== 'php') {
+                    continue;
+                }
+                if (isset($model[$file->getPathname()])) {
                     continue;
                 }
                 if (self::looksLikeAFormSource($file->getPathname())) {

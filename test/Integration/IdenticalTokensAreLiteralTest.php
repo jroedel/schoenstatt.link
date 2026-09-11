@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Books\LibraryDeleteForm;
-use Laminas\Form\Form;
+use SionModel\Form\Form;
 use Laminas\Validator\Identical;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Fuzz\FormRepository;

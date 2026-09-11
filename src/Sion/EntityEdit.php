@@ -8,7 +8,7 @@ use App\Books\LibraryScopedForms;
 use App\Laminas\ServiceBridge;
 use App\Acl\IsAllowed;
 use Closure;
-use Laminas\Form\FormInterface;
+use SionModel\Form\FormInterface;
 use SionModel\Form\DeleteEntityForm;
 use RuntimeException;
 

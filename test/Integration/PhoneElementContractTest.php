@@ -7,7 +7,7 @@ namespace SchoenstattTest\Integration;
 use Laminas\Filter\StringTrim;
 use Laminas\Filter\StripNewlines;
 use Laminas\Filter\ToNull;
-use Laminas\Form\Fieldset;
+use SionModel\Form\Fieldset;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Form\Element\Phone;

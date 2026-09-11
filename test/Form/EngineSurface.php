@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Form;
 
 use App\Locale\Locales;
-use Laminas\Form\Fieldset;
+use SionModel\Form\Fieldset;
 use Locale;
 use SchoenstattTest\Fuzz\FormRepository;
 

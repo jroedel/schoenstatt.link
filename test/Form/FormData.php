@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Form;
 
-use Laminas\Form\Element\Collection;
-use Laminas\Form\ElementInterface;
-use Laminas\Form\Fieldset;
+use SionModel\Form\Collection;
+use SionModel\Form\ElementInterface;
+use SionModel\Form\Fieldset;
 use SionModel\Form\Element\Button;
 use SionModel\Form\Element\Checkbox;
 use SionModel\Form\Element\Csrf;
