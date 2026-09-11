@@ -10,11 +10,13 @@ use Books\Form\BookForm;
 use Laminas\ServiceManager\ServiceManager;
 use PDO;
 use PHPUnit\Framework\TestCase;
+use SchoenstattTest\Form\Engine;
 
 use function getenv;
 use function sprintf;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../Form/Engine.php';
 
 /**
  * Whether a book needs a call number follows the library, and the specification says so.
@@ -37,9 +39,15 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * ## What is asserted
  *
  * Both directions, against two real libraries, at both layers: what the **specification**
- * says, and what the **assembled filter** does. Asserting only the assembled filter would
- * pass just as well with the old patch in place, which is the whole point — the change
- * being pinned is that the specification is now the thing that knows.
+ * says, and what the **engine** does with a book that has no call number. Asserting the
+ * specification alone would not notice a rule that the engine cannot reach; asserting the
+ * engine alone would have passed just as well with the old patch in place, which is the
+ * whole point — the change being pinned is that the specification is now the thing that
+ * knows.
+ *
+ * It read `$form->getInputFilter()->get('callNumber')->isRequired()` for the second half
+ * until 2026-09-11. That object is laminas' assembled filter, which nothing has consulted
+ * since the cutover, and it leaves with `Laminas\Form\Form`.
  */
 final class CallNumberRequirementTest extends TestCase
 {
@@ -72,10 +80,18 @@ final class CallNumberRequirementTest extends TestCase
                 )
             );
 
+            //The engine's verdict, not its specification read twice: a book with every
+            //other field left alone reports a message on `callNumber` exactly when the
+            //library requires one.
+            $engine = Engine::of($form, ['security']);
+            $engine->setData(['callNumber' => '']);
+            $engine->setValidationGroup(['callNumber']);
+            $engine->isValid();
+
             self::assertSame(
                 $expected,
-                $form->getInputFilter()->get('callNumber')->isRequired(),
-                sprintf('the assembled filter disagrees for library %d', $libraryId)
+                [] !== ($engine->getMessages()['callNumber'] ?? []),
+                sprintf('the engine disagrees for library %d', $libraryId)
             );
         }
     }
