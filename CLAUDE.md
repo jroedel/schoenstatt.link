@@ -133,7 +133,10 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   every change is a konsoleH ticket and a version flip reverts them all (table in
   [docs/DEPLOY.md](docs/DEPLOY.md)). Confirm `PHP_INI_SYSTEM` values from `/en/sm/phpinfo`,
   never from CLI.
-- `config.platform.php` is 8.4.24: the ceiling the locked packages impose, not the runtime.
+- `config.platform.php` is **8.5.9**, the version production runs. It was 8.4.24 while
+  locked packages capped PHP there; nothing does since 2026-09-11, so the pin states the
+  runtime again. `vendor/composer/platform_check.php` still gates at 8.4.1 — it comes from
+  the packages' own requirements, not from this — so no release demands 8.5 of a server.
   Production logs are local time; DB timestamps are UTC.
 
 ## Local environment (Docker capsule)
