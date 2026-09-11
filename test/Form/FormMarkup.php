@@ -25,6 +25,7 @@ use function array_slice;
 use function count;
 use function date;
 use function implode;
+use function gc_collect_cycles;
 use function ksort;
 use function md5;
 use function preg_match_all;
@@ -74,13 +75,16 @@ require_once __DIR__ . '/FormData.php';
  *   state with `getMessages()` behind it, so it is the only one that records what
  *   `errors()` emits — which is also the only recording of the twenty laminas validator
  *   classes' message text that survives their removal.
- * - **prepared** — `prepare()`, which is what renames a fieldset's elements to
- *   `fieldset[element]`. `App\Controller\LibraryMassCheckoutController` is the one
- *   controller that calls it, and the renaming is load-bearing twice over: it is what a
- *   browser posts, and `library-mass-checkout.html.twig`'s script selects
- *   `input[name='checkout[0][checkedOutOn]']` by that exact name. It is also a
- *   `Laminas\Form\Form` behaviour with nothing else recording it. Recorded last, so that
- *   the other three describe the forms as the pages that do not call it render them.
+ * - **prepared** — `prepare()` over a form with no data, which is what the mass-checkout
+ *   page renders on GET. Two behaviours, and both are load-bearing: it renames a
+ *   fieldset's elements to `fieldset[element]` — what a browser posts, and what
+ *   `library-mass-checkout.html.twig`'s script selects by, as
+ *   `input[name='checkout[0][checkedOutOn]']` — and it materialises a collection's `count`
+ *   rows, which is the difference between the four the librarian sees and none.
+ *   `App\Controller\LibraryMassCheckoutController` is the one controller that calls it.
+ *   It gets a build of its own; see {@see BUILDS} for the laminas behaviour that forces
+ *   that, which is also the reason the other three describe the forms as the pages that
+ *   never call `prepare()` render them.
  *
  * A fifth state — an empty submit, so that required fields report "value is required" —
  * was measured and dropped: `Form::isValid()` sets the messages it finds and clears none,
@@ -153,7 +157,27 @@ final class FormMarkup
     public const BASELINE_STATE = [
         'populated' => 'pristine',
         'invalid'   => 'pristine',
-        'prepared'  => 'invalid',
+        'prepared'  => 'pristine',
+    ];
+
+    /**
+     * Which states share one build of every form, in order.
+     *
+     * The first three are cumulative on purpose: `pristine` is read before anything is
+     * set, and each of the other two overwrites every value the previous one wrote, so one
+     * build answers all three and the ten seconds and 250 MB a build costs are spent once.
+     *
+     * `prepared` cannot join them, and the reason is a laminas behaviour worth naming:
+     * `Collection::addNewTargetElementInstance()` sets `shouldCreateChildrenOnPrepareElement`
+     * to false, so a collection that has already taken data renders exactly the rows that
+     * were submitted and `prepare()` adds none. Recorded on the same build as the data
+     * states, the mass-checkout form's collection showed **one** row — the one `invalid`
+     * gave it — where the page a librarian opens shows the four its `count` asks for. So
+     * `prepared` gets a build of its own, pristine, and the 250 MB is freed first.
+     */
+    private const BUILDS = [
+        ['pristine', 'populated', 'invalid'],
+        ['prepared'],
     ];
 
     /** @var array<string, int> */
@@ -192,51 +216,66 @@ final class FormMarkup
     /** @return array<string, array<string, array<string, string>>> */
     public function record(): array
     {
-        //The locale, for the same reason ElementSurface pins it: a form factory asks
-        //SchoenstattTable for its value options and that reads \Locale::getDefault() to
-        //pick a name out of `nameByLocale`. A CLI process inherits `en_US_POSIX`, which is
-        //not one of the five keys, so every association option would be labelled `null`.
-        //Its own repository, because the shared one is built by whichever test touches it
-        //first and would already hold whatever locale that test ran under.
-        $previous = Locale::getDefault();
-        Locale::setDefault(Locales::DEFAULT_LOCALE);
-
-        try {
-            $forms = FormRepository::fresh()->forms();
-        } finally {
-            Locale::setDefault($previous);
-        }
-
         $renderer = new BootstrapFormRenderer(static fn (string $message): string => $message);
 
-        //One build, three states, applied in this order: `pristine` is read before
-        //anything is set, and the two states that set data each overwrite every value the
-        //previous one wrote. Only `invalid` validates, so no state inherits another's
-        //messages.
         $recorded = [];
         //The full markup of every state, kept beside the recorded differences: a state
         //records what moved since the state it follows, so the comparison needs that
         //state's whole rendering rather than its own list of differences.
         $full = [];
 
-        foreach (self::STATES as $state) {
-            $this->quietly(function () use ($forms, $state): void {
-                self::apply($forms, $state);
-            });
+        foreach (self::BUILDS as $states) {
+            $forms = $this->build();
 
-            $full[$state] = $this->quietly(fn (): array => self::renderAll($forms, $renderer));
-            $against      = self::BASELINE_STATE[$state] ?? null;
+            foreach ($states as $state) {
+                $this->quietly(function () use ($forms, $state): void {
+                    self::apply($forms, $state);
+                });
 
-            foreach ($full[$state] as $path => $helpers) {
-                $recorded[$path][$state] = null === $against
-                    ? $helpers
-                    : self::differences($full[$against][$path] ?? [], $helpers);
+                $full[$state] = $this->quietly(fn (): array => self::renderAll($forms, $renderer));
+                $against      = self::BASELINE_STATE[$state] ?? null;
+
+                foreach ($full[$state] as $path => $helpers) {
+                    $recorded[$path][$state] = null === $against
+                        ? $helpers
+                        : self::differences($full[$against][$path] ?? [], $helpers);
+                }
             }
+
+            //Freed before the next build rather than after the loop: two repositories
+            //alive at once is 500 MB of forms and their value options, and the integration
+            //suite runs at 1 GB with other tests' repositories already in it.
+            unset($forms);
+            gc_collect_cycles();
         }
 
         ksort($recorded);
 
         return $recorded;
+    }
+
+    /**
+     * Every form in the application, built under the locale a Symfony-served request has.
+     *
+     * The locale, for the same reason ElementSurface pins it: a form factory asks
+     * SchoenstattTable for its value options and that reads `\Locale::getDefault()` to pick
+     * a name out of `nameByLocale`. A CLI process inherits `en_US_POSIX`, which is not one
+     * of the five keys, so every association option would be labelled `null`. Its own
+     * repository, because the shared one is built by whichever test touches it first and
+     * would already hold whatever locale that test ran under.
+     *
+     * @return array<class-string, Fieldset>
+     */
+    private function build(): array
+    {
+        $previous = Locale::getDefault();
+        Locale::setDefault(Locales::DEFAULT_LOCALE);
+
+        try {
+            return FormRepository::fresh()->forms();
+        } finally {
+            Locale::setDefault($previous);
+        }
     }
 
     // ------------------------------------------------------------------ states
