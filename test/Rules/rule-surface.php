@@ -336,9 +336,9 @@ return array (
       'float-where-int-wanted' => 'string "3.7"',
       'leading-plus' => 'string "+5"',
       'hex-literal' => 'string "0x1F"',
-      'empty-array' => 'threw Laminas\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 0)',
-      'flat-array' => 'threw Laminas\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 2)',
-      'nested-array' => 'threw Laminas\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 1)',
+      'empty-array' => 'threw SionModel\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 0)',
+      'flat-array' => 'threw SionModel\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 2)',
+      'nested-array' => 'threw SionModel\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 1)',
       'date-garbage' => 'string "asdf"',
       'date-relative-word' => 'string "tomorrow"',
       'date-relative-500y' => 'string "+500 years"',
@@ -394,7 +394,7 @@ return array (
       'handle' => 'string "someone_1"',
       'opening-hours-json' => 'string "[{"dayOfWeek":"Monday","opens":"09:00","closes":"17:00"}]"',
       'date-select-parts' => 'string "2020-03-15"',
-      'date-select-no-year' => 'threw Laminas\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 2)',
+      'date-select-no-year' => 'threw SionModel\\Filter\\Exception\\RuntimeException: There are not enough values in the array to filter this date (Required: 3, Received: 2)',
     ),
     'Int (the alias)' => 
     array (

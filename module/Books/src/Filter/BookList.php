@@ -1,7 +1,7 @@
 <?php
 namespace Books\Filter;
 
-use Laminas\Filter\AbstractFilter;
+use SionModel\Filter\AbstractFilter;
 
 class BookList extends AbstractFilter
 {
@@ -24,7 +24,7 @@ class BookList extends AbstractFilter
      *
      * @todo Allow other barcode patterns for future library schemas
      * {@inheritDoc}
-     * @see \Laminas\Filter\FilterInterface::filter()
+     * @see \SionModel\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {
