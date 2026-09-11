@@ -26,6 +26,14 @@
 #   -y, --yes      no confirmation prompt (a routine deploy already asks nothing;
 #                  this forces past the prompt an UNUSUAL run would raise)
 #
+# Normally reached through `make prod-deploy` (tools/prod-deploy.sh), which builds
+# the release in a checkout of its own and hands it here. Two environment
+# variables carry that handover's verification contract, and nothing else sets
+# them: DEPLOY_VERIFIED_SHA says ci-local already proved that revision green in
+# the capsule's tree, so this script does not repeat it; DEPLOY_UNVERIFIED_REASON
+# says nothing could verify this build and why, which makes it an unusual deploy
+# and brings back the confirmation prompt.
+#
 # Configuration is .deploy.local (gitignored, mode 0600), seeded from
 # .deploy.local.dist by config.sh. Credentials never reach the server.
 #
@@ -1017,18 +1025,52 @@ if [ "$DRY_RUN" = 1 ] && [ "$SKIP_TESTS" = 0 ]; then
     dim "--dry-run: skipping tools/ci-local.sh; run it directly for a full rehearsal"
 fi
 
-if [ "$SKIP_TESTS" = 1 ]; then
-    warn "skipping tools/ci-local.sh (--skip-tests)"
-    # CI cannot run until 2026-09-01 (Actions quota), so ci-local is the ONLY
-    # verification this change gets. Skipping it is exactly the case where someone
-    # should be asked.
-    [ "$DRY_RUN" = 1 ] || UNUSUAL+=("tests were skipped, and CI cannot run — nothing verified this build")
+# >>> verification handover
+# Verification may already have happened, elsewhere, on purpose.
+#
+# tools/prod-deploy.sh builds the release in its own checkout so that a deploy and a
+# working day can share a machine. ci-local cannot run there: docker-compose.yml
+# bind-mounts the DEVELOPMENT tree into the capsule, so `docker compose exec` from the
+# deploy checkout would test that tree while reporting on this release. prod-deploy.sh
+# therefore runs ci-local in the tree the capsule actually serves — but only when that
+# tree is on the very revision being shipped — and says which happened here.
+#
+# Exactly one of the two is non-empty, and nothing but prod-deploy.sh sets either.
+VERIFIED_ELSEWHERE=0
+if [ "$SKIP_TESTS" = 0 ]; then
+    if [ -n "${DEPLOY_VERIFIED_SHA:-}" ]; then
+        SKIP_TESTS=1
+        if [ "$DEPLOY_VERIFIED_SHA" = "$SHA" ]; then
+            VERIFIED_ELSEWHERE=1
+        else
+            # Only reachable if master moved between prod-deploy.sh's fetch and this
+            # one, which means the thing that was proven green is not the thing here.
+            UNUSUAL+=("ci-local proved ${DEPLOY_VERIFIED_SHA:0:7} green, but this deploy is $SHORT")
+        fi
+    elif [ -n "${DEPLOY_UNVERIFIED_REASON:-}" ]; then
+        SKIP_TESTS=1
+        UNUSUAL+=("nothing verified this build: $DEPLOY_UNVERIFIED_REASON")
+    fi
+fi
+
+if [ "$VERIFIED_ELSEWHERE" = 1 ]; then
+    step "Verification"
+    ok "tools/prod-deploy.sh already ran ci-local against $SHORT in the capsule's tree"
+elif [ "$SKIP_TESTS" = 1 ]; then
+    warn "skipping tools/ci-local.sh"
+    # CI cannot run (Actions quota), so ci-local is the ONLY verification this change
+    # gets. Skipping it is exactly the case where someone should be asked — unless the
+    # reason is already in UNUSUAL, which the block above has seen to.
+    if [ "$DRY_RUN" = 0 ] && [ -z "${DEPLOY_UNVERIFIED_REASON:-}" ] && [ -z "${DEPLOY_VERIFIED_SHA:-}" ]; then
+        UNUSUAL+=("tests were skipped, and CI cannot run — nothing verified this build")
+    fi
 else
     step "Verification (tools/ci-local.sh --ci)"
     dim "lint, composer --no-dev rehearsal, PHPStan level 0, unit, integration"
     bash tools/ci-local.sh --ci || fail "verification failed. Fix it, or re-run with --skip-tests if you know why."
     ok "all five CI jobs green"
 fi
+# <<< verification handover
 
 # ============================================================ build =========
 

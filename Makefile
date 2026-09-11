@@ -4,7 +4,8 @@
 #
 # `prod-deploy` deploys. It is a person's decision and it prompts before the swap; the
 # target exists to make the checks that precede it unskippable, not to make deploying
-# casual. See docs/DEPLOY.md.
+# casual. It builds the release in its own checkout and never touches this working tree.
+# See docs/DEPLOY.md.
 
 .DEFAULT_GOAL := help
 .PHONY: help dev-bump-submodules prod-deploy ci
@@ -17,6 +18,7 @@ help: ## Show this help
 	@printf '  \033[32m%-22s\033[0m %s\n' 'DRY_RUN=1' 'verify and report without changing anything'
 	@printf '  \033[32m%-22s\033[0m %s\n' 'CI=1' 'prod-deploy: run ci-local.sh first and refuse if it fails'
 	@printf '  \033[32m%-22s\033[0m %s\n' 'CHECKS_ONLY=1' 'prod-deploy: run the checks and stop, never deploying'
+	@printf '  \033[32m%-22s\033[0m %s\n' 'DEPLOY_TREE=DIR' 'prod-deploy: where the deploy checkout lives'
 
 ci: ## Run everything CI runs, plus smoke, fuzz and the post-deploy script
 	@./tools/ci-local.sh
@@ -27,8 +29,10 @@ ci: ## Run everything CI runs, plus smoke, fuzz and the post-deploy script
 dev-bump-submodules: ## Pin submodules to their merged commits and push
 	@./tools/bump-submodules.sh
 
-## Check, then deploy. The checks exist because a release is built from the WORKING TREE:
-## `git checkout master` does not move a submodule's checkout, so the libraries that ship
-## are whatever is sitting in module/*. See the script header.
-prod-deploy: ## Fast-forward master, verify the tree, then run tools/deploy.sh
+## Check, then deploy — from a checkout of its own, NOT from this working tree. A release
+## is built from a working tree, so a deploy used to take yours over (checkout master,
+## merge --ff-only, and a refusal if you had uncommitted work). It now maintains
+## a checkout at origin/master, with the pinned submodule commits inside it, and ships
+## that, leaving you free to carry on here. See the script header.
+prod-deploy: ## Deploy origin/master from a separate checkout
 	@./tools/prod-deploy.sh
