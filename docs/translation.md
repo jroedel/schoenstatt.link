@@ -271,10 +271,12 @@ catalogs, whose format is unchanged.
 `symfony/translation` was the planned replacement and was rejected on measurement. It would
 have needed a custom loader for the catalog format, a decorator to detect a catalogue miss
 (it has no missing-translation event, and discovery depends on one) and an adapter to the
-laminas interface the form validators still require — while ICU formatting, pluralization
-and its other loaders went unused. Ours implements `Laminas\Translator\TranslatorInterface`
-directly, which is the shape laminas-validator 3 will require, so the deprecated
-`Laminas\Validator\Translator\Translator` adapter went with it.
+interface the form validators want — while ICU formatting, pluralization and its other
+loaders went unused. Ours implements `Laminas\Translator\TranslatorInterface`, an
+interface-only package of one file, which is what
+`SionModel\Validator\AbstractValidator::setDefaultTranslator()` type-hints. That is how a
+validator's message gets translated without either side knowing about the other, and it is
+the last laminas package this module names.
 
 Three properties are load-bearing and silent when wrong:
 

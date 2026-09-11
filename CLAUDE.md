@@ -111,6 +111,12 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
 - HTML renders with Twig (`templates/`, `module/{JUser,JTranslate}/templates/`, layout
   `templates/layout.html.twig`; compiled to `data/cache/twig`). Forms render through
   `SionModel\Form\BootstrapFormRenderer`.
+- **The form stack is ours** (2026-09-11, iteration A of the laminas exit):
+  `SionModel\Form\{Form,Fieldset,Collection,Factory}`, `SionModel\Form\Element\*`, the
+  engine `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and the rules
+  `SionModel\{Validator,Filter}\*` with `SionModel\Uri\Http`. A rule name becomes an
+  object through a flat `Registry` — no plugin manager, no container, no module loading —
+  which is what lets the associations API validate with none of those present.
 - `App\Laminas\ServiceBridge` lazily builds the laminas `ServiceManager` for the laminas-side
   services ported code still needs (config, tables, translator). Nothing must build it on
   `/_health`. Every container is built by `App\Laminas\ContainerFactory` (bridge, console,
@@ -235,10 +241,18 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
 - **Authorization changes are diffed**: `docker compose exec -T app php tools/acl-table.php
   --format=json` against `docs/acl-baseline.json`.
 - **Forms**: `php composer.phar fuzz`, contract "no new gaps"; `fuzz-baseline` regenerates
-  `test/Fuzz/known-form-gaps.php` — read every added line. `disable_inarray_validator` on
-  the element is what removes a choice field's domain; `filters`/`validators` inside an
-  element definition are discarded; a field missing from `getInputFilterSpecification()`
-  gets `required => false` and nothing else. Read the assembled `getInputFilter()`.
+  `test/Fuzz/known-form-gaps.php` — read every added line. **The specification is the whole
+  of it**: `getInputFilterSpecification()` is what the engine reads, and a field it does not
+  name is filtered by nothing and validated by nothing. `filters`/`validators` written
+  inside an element definition are discarded, and `disable_inarray_validator` is now
+  documentation — a choice field's domain comes from `SionModel\Form\ChoiceDomain` in the
+  spec. Five recordings are the contract for anything that changes a form; each has a
+  `composer *-baseline` script and an integration test, and a changed line in one is a real
+  answer moving, never something to regenerate away:
+  `test/Form/form-markup.php` (rendered markup), `test/Form/engine-surface.php` (verdict,
+  values, messages), `test/Element/element-surface.php` (every element's answers),
+  `test/Rules/rule-surface.php` (every rule over a fixed corpus),
+  `test/Rules/uri-surface.php` (URLs through `Http` and `SionTable::filterUrl()`).
 - Integration tests build the ServiceManager the way `bin/console` does, never
   `bootstrap()`, with config caches **off** (CI has no writable `data/config`) and skip
   without a database. `bin/console` is the headless seam: commands via the `console.commands`

@@ -20,7 +20,8 @@ read its owner: `tools/ctx def <Symbol>` prints the declaration with exact bound
 | A page, or its URL | `config/symfony/routes.php` and the controller it names | the route's `RouteAccess`, `templates/`, laminas-exit.md §7 | `ci-local.sh smoke`; `ReservedVerbsTest`; the page in the capsule |
 | A JUser or JTranslate page | `module/{JUser,JTranslate}/config/symfony-routes.php` | the host adapters in `src/{JUser,JTranslate}/Host`, `HostMessages`, `HostUrls` | `ci-local.sh smoke integration` |
 | Roles, guards, per-row access | `src/Acl`, `src/Authorization` | the `bjyauthorize` config keys the rules are still declared in | `tools/acl-table.php --format=json` diffed against `docs/acl-baseline.json` — **every** authorization change |
-| A form, or a field on one | the form class, and its `getInputFilterSpecification()` | `SionModel\Form\BootstrapFormRenderer`; the assembled `getInputFilter()`, never the spec alone | `ci-local.sh fuzz`, contract "no new gaps"; read every line `fuzz-baseline` adds |
+| A form, or a field on one | the form class, and its `getInputFilterSpecification()` — which is the whole of what the engine reads | `SionModel\Form\BootstrapFormRenderer`; `SionModel\Form\Validation\InputFilter` | `ci-local.sh fuzz`, contract "no new gaps"; read every line `fuzz-baseline` adds, and every changed line in the five recordings |
+| A validator or a filter | `SionModel\{Validator,Filter}\*`, and the `Registry` that names it | every specification that names it — they are addressed by class, so `rg` the class name | `test/Rules/rule-surface.php` via `RuleSurfaceTest`; a changed line is a stored value, a verdict or a message |
 | A translated string | JTranslate; `App\Laminas\TranslatorConfigurator` | the route's `_text_domain`; the Twig checklist in [translation.md](translation.md) | render the page in a non-English locale; `jtranslate:export-catalogs` as `-u www-data` |
 | Anything a `SionTable` caches | `SionModel\Db\Model\SionCacheTrait`, `SionModel\Cache\CacheFlushQueue` | [caching.md](caching.md); the dependency map and its invariants | `/en/sm/cache-status` over HTTP — APCu is per-SAPI, so a CLI reading measures a different segment |
 | An API resource or field | `src/Api`, `src/Controller/Api` | [api-v3.md](api-v3.md); `requiredRole()` | `ci-local.sh integration`; and a migration plus a `juser.api_token_roles` row, or no token can ever carry the role |
@@ -40,8 +41,10 @@ read its owner: `tools/ctx def <Symbol>` prints the declaration with exact bound
 - **Pure logic**: the focused unit test, plus `ci-local.sh qa`.
 - **Anything a visitor sees**: `smoke`. It is the only suite that exercises a real request
   through a real kernel against a real database.
-- **Anything a form accepts**: `fuzz`. A spec-driven parity test cannot see the 101
-  validators the elements carry, CSRF among them.
+- **Anything a form accepts**: `fuzz`, plus the recording that covers the layer you changed
+  — markup, engine, element or rule. They are recordings, not assertions somebody wrote, so
+  a changed line is an answer that moved; regenerating one to make a test pass turns it into
+  a record of whatever the code now happens to do.
 - **Anything authorization touches**: the ACL diff, always, even when nothing looks like a
   rule change. A dynamic resource that has no entry 403s everyone.
 - **Anything cached**: measure over HTTP, warm and cold. Identical query counts in both
