@@ -2,7 +2,7 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
@@ -400,7 +400,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -422,7 +422,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -444,7 +444,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -466,7 +466,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -487,7 +487,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -507,7 +507,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     [
                         'name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -519,7 +519,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     [
                         'name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -533,7 +533,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -556,7 +556,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -577,7 +577,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripNewlines'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -610,7 +610,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -631,7 +631,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -657,7 +657,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -668,7 +668,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -682,7 +682,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -704,7 +704,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -726,7 +726,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -748,7 +748,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -774,7 +774,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -787,7 +787,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \SionModel\Filter\ToNull::TYPE_INTEGER,
                         ],
                     ],
                 ],
@@ -799,7 +799,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripTags'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],

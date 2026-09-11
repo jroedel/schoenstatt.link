@@ -2,7 +2,7 @@
 namespace Books\Form;
 
 use SionModel\Form\Form;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CheckboxDomain;
 

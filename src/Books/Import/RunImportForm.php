@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Books\Import;
 
-use Laminas\Filter\StringTrim;
+use SionModel\Filter\StringTrim;
 use SionModel\Form\Form;
-use Laminas\InputFilter\InputFilterProviderInterface;
-use Laminas\Validator\Regex;
+use SionModel\Form\InputFilterProviderInterface;
+use SionModel\Validator\Regex;
 use SionModel\Form\CsrfSpec;
 
 /**
@@ -29,8 +29,6 @@ use SionModel\Form\CsrfSpec;
  * re-renders the preview instead of importing.
  *
  * The digest itself is App\Books\Import\ImportPlan::digest(); this only carries it.
- *
- * @extends Form<array<string, mixed>>
  */
 final class RunImportForm extends Form implements InputFilterProviderInterface
 {

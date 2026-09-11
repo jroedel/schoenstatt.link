@@ -2,8 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
-use SionModel\Form\Form;
-use Laminas\InputFilter\Factory as InputFilterFactory;
+use SionModel\Form\Validation\InputFilter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Form\DatePrecision;
@@ -282,30 +281,20 @@ class DatePrecisionContractTest extends TestCase
 
     /**
      * One InArray, from the specification. Not zero — that would let any string
-     * into the column — and not two, which is what happens when the element's
-     * automatic one is left on and the two inputs merge.
+     * into the column — and not two, which is what `disable_inarray_validator`
+     * on the element exists to prevent: without it the element contributes its
+     * own domain check beside this one.
      *
      * @param mixed $value
      */
     #[DataProvider('precisionFieldCases')]
     public function testThePrecisionFieldAcceptsOnlyTheThreeValues($value, bool $expected): void
     {
-        $form = new Form('t');
-        $form->add([
-            'name' => 'p',
-            'type' => 'Select',
-            'options' => [
-                'label' => 'p',
-                'value_options' => DatePrecision::valueOptions(),
-                'disable_inarray_validator' => true,
-            ],
-        ]);
+        $declared = DatePrecision::filterSpec()['validators'] ?? [];
+        self::assertCount(1, $declared, 'exactly one domain check');
+        self::assertSame(\SionModel\Validator\InArray::class, $declared[0]['name']);
 
-        $filter = (new InputFilterFactory())->createInputFilter(['p' => DatePrecision::filterSpec()]);
-        $validators = $filter->get('p')->getValidatorChain()->getValidators();
-        self::assertCount(1, $validators, 'exactly one domain check');
-        self::assertInstanceOf(\Laminas\Validator\InArray::class, $validators[0]['instance']);
-
+        $filter = InputFilter::withRules(['p' => DatePrecision::filterSpec()]);
         $filter->setData(['p' => $value]);
         self::assertSame($expected, $filter->isValid());
     }

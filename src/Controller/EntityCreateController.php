@@ -11,7 +11,7 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityCreate;
 use App\Sion\FormViewVariables;
-use Laminas\Filter\StripTags;
+use SionModel\Filter\StripTags;
 use SionModel\Form\Element\Select;
 use SionModel\Form\FormInterface;
 use Locale;
@@ -177,7 +177,7 @@ final class EntityCreateController
     /**
      * The page itself. Every exit that is not a redirect comes through here.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @param array<string, string>               $routeParams
      */
     private function render(
@@ -378,7 +378,7 @@ final class EntityCreateController
      * original's `if (! $this->getRequest()->isPost())` and matters: on a failed POST the
      * form must re-render what was typed, not what the URL suggested.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      */
     private function prefill(Request $request, FormInterface $form): void
     {
@@ -406,7 +406,7 @@ final class EntityCreateController
      * are not checked against anything, so `?kind=nonsense` reaches the element and the
      * form refuses it on submit.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      */
     private function prefillAssociation(Request $request, FormInterface $form): void
     {
@@ -435,7 +435,7 @@ final class EntityCreateController
      * The `if (! $form->get('associationId')->getValue())` guard is the original's: a role
      * hint is ignored when an association is already chosen.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      */
     private function prefillAssignment(Request $request, FormInterface $form): void
     {
@@ -474,7 +474,7 @@ final class EntityCreateController
      * that library, and `collectionId` is copied only when the two libraries are the same —
      * a collection id means nothing outside its own library.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      */
     private function prefillBook(Request $request, FormInterface $form): void
     {
@@ -530,7 +530,7 @@ final class EntityCreateController
      * answer it. Guarded rather than assumed for the reason `valueOptions()` is: a form's
      * shape is data here.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @return array<array-key, mixed>
      */
     private function roleTitleValueOptions(FormInterface $form): array
@@ -549,7 +549,7 @@ final class EntityCreateController
      * Set an element's value only when the select already offers it, which is laminas'
      * `key_exists($param, $element->getValueOptions())` guard.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      */
     private function setFromOptions(FormInterface $form, string $element, ?string $value): void
     {
@@ -568,7 +568,7 @@ final class EntityCreateController
     /**
      * Copy a list of fields from a source row onto the form, skipping what neither has.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @param array<string, mixed>                $source
      * @param list<string>                        $fields
      */
@@ -593,7 +593,7 @@ final class EntityCreateController
     }
 
     /**
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @return array<string, mixed>
      */
     private function extraVariables(Request $request, string $entity, FormInterface $form): array

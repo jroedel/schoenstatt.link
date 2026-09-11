@@ -3,7 +3,7 @@ namespace Books\Form;
 
 use Books\Model\LibraryTable;
 use SionModel\Form\SionForm;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
@@ -253,7 +253,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -275,7 +275,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -297,7 +297,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -319,7 +319,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -341,7 +341,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -363,7 +363,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -384,7 +384,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripNewlines'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -413,7 +413,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -442,7 +442,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -464,7 +464,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -486,7 +486,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -507,7 +507,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \SionModel\Filter\ToNull::TYPE_INTEGER,
                         ],
                     ],
                 ],
@@ -519,7 +519,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripTags'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],

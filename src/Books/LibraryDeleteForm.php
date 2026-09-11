@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Books;
 
-use Laminas\Filter\StringTrim;
+use SionModel\Filter\StringTrim;
 use SionModel\Form\Form;
-use Laminas\InputFilter\InputFilterProviderInterface;
-use Laminas\Validator\Identical;
-use Laminas\Validator\NotEmpty;
-use Laminas\Validator\StringLength;
+use SionModel\Form\InputFilterProviderInterface;
+use SionModel\Validator\Identical;
+use SionModel\Validator\NotEmpty;
+use SionModel\Validator\StringLength;
 use SionModel\Form\CsrfSpec;
 
 /**
@@ -45,8 +45,6 @@ use SionModel\Form\CsrfSpec;
  *
  * The 900-second CSRF timeout matches `DeleteEntityForm` and `RefreshSortForm`, which are
  * the application's other two confirmation forms.
- *
- * @extends Form<array<string, mixed>>
  */
 final class LibraryDeleteForm extends Form implements InputFilterProviderInterface
 {

@@ -230,7 +230,7 @@ class PatresGateway
         if (is_null($this->personInputFilterSpec)) {
             throw new \Exception('No person input filter specification set');
         }
-        return Engine::withLaminasRules($this->personInputFilterSpec);
+        return Engine::withRules($this->personInputFilterSpec);
     }
 
     /**

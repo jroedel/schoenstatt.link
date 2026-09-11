@@ -2,7 +2,7 @@
 namespace Books\Form;
 
 use SionModel\Form\Form;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 
 class SearchForm extends Form implements InputFilterProviderInterface
@@ -156,7 +156,7 @@ class SearchForm extends Form implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \SionModel\Filter\ToNull::TYPE_INTEGER,
                         ]
                     ],
                 ],
@@ -166,7 +166,7 @@ class SearchForm extends Form implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],

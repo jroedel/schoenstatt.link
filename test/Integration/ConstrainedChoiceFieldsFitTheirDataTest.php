@@ -8,8 +8,8 @@ use Laminas\Db\Adapter\AdapterInterface;
 use SionModel\Form\Element\Select;
 use SionModel\Form\Fieldset;
 use SionModel\Form\Form;
-use Laminas\Validator\Explode;
-use Laminas\Validator\InArray;
+use SionModel\Validator\Explode;
+use SionModel\Validator\InArray;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormGapCollector;
@@ -353,8 +353,8 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
      *
      * `ChoiceDomain` writes an `InArray` by class name with a `haystack` option, and wraps a
      * multiple select's in an `Explode` whose `validator` option is an **instance**. A
-     * specification elsewhere may name either by short name, which is what the plugin
-     * managers accept, so both spellings are matched.
+     * specification elsewhere may name either by its short name, which
+     * {@see \SionModel\Validator\Registry} also accepts, so both spellings are matched.
      *
      * @param array<string, mixed> $validator
      * @return list<string>|null

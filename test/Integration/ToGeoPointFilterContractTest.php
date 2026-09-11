@@ -2,7 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Validator\GpsPoint;
+use SionModel\Validator\GpsPoint;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Db\GeoPoint;
@@ -124,7 +124,7 @@ class ToGeoPointFilterContractTest extends TestCase
 
     /**
      * A non-string is nulled rather than handed on, and the asymmetry with a bad
-     * string is deliberate: Laminas\Validator\GpsPoint raises a TypeError on an
+     * string is deliberate: SionModel\Validator\GpsPoint raises a TypeError on an
      * array, which would escape InputFilter::isValid() as a 500 — the failure the
      * rest of this filter exists to avoid. Unlike 'asdf', an array is not
      * something a person typed; only `geoPoint[]=x` in a crafted request produces

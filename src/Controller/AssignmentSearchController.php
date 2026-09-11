@@ -140,11 +140,11 @@ final class AssignmentSearchController
      * `associationKind` and `associationCountry` options are the application's, built
      * by its factory from the database, rather than a copy that would drift.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     private function advancedForm(): FormInterface
     {
-        /** @var FormInterface<array<string, mixed>> $form */
+        /** @var FormInterface $form */
         $form = $this->laminas->get(AdvancedSearchForm::class);
 
         return $form;

@@ -4,7 +4,7 @@
 namespace Books\View\Helper;
 
 use Laminas\Translator\TranslatorInterface;
-use Laminas\Uri\Http;
+use SionModel\Uri\Http;
 use SionModel\View\Helper\FormatUrlObject;
 
 class FormatPublicationUrlObject extends FormatUrlObject

@@ -7,7 +7,7 @@ use SionModel\Validator\AbstractPatternValidator;
 /**
  * Validates a site-wide Schoenstatt link identifier (e.g. SL300001P).
  *
- * Extends AbstractPatternValidator rather than Laminas\Validator\Regex, which
+ * Extends AbstractPatternValidator rather than SionModel\Validator\Regex, which
  * laminas marked `@final`. Beyond validation this class is the canonical home
  * of the entity-type constants below, which are read across ~15 files.
  */

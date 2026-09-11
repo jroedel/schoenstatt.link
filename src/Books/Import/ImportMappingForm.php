@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Books\Import;
 
 use SionModel\Form\Form;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 
@@ -26,8 +26,6 @@ use function trim;
  * The selects are built from the file that was actually uploaded, so the options are
  * that file's own worksheets and that file's own column headings. HeaderMatcher has
  * already guessed; this is the chance to disagree with it.
- *
- * @extends Form<array<string, mixed>>
  */
 final class ImportMappingForm extends Form implements InputFilterProviderInterface
 {
@@ -111,8 +109,9 @@ final class ImportMappingForm extends Form implements InputFilterProviderInterfa
                 //registers this form, so `FormRepository` builds it by shape with an empty
                 //`$worksheets`, and `ChoiceDomain` declines to constrain a field whose
                 //options it cannot see. In every request there is an uploaded file and the
-                //domain is its sheets. Same shape as `Books\Form\SearchForm::collectionId`
-                //in `EngineMatchesAssembledFilterTest::KNOWN_DIFFERENCES`.
+                //domain is its sheets. `Books\Form\SearchForm::collectionId` has the same
+                //shape, and was a named exception in the parity tests that measured the
+                //engine against `Laminas\InputFilter` before both left.
                 'required'   => true,
                 'validators' => ChoiceDomain::validators($this->get('worksheet')),
             ],
