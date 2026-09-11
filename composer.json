@@ -122,6 +122,7 @@
         "fuzz": "docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar --testsuite fuzz",
         "fuzz-baseline": "docker compose exec -T app php -d memory_limit=1G test/Fuzz/regenerate-baseline.php",
         "form-markup-baseline": "docker compose exec -T -u www-data app php -d memory_limit=1G test/Form/regenerate-form-markup.php",
+        "engine-surface-baseline": "docker compose exec -T -u www-data app php -d memory_limit=1G test/Form/regenerate-engine-surface.php",
         "test": "docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar",
         "stan": "docker compose exec -T app php -d memory_limit=1G tools/phpstan.phar analyse"
     },
@@ -131,6 +132,7 @@
         "fuzz": "Run the form input-validation fuzz harness. No HTTP, read-only DB. Contract is 'no new gaps': pre-existing ones live in test/Fuzz/known-form-gaps.php.",
         "fuzz-baseline": "Regenerate test/Fuzz/known-form-gaps.php. Review the diff: every added line is a validation gap being accepted.",
         "form-markup-baseline": "Regenerate test/Form/form-markup.php, the rendered-markup contract iteration A's form model has to meet. Review the diff: every changed line is markup a browser would receive differently.",
+        "engine-surface-baseline": "Regenerate test/Form/engine-surface.php, what the validation engine returns for every form. Review the diff: every changed line is a verdict, a stored value or a message that moved.",
         "integration": "Run the integration suite. Needs memory_limit=1G for the same reason `fuzz` does, and since batch 10 for literally the same code: three of its tests build every form in the application through test/Fuzz/FormRepository, which is what costs the memory. Measured 2026-08-15 — at the default 512M it dies partway through TranslationWriteSemanticsTest, which is merely where the limit happens to land.",
         "test": "Run every suite in one process. Needs memory_limit=1G for the same reason `fuzz` does: Books\\Form\\Publication's factory calls getKeywordsValueOptions(), which loads every publication row, and at the default 512M it exhausts the limit once the earlier suites' memory is already held. Measured 2026-08-07 — it failed identically before this batch."
     }
