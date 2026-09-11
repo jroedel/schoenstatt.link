@@ -63,7 +63,7 @@ Validation already runs on our engine and every element is already ours. What is
 the form itself and the rules' implementations.
 
 1. **The rendered-markup baseline** is `test/Form/form-markup.php`, recorded 2026-09-11
-   through `SionModel\Form\BootstrapFormRenderer` over the laminas form model: 483
+   through `SionModel\Form\BootstrapFormRenderer` over the laminas form model: 492
    surfaces — every element of the 43 forms `test/Fuzz/FormRepository` builds, plus each
    form's open tag — in the four states a controller puts a form in (`pristine`,
    `populated`, `invalid`, `prepared`), and under each one every helper
