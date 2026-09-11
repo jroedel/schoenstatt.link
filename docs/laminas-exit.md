@@ -16,10 +16,12 @@ under `module/*/src` that a Symfony-served request reaches.
   404 is Symfony-served. `LegacyBridge`, the `SYMFONY_KERNEL` canary and laminas-mvc's
   dispatch are gone; rolling back to a laminas front controller is not possible.
   `curl https://schoenstatt.link/_health` → `{"status":"ok","kernel":"symfony"}`.
-- **Routes** are declared in `config/symfony/routes.php` (106 declarations through the
+- **Routes** are declared in `config/symfony/routes.php` (through the
   `$ported`/`$edit`/`$create`/`$delete`/`$libraryPage` helpers, plus JUser's and
-  JTranslate's route closures). HTML renders with **Twig** from `templates/` and
-  `module/{JUser,JTranslate}/templates/`.
+  JTranslate's route closures), and **only** there: laminas-router went at step 6
+  (2026-09-09) with the `router` config key and laminas-http, and every URL the application
+  generates assembles from Symfony's `UrlGenerator` through `App\Laminas\RouteUrl`. HTML
+  renders with **Twig** from `templates/` and `module/{JUser,JTranslate}/templates/`.
 - **Authorization** is `symfony/security-core` (`App\Acl\AclVoter`, `Authorizer`,
   `AclAssembler`) reading the roles, guards and rules still declared in `bjyauthorize`
   config keys (`config/autoload/acl.global.php`, module configs). bjy-authorize and
@@ -89,10 +91,15 @@ under `module/*/src` that a Symfony-served request reaches.
 - `App\Laminas\ServiceBridge` is the seam: a lazily built laminas `ServiceManager` a
   Symfony controller asks for laminas-side services. It disappears at step 7.
 
-## 2. The dependency picture (measured 2026-09-09, after step 0)
+## 2. The dependency picture (first measured 2026-09-09 after step 0; counts re-measured 2026-09-11)
 
-**32** `laminas/*` packages are installed, down from 37. The two facts that shape the
-order, and step 0 confirmed both:
+**16** `laminas/*` packages are installed, down from 37. Four are nobody's choice but
+laminas': `config` (laminas-modulemanager), `escaper` (laminas-form and laminas-uri),
+`hydrator` (laminas-form) and — awkwardly — `loader`, which is a **direct** line of ours
+covering laminas-modulemanager's undeclared use of `Laminas\Loader\*`; no code of ours
+names that namespace. The other twelve we require directly.
+
+The two facts that shape the order, and step 0 confirmed both:
 
 **Removing laminas-mvc was necessary, not sufficient, for anything but the PHP pin.**
 `php composer.phar why-not laminas/laminas-servicemanager 4.0.0` named fourteen cappers
@@ -122,15 +129,21 @@ three cache adapters — so the platform stays 8.4.24 until steps 1 and 2.
 **Measure, never assume.** Before and after every step: `why-not php 8.5.0`,
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
 — the count of the last is the progress metric. Step 0 took it 37 → 32, step 1a 32 → 28,
-step 1b 28 → 27.
+step 1b 28 → 27; steps 1c, 2, 3 and 4 took it to 17, and step 6 to **16**.
 
-**Most of what step 1 listed is blocked behind later steps, and the measurement says so.**
-`laminas-uri` is required by `laminas-http` *and* `laminas-router`; `laminas-http` is what
-`App\JUser\Host\RouteResolver` and `tools/acl-table.php` hand to the laminas router to
-match against. So both leave at step 6, not here. `laminas-json` is required by
+**Most of what step 1 listed was blocked behind later steps, and the measurement said so.**
+`laminas-uri` was required by `laminas-http` *and* `laminas-router`; `laminas-http` was what
+`App\JUser\Host\RouteResolver` and `tools/acl-table.php` handed to the laminas router to
+match against, so it left with the router at step 6. `laminas-json` was required by
 `laminas-view` and `laminas-serializer`, and `laminas-serializer` *is* the laminas-cache
 serializer — step 4 and step 2. What was actually removable in step 1 was the four
 packages of 1a and `laminas-navigation`.
+
+**`laminas-uri` is the one left of that list, and it is now the most leveraged package in
+the tree.** Nothing requires it any more; we do, in **8 files and 18 references**, 17 of
+them `Laminas\Uri\Http` passed as an option to a URI validator. It is the *only* remaining
+requirer of `laminas-validator` once laminas-form goes, and — with laminas-form — of
+`laminas-escaper`. So those three leave together or not at all: see §3.
 
 **A `laminas/*` a submodule uses is invisible to `tools/laminas-audit.php`.** The audit
 scans this application's roots only — SionModel, JUser and JTranslate are separate composer
@@ -158,12 +171,12 @@ deletes.
 | 0 ✅ | laminas-mvc, mvc-i18n, mvc-plugin-{identity,flashmessenger,prg}, diablomedia/laminas-twb-bundle, slm/locale | see §4 | **done 2026-09-09.** Own container bootstrap; own view-helper manager; `Laminas\Validator\Translator\Translator`; session-backed flash store; Twig mail templates |
 | 1a ✅ | laminas-captcha, recaptcha, text (**0 uses**), math (6 `Rand`); our direct `laminas-json` line (8 call sites → `App\Json`) | 12 files | **done 2026-09-09.** `random_int`/`random_bytes`; `App\Json` reproduces the two behaviours that were load-bearing |
 | 1b ✅ | navigation (config-only: nothing resolved the service) | 3 config files | **done 2026-09-09.** `App\View\NavigationTree` already built the tree from the `navigation` config key, which stays |
-| 1c | json ✅ (went with laminas-view at step 4), serializer (it is the laminas-cache serializer), uri (7 files, but laminas-http **and laminas-router** require it), http (`Client` in two gateways and a console command; `Request` only to feed the laminas router) | ~15 files | `symfony/http-client` or ~20 lines of our own; the rest unblock at steps 2 and 6 |
+| 1c ◐ | json ✅ (with laminas-view at step 4), serializer ✅ (with laminas-cache at step 2), http ✅ (with laminas-router at step 6); **uri is what is left** | 8 files, 18 references | `Laminas\Uri\Http` is 17 of the 18, always as a URI validator's option. Nothing requires uri now, and uri is the last requirer of `laminas-validator` and (with laminas-form) of `laminas-escaper` — so it goes with step 5 or those two stay |
 | 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
 | 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours, implementing `Laminas\Translator\TranslatorInterface`. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. **laminas-escaper does not leave here** — laminas-form (`^2`) and laminas-uri (`^2.9`) require it, so it goes with steps 5 and 6; no code of ours uses it any more |
-| 5 ◐ | laminas-form, inputfilter, validator, filter | 41 forms, 441 elements, ~170 files | **validation cutover and element model done 2026-09-11**, both ours; the form model is what is left. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and `SionModel\Form\Element`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
-| 6 | laminas-router (27) | every route is declared twice today | Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names |
+| 5 ◐ | laminas-form, inputfilter, filter, hydrator — and validator + escaper **only if laminas-uri goes with it** | form 77 files, inputfilter 60, validator 65, filter 49; 41 forms, 441 elements | **validation cutover and element model done 2026-09-11**, both ours; the form model and the validator/filter library are what is left. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and `SionModel\Form\Element`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
+| 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
 | 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
 | 8 | laminas-db (96 files; `SionTable` is 2,413 lines over `TableGateway`/`Sql`) | the largest | Doctrine DBAL (decision pending, §6) |
 
@@ -176,21 +189,29 @@ is our own 28 helpers, and that is step 4's actual content. Measured 2026-09-09.
 
 **Order by packages removed, not by the numbering.** Step 4 took two (view, json) — not
 the three first planned: `laminas-escaper` is required by `laminas-form` (`^2`) and
-`laminas-uri` (`^2.9`), so it cannot leave before steps 5 and 6 however little of our own
-code touches it. Step 6 takes four (router, uri, http, loader) but changes URL generation at 57
-template call sites and the ACL resource names with it. Step 5 takes four and unblocks two
-more (session, hydrator) across ~170 files. Nothing in 4, 5 or 6 blocks the others.
+`laminas-uri` (`^2.9`), so it cannot leave before both of those do. Step 6 was planned as
+four (router, uri, http, loader) and took **two**: router and http. `laminas-loader` stays
+because laminas-modulemanager uses `Laminas\Loader\*` without requiring it, and
+`laminas-uri` stays because the forms validate URLs with it — measured 2026-09-11, from the
+`require` blocks in `vendor/laminas/*/composer.json` rather than from the plan.
 
-**laminas-session does not leave at step 2.** `Laminas\Validator\Csrf` reads a
-`Laminas\Session\Container`, and every form here carries a CSRF element, so the session
-package is held by the forms and leaves with them at step 5. What step 2 removed is the
-*authentication* use of it: the identity no longer goes through a laminas storage adapter,
-only through `JUser\Host\SessionInterface`, whose one implementation is the host's.
-Measured 2026-09-09, the same way step 1's blockers were.
+**laminas-session does not leave at step 2.** No package requires it — the direct line is
+ours — and two things hold it. `Laminas\Validator\Csrf` reads a `Laminas\Session\Container`
+and every form carries a CSRF element, so one half leaves with the forms. The other half is
+the session itself: `App\Http\SessionListener` starts a `SessionManager` per request and
+`SionModel\Messaging\FlashMessages` stores flashes in a `Container`, which is what makes
+`Laminas_Auth` the identity key and a flash survive a redirect. **14 files** name the
+namespace. What step 2 removed is the *authentication* use of it: the identity no longer
+goes through a laminas storage adapter, only through `JUser\Host\SessionInterface`, whose
+one implementation is the host's. Measured 2026-09-09, re-measured 2026-09-11.
 
-`laminas-hydrator`, `config`, `loader`, `translator` are transitive glue and leave with
-their parents. Steps 2 to 8 rewrite code in the **shared submodules** (SionModel, JUser,
-JTranslate); see §6 before starting any of them.
+`laminas-hydrator` and `config` are transitive glue and leave with their parents
+(laminas-form, laminas-modulemanager). `laminas-loader` is glue too but needs our direct
+line until laminas-modulemanager goes, for the reason above. `laminas-translator` is
+neither: it is a zero-dependency interface package we chose, named in **30 files**, and it
+leaves only when we declare the interface ourselves — the cheapest package in the tree and
+the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodules**
+(SionModel, JUser, JTranslate); see §6 before starting any of them.
 
 ## 4. Step 0 in detail: removing laminas-mvc
 
@@ -389,8 +410,7 @@ through a closure because `App\Kernel::routeUrl()` reads the request's base URL.
 signed in without the role → `403` from `templates/error/403.html.twig`. The **identity**
 picks the branch, never the failed check. The redirect carries the query string
 percent-encoded and the path literal; JUser's `RouteResolver` accepts only what the
-laminas router matches (locale prefix stripped, matched on a **clone** with an empty base
-URL — `RouteUrl` mutates the shared router's base). Default roles `lib_user`, `pub_user`,
+Symfony router matches, with the locale prefix stripped first. Default roles `lib_user`, `pub_user`,
 `sch_user`, `bib_user` are `is_default = 1`: a guard naming one means "signed in", and the
 per-row check (`show`/`checkout` on libraries) is the real protection; `administrate` is
 granted on every library. The identity's roles are read from `linkUser()` (names), not
@@ -418,8 +438,9 @@ granted on every library. The identity's roles are read from `linkUser()` (names
   functions, `flash_messages`, `now_messages`), `ChromeExtension` (`current_route`,
   `navigation_items`, `language_options`, `canonical_links`, `search_box`, `display_name`,
   `csp_nonce`, `json_ld`). `App\View\SiteChrome` makes the chrome's decisions;
-  `App\View\PreferredUrls` answers a record's canonical URL; `App\Laminas\RouteUrl`
-  assembles laminas URLs with the locale prefix.
+  `App\View\PreferredUrls` answers a record's canonical URL; `App\Laminas\RouteUrl` is
+  every URL the application generates — since step 6 it assembles from Symfony's
+  `UrlGenerator`, so its name and `laminas_path()`'s are both historical.
 - Forms render through `SionModel\Form\BootstrapFormRenderer` (`form_row`, `form_open`…
   via `SionModel\Twig\FormExtension`), byte-compatible with the old TwbBundle markup.
 
