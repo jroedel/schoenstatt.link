@@ -177,8 +177,8 @@ deletes.
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. **laminas-escaper does not leave here** — laminas-form (`^2`) and laminas-uri (`^2.9`) require it, so it goes with steps 5 and 6; no code of ours uses it any more |
 | 5 ◐ | laminas-form, inputfilter, filter, hydrator — and validator + escaper **only if laminas-uri goes with it** | form 77 files, inputfilter 60, validator 65, filter 49; 41 forms, 441 elements | **validation cutover and element model done 2026-09-11**, both ours; the form model and the validator/filter library are what is left. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and `SionModel\Form\Element`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
-| 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
-| 8 | laminas-db (96 files; `SionTable` is 2,413 lines over `TableGateway`/`Sql`) | the largest | Doctrine DBAL (decision pending, §6) |
+| 7 | laminas-servicemanager, modulemanager, eventmanager, config, loader — and laminas-session with them | servicemanager 91 files and 58 `FactoryInterface` implementations; session 14; eventmanager 4; modulemanager 3 | **Our own PSR-11 container** (§6), not Symfony DI. `stdlib` does *not* leave here: laminas-db holds it |
+| 8 | laminas-db, and `stdlib` and `translator` with it | db 94 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; translator 30 files; stdlib 5 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after |
 
 **Step 4 is not gated on step 5, though it looks it.** Every `Laminas\Form\View\Helper\*`
 class extends `Laminas\I18n\View\Helper\AbstractTranslatorHelper`, so it is tempting to
@@ -212,6 +212,48 @@ neither: it is a zero-dependency interface package we chose, named in **30 files
 leaves only when we declare the interface ourselves — the cheapest package in the tree and
 the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodules**
 (SionModel, JUser, JTranslate); see §6 before starting any of them.
+
+### The three iterations left
+
+Steps 0, 1a, 1b, 3, 4 and 6 are done; 1c, 2 and 5 are part done, and 16 packages remain.
+What is left of all of them regroups into **three iterations**, each one superproject PR
+over three submodule PRs, each one deploy — the numbering above is the order the work was
+*planned* in, this is the order it can actually ship in:
+
+| | removes | leaves | content |
+|---|---|---|---|
+| **A** | form, inputfilter, filter, validator, hydrator, escaper, uri | 9 | the form model, and our own validator and filter classes |
+| **B** | session, servicemanager, modulemanager, eventmanager, config, loader | 3 | the session and the container (step 2's remainder and step 7) |
+| **C** | db, stdlib, translator | 0 | the database layer (step 8) |
+
+**Two orderings are forced and one is chosen.** `stdlib` cannot leave until db,
+servicemanager, config, filter, validator and hydrator have, so it is last whatever we do;
+`escaper` and `validator` cannot leave until laminas-form *and* laminas-uri both have, so
+they are A. The choice is **container before database**: the 58 `FactoryInterface`
+implementations are rewritten either way, and doing the container second rewrites
+`SionTable`'s wiring once instead of twice.
+
+**Each iteration deletes its own oracle, so each one starts by recording it.**
+`WholeFormEngineParityTest`, `EngineMatchesAssembledFilterTest` and
+`ElementModelParityTest` all prove our code by running laminas' beside it; they stop
+existing with the package. The answer is the one the element swap used —
+`test/Element/element-surface.php` recorded what 441 elements answer *before* the swap, and
+the swap then showed 432 changed lines and nothing else. Record first, replace second.
+
+- **A** needs a rendered-markup baseline that does not exist yet: 39 forms on
+  `SionModel\Form\Form`, 8 fieldset subclasses, one `Collection`, and
+  `BootstrapFormRenderer`'s 1,154 lines. `tools/port-baseline.php` is retired but its
+  normalization rules are what such a capture needs. The validator and filter classes are
+  the easier half — a specification names them **as strings** and the engine already takes
+  a name → object callable, so the seam is one map. ~20 validators and ~12 filters are
+  actually used; `ToNull` alone is 96 of the filter references.
+- **B** ships the way step 0's batch 2 did: our services shadow laminas' **under the same
+  ids** and deploy with the package still installed, then a second commit removes it. This
+  is the highest-risk deploy of the three, and its failure shape is a fatal under HTTP 200
+  rather than an error. The session moves first and must keep the storage key `Laminas_Auth`
+  or the deploy signs every visitor out.
+- **C** has the best verification of the three because the SQL is observable: capture
+  MariaDB's general log across a full smoke run before and after and diff the statements.
 
 ## 4. Step 0 in detail: removing laminas-mvc
 
@@ -377,11 +419,20 @@ Settled since:
   41 forms and their rendering against a different model to reach the same place.
 - **Mail templates: Twig**, at step 0.
 
-Still open:
+Taken 2026-09-11, and together they mean the exit adds **no dependency at all** — 16
+packages out, none in:
 
-1. **Database layer**: Doctrine DBAL (recommended) or a thin PDO wrapper of our own.
-   `SionModel\Db\Model\SionTable` is 2,412 lines over `TableGateway`/`Sql` and 94 files
-   name `Laminas\Db`, so this is the one remaining decision with real weight.
+- **The container is ours**, not Symfony DI and not FrameworkBundle. A PSR-11 container
+  reading factories, aliases and invokables from the merged config; the 58
+  `FactoryInterface` classes become `__invoke($container)`; the `data/config/` merge cache
+  is unchanged. FrameworkBundle would also have wanted to own the kernel
+  `App\Kernel` hand-wires, which is a second cost on top of the dependency.
+- **The database layer is a thin PDO wrapper of ours**, not Doctrine DBAL.
+  `SionModel\Db\Model\SionTable` is 2,412 lines that already hold the query logic; what
+  laminas-db supplies underneath it is largely a parameter binder and a result iterator.
+  DBAL is heavier than that seam needs, and 94 files would have to learn its abstractions.
+
+Nothing is open.
 
 ## 7. How the Symfony side is built (reference)
 
