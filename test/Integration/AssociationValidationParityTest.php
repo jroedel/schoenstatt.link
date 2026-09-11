@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Form\Element\Checkbox;
-use Laminas\Form\Element\Date as DateElement;
-use Laminas\Form\Element\Email;
-use Laminas\Form\Element\Url;
 use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use App\Schoenstatt\Association\AssociationValidator;
@@ -19,7 +15,11 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Schoenstatt\Form\AssociationForm;
-use SionModel\Form\Element\Phone;
+use SionModel\Form\Element\Checkbox;
+use SionModel\Form\Element\Date as DateElement;
+use SionModel\Form\Element\Email;
+use SionModel\Form\Element\Registry;
+use SionModel\Form\Element\Url;
 use SionModel\Form\SionForm;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -89,9 +89,11 @@ final class AssociationValidationParityTest extends TestCase
      */
     private static function form(): AssociationForm
     {
-        $elements = new FormElementManager(new ServiceManager(), [
-            'invokables' => ['Phone' => Phone::class],
-        ]);
+        //`Registry::config()`, not a private list of one: AssociationValidator builds this
+        //form the same way, and a manager configured with only `Phone` would hand this test
+        //laminas elements while the application gets ours — which is exactly the drift the
+        //assertions below exist to catch.
+        $elements = new FormElementManager(new ServiceManager(), Registry::config());
 
         $form = new AssociationForm();
         $form->setFormFactory(new FormFactory($elements));
@@ -412,7 +414,8 @@ final class AssociationValidationParityTest extends TestCase
      * form's actual elements.
      *
      * `URI`, `HTML5_EMAIL` and `HTML5_DATE` restate what `Laminas\\Form\\Element\\Url`,
-     * `Email` and `Date` contribute of their own accord. Every other form in the
+     * `Email` and `Date` used to contribute of their own accord, and which
+     * `SionModel\\Form\\Element\\*` no longer contributes at all. Every other form in the
      * application derives those from the element through
      * `SionModel\\Form\\InputTypeRules`; these six cannot, because this specification is
      * shared with the API and the API builds no form.

@@ -145,7 +145,7 @@ final class AssociationInputFilterSpec
     /**
      * What a checkbox may post: its checked and unchecked values, and nothing else.
      *
-     * `Laminas\Form\Element\Checkbox` builds exactly this for itself
+     * `SionModel\Form\Element\Checkbox` builds exactly this for itself
      * (`InArray(['1', '0'], strict: false)`) and hands it to the input filter, which is
      * why six association fields were constrained here today without this class saying
      * so — see `SionModel\Form\CheckboxDomain`. That stops being true when
@@ -530,7 +530,7 @@ final class AssociationInputFilterSpec
     {
         return [
             'required'   => false,
-            //`Laminas\Form\Element\Url::getInputSpecification()` supplies the StringTrim,
+            //`Laminas\Form\Element\Url::getInputSpecification()` supplied the StringTrim,
             //and it goes first for the reason phone()'s does. Written out here rather than
             //folded into toNullString(), which a dozen plain-text fields also use and whose
             //elements supply nothing.

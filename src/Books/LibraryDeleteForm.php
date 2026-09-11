@@ -106,7 +106,7 @@ final class LibraryDeleteForm extends Form implements InputFilterProviderInterfa
     public function getInputFilterSpecification(): array
     {
         return [
-            //Restated rather than left to `Laminas\Form\Element\Csrf`, for the reason in
+            //Restated rather than left to `SionModel\Form\Element\Csrf`, for the reason in
             //SionModel\Form\CsrfSpec: `SionModel\Form\Validation\InputFilter` reads the
             //specification and nothing else, so a check that lives only on the element is a
             //check that disappears the day the engine is cut over — and on this form that

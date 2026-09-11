@@ -8,7 +8,7 @@ use Laminas\Form\Factory as FormFactory;
 use Laminas\Form\FormElementManager;
 use Laminas\ServiceManager\ServiceManager;
 use Schoenstatt\Form\AssociationForm;
-use SionModel\Form\Element\Phone;
+use SionModel\Form\Element\Registry;
 use SionModel\Form\Validation\FormSpecification;
 use SionModel\Form\Validation\InputFilter as Engine;
 
@@ -45,9 +45,9 @@ use SionModel\Form\Validation\InputFilter as Engine;
  * validates through — {@see Engine} — is the same one every web form uses, resolving
  * its rules out of a bare `ServiceManager`.
  *
- * The only thing `init()` needs beyond the defaults is SionModel's `Phone` element,
- * registered below as the single invokable rather than by loading SionModel's module
- * config.
+ * The element manager below is configured from {@see Registry}, the same list the merged
+ * `form_elements` config carries — SionModel's `Phone` among them — rather than by loading
+ * SionModel's module config.
  *
  * ## The CSRF seam
  *
@@ -123,9 +123,10 @@ final class AssociationValidator
      */
     private function form(): AssociationForm
     {
-        $elements = new FormElementManager(new ServiceManager(), [
-            'invokables' => ['Phone' => Phone::class],
-        ]);
+        //The same list the merged `form_elements` config carries, because this path never
+        //sees that config: three places build elements and a private copy of the list here
+        //would silently keep building laminas elements after everything else stopped.
+        $elements = new FormElementManager(new ServiceManager(), Registry::config());
 
         $form = new AssociationForm();
         $form->setFormFactory(new FormFactory($elements));

@@ -45,37 +45,41 @@ under `module/*/src` that a Symfony-served request reaches.
   `Schoenstatt\Service\PatresGatewayFactory`) build the engine over
   `FormSpecification::of($form)` through `InputFilter::withLaminasRules()`, dropping the
   CSRF rule by unsetting its key rather than by `remove()`ing an input. What still calls
-  `getInputFilter()` is `test/Integration/WholeFormEngineParityTest`, which compares
-  laminas against the engine on every form and is what the element swap retires.
-  laminas-form still supplies elements and rendering; the packages leave when the element
-  and form models land.
-  What remains of step 5 is the element model and the form model. Measured 2026-09-11
-  across all 36 forms: **441 elements, 15 laminas element classes, 24 option keys, 29
-  attribute keys**, and the distribution is what decides the shape — `Select` 136, `Text`
-  73, `Checkbox` 42, `Textarea` 39, `Csrf` 35, `Submit` 35, `Hidden` 15 is 85% of them.
-  Most of those classes differ only in a `type` attribute and an input specification, and
-  the input specification is ours now, so they collapse. What genuinely differs is the
-  option list (Select), the two values (Checkbox), the token (Csrf), the three sub-selects
-  (DateSelect) and nesting (Fieldset, Collection). `test/Element/element-surface.php`
-  records what all 441 answer today and is the contract the replacement is written
-  against. Three option keys become documentation the day it lands:
-  `disable_inarray_validator` (63 uses), `required` (124) and `allow_empty` are read by the
-  input-filter half, which no longer looks at elements.
-  `SionModel\Form\Element` holds the replacement: `Element` plus fifteen classes, none of
-  them supplying an input specification, all of them still implementing laminas' element
-  interfaces so a `Laminas\Form\Fieldset` can hold one until the form model lands. They
-  are not reached by any form yet; `test/Integration/ElementModelParityTest` builds one from
-  each real definition and compares it against the laminas element it replaces, and
-  `test/Unit/ElementModelBehaviourTest` pins the edges no definition exercises. Two things
-  are deliberately not reproduced: laminas' `hasValue` flag, which nothing in laminas-form
-  or this application reads, and `MonthSelect`, which no form has — so `DateSelect` does not
-  inherit from one here.
+  `getInputFilter()` is `test/Integration/WholeFormEngineParityTest` and
+  `EngineMatchesAssembledFilterTest`, which compare laminas against the engine on every
+  form; they stay until laminas-form goes.
+- **Every element is ours** (step 5, element model, 2026-09-11). `SionModel\Form\Element`
+  holds `Element` plus fifteen classes — `Text`, `Textarea`, `Hidden`, `Submit`, `Button`,
+  `File`, `Url`, `Email`, `Number`, `AbstractDateTime`, `Date`, `Checkbox`, `Select`,
+  `Csrf`, `DateSelect`, and `Phone` beside them — none supplying an input specification,
+  all still implementing laminas' element interfaces so a `Laminas\Form\Fieldset` can hold
+  one until the form model lands. `SionModel\Form\Element\Registry` is the single list
+  that swaps them in: it feeds SionModel's `form_elements` config, the `Factory`
+  `SionModel\Form\Form::getFormFactory()` installs, and the two fieldsets built with `new`.
+  Measured across all 41 forms: **441 elements**, of which **432 changed class and nothing
+  else**. `test/Element/element-surface.php` records what each one answers to every question
+  the application asks of it; regenerating it after the swap changed 432 lines, every one of
+  them the class name, and **0 other lines**. Of the nine that did not change, seven are
+  `Phone`, which was already ours and answers the same after being rewritten to extend
+  `Element` rather than laminas' `@final` `Tel`; one is a fieldset; and one is the single
+  `Laminas\Form\Element\Collection` left in the application, which belongs to the form model.
+  `MultiCheckbox`, `Radio` and `MonthSelect` are deliberately not reproduced — the census
+  found none in any form — and neither is laminas' `hasValue` flag, which nothing reads.
+  `test/Integration/ElementModelParityTest` still runs, inverted: for every element a form
+  really builds it constructs the laminas element that used to stand there and asserts ours
+  answers the same. `test/Unit/ElementModelBehaviourTest` pins the edges no definition
+  exercises.
   A rule that lives on an element and not in a specification is a rule the engine cannot
   see, so `test/Fuzz/known-form-gaps.php` tracks two categories for it —
-  `validationSuppliedOnlyByElement` (3, all harness artefacts) and
-  `filteringSuppliedOnlyByElement` (0) — and `FormValidationContractTest` fails when either
-  grows. `SionModel\Form\{CsrfSpec,ChoiceDomain,CheckboxDomain,InputTypeRules}` are how a
-  specification restates one.
+  `validationSuppliedOnlyByElement` and `filteringSuppliedOnlyByElement`, **both 0 since the
+  swap**, because an element that supplies no input specification cannot hide a rule — and
+  `FormValidationContractTest` fails when either grows.
+  `SionModel\Form\{CsrfSpec,ChoiceDomain,CheckboxDomain,InputTypeRules}` are how a
+  specification restates one; three option keys are documentation only now —
+  `disable_inarray_validator` (63 uses), `required` (124) and `allow_empty`, read by the
+  input-filter half, which no longer looks at elements.
+  What remains of step 5 is the form model: `Form`, `Fieldset`, `Collection` and the
+  rendering, with rendered-HTML parity as the contract.
 - **What laminas still does**, and therefore what this plan removes: the service
   container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`,
   `laminas-eventmanager` — direct requirements since step 0), the database layer
@@ -158,7 +162,7 @@ deletes.
 | 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
 | 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours, implementing `Laminas\Translator\TranslatorInterface`. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. **laminas-escaper does not leave here** — laminas-form (`^2`) and laminas-uri (`^2.9`) require it, so it goes with steps 5 and 6; no code of ours uses it any more |
-| 5 | laminas-form, inputfilter, validator, filter | 36 forms, ~170 files | Symfony Form + Validator. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
+| 5 ◐ | laminas-form, inputfilter, validator, filter | 41 forms, 441 elements, ~170 files | **validation cutover and element model done 2026-09-11**, both ours; the form model is what is left. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, and `SionModel\Form\Element`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 | laminas-router (27) | every route is declared twice today | Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names |
 | 7 | laminas-servicemanager (76 `FactoryInterface` factories), modulemanager, eventmanager, stdlib | ~120 files | Symfony DI; FrameworkBundle is installable after steps 2 and 3, and `App\Kernel` is what it replaces |
 | 8 | laminas-db (96 files; `SionTable` is 2,413 lines over `TableGateway`/`Sql`) | the largest | Doctrine DBAL (decision pending, §6) |

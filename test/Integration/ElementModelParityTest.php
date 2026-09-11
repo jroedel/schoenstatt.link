@@ -10,8 +10,11 @@ use Laminas\Form\Fieldset;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Element\ElementSurface;
 use SionModel\Form\Element as Ours;
+use SionModel\Form\Element\Registry;
 
 use function array_diff;
+use function array_flip;
+use function array_values;
 use function array_key_exists;
 use function array_keys;
 use function implode;
@@ -26,26 +29,26 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Element/ElementSurface.php';
 
 /**
- * Every element of ours answers what its laminas twin answers, on the real definitions.
+ * Every element on the site still answers what the laminas element it replaced would.
  *
- * ## Why a twin and not the baseline file
+ * ## Why this outlives the swap
  *
  * `test/Element/element-surface.php` records what the application's elements answer, and
- * `ElementSurfaceTest` will be what proves the replacement kept those answers once the
- * elements are actually swapped in. Until then nothing in `SionModel\Form\Element` is
- * reached by a single form, and a class nothing constructs is a class nothing has checked.
+ * `ElementSurfaceTest` compares against it — but that baseline was regenerated *from this
+ * code*. It is what catches a later change; it cannot, on its own, say that the replacement
+ * was faithful in the first place. That was a one-time measurement: 432 elements changed
+ * class and not one other recorded answer moved.
  *
- * So this builds the twin: for 432 of the 439 leaf elements the application really has —
- * everything but the seven `Phone`s, which are re-parented with the swap — it constructs
- * ours from the **same definition**, the same name, the same options array and the same
- * attributes, and asks both the same questions through
- * {@see ElementSurface::describe()} rather than a second list that could drift from the one
- * the baseline was taken with.
+ * This is the repeatable version of it, and it runs in the opposite direction from the way
+ * it did before the swap. For each of the 432 real leaf elements — all of them ours now —
+ * it builds the **laminas element it replaced** from the same definition, the same name,
+ * the same options array and the same attributes in the order `Laminas\Form\Factory`
+ * applies them, and asks both the same questions through {@see ElementSurface::describe()}
+ * rather than a second list that could drift from the one the baseline was taken with.
  *
- * That is a legitimate parallel comparison and not the self-agreeing kind: the two sides are
- * different code reading the same input, which is exactly what `FormSpecification` could do
- * and the *form* model cannot, because a form's element definitions are `add([...])` calls
- * buried in a constructor. Here the definition is available, so it can drive both.
+ * It is a real parallel comparison and not the self-agreeing kind: two different
+ * implementations reading the same input. It lives exactly as long as laminas-form is
+ * installed, and goes when the package does.
  *
  * ## What is replayed, and why only that
  *
@@ -61,29 +64,16 @@ require_once __DIR__ . '/../Element/ElementSurface.php';
 final class ElementModelParityTest extends TestCase
 {
     /**
-     * laminas' class => ours. Every element class the census found has to appear here or in
-     * {@see NOT_YET_REPLACED}; an unrecognised one fails rather than being skipped, because
-     * a silently unmeasured element type is the one that breaks a form.
+     * Ours => the laminas class it replaced, which is {@see Registry::REPLACEMENTS} read
+     * backwards. Taken from that constant rather than restated, so a replacement registered
+     * for production and forgotten here cannot go unmeasured.
      *
-     * @var array<class-string, class-string>
+     * @return array<class-string, class-string>
      */
-    private const TWINS = [
-        LaminasElement::class                           => Ours\Element::class,
-        LaminasElement\Text::class                      => Ours\Text::class,
-        LaminasElement\Textarea::class                  => Ours\Textarea::class,
-        LaminasElement\Hidden::class                    => Ours\Hidden::class,
-        LaminasElement\Submit::class                    => Ours\Submit::class,
-        LaminasElement\Button::class                    => Ours\Button::class,
-        LaminasElement\File::class                      => Ours\File::class,
-        LaminasElement\Url::class                       => Ours\Url::class,
-        LaminasElement\Email::class                     => Ours\Email::class,
-        LaminasElement\Number::class                    => Ours\Number::class,
-        LaminasElement\Date::class                      => Ours\Date::class,
-        LaminasElement\Checkbox::class                  => Ours\Checkbox::class,
-        LaminasElement\Select::class                    => Ours\Select::class,
-        LaminasElement\Csrf::class                      => Ours\Csrf::class,
-        LaminasElement\DateSelect::class                => Ours\DateSelect::class,
-    ];
+    private static function twins(): array
+    {
+        return array_flip(Registry::REPLACEMENTS);
+    }
 
     /**
      * Classes this step deliberately leaves where they are, each with the step that takes
@@ -91,20 +81,16 @@ final class ElementModelParityTest extends TestCase
      *
      * @var array<class-string, string>
      */
-    private const NOT_YET_REPLACED = [
+    private const NOT_COMPARED = [
         //A fieldset, and fieldsets belong to the form model: Collection composes a target
         //element and a count, and `Laminas\Form\Fieldset::add()` is what holds it together.
+        //Still a laminas class, so it is not in the twins map either.
         LaminasElement\Collection::class => 'the form model replaces Fieldset and Collection together',
 
-        //Not replaced at all: laminas has DateSelect extend MonthSelect, and the census
-        //found zero MonthSelect elements in any form. `SionModel\Form\Element\DateSelect`
-        //therefore stands alone and there is nothing here to compare it against.
-        LaminasElement\MonthSelect::class => 'no form has one; DateSelect does not inherit from it here',
-
-        //Ours already, but still `extends Laminas\Form\Element` and still supplying an input
-        //specification. Re-parenting it is a production change and belongs with the swap,
-        //not with a step that adds unreached classes.
-        Ours\Phone::class => 're-parented when the elements are swapped in',
+        //Ours, and never had a laminas twin to compare against: it replaced
+        //`Laminas\Form\Element\Tel`, which laminas marked `@final` and which contributed
+        //nothing but a type attribute. `PhoneElementContractTest` is what holds it.
+        Ours\Phone::class => 'replaced a final laminas element years ago; no twin to build',
     ];
 
     /**
@@ -114,8 +100,9 @@ final class ElementModelParityTest extends TestCase
      */
     private const COMPARISON_FLOOR = 2400;
 
-    public function testEveryElementOfOursAnswersWhatItsLaminasTwinAnswers(): void
+    public function testEveryElementAnswersWhatTheLaminasElementItReplacedWould(): void
     {
+        $twins       = self::twins();
         $differences = [];
         $comparisons = 0;
         $covered     = [];
@@ -126,26 +113,27 @@ final class ElementModelParityTest extends TestCase
             }
 
             $class = $element::class;
-            if (array_key_exists($class, self::NOT_YET_REPLACED)) {
+            if (array_key_exists($class, self::NOT_COMPARED)) {
                 continue;
             }
 
             self::assertArrayHasKey(
                 $class,
-                self::TWINS,
+                $twins,
                 sprintf(
-                    '%s is a %s, which has no replacement and is not listed as deferred. '
-                    . 'Add it to TWINS or say in NOT_YET_REPLACED which step takes it.',
+                    '%s is a %s, which no entry of Registry::REPLACEMENTS accounts for and '
+                    . 'NOT_COMPARED does not excuse. A silently unmeasured element type is '
+                    . 'the one that breaks a form.',
                     $path,
                     $class
                 )
             );
 
             $covered[$class] = true;
-            $theirs          = ElementSurface::describe($element);
-            $ours            = ElementSurface::describe(self::twin($element, self::TWINS[$class]));
+            $ours            = ElementSurface::describe($element);
+            $theirs          = ElementSurface::describe(self::twin($element, $twins[$class]));
 
-            foreach ($theirs as $field => $expected) {
+            foreach ($ours as $field => $got) {
                 //Guaranteed to differ, and the whole point: this is the field that says
                 //which of ours took which of theirs.
                 if ('class' === $field) {
@@ -153,7 +141,7 @@ final class ElementModelParityTest extends TestCase
                 }
 
                 $comparisons++;
-                $got = array_key_exists($field, $ours) ? $ours[$field] : '<<absent>>';
+                $expected = array_key_exists($field, $theirs) ? $theirs[$field] : '<<absent>>';
                 if ($got === $expected) {
                     continue;
                 }
@@ -161,7 +149,7 @@ final class ElementModelParityTest extends TestCase
                 $differences[] = sprintf(
                     '%s (%s): %s is %s, laminas says %s',
                     $path,
-                    self::TWINS[$class],
+                    $class,
                     $field,
                     self::brief($got),
                     self::brief($expected)
@@ -178,32 +166,33 @@ final class ElementModelParityTest extends TestCase
         self::assertSame(
             [],
             $differences,
-            "A replacement element answers differently from the laminas element it replaces:\n  "
+            "An element answers differently from the laminas element it replaced:\n  "
             . implode("\n  ", array_slice($differences, 0, 30))
         );
 
-        //A twin nothing exercised is a twin nothing checked. The two deferred classes are
-        //not in TWINS, so this compares like with like.
-        $unexercised = array_diff(array_keys(self::TWINS), array_keys($covered));
+        //A replacement nothing exercised is a replacement nothing checked. Registry lists
+        //what production resolves to, so an entry with no element behind it is either a
+        //dead registration or a form that stopped using a type.
+        $unexercised = array_diff(array_values(Registry::REPLACEMENTS), array_keys($covered));
         self::assertSame(
             [],
-            $unexercised,
+            array_values($unexercised),
             'These replacements were never compared against a real element: '
             . implode(', ', $unexercised)
         );
     }
 
     /**
-     * The same definition, built by the replacement class.
+     * The same definition, built by the laminas class this element replaced.
      *
-     * @param class-string $ours
+     * @param class-string $theirs
      */
-    private static function twin(ElementInterface $element, string $ours): ElementInterface
+    private static function twin(ElementInterface $element, string $theirs): ElementInterface
     {
         $options = $element->getOptions();
 
         /** @var ElementInterface $twin */
-        $twin = new $ours($element->getName(), $options);
+        $twin = new $theirs($element->getName(), $options);
         $twin->setAttributes($element->getAttributes());
 
         //Replayed only where the element's options are not the ones its definition
@@ -212,7 +201,7 @@ final class ElementModelParityTest extends TestCase
         //so comparing the declaration against the element is what tells the two apart.
         //Replaying unconditionally would hide a broken `value_options` promotion; never
         //replaying leaves 19 selects comparing two empty lists.
-        if ($element instanceof LaminasElement\Select && $twin instanceof Ours\Select) {
+        if ($element instanceof Ours\Select && $twin instanceof LaminasElement\Select) {
             if ($element->getValueOptions() !== ($options['value_options'] ?? [])) {
                 $twin->setValueOptions($element->getValueOptions());
             }
@@ -235,8 +224,8 @@ final class ElementModelParityTest extends TestCase
         //original does not have.
         if (
             null !== $element->getValue()
-            && ! $element instanceof LaminasElement\Csrf
-            && ! $element instanceof LaminasElement\MonthSelect
+            && ! $element instanceof Ours\Csrf
+            && ! $element instanceof Ours\DateSelect
         ) {
             //Through setAttribute() rather than setValue(), because that is how a form
             //states a value — `'attributes' => ['value' => 50]`, 35 of them — and the
