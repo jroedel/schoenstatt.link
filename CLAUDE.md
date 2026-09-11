@@ -189,6 +189,11 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
 
 ## Deployment
 
+`make prod-deploy` builds the release in a checkout of its own
+(`~/.cache/schoenstatt.link-deploy`) and never touches the working tree, so a deploy and a
+working day can share a machine; `ci-local` still runs here, because the capsule serves
+this tree, and only when this tree is on the revision being shipped.
+
 `./tools/deploy.sh` — atomic releases, one symlink swap, OPcache reset on all three pools,
 `/_health` revision poll before any post-deploy migration, migration ledger `sch_migration`
 with `-- @phase`, `@kind`, `@tables` (no default for `@phase`), rollback refused for a
