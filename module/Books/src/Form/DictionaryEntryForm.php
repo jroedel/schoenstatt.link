@@ -2,7 +2,7 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use Books\Model\LibraryOptions;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
@@ -137,7 +137,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -163,7 +163,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -194,7 +194,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],

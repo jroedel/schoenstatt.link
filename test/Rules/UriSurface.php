@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Rules;
 
-use Laminas\Uri\Http;
+use SionModel\Uri\Http;
 use SionModel\Db\Model\SionTable;
 use Throwable;
 
@@ -15,15 +15,16 @@ use function preg_replace_callback;
 use function sprintf;
 
 /**
- * What `Laminas\Uri\Http` answers, and what the application stores because of it.
+ * What `SionModel\Uri\Http` answers, and what the application stores because of it.
  *
  * ## Why this is recorded apart from the rules
  *
- * `laminas-uri` is eight files and eighteen references, and seventeen of those are the
- * string `'Laminas\Uri\Http'` handed to a URI validator as its `uriHandler` — which
- * {@see RuleSurface} already measures, because the validator is named in a specification.
+ * `laminas-uri` was eight files and eighteen references, and fourteen of those were the
+ * string `'Laminas\Uri\Http'` carried as a URI validator's `uriHandler` option — which
+ * {@see RuleSurface} measured, because the validator is named in a specification, and which
+ * left with the package: {@see \SionModel\Validator\Uri} has no handler to choose.
  *
- * The eighteenth is the one that matters. `SionModel\Db\Model\SionTable` builds a `Http`
+ * The references that matter are the rest. `SionModel\Db\Model\SionTable` builds a `Http`
  * in three places and keeps `$url->toString()` — so laminas-uri is not validating a URL
  * here, it is **rewriting the value that goes into the column**. `filterUrl()` also takes
  * the host as the link's label when the editor left it blank, so a changed `getHost()`

@@ -15,7 +15,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
  * Characterization test for the six pattern validators that used to extend
- * Laminas\Validator\Regex. laminas marked Regex `@final`, so they were moved
+ * SionModel\Validator\Regex. laminas marked Regex `@final`, so they were moved
  * onto SionModel\Validator\AbstractPatternValidator (which extends the still-open
  * AbstractValidator). Nothing about their observable behaviour may change:
  *
@@ -32,7 +32,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class PatternValidatorContractTest extends TestCase
 {
-    /** The key Laminas\Validator\Regex reports a non-matching value under. */
+    /** The key SionModel\Validator\Regex reports a non-matching value under. */
     private const NOT_MATCH = 'regexNotMatch';
 
     /**

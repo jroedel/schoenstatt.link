@@ -104,10 +104,9 @@ final class ContainerFactory
         //JTranslate's own name for the same object.
         //
         //Since 2026-09 that object is `JTranslate\I18n\Translator\Translator`, which
-        //implements both the `Laminas\Translator` interface (what laminas-validator 3 will
-        //want) and laminas-validator 2's own deprecated one, so validators take it
-        //directly. The `Laminas\Validator\Translator\Translator` adapter that used to sit
-        //in between is gone with laminas-i18n.
+        //implements the `Laminas\Translator` interface — one file, no implementation, and
+        //what `SionModel\Validator\AbstractValidator::setDefaultTranslator()` type-hints —
+        //so validators take it directly, with no adapter in between.
         $services->configure([
             'factories'  => [
                 JTranslateTranslator::class => JTranslateTranslatorFactory::class,

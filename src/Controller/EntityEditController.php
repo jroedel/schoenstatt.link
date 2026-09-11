@@ -424,7 +424,7 @@ final class EntityEditController
      * The per-entity view variables, dispatched by name so each one is greppable.
      *
      * @param array<string, mixed> $object
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @return array<string, mixed>
      */
     private function extraVariables(Request $request, string $entity, array $object, FormInterface $form): array

@@ -38,7 +38,7 @@ use function is_array;
  *
  * Both lines are easy to get subtly wrong in the same direction. A spec taken from a
  * *fieldset* rather than the form, or an engine built with a rule set other than
- * `withLaminasRules()`, answers plausibly and differently; and a test that builds its own
+ * `withRules()`, answers plausibly and differently; and a test that builds its own
  * pair is a test that can drift from what `SionModel\Form\Form::isValid()` does. One seam,
  * named after what it is.
  */
@@ -53,7 +53,7 @@ final class Engine
      */
     public static function of(Fieldset $form, array $without = []): InputFilter
     {
-        return InputFilter::withLaminasRules(self::specificationOf($form, $without));
+        return InputFilter::withRules(self::specificationOf($form, $without));
     }
 
     /**

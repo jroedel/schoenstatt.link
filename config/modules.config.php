@@ -11,10 +11,12 @@
  * This should be an array of module namespaces used in the application.
  */
 $modules = [
-    //`Laminas\Form` left on 2026-09-11 with the form model: its module registered the
-    //`FormElementManager` that built elements, and `SionModel\Form\Element\Registry` is
-    //that list now — reached by the form's own factory, with nothing to configure.
-    'Laminas\Validator',
+    //`Laminas\Form`, `Laminas\Validator` and `Laminas\Filter` all left on 2026-09-11 with
+    //the form model and the rule library. Each registered a plugin manager — the
+    //`FormElementManager` that built elements, the two that turned a specification's rule
+    //names into objects — and `SionModel\Form\Element\Registry`,
+    //`SionModel\Validator\Registry` and `SionModel\Filter\Registry` are those lists now:
+    //flat maps, reached directly, with nothing to configure and no module to load.
     //provides the session factories JUser\Module::onBootstrap starts
     'Laminas\Session',
     'JUser',

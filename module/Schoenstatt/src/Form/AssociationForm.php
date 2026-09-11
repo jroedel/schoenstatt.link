@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use SionModel\Form\SionForm;
@@ -485,7 +485,6 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Facebook URL',
                 'required' => false,
-                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -499,7 +498,6 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Other URL 1',
                 'required' => false,
-                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -528,7 +526,6 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Other URL 2',
                 'required' => false,
-                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -557,7 +554,6 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Other URL 3',
                 'required' => false,
-                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [

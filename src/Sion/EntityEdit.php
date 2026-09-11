@@ -209,7 +209,7 @@ final class EntityEdit
      * would also swallow a genuine fault in one of the seven forms that do build.
      *
      * @param array<string, mixed> $object the row `load()` returned, for the three above
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     public function form(string $entity, array $object = []): FormInterface
     {
@@ -232,7 +232,7 @@ final class EntityEdit
             throw new RuntimeException("The container did not return a form for '$entity'.");
         }
 
-        /** @var FormInterface<array<string, mixed>> $instance */
+        /** @var FormInterface $instance */
         return $instance;
     }
 
@@ -250,7 +250,7 @@ final class EntityEdit
      * URL — and the CSRF token it carries is accepted there because both front controllers
      * read the same laminas session.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     public function deleteForm(): FormInterface
     {

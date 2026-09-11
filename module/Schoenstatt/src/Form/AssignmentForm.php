@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\SionForm;
 use App\Json;

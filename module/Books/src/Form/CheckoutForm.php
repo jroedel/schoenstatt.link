@@ -2,8 +2,8 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Laminas\InputFilter\InputFilterProviderInterface;
-use Laminas\Validator\NotEmpty;
+use SionModel\Form\InputFilterProviderInterface;
+use SionModel\Validator\NotEmpty;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\ChoiceDomain;
 
@@ -78,7 +78,7 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'Laminas\Validator\NotEmpty',
+                        'name' => 'SionModel\Validator\NotEmpty',
                         'options' => [
                             'type' => NotEmpty::EMPTY_ARRAY
                         ],

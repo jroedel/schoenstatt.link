@@ -2,13 +2,12 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\ServiceManager\ServiceManager;
-use Laminas\Validator\ValidatorPluginManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Filter\Registry as FilterRegistry;
 use SionModel\Filter\ToDateTime;
 use SionModel\Validator\ParseableDate;
+use SionModel\Validator\Registry as ValidatorRegistry;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -227,19 +226,17 @@ class ParseableDateValidatorContractTest extends TestCase
     }
 
     /**
-     * The input filter specifications name this validator by string, so a missing
-     * or misspelled entry in SionModel's `validators` config is a
-     * ServiceNotFoundException at request time on twelve date fields. Both the
-     * FQCN (how the forms spell it) and the short alias (how the config
-     * registers it) have to resolve.
+     * The input filter specifications name this validator by string, so a name the
+     * registry cannot turn into an object is a hard failure at request time on twelve
+     * date fields. All twelve spell it fully qualified, which {@see ValidatorRegistry::get()}
+     * resolves by falling through to the argument itself — this validator has no short
+     * name and needs none — and that fallthrough is the thing worth pinning: it is one
+     * `is_a()` check away from accepting anything.
      */
     #[DataProvider('registeredNames')]
-    public function testResolvesThroughTheValidatorPluginManager(string $name): void
+    public function testResolvesThroughTheValidatorRegistry(string $name): void
     {
-        $config  = include __DIR__ . '/../../module/SionModel/config/module.config.php';
-        $manager = new ValidatorPluginManager(new ServiceManager(), $config['validators']);
-
-        self::assertInstanceOf(ParseableDate::class, $manager->get($name));
+        self::assertInstanceOf(ParseableDate::class, ValidatorRegistry::get($name));
     }
 
     /**
@@ -249,7 +246,6 @@ class ParseableDateValidatorContractTest extends TestCase
     {
         return [
             'fully qualified' => [ParseableDate::class],
-            'short alias'     => ['ParseableDate'],
         ];
     }
 

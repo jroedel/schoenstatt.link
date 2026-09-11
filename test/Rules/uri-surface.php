@@ -1,7 +1,7 @@
 <?php
 
 /**
- * What `Laminas\Uri\Http` answers, and what `SionTable::filterUrl()` stores because of it.
+ * What `SionModel\Uri\Http` answers, and what `SionTable::filterUrl()` stores because of it.
  *
  * GENERATED FILE — regenerate with:
  *
@@ -47,9 +47,9 @@ return array (
     'scheme-relative' => 'valid=yes absolute=no relative=no scheme=(none) host=«example.com» toString=«//example.com/path»',
     'path-only' => 'valid=yes absolute=no relative=yes scheme=(none) host=(none) toString=«/path/only»',
     'relative-path' => 'valid=yes absolute=no relative=yes scheme=(none) host=(none) toString=«path/only»',
-    'mailto' => 'threw Laminas\\Uri\\Exception\\InvalidUriPartException: Scheme "mailto" is not valid or is not accepted by Laminas\\Uri\\Http',
-    'javascript' => 'threw Laminas\\Uri\\Exception\\InvalidUriPartException: Scheme "javascript" is not valid or is not accepted by Laminas\\Uri\\Http',
-    'ftp' => 'threw Laminas\\Uri\\Exception\\InvalidUriPartException: Scheme "ftp" is not valid or is not accepted by Laminas\\Uri\\Http',
+    'mailto' => 'threw SionModel\\Uri\\Exception\\InvalidUriPartException: Scheme "mailto" is not valid or is not accepted by SionModel\\Uri\\Http',
+    'javascript' => 'threw SionModel\\Uri\\Exception\\InvalidUriPartException: Scheme "javascript" is not valid or is not accepted by SionModel\\Uri\\Http',
+    'ftp' => 'threw SionModel\\Uri\\Exception\\InvalidUriPartException: Scheme "ftp" is not valid or is not accepted by SionModel\\Uri\\Http',
     'not-a-url' => 'valid=yes absolute=no relative=yes scheme=(none) host=(none) toString=«this%20is%20not%20a%20url»',
     'leading-whitespace' => 'valid=yes absolute=no relative=yes scheme=(none) host=(none) toString=«%20%20https://example.com/path»',
     'trailing-whitespace' => 'valid=yes absolute=yes relative=no scheme=«https» host=«example.com» toString=«https://example.com/path%20%20»',
@@ -90,9 +90,9 @@ return array (
     'scheme-relative' => 'url=«//example.com/path» label=«example.com»',
     'path-only' => 'url=«/path/only» label=(none)',
     'relative-path' => 'url=«path/only» label=(none)',
-    'mailto' => 'threw Laminas\\Uri\\Exception\\InvalidUriPartException: Scheme "mailto" is not valid or is not accepted by Laminas\\Uri\\Http',
-    'javascript' => 'threw Laminas\\Uri\\Exception\\InvalidUriPartException: Scheme "javascript" is not valid or is not accepted by Laminas\\Uri\\Http',
-    'ftp' => 'threw Laminas\\Uri\\Exception\\InvalidUriPartException: Scheme "ftp" is not valid or is not accepted by Laminas\\Uri\\Http',
+    'mailto' => 'threw SionModel\\Uri\\Exception\\InvalidUriPartException: Scheme "mailto" is not valid or is not accepted by SionModel\\Uri\\Http',
+    'javascript' => 'threw SionModel\\Uri\\Exception\\InvalidUriPartException: Scheme "javascript" is not valid or is not accepted by SionModel\\Uri\\Http',
+    'ftp' => 'threw SionModel\\Uri\\Exception\\InvalidUriPartException: Scheme "ftp" is not valid or is not accepted by SionModel\\Uri\\Http',
     'not-a-url' => 'url=«this%20is%20not%20a%20url» label=(none)',
     'leading-whitespace' => 'url=«%20%20https://example.com/path» label=(none)',
     'trailing-whitespace' => 'url=«https://example.com/path%20%20» label=«example.com»',

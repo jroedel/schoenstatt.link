@@ -270,7 +270,7 @@ class ToDateTimeFilterContractTest extends TestCase
      *    would for '' or whitespace. Nothing was entered.
      *  - A NUL among other characters is *bad input*, and comes back as a string
      *    so the validator chain can report it. It comes back with the NUL
-     *    removed, which is not cosmetic: Laminas\Validator\Date, which the Date
+     *    removed, which is not cosmetic: SionModel\Validator\Date, which the Date
      *    form element contributes ahead of anything a form specification adds,
      *    calls DateTime::createFromFormat() and PHP raises
      *    `ValueError: must not contain any null bytes`. Passing the raw value on

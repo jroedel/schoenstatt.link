@@ -32,7 +32,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * That makes most of the parity structural, which is the point — but not all of it,
  * and what is left is what this test pins:
  *
- * - **The API removes the CSRF rule.** It has to: `Laminas\Validator\Csrf` reads a
+ * - **The API removes the CSRF rule.** It has to: `SionModel\Validator\Csrf` reads a
  *   session an API request does not have. That removal is the entire permitted
  *   difference between the two surfaces, and `testCsrfIsTheOnlyRuleTheApiDrops`
  *   asserts it is the *only* one. A future edit that drops another key to make

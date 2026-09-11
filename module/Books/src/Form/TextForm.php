@@ -2,9 +2,9 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\InputFilterProviderInterface;
 use Books\Model\EventTextTable;
-use Laminas\Validator\Identical;
+use SionModel\Validator\Identical;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\CsrfSpec;
 use SionModel\Form\CheckboxDomain;
@@ -126,7 +126,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -180,7 +180,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripTags'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                            'type' => \SionModel\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],

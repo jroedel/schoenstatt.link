@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
  * Characterization test for Books\Filter\SortText, which used to extend
- * Laminas\Filter\PregReplace (now `@final`) and was moved onto the still-open
+ * SionModel\Filter\PregReplace (now `@final`) and was moved onto the still-open
  * AbstractFilter. It only ever used the parent for setPattern()/getPattern()
  * validity checking; filter() was overridden wholesale.
  *

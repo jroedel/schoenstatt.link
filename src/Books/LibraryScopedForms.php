@@ -108,7 +108,7 @@ final class LibraryScopedForms
      * `collection` cannot answer null, because the value-option lists that make those forms
      * mean anything are all scoped to one library; they throw, as their factories do.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     public function formForLibrary(string $entity, ?int $libraryId): FormInterface
     {
@@ -131,7 +131,7 @@ final class LibraryScopedForms
      * The form for one of the three, wired against the library the row belongs to.
      *
      * @param array<string, mixed> $object the row `EntityEdit::load()` returned
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     public function form(string $entity, array $object): FormInterface
     {
@@ -177,7 +177,7 @@ final class LibraryScopedForms
     /**
      * `Books\Service\BookFormFactory::__invoke()` from `$table->setLibraryId()` onward.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     private function bookForm(int $libraryId): FormInterface
     {
@@ -223,7 +223,7 @@ final class LibraryScopedForms
      * Its whole body is the library lookup plus two lines, and both are reproduced: the
      * table is scoped, and `libraryId` is set as the form's *value* rather than as options.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     private function collectionForm(int $libraryId): FormInterface
     {
@@ -238,7 +238,7 @@ final class LibraryScopedForms
     /**
      * `Books\Service\LibraryFormFactory::__invoke()`.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     /**
      * `$libraryId` is nullable here alone, and only the create surface passes null: the
@@ -246,7 +246,7 @@ final class LibraryScopedForms
      * `if (isset($libraryId))`, so `/libraries/create` renders `mainCollectionId` with no
      * options. Reproduced by skipping the same call.
      *
-     * @return FormInterface<array<string, mixed>>
+     * @return FormInterface
      */
     private function libraryForm(?int $libraryId): FormInterface
     {
@@ -306,7 +306,7 @@ final class LibraryScopedForms
      * can catch, so it should be loud the first time it happens rather than quietly
      * rendering a select with no options.
      *
-     * @param FormInterface<array<string, mixed>> $form
+     * @param FormInterface $form
      * @param array<array-key, mixed> $options
      */
     private function setOptions(FormInterface $form, string $name, array $options): void
