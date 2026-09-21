@@ -34,7 +34,7 @@ use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Spatie\SchemaOrg\Organization;
 use Schoenstatt\Validator\EventsJson;
 use JTranslate\Model\TranslationsTable;
-use Cocur\Slugify\Slugify;
+use App\Text\Slug;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -1091,11 +1091,7 @@ class SchoenstattTable extends SionTable implements
 
     public static function getSlug($text)
     {
-        static $slugFilter;
-        if (! isset($slugFilter)) {
-            $slugFilter = new Slugify();
-        }
-        $slug = $slugFilter->slugify($text);
+        $slug = Slug::of((string)$text);
         if (strlen($slug) > 50) {
             $slug = trim(substr($slug, 0, 50), '-');
         }

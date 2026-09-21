@@ -13,9 +13,6 @@
     rebuilds the role `<option>` list whenever the association changes. Without it the role
     select is empty until the page is reloaded, which is also why the controller's
     `?roleId=` prefill has to set the options itself.
-  - **The script is minified**, through `jshrink` — the only page in the application that
-    does. `minify_js` is the Twig counterpart; see App\Twig\ScriptExtension for why
-    reproducing it matters to the baseline diff.
 
   No delete button and no confirmation modal: the edit page has both, and a record that does
   not exist yet cannot be deleted.
@@ -49,7 +46,6 @@
 
 {% block inline_scripts %}
 <script nonce="{{ csp_nonce() }}">
-{% apply minify_js %}
 $(function() {
     var $associationId = $("select[name='associationId']");
     var roles = {{ form.getRolesJson()|raw }};
@@ -80,6 +76,5 @@ $("select[name='associationId']").selectize({
     create: false,
     sortField: 'text'
 });
-{% endapply %}
 </script>
 {% endblock %}

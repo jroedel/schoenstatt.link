@@ -7,7 +7,7 @@ use Books\Model\BorrowerTokenTable;
 use Books\Model\LibraryTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Symfony\Component\Mime\Address;
-use voku\Html2Text\Html2Text;
+use SionModel\Mailing\HtmlToText;
 
 class BooksMailer extends Mailer
 {
@@ -220,7 +220,7 @@ class BooksMailer extends Mailer
             $message = $this->createEmail()
                 ->subject($localizedSubject[$locale])
                 ->html($html)
-                ->text((new Html2Text($html))->getText());
+                ->text(HtmlToText::convert($html));
             if (isset($replyEmail)) {
                 $message->addReplyTo($replyEmail);
             }

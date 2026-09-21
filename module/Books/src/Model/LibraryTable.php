@@ -6,8 +6,6 @@ use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
 use JUser\Model\UserTable;
 use Laminas\Db\Adapter\AdapterInterface;
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Predicate\Expression;
 use Laminas\Db\Sql\Where;
@@ -1194,11 +1192,11 @@ ORDER BY `publisher`";
      * never been reachable: no route, no action, no caller. Three defects are worth
      * naming, because each was invisible while nothing called it.
      *
-     * The stub cached `Carbon::today()` in a `static`, then called `addDays()` on
-     * it. Carbon's addDays MUTATES (measured: +14, then +28, then +42 on one
-     * instance), so renewing a second book in one request would have granted twice
-     * the period and a third three times. A fresh CarbonImmutable per call is not
-     * defensive style here; it is the fix.
+     * The stub cached a today-instance in a `static`, then added days to it with a
+     * MUTATING call (measured: +14, then +28, then +42 on one instance), so renewing
+     * a second book in one request would have granted twice the period and a third
+     * three times. A fresh `DateTimeImmutable` per call is not defensive style here;
+     * it is the fix, and the immutability is what makes it hold.
      *
      * The period runs from TODAY, not from the old due date. That is deliberate and
      * it is the policy for overdue books in particular: a book five months overdue
@@ -1248,8 +1246,8 @@ ORDER BY `publisher`";
         }
 
         $days = (int) $libraryOptions->defaultCheckoutTimePeriodInDays;
-        $newDueOn = CarbonImmutable::today(new \DateTimeZone('UTC'))
-            ->addDays($days)
+        $newDueOn = (new \DateTimeImmutable('today', new \DateTimeZone('UTC')))
+            ->modify(sprintf('+%d days', $days))
             ->setTime(23, 59, 59);
 
         $gateway = $this->getTableGateway('lib_checkouts');
@@ -2172,14 +2170,20 @@ ORDER BY CreatedOn DESC";
                 if (! is_numeric($daysToLend)) { //shouldn't happen
                     $daysToLend = self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
                 }
+                //A COPY, and a mutable one. A copy because $data['checkedOutOn'] is also
+                //written to the CheckedOutOn column, and when it was defaulted it is this
+                //method's shared `static $now` — mutating it would move both. Mutable
+                //because SionTable only stringifies a column value that is `instanceof
+                //\DateTime`; a DateTimeImmutable reaches the TableGateway as an object.
                 if ($data['checkedOutOn'] instanceof \DateTime) {
-                    $dueDate = Carbon::instance($data['checkedOutOn']);
+                    $dueDate = \DateTime::createFromInterface($data['checkedOutOn']);
                 } else {
-                    $tz = new \DateTimeZone('UTC');
-                    $dueDate = new Carbon(null, $tz);
+                    $dueDate = new \DateTime('now', new \DateTimeZone('UTC'));
                 }
-                $dueDate->addDays($daysToLend)
-                    ->endOfDay();
+                //Carbon's endOfDay() set 23:59:59.999999, but the column is DATETIME and
+                //the value is written through format('Y-m-d H:i:s'), so this is identical.
+                $dueDate->modify(sprintf('+%d days', (int) $daysToLend));
+                $dueDate->setTime(23, 59, 59);
                 $data['dueOn'] = $dueDate;
             }
         }

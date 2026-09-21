@@ -163,8 +163,6 @@ final class TwigFactory
             'layout.html.twig'
         ));
         $twig->addExtension(new MarkdownExtension());
-        //One page minifies its inline script on laminas; see the extension's docblock.
-        $twig->addExtension(new ScriptExtension());
 
         return $twig;
     }

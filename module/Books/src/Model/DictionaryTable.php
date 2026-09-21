@@ -3,7 +3,7 @@ namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
 use Laminas\Db\Adapter\AdapterInterface;
-use Cocur\Slugify\Slugify;
+use App\Text\Slug;
 use Laminas\Db\ResultSet\ResultSetInterface;
 use Books\Exception\DuplicateKeyException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -49,15 +49,10 @@ class DictionaryTable extends SionTable
     protected function preprocessDictionaryEntry($data, $entityData, $action)
     {
         //calculate slug
-        static $filter;
         if (! isset($data['key'])) {
             return $data;
         }
-        if (! isset($filter)) {
-            $filter = new Slugify();
-        }
-        $slug = $filter->slugify($data['key']);
-        $data['slug'] = $slug;
+        $data['slug'] = Slug::of((string)$data['key']);
 
         //check for a duplicate slug-locale
         if (self::ENTITY_ACTION_CREATE === $action
