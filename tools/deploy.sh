@@ -1263,8 +1263,10 @@ step "Warming the release (still not serving)"
 # It cannot be: bin/console sets config_cache_enabled=false (see the comment there
 # — a test run must not write data/config, and CI has no writable one), so no
 # console command can ever populate it. Measured 2026-08-17 by clearing
-# data/config and running a console command: still empty. One web request: both
-# files written.
+# data/config and running a console command: still empty. One web request writes
+# it. That used to be two files; the module class-map went with
+# laminas-modulemanager on 2026-09-21, because composer's PSR-4 map resolves
+# every Module class and the file the listener wrote held an empty array.
 #
 # In practice it is warm before any visitor arrives anyway — the opcode-cache
 # reset, the twelve /_health probes and the smoke run all execute the new release
