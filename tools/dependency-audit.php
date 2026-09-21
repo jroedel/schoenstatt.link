@@ -161,11 +161,12 @@ foreach ($installed as $name => $version) {
  *    JTranslate}` are autoloaded through this package's own PSR-4, not installed as path
  *    repositories. So `symfony/mailer` is unused by `src/` and installs the mailer for two
  *    submodules; dropping the line uninstalls it and takes every email with it.
- * 2. An installed package names it without requiring it. `laminas-modulemanager` imports
- *    `Laminas\Loader\ModuleAutoloader` in `ModuleLoaderListener`, which
- *    `DefaultListenerAggregate` constructs unconditionally and `App\Laminas\ContainerFactory`
- *    attaches — and it does not require `laminas/laminas-loader`. Our direct line is the
- *    only thing installing it, so dropping it fatals at boot.
+ * 2. An installed package names it without requiring it. The case that proved this was
+ *    `laminas-modulemanager`, which imported `Laminas\Loader\ModuleAutoloader` in
+ *    `ModuleLoaderListener` without requiring `laminas/laminas-loader` — so our own
+ *    direct line was the only thing installing a package our code never names, and
+ *    dropping it fatalled at boot. Both packages left on 2026-09-21 with
+ *    `App\Modules\ModuleConfig`; the mechanism did not.
  *
  * So the two verdicts differ on one question: would the package still arrive without our
  * line? A consumer that also **requires** it answers yes — composer installs it either way

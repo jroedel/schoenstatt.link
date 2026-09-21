@@ -96,9 +96,16 @@ under `module/*/src` that a Symfony-served request reaches.
   stored URLs with. Two classes trade laminas' tables for shape checks and are therefore
   strictly more permissive: `EmailAddress` and `Uri` accept any TLD. `config/modules.config.php`
   lost its last laminas module entries with them.
+- **The module system is ours** (2026-09-21). `App\Modules\ModuleConfig` collects each
+  enabled module's `getConfig()`, layers `config/autoload/` over it and caches the result —
+  thirty lines, which is all `laminas-modulemanager` was doing here. Of everything
+  `DefaultListenerAggregate` attached, only `ConfigListener` had an effect: no module class
+  in this application declares `getAutoloaderConfig()`, `init()`, `onBootstrap()` or
+  `getModuleDependencies()`, and composer's PSR-4 map resolves every one of them, so the
+  class-map cache the loader maintained held an empty array.
 - **What laminas still does**, and therefore what this plan removes: the service
-  container and module/config loading (`laminas-servicemanager`, `laminas-modulemanager`,
-  `laminas-eventmanager` — direct requirements since step 0), the database layer
+  container (`laminas-servicemanager`, `laminas-eventmanager` — direct requirements since
+  step 0), the database layer
   (`laminas-db`, under `SionModel\Db\Model\SionTable`), the session, and the
   `Laminas\Translator\TranslatorInterface` our translator and our validators share.
   laminas-i18n went at step 3, laminas-view at step 4, and the whole form stack at
@@ -108,10 +115,10 @@ under `module/*/src` that a Symfony-served request reaches.
 
 ## 2. The dependency picture (first measured 2026-09-09 after step 0; counts re-measured 2026-09-11)
 
-**9** `laminas/*` packages are installed, down from 37. Two are nobody's choice but
-laminas': `config` (laminas-modulemanager) and — awkwardly — `loader`, which is a **direct**
-line of ours covering laminas-modulemanager's undeclared use of `Laminas\Loader\*`; no code
-of ours names that namespace. The other seven we require directly.
+**6** `laminas/*` packages are installed, down from 37, and every one is a direct line of
+ours: `db`, `eventmanager`, `servicemanager`, `session`, `stdlib`, `translator`. Nothing
+here is transitive any more — the last two that were, `config` and `loader`, left on
+2026-09-21 with `laminas-modulemanager`.
 
 The two facts that shape the order, and step 0 confirmed both:
 
@@ -202,9 +209,11 @@ was our own 28 helpers, and that was step 4's actual content. Measured 2026-09-0
 the three first planned: `laminas-escaper` was required by `laminas-form` (`^2`) and
 `laminas-uri` (`^2.9`), so it could not leave before both of those did. Step 6 was planned
 as four (router, uri, http, loader) and took **two**: router and http. Iteration A then
-took seven at once, because the graph left no smaller cut. `laminas-loader` stays because
-laminas-modulemanager uses `Laminas\Loader\*` without requiring it — measured from the
-`require` blocks in `vendor/laminas/*/composer.json` rather than from the plan.
+took seven at once, because the graph left no smaller cut. `laminas-loader` outlived that
+step for a reason no plan predicted — laminas-modulemanager used `Laminas\Loader\*` without
+requiring it, so our own direct line was the only thing installing it — and left on
+2026-09-21 when its consumer did. All three were measured from the `require` blocks in
+`vendor/laminas/*/composer.json` rather than from the plan.
 
 **laminas-session does not leave at step 2.** No package requires it — the direct line is
 ours — and what holds it is the session itself: `App\Http\SessionListener` starts a `SessionManager` per request and
@@ -214,9 +223,7 @@ namespace. What step 2 removed is the *authentication* use of it: the identity n
 goes through a laminas storage adapter, only through `JUser\Host\SessionInterface`, whose
 one implementation is the host's. Measured 2026-09-09, re-measured 2026-09-11.
 
-`config` is transitive glue and leaves with its parent (laminas-modulemanager).
-`laminas-loader` is glue too but needs our direct line until laminas-modulemanager goes,
-for the reason above. `laminas-translator` is neither: it is a zero-dependency interface
+`laminas-translator` is not glue: it is a zero-dependency interface
 package we chose, named in **32 files**, and it
 leaves only when we declare the interface ourselves — the cheapest package in the tree and
 the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodules**
@@ -224,8 +231,8 @@ the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodule
 
 ### What is left, and in what order it ships
 
-Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6 are done; 2 has only `session` left, and **9 packages
-remain**. The numbering above is the order the work was *planned* in, which is not the order
+Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6 are done; 2 has only `session` left, the module system
+went on 2026-09-21, and **6 packages remain**. The numbering above is the order the work was *planned* in, which is not the order
 it can be released in, so the remainder ships as two iterations — the session and the
 container, then the database.
 
@@ -240,8 +247,8 @@ seven packages, 2026-09-11) is recorded there as done, with what its five record
 ### 4.1 What laminas-mvc still provides
 
 - **Nothing, at runtime.** Every container is built by `App\Laminas\ContainerFactory`
-  (event managers, `ModuleManager` with the default listeners and a `ServiceListener` for
-  `service_manager`); it defines `MvcTranslator` (since 2026-09 an alias of
+  (event managers, the merged module configuration from `App\Modules\ModuleConfig`, and the
+  `service_manager` key applied from it); it defines `MvcTranslator` (since 2026-09 an alias of
   `JTranslate\I18n\Translator\Translator`, the one translator) under the ids ported code
   asks for, and registers the two delegators. Nothing asks for `Application`, `ControllerPluginManager` or
   `ViewRenderer`. `Router` survives — laminas-router's own ConfigProvider provides it. The
@@ -522,14 +529,16 @@ Four verdicts:
   from `^7.4` to 8.1.
 - `?` — a `files` or classmap package with no prefix to search for. Check it by hand.
 
-**Six lines here read as unused and none of them is droppable**, which is why the bare
+**Five lines here read as unused and none of them is droppable**, which is why the bare
 "unused" verdict was replaced: `giggsey/libphonenumber-for-php`, `monolog/monolog` and
-`symfony/mailer` are `USED*` through the submodules; `laminas/laminas-loader` is `USED*`
-through `laminas-modulemanager`, which imports `Laminas\Loader\ModuleAutoloader` in the
-listener `DefaultListenerAggregate` always constructs and does not require the package;
-`psr/simple-cache` and `symfony/error-handler` are `PIN?`. Verified against composer
-itself — each line removed from a scratch copy and re-resolved; the two `PIN?` survived,
-the `USED*` ones vanished.
+`symfony/mailer` are `USED*` through the submodules; `psr/simple-cache` and
+`symfony/error-handler` are `PIN?`. Verified against composer itself — each line removed
+from a scratch copy and re-resolved; the two `PIN?` survived, the `USED*` ones vanished.
+A sixth, `laminas/laminas-loader`, was `USED*` through `laminas-modulemanager`, which
+imported `Laminas\Loader\ModuleAutoloader` in a listener `DefaultListenerAggregate` always
+constructs and did not require the package. Both left on 2026-09-21, and with them
+`laminas-config`, `brick/varexporter` and `webimpress/safe-writer`; `nikic/php-parser`,
+which `composer.json` declares only for `tools/ctx`, returned to the dev-only set.
 
 ### What is left
 

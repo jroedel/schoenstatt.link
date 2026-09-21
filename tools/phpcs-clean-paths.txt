@@ -88,3 +88,11 @@ module/JTranslate/src/Controller/PhraseDeleteController.php
 # The ctx navigation tool (2026-09-11). Level 8 and PSR-12 from its first commit;
 # it is new code and there is no legacy to grandfather.
 tools/ctx
+
+# Application's service factories, named one by one because module/Application is
+# otherwise legacy code phpcs.xml sweeps wholesale. These three exist because a module
+# config may hold no closures once App\Modules\ModuleConfig caches it with var_export
+# (2026-09-21) — see SchoenstattTest\Integration\MergedConfigIsPlainDataTest.
+module/Application/src/Service/CacheFactory.php
+module/Application/src/Service/JTranslateCacheFactory.php
+module/Application/src/Service/JUserSessionFactory.php

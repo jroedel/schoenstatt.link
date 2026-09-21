@@ -113,12 +113,19 @@ class PortedRouteErrorReportingTest extends TestCase
      * of this existed.
      *
      * Needs no database, and drives the case with a module that does not exist so that
-     * building the ServiceBridge is guaranteed to fail.
+     * building the ServiceBridge is guaranteed to fail — **and with a cache directory that
+     * does not exist either**, which is load-bearing since 2026-09-21. `ServiceBridge`
+     * always builds with the config caches on, and `App\Modules\ModuleConfig` reads a warm
+     * cache without consulting the module list at all, so a bogus module list alone stopped
+     * breaking anything. laminas-modulemanager instantiated every `Module` class whether or
+     * not the merged config was cached; nothing needs that here, because every module class
+     * in this application has `getConfig()` and nothing else.
      */
     public function testAContainerThatCannotBeBuiltDegradesRatherThanThrowing(): void
     {
-        $broken            = $this->appConfig();
-        $broken['modules'] = ['NoSuchModuleExistsAnywhere'];
+        $broken                                         = $this->appConfig();
+        $broken['modules']                              = ['NoSuchModuleExistsAnywhere'];
+        $broken['module_listener_options']['cache_dir'] = '/no-such-directory-' . bin2hex(random_bytes(6));
 
         $kernel   = new Kernel($broken);
         $response = $kernel->handle(Request::create('/_health'));
