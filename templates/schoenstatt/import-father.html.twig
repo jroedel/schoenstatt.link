@@ -31,13 +31,11 @@
 
 {% block inline_scripts %}
 <script nonce="{{ csp_nonce() }}">
-{% apply minify_js %}
 $(function () {
 $("select[name='personId']").selectize({
     create: false,
     sortField: 'text'
 });
 });
-{% endapply %}
 </script>
 {% endblock %}

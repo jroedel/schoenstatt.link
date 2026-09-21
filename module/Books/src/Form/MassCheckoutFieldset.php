@@ -2,7 +2,6 @@
 namespace Books\Form;
 
 use SionModel\Form\InputFilterProviderInterface;
-use Carbon\Carbon;
 use SionModel\Form\Fieldset;
 
 class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterface
@@ -11,8 +10,7 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
     {
         parent::__construct('checkout');
 
-        $today = new Carbon();
-        $todayText = $today->format('Y-m-d');
+        $todayText = (new \DateTimeImmutable())->format('Y-m-d');
         $this->add([
             'name' => 'checkedOutOn',
             'type' => 'Date',

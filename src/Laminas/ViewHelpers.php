@@ -230,19 +230,20 @@ final class ViewHelpers
      * SionModel's relative-time formatter — `<abbr title="6/13/65, 12:00 AM">57 years
      * ago</abbr>`.
      *
-     * On the allowlist rather than reimplemented because what it wraps is a Carbon
-     * locale table: `Carbon::setLocale(\Locale::getDefault())` on first use, then
-     * `diffForHumans()`, which is 60-odd translated relative-time patterns per locale.
-     * Reproducing that is not "keep the markup identical", it is shipping a second
-     * translation catalogue.
+     * On the allowlist rather than reimplemented because it is logic rather than markup.
+     * It used to wrap Carbon; since 2026-09-21 it wraps `SionModel\I18n\RelativeTime`,
+     * which carries the nine strings per locale that `diffForHumans()` actually reached —
+     * seven units plus the two framings — for the five locales this site serves. The
+     * "60-odd patterns per locale" this note used to cite was Carbon's whole locale file,
+     * most of it calendar formats and month names nothing here asked for.
      *
      * It reaches the renderer only for `dateFormat` — the `title` attribute — so it
      * runs with no MvcEvent for the same reason dateFormat() above does. Measured on a
      * ported comment list.
      *
-     * Memoized rather than built per call because of the first-invocation latch inside it:
-     * `Carbon::setLocale()` is global state, and a fresh instance would set it again on a
-     * page that has already formatted a date.
+     * Memoized because the helper is cheap to keep and reached once per comment on a page;
+     * it no longer *has* to be. The first-invocation latch it used to carry existed only to
+     * set Carbon's global locale once, and `RelativeTime` takes its locale as an argument.
      */
     public function diffForHumans(): DiffForHumans
     {

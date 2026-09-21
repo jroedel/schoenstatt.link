@@ -4,12 +4,11 @@ namespace Books\Model;
 use SionModel\Db\Model\SionTable;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Adapter\AdapterInterface;
-use voku\Html2Text\Html2Text;
+use SionModel\Mailing\HtmlToText;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
 use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
-use voku\helper\UTF8;
 
 class EventTextTable extends SionTable
 {
@@ -315,11 +314,7 @@ class EventTextTable extends SionTable
             $data['htmlText'] = $parsedown->text($data['markdownText']);
 
             //generate plain text
-            if (! isset($html2Text)) {
-                $html2Text = new Html2Text();
-            }
-            $html2Text->setHtml($data['htmlText']);
-            $data['plainText'] = $html2Text->getText();
+            $data['plainText'] = HtmlToText::convert($data['htmlText']);
         }
 
         return $data;
