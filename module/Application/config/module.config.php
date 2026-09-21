@@ -12,6 +12,7 @@ namespace Application;
 
 use JUser\Host\SessionInterface as JUserSessionInterface;
 use App\Console\Command\BuildSitemapCommand;
+use App\Session\HttpSession;
 use App\Console\Command\BuildSitemapCommandFactory;
 use JTranslate\I18n\Translator\Translator as AppTranslator;
 use SionModel\Cache\Storage as CacheStorage;
@@ -22,6 +23,10 @@ use Psr\Log\LoggerInterface;
 return [
     'service_manager' => [
         'factories' => [
+            //The request's session, from the merged `session_config` block. Registered
+            //here since 2026-09-21, when laminas-session left and JUser's module config
+            //stopped registering a SessionManager and a session Config.
+            HttpSession::class => Service\HttpSessionFactory::class,
             //the session JUser reads and writes, as its own host contract; one
             //registration is what makes the Symfony kernel and the laminas container share
             //a single adapter

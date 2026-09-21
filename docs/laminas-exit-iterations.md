@@ -5,21 +5,22 @@ order the remaining work can actually **ship** in. The numbering there — steps
 the order it was planned in, and what is left of it does not line up with what can be
 released together, which is what this file supplies.
 
-**6 `laminas/*` packages are installed**, down from 37. Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6
+**4 `laminas/*` packages are installed**, down from 37. Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6
 are done; 2 has only `session` left. Everything remaining regroups into two iterations:
 
 | | removes | leaves | content |
 |---|---|---|---|
 | **A** ✅ | form, inputfilter, filter, validator, hydrator, escaper, uri | 9 | the form model, and our own validator and filter classes |
-| **B** | modulemanager, config, loader ✅ · session, servicemanager, eventmanager | 3 | the module system, the session and the container |
+| **B** | modulemanager, config, loader ✅ · session, eventmanager ✅ · servicemanager | 3 | the module system, the session and the container |
 | **C** | db, stdlib, translator | 0 | the database layer |
 
-**Iteration B's first third shipped on its own (2026-09-21)**: the module system turned out
-to be separable from the container, so `laminas-modulemanager`, `laminas-config` and
-`laminas-loader` left ahead of the rest — with `brick/varexporter` and
-`webimpress/safe-writer` behind them — without touching the session or the ServiceManager.
-That is the exception rather than the shape of the rest: the session and the container are
-still one deploy.
+**Iteration B shipped in three parts, not one (2026-09-21).** The grouping in this table
+was wrong twice in the same direction. The module system turned out to be separable from
+the container — `laminas-modulemanager`, `laminas-config` and `laminas-loader` left with
+`brick/varexporter` and `webimpress/safe-writer` behind them — and then the session turned
+out to be separable too, taking `laminas-eventmanager` with it, because nothing else had
+ever required one. **Only the container is left**, and it is the part that was always going
+to be hardest; nothing now ships alongside it.
 
 Each is **one superproject PR over three submodule PRs, and one deploy**. Nothing new is
 added: both remaining design decisions were taken 2026-09-11 in favour of our own code, so
@@ -121,8 +122,8 @@ laminas reported three. `uri-surface.php` moved 6 lines, all an exception class 
 
 ## B — the module system, the session and the container (9 → 3)
 
-**Removes:** laminas-modulemanager, laminas-config, laminas-loader (done 2026-09-21),
-laminas-session, laminas-servicemanager, laminas-eventmanager.
+**Removes:** laminas-modulemanager, laminas-config, laminas-loader, laminas-session,
+laminas-eventmanager (all done 2026-09-21), laminas-servicemanager.
 
 0. **The module system, done.** `App\Modules\ModuleConfig` merges the module configs and
    caches them; `App\Laminas\ContainerFactory` applies the merged `service_manager` key
@@ -132,11 +133,17 @@ laminas-session, laminas-servicemanager, laminas-eventmanager.
    `brick/varexporter`. Those are named factory classes now, and
    `SchoenstattTest\Integration\MergedConfigIsPlainDataTest` keeps them that way: our own
    cache writer is `var_export`, which can write back an array of scalars and nothing else.
-1. **The session moves next**, and it is small but unforgiving: 15 files.
-   `App\Http\SessionListener` starts a manager per request, `SionModel\Messaging\FlashMessages`
-   stores flashes in a container, and JUser keeps the identity there.
-   **The storage key must stay `Laminas_Auth`** or the deploy signs every visitor out.
-   symfony/http-foundation is already a dependency and already has a session.
+1. **The session, done.** Five production files, not the fifteen that *name* the namespace.
+   `SionModel\Session\*` reads and writes the namespaces and `App\Session\HttpSession`
+   starts the session and owns the cookie; JUser was already behind its own
+   `Host\SessionInterface`. The storage key stayed `Laminas_Auth`, and so did the whole
+   **stored format**, which was the real hazard: laminas wrote a serialised
+   `Laminas\Stdlib\ArrayObject` per namespace, so the session had to leave **before**
+   `laminas-stdlib` while an old session still deserialises into a real object. Recorded in
+   `test/Session/session-surface.php` and proved in both directions, including a page served
+   to a hand-written old-format session that came back signed in.
+   symfony/http-foundation was not used: it would have been a second session implementation
+   beside PHP's own, and the stored format is PHP's.
 2. **The container.** 83 files name `Laminas\ServiceManager`, and 58 classes implement one
    of its factory contracts — 56 `FactoryInterface` and 2 `DelegatorFactoryInterface`.
    Ours is a PSR-11 implementation reading factories, aliases and invokables from the
