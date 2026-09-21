@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
-use Laminas\ModuleManager\ModuleManager;
+use App\Modules\ModuleConfig;
 use Psr\Container\ContainerInterface;
 
+use function array_flip;
 use function array_key_exists;
 use function getcwd;
 use function glob;
@@ -38,15 +39,17 @@ final class ModuleLanguageDirectories
     /** @return array<string, string> */
     public static function forContainer(ContainerInterface $container): array
     {
-        /** @var ModuleManager $manager */
-        $manager = $container->get(ModuleManager::class);
+        /** @var ModuleConfig $modules */
+        $modules = $container->get(ModuleConfig::class);
 
-        return self::forLoadedModules($manager->getLoadedModules());
+        return self::forLoadedModules(array_flip($modules->moduleNames()));
     }
 
     /**
-     * @param array<string, mixed> $loadedModules keyed by module name, as
-     *        `ModuleManager::getLoadedModules()` answers
+     * @param array<string, mixed> $loadedModules keyed by module name — a set, which is
+     *        all this ever read. `ModuleManager::getLoadedModules()` answered it with the
+     *        `Module` instances as values until laminas-modulemanager left on 2026-09-21;
+     *        nothing looked at them, so `ModuleConfig` never builds one.
      * @return array<string, string>
      */
     public static function forLoadedModules(array $loadedModules): array
