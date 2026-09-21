@@ -505,6 +505,32 @@ own code use its namespace and does `composer.json` say so. Run it per repositor
 (`--root=module/SionModel`): a package can read as unused in the superproject and still be
 load-bearing in a submodule.
 
+**The superproject's `composer.json` is the only manifest composer reads here.** `module/`
+is autoloaded through this package's own PSR-4, not installed as path repositories, so a
+package used only by SionModel, JUser or JTranslate must be declared *here* — and dropping
+that line uninstalls it for them. `symfony/mailer` is named nowhere in `src/` and carries
+every email the site sends.
+
+Four verdicts:
+
+- `USED / NOT DECLARED` — add the line; it resolves today only because something else
+  requires it. The ten open ones were closed on 2026-09-21, eight of them in SionModel.
+- `USED*` — this root's code does not name it, but something its installed set serves does,
+  and that consumer does not require it. **The line is what installs the package.**
+- `PIN?` — a consumer requires it too, so composer installs it either way and the line only
+  bounds the version. Not free either: dropping `symfony/error-handler`'s let it resolve
+  from `^7.4` to 8.1.
+- `?` — a `files` or classmap package with no prefix to search for. Check it by hand.
+
+**Six lines here read as unused and none of them is droppable**, which is why the bare
+"unused" verdict was replaced: `giggsey/libphonenumber-for-php`, `monolog/monolog` and
+`symfony/mailer` are `USED*` through the submodules; `laminas/laminas-loader` is `USED*`
+through `laminas-modulemanager`, which imports `Laminas\Loader\ModuleAutoloader` in the
+listener `DefaultListenerAggregate` always constructs and does not require the package;
+`psr/simple-cache` and `symfony/error-handler` are `PIN?`. Verified against composer
+itself — each line removed from a scratch copy and re-resolved; the two `PIN?` survived,
+the `USED*` ones vanished.
+
 ### What is left
 
 | package | own deps | files | verdict |
