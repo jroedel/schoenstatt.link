@@ -103,9 +103,15 @@ under `module/*/src` that a Symfony-served request reaches.
   in this application declares `getAutoloaderConfig()`, `init()`, `onBootstrap()` or
   `getModuleDependencies()`, and composer's PSR-4 map resolves every one of them, so the
   class-map cache the loader maintained held an empty array.
+- **The session is ours** (2026-09-21). `SionModel\Session\*` reads and writes the
+  namespaces; `App\Session\HttpSession` starts the session and owns the cookie. The format
+  is unchanged and that was the whole difficulty: laminas stored a serialised
+  `Laminas\Stdlib\ArrayObject` per namespace, so the session had to leave **before**
+  `laminas-stdlib` rather than after it, while an old session still deserialises into a real
+  object. `test/Session/session-surface.php` is the recording that pins it.
 - **What laminas still does**, and therefore what this plan removes: the service
-  container (`laminas-servicemanager`, `laminas-eventmanager` — direct requirements since
-  step 0), the database layer
+  container (`laminas-servicemanager` — a direct requirement since step 0), the database
+  layer
   (`laminas-db`, under `SionModel\Db\Model\SionTable`), the session, and the
   `Laminas\Translator\TranslatorInterface` our translator and our validators share.
   laminas-i18n went at step 3, laminas-view at step 4, and the whole form stack at
@@ -115,10 +121,11 @@ under `module/*/src` that a Symfony-served request reaches.
 
 ## 2. The dependency picture (first measured 2026-09-09 after step 0; counts re-measured 2026-09-11)
 
-**6** `laminas/*` packages are installed, down from 37, and every one is a direct line of
-ours: `db`, `eventmanager`, `servicemanager`, `session`, `stdlib`, `translator`. Nothing
-here is transitive any more — the last two that were, `config` and `loader`, left on
-2026-09-21 with `laminas-modulemanager`.
+**4** `laminas/*` packages are installed, down from 37, and every one is a direct line of
+ours: `db`, `servicemanager`, `stdlib`, `translator`. Nothing here is transitive any more —
+the last two that were, `config` and `loader`, left on 2026-09-21 with
+`laminas-modulemanager`, and `eventmanager` followed the same day with `laminas-session`,
+which was the only thing that had ever wanted one.
 
 The two facts that shape the order, and step 0 confirmed both:
 
@@ -126,14 +133,16 @@ The two facts that shape the order, and step 0 confirmed both:
 `php composer.phar why-not laminas/laminas-servicemanager 4.0.0` named fourteen cappers
 before step 0 and ten after it, every one a current laminas component **at its latest
 release** requiring `laminas-servicemanager ^3.x` only — laminas-cache, filter, form, i18n,
-inputfilter, router, session, text, validator, view. Nine of those ten have since been
-removed. Measured 2026-09-11, one is left:
+inputfilter, router, session, text, validator, view. **All ten are now gone**, the last of
+them `laminas-session` on 2026-09-21, so nothing caps servicemanager at 3.x except our own
+direct `^3.24` line — which iteration B removes with the container. Re-measured that day:
 
-| package | latest | servicemanager constraint |
-|---|---|---|
-| laminas-session | 2.27.0 | `^3.23.1` |
+    $ composer why-not laminas/laminas-servicemanager 4.0.0
+    jroedel/schoenstatt.link       dev-master requires laminas/laminas-servicemanager (^3.24)
+    laminas/laminas-servicemanager 4.0.0      requires php (~8.1.0 || ~8.2.0 || ~8.3.0 but 8.5.9 is installed)
 
-plus our own direct `^3.24` line, which iteration B removes with the container.
+The second line is the more interesting one: 4.0.0 predates PHP 8.5 and could not be
+installed here even if our line said `^4`. Upgrading was never the route.
 
 So servicemanager 4, laminas-cache 4 (and with it `psr/cache` 2/3 and FrameworkBundle)
 are unreachable by upgrading. They become reachable only by **removing** the packages,
@@ -195,7 +204,7 @@ deletes.
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. laminas-escaper could not leave here — laminas-form (`^2`) and laminas-uri (`^2.9`) required it — and left with both at iteration A |
 | 5 ✅ | laminas-form, inputfilter, filter, validator, hydrator, escaper — and laminas-uri with them | form 77 files, inputfilter 60, validator 65, filter 49; 42 forms, 441 elements | **done 2026-09-11** as iteration A: engine, element model, form model and rule library, all ours. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, `SionModel\Form\Element\*`, `SionModel\{Validator,Filter}\*`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
-| 7 | laminas-servicemanager, modulemanager, eventmanager, config, loader — and laminas-session with them | servicemanager 83 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`); session 15; eventmanager 4; modulemanager 3 | **Our own PSR-11 container** (§6), not Symfony DI. `stdlib` does *not* leave here: laminas-db holds it |
+| 7 | laminas-servicemanager — modulemanager, config, loader, session and eventmanager left ahead of it on 2026-09-21 | servicemanager 82 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`) | **Our own PSR-11 container** (§6), not Symfony DI. `stdlib` does *not* leave here: laminas-db holds it. Nothing else ships with it any more, which was not the plan and is the better shape |
 | 8 | laminas-db, and `stdlib` and `translator` with it | db 99 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; translator 32 files; stdlib 9 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after |
 
 **Step 4 was not gated on step 5, though it looked it.** Every `Laminas\Form\View\Helper\*`
@@ -215,13 +224,14 @@ requiring it, so our own direct line was the only thing installing it — and le
 2026-09-21 when its consumer did. All three were measured from the `require` blocks in
 `vendor/laminas/*/composer.json` rather than from the plan.
 
-**laminas-session does not leave at step 2.** No package requires it — the direct line is
-ours — and what holds it is the session itself: `App\Http\SessionListener` starts a `SessionManager` per request and
-`SionModel\Messaging\FlashMessages` stores flashes in a `Container`, which is what makes
-`Laminas_Auth` the identity key and a flash survive a redirect. **14 files** name the
-namespace. What step 2 removed is the *authentication* use of it: the identity no longer
-goes through a laminas storage adapter, only through `JUser\Host\SessionInterface`, whose
-one implementation is the host's. Measured 2026-09-09, re-measured 2026-09-11.
+**laminas-session did not leave at step 2**, and left on its own on 2026-09-21 rather than
+with the container it was grouped with. What step 2 removed was the *authentication* use of
+it: the identity stopped going through a laminas storage adapter and went through
+`JUser\Host\SessionInterface`, whose one implementation is the host's. What remained was
+the session itself — `App\Http\SessionListener` starting a manager per request and
+`SionModel\Messaging\FlashMessages` storing flashes in a `Container` — and it turned out to
+need nothing from the ServiceManager. It took `laminas-eventmanager` with it, because
+nothing else had ever required one.
 
 `laminas-translator` is not glue: it is a zero-dependency interface
 package we chose, named in **32 files**, and it
@@ -231,8 +241,9 @@ the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodule
 
 ### What is left, and in what order it ships
 
-Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6 are done; 2 has only `session` left, the module system
-went on 2026-09-21, and **6 packages remain**. The numbering above is the order the work was *planned* in, which is not the order
+Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6 are done, and 2 is finished: the module system and the
+session both went on 2026-09-21, so **4 packages remain** — the container, the database
+layer, `stdlib` beneath both, and the translator interface. The numbering above is the order the work was *planned* in, which is not the order
 it can be released in, so the remainder ships as two iterations — the session and the
 container, then the database.
 
@@ -291,9 +302,10 @@ seven packages, 2026-09-11) is recorded there as done, with what its five record
   `Laminas\I18n\Translator\TranslatorInterface`. `TranslatorConfigurator`'s delegator moves
   to that canonical interface — delegate the canonical id, never an alias (aliases resolve
   before delegators are looked up; a delegator on an alias silently never runs).
-- `SionModel\Messaging\FlashMessages`: a `laminas-session` `Container` under the **same**
-  key `FlashMessenger`, the same five namespace strings, so a flash written by the release
-  being replaced renders in the release that replaces it. One instance per request
+- `SionModel\Messaging\FlashMessages`: a `SionModel\Session` bag under the **same** key
+  `FlashMessenger`, the same five namespace strings and the same stored shape — one
+  `SplQueue` per severity, one hop of expiry — so a flash written by the release being
+  replaced renders in the release that replaces it, and the other way round. One instance per request
   (`HostMessages` memoises; a second instance drains the first's messages). `NowMessenger`
   becomes a plain per-request service. Rendering moves into `JTranslate\Twig\JTranslateExtension`.
   `JUser\Host\Severity` and `JTranslate\Host\Severity` keep the strings; the two

@@ -56,6 +56,7 @@ module/SionModel/src/Form/InputTypeRules.php
 module/SionModel/src/View/Escape.php
 module/SionModel/src/Twig
 module/SionModel/src/Messaging
+module/SionModel/src/Session
 module/SionModel/src/Mailing/CssInliner.php
 module/SionModel/src/Mailing/HtmlToText.php
 module/SionModel/src/Mailing/TemplateRendererInterface.php
@@ -94,5 +95,6 @@ tools/ctx
 # config may hold no closures once App\Modules\ModuleConfig caches it with var_export
 # (2026-09-21) — see SchoenstattTest\Integration\MergedConfigIsPlainDataTest.
 module/Application/src/Service/CacheFactory.php
+module/Application/src/Service/HttpSessionFactory.php
 module/Application/src/Service/JTranslateCacheFactory.php
 module/Application/src/Service/JUserSessionFactory.php
