@@ -156,7 +156,7 @@ the tree**: nothing required it, we did, and it was the only remaining requirer 
 So those three had to leave together, which is why iteration A removed seven packages in
 one release. `SionModel\Uri\Http` replaces it.
 
-**A `laminas/*` a submodule uses is invisible to `tools/laminas-audit.php`.** The audit
+**A `laminas/*` a submodule uses is invisible to `tools/dependency-audit.php` run without `--root`.** The audit
 scans this application's roots only — SionModel, JUser and JTranslate are separate composer
 packages with their own requirements — so a package can read as unused here and still be
 load-bearing there. Removing `laminas-json` in step 4 broke `JTranslate\Service\CountriesFactory`
@@ -168,7 +168,7 @@ in step 1a also dropped `laminas-session`, because captcha was the only package 
 it and this application never declared it — `App\Http\SessionListener` and
 `SionModel\Messaging\FlashMessages` use it on every request. Eight packages were in that
 state and are now direct requirements (cache, escaper, filter, inputfilter, session,
-stdlib, uri, validator). `tools/laminas-audit.php` is the check: for every installed
+stdlib, uri, validator). `tools/dependency-audit.php` is the check: for every installed
 `laminas/*`, does our own code use its namespace, and does `composer.json` say so.
 
 ## 3. The order
@@ -496,28 +496,57 @@ and never builds a translator. The session starts in `App\Http\SessionListener`.
 
 ## 8. Beyond laminas: every other dependency
 
-Direct, non-laminas requirements across the application and the three submodules,
-measured 2026-09-09 (files using the namespace, outside `vendor/` and `.phtml`):
+**56 runtime packages**, down from 74 on 2026-09-21, when the nine candidates below left
+together. Direct, non-laminas requirements across the application and the three submodules;
+file counts are namespace uses outside `vendor/`.
+
+`tools/dependency-audit.php` is the standing check — for every installed package, does our
+own code use its namespace and does `composer.json` say so. Run it per repository
+(`--root=module/SionModel`): a package can read as unused in the superproject and still be
+load-bearing in a submodule.
+
+### What is left
 
 | package | own deps | files | verdict |
 |---|---|---|---|
-| symfony/{http-kernel, http-foundation, routing, event-dispatcher, console, mailer, security-core}, twig/twig | — | the platform | keep |
-| symfony/error-handler | 2 | **0** direct uses; http-kernel requires it | drop the direct line |
+| symfony/{http-kernel, http-foundation, routing, event-dispatcher, console, mailer, security-core, mime, http-client}, twig/twig, psr/{container, log, simple-cache} | — | the platform | keep |
+| symfony/error-handler | 2 | **0** direct uses | **keep the line.** It reads as droppable and is not: http-kernel accepts `^6.4\|^7.0\|^8.0`, so removing our `^7.4` let composer resolve it to 8.1. The line is a version pin, not a use |
 | monolog/monolog | 0 | 2 (SionModel logging) | keep; PSR-3 with no deps |
 | firebase/php-jwt | 0 | 4 (API tokens, JUser) | keep, or replace with `hash_hmac` over a signed id (tokens are opaque to callers) |
-| spatie/schema-org | 0 | 13 (JSON-LD on books, shrines, persons) | candidate: the JSON-LD emitted is a handful of fixed shapes; a typed array builder replaces a 900-class package |
+| spatie/schema-org | 0 | 13 (JSON-LD on books, shrines, persons) | candidate, and the largest on disk at 41 MB: the JSON-LD emitted is a handful of fixed shapes; a typed array builder replaces a 900-class package |
+| giggsey/libphonenumber-for-php | 2 | 1 (`Telephone` helper) | candidate, 23 MB: replace with a formatting-only fallback, or drop formatting — one helper, display only |
 | erusev/parsedown + parsedown-extra | 0 + 1 | 4 | keep one Markdown parser; parsedown is unmaintained since 2019 — replace with `league/commonmark` (maintained, 3 deps) **or** drop Markdown where it is only rendering plain notes. Decide per use |
-| nesbot/carbon | 4 | 4 | replace with `DateTimeImmutable` + `IntlDateFormatter` (`DiffForHumans` is the one non-trivial call) |
-| giggsey/libphonenumber-for-php | 2 | 1 (`Telephone` helper) | replace with a formatting-only fallback, or drop formatting: one helper, display only |
-| voku/html2text, tijsverkoyen/css-to-inline-styles | 1 + 1 | 3 + 1 | mail only (text alternative, inlined styles); fold into the Twig mail port with a 40-line inliner or accept plain-text mails |
-| neitanod/forceutf8 | 0 | 1 | replace with `mb_convert_encoding`/`iconv` |
-| tedivm/jshrink | 0 | 2 | drop: minify at build time or serve the source; not a runtime concern |
-| matriphe/iso-639 | 0 | 1 | replace with a 200-line array of the languages this site uses |
-| cocur/slugify | 0 | 2 | replace with `Symfony\Component\String\Slugger` (already installed via symfony/string) |
-| scottconnerly/timezone | 0 | 1 | replace with `DateTimeZone::listIdentifiers()` + Intl |
+| phpoffice/phpspreadsheet | several | library import/export | keep; nothing else reads XLSX |
 | spatie/opening-hours | 0 | 2 (shrine opening hours) | keep for now; revisit with the shrine dataset work |
-| nicolaswurtz/chordpro-php (jroedel fork) | 0 | 1 (`CompositionController`) | the last personal fork after step 0; either upstream the fork or vendor the ~300 lines this site uses |
-| neilime/zf2-twb-bundle (SionModel `composer.json`) | — | not installed here | remove the requirement in step 0 |
+| nicolaswurtz/chordpro-php (jroedel fork) | 0 | 1 (`CompositionController`) | the last personal fork; either upstream it or vendor the ~300 lines this site uses |
+
+### What left on 2026-09-21, and what replaced it
+
+Nine `require` lines, seventeen packages out of the lock, and about 8 MB of `vendor/`.
+Each replacement was gated on a differential against the package it replaced, run in the
+capsule while that package was still installed.
+
+| package | replaced by | what the measurement said |
+|---|---|---|
+| cocur/slugify | `App\Text\Slug` — ICU transliteration plus 223 rules derived mechanically from the package's own rulesets | 0 differences over all 14,211 distinct values this application slugs, their 149 characters, and Latin-1/Latin-Extended/Greek/Cyrillic in full. **Not** `AsciiSlugger`, which answers `schonstatt` where cocur answers `schoenstatt` and would have cost two new declared requirements |
+| neitanod/forceutf8 | `SionModel\Text\Utf8Repair` | 0 differences over 30,574 production values and a 532-case byte probe. A whole-string `mb_convert_encoding` was tried first and loses the valid parts of a mixed string, so the byte loop is transcribed instead — reproduced bugs included |
+| voku/html2text (+4) | `SionModel\Mailing\HtmlToText` | 2,748 of 2,756 stored documents identical; both mail templates and all 44 rule probes byte-identical. The eight differ by a blank line inside two very long footnote lists |
+| tijsverkoyen/css-to-inline-styles (+1) | `SionModel\Mailing\CssInliner` | identical inline declarations on every element of all 117 real mail bodies in `mailings` |
+| nesbot/carbon (+5) | `SionModel\I18n\RelativeTime` | 0 differences over 175 (locale, offset) pairs. It carries the nine strings per locale `diffForHumans()` actually reached, transcribed from Carbon's own `Lang/` files |
+| scottconnerly/timezone | `App\Time\TimeZoneOptions` + `src/Time/timezone-names.php` | the names come from Rails' MIT `ActiveSupport::TimeZone::MAPPING`, not from the GPL-2.0-only package. Thirteen entries had drifted since its 2018 snapshot, all corrections; no stored value was affected |
+| matriphe/iso-639 | nothing — the code was dead | `getIso639()`, `getNativeLanguageNames()` and `getNativeLanguageName()` were `@deprecated` with no caller in four repositories |
+| tedivm/jshrink | nothing — the reason had expired | `minify_js` existed so `tools/port-baseline.php` could diff against the laminas rendering. There are no `.phtml` left and that tool records itself as retired |
+
+Two of the nine were also **GPL in a BSD-3-Clause tree** — `scottconnerly/timezone`
+(GPL-2.0-only) and `voku/html2text` (GPL-2.0-or-later) — which matters for issue #259.
+
+**A recording had an expiry date, and this is how it was found.** The timezone labels were
+built with `timezone_offset_get($zone, new DateTime())`, so they followed daylight saving:
+`test/Element/element-surface.php` held `'Europe/Berlin' => '(GMT+02:00) Bern'`, recorded in
+summer, and would have failed on 2026-10-25 for a reason no commit caused. The replacement
+formats the zone's **standard** offset, so the labels no longer move twice a year.
 
 Rule: before adding a package, ask whether twenty lines of our own code would do; when
-touching code that uses one of the candidates above, replace it in the same PR.
+touching code that uses one of the candidates above, replace it in the same PR. And record
+the outgoing package's answers as data *before* removing it — a parity test dies with its
+subject, a recording outlives it.
