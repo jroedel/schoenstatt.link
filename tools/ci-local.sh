@@ -245,6 +245,27 @@ stage_composer() {
     else
         bad "composer install --no-dev could not resolve"
     fi
+
+    # The third question, which neither check above can answer: is the vendor/ that
+    # everything below actually runs against the vendor/ this lock describes? `validate`
+    # compares composer.json with the lock, and a --dry-run exits 0 while merely REPORTING
+    # the operations it would perform — so a drifted tree passes both in silence.
+    #
+    # WHY: on 2026-09-21 the lock said symfony/mime v7.4.19 and the capsule held v7.4.15.
+    # Both checks were green. Every suite below, five recordings and a release's whole
+    # verification ran against a package set that was not the one the release shipped, and
+    # the component in question sat directly under the mail path that release rewrote.
+    # Nothing was wrong in the end, which is the point: the gate could not have told us.
+    #
+    # With dev packages, unlike the rehearsal above: --no-dev must always report removing
+    # phpunit and phpcs from a development tree, so it can never assert an empty plan.
+    OUT=$(in_capsule php composer.phar install --no-interaction --no-progress --dry-run 2>&1)
+    record "composer install --dry-run (vendor vs lock)" "$OUT"
+    if says "$OUT" 'Nothing to install, update or remove'; then
+        ok "vendor/ holds exactly what the lock names"
+    else
+        bad "vendor/ has drifted from composer.lock — composer install (./tools/ci-local.sh --last)"
+    fi
     # Classify on what a REAL finding looks like, not on what a known network error looks
     # like. Matching error strings is a losing game — this branch used to test only for
     # 'Could not resolve host', so on 2026-08-16 a transient failure to fetch the advisory
