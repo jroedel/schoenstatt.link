@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Application\Service;
 
 use App\JUser\Host\Session as JUserSession;
-use App\Laminas\ContainerServices;
+use App\Session\HttpSession;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 
@@ -32,6 +32,9 @@ class JUserSessionFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null): JUserSession
     {
-        return new JUserSession(new ContainerServices($container));
+        /** @var HttpSession $session */
+        $session = $container->get(HttpSession::class);
+
+        return new JUserSession($session);
     }
 }

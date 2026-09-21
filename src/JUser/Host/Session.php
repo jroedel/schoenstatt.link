@@ -4,92 +4,57 @@ declare(strict_types=1);
 
 namespace App\JUser\Host;
 
-use App\Laminas\LaminasServices;
+use App\Session\HttpSession;
 use JUser\Host\SessionInterface;
-use Laminas\Session\Container;
-use Laminas\Session\ManagerInterface;
-use Laminas\Session\SessionManager;
 
 /**
- * `JUser\Host\SessionInterface` over laminas-session.
+ * `JUser\Host\SessionInterface` over this application's session.
  *
  * The session is already started by the time any of this runs — `App\Http\SessionListener`
- * does it — so a `Laminas\Session\Container` built here reads and writes the same session
- * laminas-mvc would. That is what lets a POST served by one front controller hand a value to
- * a GET served by the other, which matters for the release in which both are live.
+ * does it — so the bags below read and write whatever the request arrived with.
  *
- * ## The concrete SessionManager, not the interface, and the narrowing is load-bearing
+ * Until 2026-09-21 this sat on `Laminas\Session\Container` and a `SessionManager`, and the
+ * docblock here recorded a narrowing that mattered: `ManagerInterface::regenerateId()`
+ * declared no parameters, so `regenerateId(true)` — retire the old session server-side,
+ * which is the entire point at a privilege change — did not type-check against it, and
+ * this class depended on the concrete class to get the argument through.
+ * {@see HttpSession::regenerateId()} takes it, so the narrowing is gone with the package.
  *
- * `ManagerInterface::regenerateId()` declares **no parameters**, so `regenerateId(true)` —
- * delete the old session server-side, which is the whole point at a privilege change — does
- * not type-check against it. `Laminas\Session\Service\SessionManagerFactory` answers that
- * service id with a `SessionManager`, so this is a narrowing of a declared type to the real
- * one rather than a cast and rather than a hope.
+ * ## One session object per request
  *
- * ## Built from the laminas container, not only for it
- *
- * The constructor takes {@see LaminasServices} rather than the concrete `ServiceBridge`
- * because this is registered *in* the laminas container as `JUser\Host\SessionInterface`
- * — {@see \App\Laminas\ContainerServices} adapts the container to that interface, the
- * same way the `isAllowed` view helper is assembled. One registration is what keeps the
- * Symfony kernel and the laminas container sharing a single session adapter, and with it a
- * single identity: two would each memoize their own answer, and a sign-in through one would
- * leave the other still reporting an anonymous visitor.
- *
- * ## Containers are cached per namespace
- *
- * Not for speed: `new Container($ns, $manager)` on every read is fine. It is that a
- * container is an `ArrayObject` over the session storage and holding one per namespace keeps
- * "two writes to one namespace" obviously a single object's business.
+ * Registered in the laminas container as `JUser\Host\SessionInterface` and handed the same
+ * {@see HttpSession} the kernel started, so the Symfony kernel and the laminas container
+ * share one session and one identity. Two would each memoize their own answer, and a
+ * sign-in through one would leave the other reporting an anonymous visitor.
  */
 final class Session implements SessionInterface
 {
-    /** @var array<string, Container<string, mixed>> */
-    private array $containers = [];
-
-    public function __construct(private readonly LaminasServices $laminas)
+    public function __construct(private readonly HttpSession $session)
     {
     }
 
     public function get(string $namespace, string $key): mixed
     {
-        //array access, not `->$key`: Container resolves properties through ArrayObject's
-        //magic, which PHPStan level 8 reads as an undefined property
-        return $this->container($namespace)[$key] ?? null;
+        return $this->session->bag($namespace)->get($key);
     }
 
     public function set(string $namespace, string $key, mixed $value): void
     {
-        $this->container($namespace)[$key] = $value;
+        $this->session->bag($namespace)->set($key, $value);
     }
 
     public function remove(string $namespace, string $key): void
     {
-        $container = $this->container($namespace);
-        unset($container[$key]);
+        $this->session->bag($namespace)->remove($key);
     }
 
     public function regenerateId(bool $destroyOld = true): void
     {
-        $this->manager()->regenerateId($destroyOld);
+        $this->session->regenerateId($destroyOld);
     }
 
     public function forgetMe(): void
     {
-        $this->manager()->forgetMe();
-    }
-
-    /** @return Container<string, mixed> */
-    private function container(string $namespace): Container
-    {
-        return $this->containers[$namespace] ??= new Container($namespace, $this->manager());
-    }
-
-    private function manager(): SessionManager
-    {
-        /** @var SessionManager $manager */
-        $manager = $this->laminas->get(ManagerInterface::class);
-
-        return $manager;
+        $this->session->forgetMe();
     }
 }

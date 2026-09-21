@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Laminas;
 
 use JTranslate\I18n\TranslatableMessage;
-use Laminas\Session\ManagerInterface;
 use SionModel\Messaging\FlashMessages;
 use SionModel\Messaging\NowMessages;
+use SionModel\Session\SessionInterface;
 
 /**
  * This application's two messengers, behind one object per request.
@@ -42,11 +42,12 @@ final class HostMessages
     private readonly NowMessages $current;
 
     /**
-     * @param ManagerInterface|null $sessions the session manager the flash container
-     *        belongs to; null means the container's default manager, which the
-     *        application's SessionListener starts
+     * @param SessionInterface|null $sessions the session the flash namespace lives in;
+     *        null means the default session, which `App\Http\SessionListener` starts and
+     *        registers. A console process or a test passes none and writes into a
+     *        `$_SESSION` nothing persists.
      */
-    public function __construct(private readonly ?ManagerInterface $sessions = null)
+    public function __construct(private readonly ?SessionInterface $sessions = null)
     {
         $this->current = new NowMessages();
     }
@@ -94,6 +95,6 @@ final class HostMessages
      */
     private function flashes(): FlashMessages
     {
-        return $this->flashes ??= new FlashMessages($this->sessions);
+        return $this->flashes ??= new FlashMessages($this->sessions?->bag(FlashMessages::CONTAINER));
     }
 }

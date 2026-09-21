@@ -9,12 +9,14 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
 - **The goal is a laminas-free application**: every `laminas/*` package removed, no
   exceptions, via a second strangler. Plan, order, per-step rules and open decisions are in
   [laminas-exit.md](laminas-exit.md); this file does not repeat them.
-- **Removing laminas-mvc did not unlock servicemanager 4 or FrameworkBundle.** Nine of the
-  ten components that capped servicemanager at 3.x are gone; `laminas-session` is the last,
-  and our own direct `^3.24` line goes with the container. FrameworkBundle's own blocker is
+- **Removing laminas-mvc did not unlock servicemanager 4 or FrameworkBundle.** All ten
+  components that capped servicemanager at 3.x are now gone, `laminas-session` last on
+  2026-09-21, and only our own direct `^3.24` line remains — which goes with the container.
+  Upgrading was never the route anyway: servicemanager 4.0.0 requires PHP 8.1–8.3 and this
+  runs 8.5. FrameworkBundle's own blocker is
   already gone: laminas-cache held `psr/cache` at `^1` and left with step 2.
-- Progress metric: `composer show --locked | grep laminas` (37 on 2026-09-09, **9** on
-  2026-09-11); also run `why-not php 8.5.0` and
+- Progress metric: `composer show --locked | grep laminas` (37 on 2026-09-09, 9 on
+  2026-09-11, **4** on 2026-09-21); also run `why-not php 8.5.0` and
   `why-not laminas/laminas-servicemanager 4.0.0` around each step.
 - The parked ~102-factory Interop→Psr sweep stays parked; the factories leave with step 7.
 

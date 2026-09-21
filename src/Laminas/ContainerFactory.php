@@ -7,11 +7,6 @@ namespace App\Laminas;
 use App\Acl\AclProvider;
 use App\Acl\IsAllowed;
 use JTranslate\Model\TranslationsTable;
-use Laminas\EventManager\EventManager;
-use Laminas\EventManager\EventManagerAwareInterface;
-use Laminas\EventManager\EventManagerInterface;
-use Laminas\EventManager\SharedEventManager;
-use Laminas\EventManager\SharedEventManagerInterface;
 use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
 use JTranslate\I18n\Translator\TranslatorFactory as JTranslateTranslatorFactory;
 use Laminas\Translator\TranslatorInterface;
@@ -26,10 +21,11 @@ use function is_array;
  * configs, the tables, the forms and the translator — without laminas-mvc.
  *
  * This is what `Laminas\Mvc\Service\ServiceManagerConfig` plus the MVC service listener
- * used to do, cut down to the part that is not the MVC layer: the event manager pair
- * laminas-session's manager expects, the merged module configuration, and the one step
- * the service listener performed — feeding the merged `service_manager` key into the
- * container. Every plugin-manager key (`validators`, `filters`, `form_elements`,
+ * used to do, cut down to the part that is not the MVC layer: the merged module
+ * configuration, and the one step the service listener performed — feeding the merged
+ * `service_manager` key into the container. The event-manager pair went on 2026-09-21
+ * with laminas-session, which was the only thing that had wanted one. Every
+ * plugin-manager key (`validators`, `filters`, `form_elements`,
  * `input_filters`, `hydrators`, `translator_plugins`, `route_manager`) is registered by
  * the laminas component that owns it, through its own `Module`/`ConfigProvider` in
  * `config/modules.config.php`. The keys laminas-mvc alone consumed — `controllers`,
@@ -159,55 +155,18 @@ final class ContainerFactory
 
         return [
             'aliases'   => [
-                'Config'                           => 'config',
-                'configuration'                    => 'config',
-                'Configuration'                    => 'config',
-                EventManagerInterface::class       => 'EventManager',
-                SharedEventManager::class          => 'SharedEventManager',
-                SharedEventManagerInterface::class => 'SharedEventManager',
+                'Config'        => 'config',
+                'configuration' => 'config',
+                'Configuration' => 'config',
             ],
             'services'  => [
                 //Already built: the merged `service_manager` key is applied from it a few
                 //lines above, so there is nothing to defer and no factory to write.
-                'config'            => $merged,
+                'config'           => $merged,
                 //The files `cache:clear-config` removes. A plain array rather than a
                 //reachable object so that SionModel, which owns the command, needs no
                 //App\ class and no second copy of the naming rule.
-                'ConfigCacheFiles'  => ModuleConfig::cacheFiles($listenerOptions),
-            ],
-            'factories' => [
-                //laminas-session's SessionManager is EventManagerAware, which is the whole
-                //of what these two still serve; the module manager that used to drive them
-                //left with laminas-modulemanager on 2026-09-21.
-                'SharedEventManager' => static fn (): SharedEventManager => new SharedEventManager(),
-                'EventManager'       => static function (ServiceManager $container): EventManager {
-                    /** @var SharedEventManager $shared */
-                    $shared = $container->get('SharedEventManager');
-
-                    return new EventManager($shared);
-                },
-            ],
-            'shared'    => [
-                'EventManager' => false,
-            ],
-            //what ServiceManagerConfig registered: an EventManagerAware service built by
-            //the container gets the container's event manager, shared manager attached
-            'initializers' => [
-                static function (ServiceManager $container, mixed $instance): void {
-                    if (! $instance instanceof EventManagerAwareInterface) {
-                        return;
-                    }
-                    $events = $instance->getEventManager();
-                    if (
-                        $events instanceof EventManagerInterface
-                        && $events->getSharedManager() instanceof SharedEventManagerInterface
-                    ) {
-                        return;
-                    }
-                    /** @var EventManagerInterface $shared */
-                    $shared = $container->get('EventManager');
-                    $instance->setEventManager($shared);
-                },
+                'ConfigCacheFiles' => ModuleConfig::cacheFiles($listenerOptions),
             ],
         ];
     }
