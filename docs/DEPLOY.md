@@ -403,7 +403,7 @@ is why releases are pruned by count, not immediately.
 | shared | per-release |
 |---|---|
 | `data/logs`, `data/exceptions`, `data/htaccess-backups` | `vendor/` |
-| `data/fonts`, `data/musicas`, `data/texts`, `data/scans`, `data/import` | `data/config` (merged config + module map) |
+| `data/fonts`, `data/musicas`, `data/texts`, `data/scans`, `data/import` | `data/config` (the merged config cache) |
 | `public/covers`, `public/associations`, `public/dh` — 1.2 GB of uploads | `data/cache/twig` |
 | `config/autoload/local.php` and `*.local.php` | compiled `*.lang.php` catalogs |
 | server-only docroot files | `public/sitemap*.xml` |
