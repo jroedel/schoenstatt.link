@@ -11329,15 +11329,15 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Time zone</label><select name="timeZoneId" class="form-control"><option value=""></option>
+<option value="Etc&#x2F;GMT&#x2B;12">(GMT-12:00) International Date Line West</option>
 <option value="Pacific&#x2F;Midway">(GMT-11:00) Midway Island</option>
-<option value="Pacific&#x2F;Pago_Pago">(GMT-11:00) American Samoa</option>
-<!-- 130 more options, 844d4cf5f077eecedf36f707bef8fab7 -->
+<!-- 136 more options, 493ea31bf17d906430d44ce4155ad0db -->
 <option value="Pacific&#x2F;Apia">(GMT+13:00) Samoa</option>
 </select></div>',
       'element' => '<select name="timeZoneId" class="form-control"><option value=""></option>
+<option value="Etc&#x2F;GMT&#x2B;12">(GMT-12:00) International Date Line West</option>
 <option value="Pacific&#x2F;Midway">(GMT-11:00) Midway Island</option>
-<option value="Pacific&#x2F;Pago_Pago">(GMT-11:00) American Samoa</option>
-<!-- 130 more options, 844d4cf5f077eecedf36f707bef8fab7 -->
+<!-- 136 more options, 493ea31bf17d906430d44ce4155ad0db -->
 <option value="Pacific&#x2F;Apia">(GMT+13:00) Samoa</option>
 </select>',
       'label' => '<label for="timeZoneId">Time zone</label>',
@@ -11348,26 +11348,26 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Time zone</label><select name="timeZoneId" class="form-control"><option value=""></option>
-<option value="Pacific&#x2F;Midway" selected>(GMT-11:00) Midway Island</option>
-<option value="Pacific&#x2F;Pago_Pago">(GMT-11:00) American Samoa</option>
-<!-- 130 more options, 844d4cf5f077eecedf36f707bef8fab7 -->
+<option value="Etc&#x2F;GMT&#x2B;12" selected>(GMT-12:00) International Date Line West</option>
+<option value="Pacific&#x2F;Midway">(GMT-11:00) Midway Island</option>
+<!-- 136 more options, 493ea31bf17d906430d44ce4155ad0db -->
 <option value="Pacific&#x2F;Apia">(GMT+13:00) Samoa</option>
 </select></div>',
       'element' => '<select name="timeZoneId" class="form-control"><option value=""></option>
-<option value="Pacific&#x2F;Midway" selected>(GMT-11:00) Midway Island</option>
-<option value="Pacific&#x2F;Pago_Pago">(GMT-11:00) American Samoa</option>
-<!-- 130 more options, 844d4cf5f077eecedf36f707bef8fab7 -->
+<option value="Etc&#x2F;GMT&#x2B;12" selected>(GMT-12:00) International Date Line West</option>
+<option value="Pacific&#x2F;Midway">(GMT-11:00) Midway Island</option>
+<!-- 136 more options, 493ea31bf17d906430d44ce4155ad0db -->
 <option value="Pacific&#x2F;Apia">(GMT+13:00) Samoa</option>
 </select>',
-      'select_without_options' => '<select name="timeZoneId"><option value="Pacific&#x2F;Midway" selected>(GMT-11:00) Midway Island</option>
+      'select_without_options' => '<select name="timeZoneId"><option value="Etc&#x2F;GMT&#x2B;12" selected>(GMT-12:00) International Date Line West</option>
 </select>',
     ),
     'invalid' => 
     array (
       'row' => '<div class="form-group "><label>Time zone</label><select name="timeZoneId" class="form-control"><option value=""></option>
+<option value="Etc&#x2F;GMT&#x2B;12">(GMT-12:00) International Date Line West</option>
 <option value="Pacific&#x2F;Midway">(GMT-11:00) Midway Island</option>
-<option value="Pacific&#x2F;Pago_Pago">(GMT-11:00) American Samoa</option>
-<!-- 130 more options, 844d4cf5f077eecedf36f707bef8fab7 -->
+<!-- 136 more options, 493ea31bf17d906430d44ce4155ad0db -->
 <option value="Pacific&#x2F;Apia">(GMT+13:00) Samoa</option>
 </select><ul class="help-block"><li>The input was not found in the haystack</li></ul></div>',
       'errors' => '<ul class="help-block"><li>The input was not found in the haystack</li></ul>',

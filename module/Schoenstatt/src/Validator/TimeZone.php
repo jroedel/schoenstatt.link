@@ -1,61 +1,46 @@
 <?php
 namespace Schoenstatt\Validator;
 
-use SionModel\Validator\AbstractValidator;
-use ScottConnerly\TimeZone\TimeZoneSelect;
+use App\Time\TimeZoneOptions;
 
-class TimeZone extends AbstractValidator
+/**
+ * The time zones an association may be set to.
+ *
+ * Despite the namespace this is not a validator and has not been one in practice: its
+ * `isValid()` compared the submitted value against the option *labels* rather than the
+ * identifiers, so it would have rejected every real time zone, and the `@todo` beside it
+ * said as much ("don't use in production"). Nothing ever reached it — no input filter
+ * specification names it, and `SionModel\Validator\Registry` does not either — because the
+ * class is used only for the static list below. The dead method went with
+ * `scottconnerly/timezone` on 2026-09-21 rather than being fixed, since fixing it would
+ * have added a check no form had.
+ *
+ * What does enforce the domain is `App\Schoenstatt\Association\AssociationFieldDomains`,
+ * which takes the *keys* of this list — the IANA identifiers — and hands them to the
+ * engine as a `ChoiceDomain`. The labels are presentation only.
+ */
+class TimeZone
 {
-    const NOT_STRING = 'notString';
-    const INVALID_TIME_ZONE = 'invalidTimeZone';
-
     /**
-     * Validation failure message template definitions
-     *
-     * @var array
+     * @param string|null $country an ISO 3166 code to narrow the list to, or null for all
+     * @return array<string, string> identifier => label
      */
-    protected $messageTemplates = [
-        self::NOT_STRING => "Invalid type given. String expected",
-        self::INVALID_TIME_ZONE => "The input is not a valid time zone",
-    ];
-
-    /**
-     *
-     * {@inheritDoc}
-     * @see \SionModel\Validator\ValidatorInterface::isValid()
-     */
-    public function isValid($value, $context = null)
-    {
-        static $timeZones;
-        if (! isset($value) || '' === $value) {
-            return true;
-        }
-        if (! is_string($value)) {
-            $this->error(self::NOT_STRING);
-            return false;
-        }
-        if (! isset($timeZones)) {
-            $timeZones = self::getTimeZoneValueOptions();
-        }
-        $result = in_array($value, $timeZones, true);
-        //@todo there appears to be some problem with false negatives here, don't use in production
-        if (! $result) {
-            $this->error(self::INVALID_TIME_ZONE);
-        }
-        return $result;
-    }
-
     public static function getTimeZoneValueOptions(?string $country = null)
     {
-        $tzs = TimeZoneSelect::get_time_zones();
-        if (isset($country) && 'GB-SCT' !== $country) {
-            $countryList = \DateTimeZone::listIdentifiers(\DateTimeZone::PER_COUNTRY, $country);
+        $all = TimeZoneOptions::all();
+        if (! isset($country) || 'GB-SCT' === $country) {
+            return $all;
         }
-        $onlyCountry = isset($country) && is_array($countryList) && ! empty($countryList);
+
+        $countryList = \DateTimeZone::listIdentifiers(\DateTimeZone::PER_COUNTRY, $country);
+        if (! is_array($countryList) || empty($countryList)) {
+            return $all;
+        }
+
         $result = [];
-        foreach ($tzs as $value) {
-            if (! $onlyCountry || in_array($value['identifier'], $countryList)) {
-                $result[$value['identifier']] = $value['alias'];
+        foreach ($all as $identifier => $label) {
+            if (in_array($identifier, $countryList)) {
+                $result[$identifier] = $label;
             }
         }
         return $result;

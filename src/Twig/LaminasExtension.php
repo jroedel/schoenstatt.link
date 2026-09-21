@@ -496,7 +496,7 @@ final class LaminasExtension extends AbstractExtension
      * A relative time — `<abbr title="6/13/65, 12:00 AM">57 years ago</abbr>`.
      *
      * Markup, and `is_safe: html` on the same terms as the rest: the helper builds the
-     * `title` through `dateFormat` and the body through Carbon, both of which produce
+     * `title` through `dateFormat` and the body through `RelativeTime`, both of which produce
      * formatted dates rather than anything a visitor typed. No user input reaches it.
      *
      * **Null and non-DateTime return the empty string rather than throwing**, which is
