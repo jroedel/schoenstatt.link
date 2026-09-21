@@ -11,8 +11,6 @@ use App\Laminas\ServiceBridge;
 use SionModel\Form\Element\Registry;
 use SionModel\Form\Fieldset;
 use Laminas\ServiceManager\ServiceManager;
-use Laminas\Session\Config\ConfigInterface as SessionConfigInterface;
-use Laminas\Session\Config\StandardConfig;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
@@ -60,14 +58,14 @@ use Throwable;
  *    The alternative — skipping four forms — is exactly the outcome the brief
  *    forbids, since an unconstructable form is where a hole hides.
  *
- * 2. **A session config.** `SuggestFormFactory` reaches the authentication
- *    service, which reaches `Laminas\Session\Config\ConfigInterface`, whose
- *    factory calls `ini_set('session.cache_expire', …)`. Under CLI that fails as
- *    soon as anything has been written to stdout ("Session ini settings cannot be
- *    changed after headers have already been sent") — and a PHPUnit run has always
- *    written its progress output by then. A `StandardConfig` is registered
- *    instead: it holds the same values without touching php.ini. Nothing in a form
- *    depends on the session's *behaviour*, only on the service resolving.
+ * 2. ~~**A session config.**~~ Gone on 2026-09-21 with laminas-session.
+ *    `SuggestFormFactory` reaches the authentication service, which reached
+ *    `Laminas\Session\Config\ConfigInterface`, whose factory called
+ *    `ini_set('session.cache_expire', …)` and **threw** when it could not — which
+ *    under CLI is as soon as anything has been written to stdout, and a PHPUnit run
+ *    has always written its progress output by then. A `StandardConfig` had to be
+ *    registered over it. `App\Session\HttpSession` applies the same settings only
+ *    when PHP will take them and never throws, so there is nothing left to work around.
  *
  * ## Read-only by construction
  *
@@ -615,10 +613,6 @@ final class FormRepository
         $container = $this->quietly(static fn (): ServiceManager => ContainerFactory::build($appConfig, false));
 
         $this->quietly(function () use ($container): void {
-            $container->setAllowOverride(true);
-            $container->setService(SessionConfigInterface::class, new StandardConfig());
-            $container->setAllowOverride(false);
-
             $this->attachSqlRecorder($container);
         });
 

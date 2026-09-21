@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Laminas\ServiceBridge;
+use App\Session\HttpSession;
 use Closure;
 use JUser\Session\SessionPruner;
-use Laminas\Session\ManagerInterface;
+use SionModel\Session\Sessions;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Throwable;
 
@@ -40,21 +41,25 @@ use const PHP_SESSION_ACTIVE;
  * and the visitor stayed broken for the 30-day life of the cookie. Latent in
  * production only because SYMFONY_KERNEL is still unset there.
  *
- * Two properties are deliberate:
+ * Three properties are deliberate:
  *
- * **It only acts when the request already carries a session cookie.** No cookie means
- * no stored session, so there is nothing to prune and nothing to validate — and
- * starting one anyway would put a session, a Set-Cookie and the laminas module load
- * on /_health and the two maintenance endpoints, which docs/laminas-exit.md is explicit
- * about not doing. An HTML page pays nothing extra either way: its layout already
- * reaches laminas for translate(), is_allowed() and the navbar.
+ * **It starts a session only when the request already carries a cookie.** No cookie means
+ * no stored session, so there is nothing to prune and nothing to validate — and starting
+ * one here anyway would put a session, a Set-Cookie and the laminas module load on
+ * /_health and the two maintenance endpoints, which docs/laminas-exit.md is explicit about
+ * not doing. An HTML page pays nothing extra either way: its layout already reaches
+ * laminas for translate(), is_allowed() and the navbar.
  *
- * **It starts the session through Laminas\Session\ManagerInterface**, not
- * session_start(), so the `session_manager.validators` config applies here exactly as
- * it does on a bridged request. That also means the session is already active by the
- * time BjyAuthorize asks JUser for the identity, so the bare session_start() that
- * call would otherwise perform becomes a no-op — the ported page keeps the identity
- * it has today, and gains the validation it did not.
+ * **It starts the session through App\Session\HttpSession**, not a bare session_start(),
+ * so `session_config` is applied first. That also means the session is active, and has
+ * been pruned, by the time BjyAuthorize asks JUser for the identity — whose own read would
+ * otherwise be what started it.
+ *
+ * **It registers that session as the default**, on every ported request and not only the
+ * ones carrying a cookie. `SionModel\Validator\Csrf` is built by the form engine from a
+ * specification, with no container in the path, so a static default is the only way it can
+ * reach a session at all — which is exactly what
+ * `Laminas\Session\AbstractContainer::getDefaultManager()` was.
  *
  * The try/catch reproduces onBootstrap's, including `session_unset()`: a session that
  * fails validation is discarded rather than allowed to fatal the request. The bridge
@@ -85,20 +90,25 @@ final class SessionListener
         if (! SymfonyRoute::isPorted($request)) {
             return;
         }
-        //no cookie, no stored session: nothing to repair, and nothing to start
-        if (null === $request->cookies->get(self::cookieName())) {
-            return;
-        }
 
         try {
-            /** @var ManagerInterface $manager */
-            $manager = ($this->bridge)()->get(ManagerInterface::class);
-            $manager->start();
+            /** @var HttpSession $session */
+            $session = ($this->bridge)()->get(HttpSession::class);
+            Sessions::setDefault($session);
+
+            //No cookie, no stored session: nothing to repair, and no reason to start one
+            //here. Anything that then touches a namespace still starts it lazily, which is
+            //what laminas' Container constructor did and what a first sign-in needs.
+            if (null === $request->cookies->get(self::cookieName())) {
+                return;
+            }
+
+            $session->start();
             if (PHP_SESSION_ACTIVE === session_status()) {
                 SessionPruner::pruneIncompleteClassValues($_SESSION);
             }
         } catch (Throwable) {
-            //exactly what JUser\Module::onBootstrap() does with a session that fails
+            //exactly what JUser\Module::onBootstrap() did with a session that fails
             //validation: drop its contents rather than fatal the request
             if (PHP_SESSION_ACTIVE === session_status()) {
                 session_unset();
