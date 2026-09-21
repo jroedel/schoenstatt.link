@@ -1,10 +1,11 @@
 <?php
 
 /**
- * If you need an environment-specific system or application configuration,
- * there is an example in the documentation
- * @see https://docs.zendframework.com/tutorials/advanced-config/#environment-specific-system-configuration
- * @see https://docs.zendframework.com/tutorials/advanced-config/#environment-specific-application-configuration
+ * What the application is built from: which modules are enabled, and how their
+ * configuration is merged and cached.
+ *
+ * Read by {@see \App\Modules\ModuleConfig}, which took this over from
+ * `laminas/laminas-modulemanager` on 2026-09-21.
  */
 
 $env = getenv('APP_ENV') ?: 'production';
@@ -13,60 +14,32 @@ return [
     // Retrieve list of modules used in this application.
     'modules' => require __DIR__ . '/modules.config.php',
 
-    // These are various options for the listeners attached to the ModuleManager
+    // How App\Modules\ModuleConfig assembles the merged configuration. The key keeps its
+    // laminas-modulemanager name because every consumer still reads it under that name;
+    // the listeners it used to configure left with the package on 2026-09-21.
     'module_listener_options' => [
-        // This should be an array of paths in which modules reside.
-        // If a string key is provided, the listener will consider that a module
-        // namespace, the value of that key the specific path to that module's
-        // Module class.
-        'module_paths' => [
-            './module',
-            './vendor',
-        ],
-
-        // An array of paths from which to glob configuration files after
-        // modules are loaded. These effectively override configuration
-        // provided by modules themselves. Paths may use GLOB_BRACE notation.
+        // Paths from which to glob configuration files after the modules' own configs are
+        // collected. These override configuration provided by the modules themselves, and
+        // the brace order is the precedence: global, *.global, local, *.local.
         'config_glob_paths' => [
             realpath(__DIR__) . '/autoload/{{,*.}global,{,*.}local}.php',
         ],
 
-        // Whether or not to enable a configuration cache.
-        // If enabled, the merged configuration will be cached and used in
-        // subsequent requests.
+        // Whether the merged configuration is cached to disk and read back on subsequent
+        // requests. Off in development, where a config edit must take effect; on in
+        // production, where `bin/console cache:clear-config` and every deploy discard it
+        // (tools/deploy.sh gives each release its own empty data/config).
         'config_cache_enabled' => ! $inDevelopment,
 
         // The key used to create the configuration cache file name.
-        'config_cache_key' => 'sch_config',// 'application.config.cache',
+        'config_cache_key' => 'sch_config',
 
-        // Whether or not to enable a module class map cache.
-        // If enabled, creates a module class map cache which will be used
-        // by in future requests, to reduce the autoloading process.
-        'module_map_cache_enabled' => ! $inDevelopment,
-
-        // The key used to create the class map cache file name.
-        'module_map_cache_key' => 'sch_module_map',// 'application.module.cache',
+        // Only names the file `cache:clear-config` deletes. laminas-modulemanager kept a
+        // module class-map cache here; nothing writes one now, because composer's PSR-4
+        // map resolves every Module class — the file it did write held an empty array.
+        'module_map_cache_key' => 'sch_module_map',
 
         // The path in which to cache merged configuration.
         'cache_dir' => 'data/config/',
-
-        // Whether or not to enable modules dependency checking.
-        // Enabled by default, prevents usage of modules that depend on other modules
-        // that weren't loaded.
-        // 'check_dependencies' => true,
     ],
-
-    // Used to create an own service manager. May contain one or more child arrays.
-    // 'service_listener_options' => [
-    //     [
-    //         'service_manager' => $stringServiceManagerName,
-    //         'config_key'      => $stringConfigKey,
-    //         'interface'       => $stringOptionalInterface,
-    //         'method'          => $stringRequiredMethodName,
-    //     ],
-    // ],
-
-    // Initial configuration with which to seed the ServiceManager.
-    // Should be compatible with Laminas\ServiceManager\Config.
-    // 'service_manager' => [],
 ];

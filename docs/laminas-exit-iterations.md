@@ -5,14 +5,21 @@ order the remaining work can actually **ship** in. The numbering there — steps
 the order it was planned in, and what is left of it does not line up with what can be
 released together, which is what this file supplies.
 
-**9 `laminas/*` packages are installed**, down from 37. Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6
+**6 `laminas/*` packages are installed**, down from 37. Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6
 are done; 2 has only `session` left. Everything remaining regroups into two iterations:
 
 | | removes | leaves | content |
 |---|---|---|---|
 | **A** ✅ | form, inputfilter, filter, validator, hydrator, escaper, uri | 9 | the form model, and our own validator and filter classes |
-| **B** | session, servicemanager, modulemanager, eventmanager, config, loader | 3 | the session and the container |
+| **B** | modulemanager, config, loader ✅ · session, servicemanager, eventmanager | 3 | the module system, the session and the container |
 | **C** | db, stdlib, translator | 0 | the database layer |
+
+**Iteration B's first third shipped on its own (2026-09-21)**: the module system turned out
+to be separable from the container, so `laminas-modulemanager`, `laminas-config` and
+`laminas-loader` left ahead of the rest — with `brick/varexporter` and
+`webimpress/safe-writer` behind them — without touching the session or the ServiceManager.
+That is the exception rather than the shape of the rest: the session and the container are
+still one deploy.
 
 Each is **one superproject PR over three submodule PRs, and one deploy**. Nothing new is
 added: both remaining design decisions were taken 2026-09-11 in favour of our own code, so
@@ -112,12 +119,20 @@ laminas reported three. `uri-surface.php` moved 6 lines, all an exception class 
   two `Regex` specifications delete `regexInvalid` and arrays and booleans pass those fields
   silently. Reproduced exactly and left visible.
 
-## B — the session and the container (9 → 3)
+## B — the module system, the session and the container (9 → 3)
 
-**Removes:** laminas-session, laminas-servicemanager, laminas-modulemanager,
-laminas-eventmanager, laminas-config, laminas-loader.
+**Removes:** laminas-modulemanager, laminas-config, laminas-loader (done 2026-09-21),
+laminas-session, laminas-servicemanager, laminas-eventmanager.
 
-1. **The session moves first**, and it is small but unforgiving: 15 files.
+0. **The module system, done.** `App\Modules\ModuleConfig` merges the module configs and
+   caches them; `App\Laminas\ContainerFactory` applies the merged `service_manager` key
+   itself, which is the only thing laminas' `ServiceListener` did here. It shipped before
+   the rest because it touches neither the session nor the ServiceManager — and because
+   three module configs held **closures**, which is what had made the config cache need
+   `brick/varexporter`. Those are named factory classes now, and
+   `SchoenstattTest\Integration\MergedConfigIsPlainDataTest` keeps them that way: our own
+   cache writer is `var_export`, which can write back an array of scalars and nothing else.
+1. **The session moves next**, and it is small but unforgiving: 15 files.
    `App\Http\SessionListener` starts a manager per request, `SionModel\Messaging\FlashMessages`
    stores flashes in a container, and JUser keeps the identity there.
    **The storage key must stay `Laminas_Auth`** or the deploy signs every visitor out.
@@ -125,11 +140,9 @@ laminas-eventmanager, laminas-config, laminas-loader.
 2. **The container.** 83 files name `Laminas\ServiceManager`, and 58 classes implement one
    of its factory contracts — 56 `FactoryInterface` and 2 `DelegatorFactoryInterface`.
    Ours is a PSR-11 implementation reading factories, aliases and invokables from the
-   merged config; the factories become `__invoke($container)`; the
-   `data/config/` merge cache is unchanged. Module and config loading —
-   `config/modules.config.php` and six module configs — moves with it, and
-   `laminas-config` and `laminas-loader` fall out (the latter is a direct line of ours only
-   because laminas-modulemanager uses `Laminas\Loader\*` without requiring it).
+   merged config; the factories become `__invoke($container)`; the `data/config/` merge
+   cache is unchanged, and `App\Modules\ModuleConfig` already owns it. Module and config
+   loading left at step 0 above, so what remains here is the container alone.
 
 **This is the highest-risk deploy of the three.** A container fault is site-wide, and its
 shape is a fatal under HTTP 200 rather than an error — a few hundred bytes of 200 on every

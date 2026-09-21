@@ -15,13 +15,7 @@ use Laminas\EventManager\SharedEventManagerInterface;
 use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
 use JTranslate\I18n\Translator\TranslatorFactory as JTranslateTranslatorFactory;
 use Laminas\Translator\TranslatorInterface;
-use Laminas\ModuleManager\Feature\ServiceProviderInterface;
-use Laminas\ModuleManager\Listener\ConfigListener;
-use Laminas\ModuleManager\Listener\DefaultListenerAggregate;
-use Laminas\ModuleManager\Listener\ListenerOptions;
-use Laminas\ModuleManager\Listener\ServiceListener;
-use Laminas\ModuleManager\ModuleEvent;
-use Laminas\ModuleManager\ModuleManager;
+use App\Modules\ModuleConfig;
 use Laminas\ServiceManager\ServiceManager;
 use SionModel\Cache\CacheFlushQueue;
 
@@ -32,15 +26,17 @@ use function is_array;
  * configs, the tables, the forms and the translator — without laminas-mvc.
  *
  * This is what `Laminas\Mvc\Service\ServiceManagerConfig` plus the MVC service listener
- * used to do, cut down to the part that is not the MVC layer: an event manager pair for
- * the module manager, the module manager itself with the default listeners (config
- * merging and caching) and the service listener that turns each module's
- * `service_manager` and `view_helpers` keys into container configuration. Every other
- * plugin-manager key (`validators`, `filters`, `form_elements`, `input_filters`,
- * `hydrators`, `translator_plugins`, `route_manager`) is registered by the laminas
- * component that owns it, through its own `Module`/`ConfigProvider` in
+ * used to do, cut down to the part that is not the MVC layer: the event manager pair
+ * laminas-session's manager expects, the merged module configuration, and the one step
+ * the service listener performed — feeding the merged `service_manager` key into the
+ * container. Every plugin-manager key (`validators`, `filters`, `form_elements`,
+ * `input_filters`, `hydrators`, `translator_plugins`, `route_manager`) is registered by
+ * the laminas component that owns it, through its own `Module`/`ConfigProvider` in
  * `config/modules.config.php`. The keys laminas-mvc alone consumed — `controllers`,
  * `controller_plugins`, `view_manager` — are not read.
+ *
+ * The merging itself is {@see ModuleConfig}, which replaced laminas-modulemanager on
+ * 2026-09-21; that class records what the module manager was and was not doing here.
  *
  * Two services laminas-mvc used to define are defined here under the same ids, because
  * ported code asks for them by those names:
@@ -62,10 +58,10 @@ final class ContainerFactory
 {
     /**
      * @param array<string, mixed> $appConfig `config/application.config.php`
-     * @param bool $configCaches whether the merged config and the module map may be read
-     *        from and written to `data/config/`. Only a web request wants that: a console
-     *        run or a test writing there leaves a file owned by the wrong user next to a
-     *        real deployment, and CI has no such directory
+     * @param bool $configCaches whether the merged config may be read from and written to
+     *        `data/config/`. Only a web request wants that: a console run or a test writing
+     *        there leaves a file owned by the wrong user next to a real deployment, and CI
+     *        has no such directory
      * @param PhraseFlush|null $phraseFlush the request's end-of-request phrase flush, armed
      *        by TranslatorConfigurator; a console process passes none
      * @param CacheFlushQueue|null $cacheFlushQueue the request's persistent-cache write
@@ -80,22 +76,30 @@ final class ContainerFactory
     ): ServiceManager {
         $appConfig['module_listener_options'] ??= [];
         if (! $configCaches) {
-            $appConfig['module_listener_options']['config_cache_enabled']     = false;
-            $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
+            $appConfig['module_listener_options']['config_cache_enabled'] = false;
         }
+
+        $moduleConfig = ModuleConfig::fromApplicationConfig($appConfig, $configCaches);
+        $merged       = $moduleConfig->merged();
 
         $services = new ServiceManager();
         $services->setAllowOverride(true);
-        $services->configure(self::bootstrapConfig($appConfig));
+        $services->configure(self::bootstrapConfig($merged, $appConfig));
         $services->configure(is_array($appConfig['service_manager'] ?? null) ? $appConfig['service_manager'] : []);
         $services->setService('ApplicationConfig', $appConfig);
         $services->setService(ServiceManager::class, $services);
+        $services->setService(ModuleConfig::class, $moduleConfig);
+
+        //What `Laminas\ModuleManager\Listener\ServiceListener` did on loadModules.post,
+        //and the only thing it did here: no module implements `ServiceProviderInterface`
+        //— every `Module` class in this application has `getConfig()` and nothing else —
+        //so the merged `service_manager` key is the whole of its contribution. It ran with
+        //override allowed, as this still does.
+        $services->configure(is_array($merged['service_manager'] ?? null) ? $merged['service_manager'] : []);
         $services->setAllowOverride(false);
 
-        $services->get('ModuleManager')->loadModules();
-
-        //After loadModules(): what follows shadows or decorates services the module
-        //configs defined, and there is nothing to shadow before that. Before anything
+        //After the module configuration: what follows shadows or decorates services the
+        //module configs defined, and there is nothing to shadow before that. Before anything
         //asks for them, which nothing has yet — a delegator on an already-built service
         //would throw.
         //There is one translator and every name for it is an alias, which is what makes
@@ -140,13 +144,19 @@ final class ContainerFactory
     }
 
     /**
-     * The services the module manager needs to exist before any module is loaded.
+     * The services that must exist before the module configuration is applied.
      *
+     * @param array<string, mixed> $merged the merged module configuration
      * @param array<string, mixed> $appConfig
      * @return array<string, mixed>
      */
-    private static function bootstrapConfig(array $appConfig): array
+    private static function bootstrapConfig(array $merged, array $appConfig): array
     {
+        /** @var array<string, mixed> $listenerOptions */
+        $listenerOptions = is_array($appConfig['module_listener_options'] ?? null)
+            ? $appConfig['module_listener_options']
+            : [];
+
         return [
             'aliases'   => [
                 'Config'                           => 'config',
@@ -155,59 +165,26 @@ final class ContainerFactory
                 EventManagerInterface::class       => 'EventManager',
                 SharedEventManager::class          => 'SharedEventManager',
                 SharedEventManagerInterface::class => 'SharedEventManager',
-                ModuleManager::class               => 'ModuleManager',
-                ServiceListener::class             => 'ServiceListener',
+            ],
+            'services'  => [
+                //Already built: the merged `service_manager` key is applied from it a few
+                //lines above, so there is nothing to defer and no factory to write.
+                'config'            => $merged,
+                //The files `cache:clear-config` removes. A plain array rather than a
+                //reachable object so that SionModel, which owns the command, needs no
+                //App\ class and no second copy of the naming rule.
+                'ConfigCacheFiles'  => ModuleConfig::cacheFiles($listenerOptions),
             ],
             'factories' => [
-                //the merged module configuration, read off the module manager's config
-                //listener once the modules are loaded (Laminas\Mvc\Service\ConfigFactory did
-                //the same)
-                'config'             => static function (ServiceManager $container): array {
-                    /** @var ModuleManager $moduleManager */
-                    $moduleManager = $container->get('ModuleManager');
-                    $moduleManager->loadModules();
-                    $listener = $moduleManager->getEvent()->getConfigListener();
-                    if (! $listener instanceof ConfigListener) {
-                        return [];
-                    }
-                    /** @var array<string, mixed> $merged */
-                    $merged = $listener->getMergedConfig(false);
-
-                    return $merged;
-                },
+                //laminas-session's SessionManager is EventManagerAware, which is the whole
+                //of what these two still serve; the module manager that used to drive them
+                //left with laminas-modulemanager on 2026-09-21.
                 'SharedEventManager' => static fn (): SharedEventManager => new SharedEventManager(),
                 'EventManager'       => static function (ServiceManager $container): EventManager {
                     /** @var SharedEventManager $shared */
                     $shared = $container->get('SharedEventManager');
 
                     return new EventManager($shared);
-                },
-                'ServiceListener'    => static fn (ServiceManager $container): ServiceListener
-                    => new ServiceListener($container),
-                'ModuleManager'      => static function (ServiceManager $container) use ($appConfig): ModuleManager {
-                    $listenerOptions  = new ListenerOptions($appConfig['module_listener_options']);
-                    $defaultListeners = new DefaultListenerAggregate($listenerOptions);
-
-                    /** @var ServiceListener $serviceListener */
-                    $serviceListener = $container->get('ServiceListener');
-                    $serviceListener->addServiceManager(
-                        $container,
-                        'service_manager',
-                        ServiceProviderInterface::class,
-                        'getServiceConfig'
-                    );
-                    /** @var EventManager $events */
-                    $events = $container->get('EventManager');
-                    $defaultListeners->attach($events);
-                    $serviceListener->attach($events);
-
-                    $moduleEvent = new ModuleEvent();
-                    $moduleEvent->setParam('ServiceManager', $container);
-
-                    $moduleManager = new ModuleManager($appConfig['modules'], $events);
-                    $moduleManager->setEvent($moduleEvent);
-
-                    return $moduleManager;
                 },
             ],
             'shared'    => [

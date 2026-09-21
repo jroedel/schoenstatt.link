@@ -28,7 +28,6 @@
         "laminas/laminas-session": "^2.27",
         "laminas/laminas-stdlib": "^3.21",
         "laminas/laminas-eventmanager": "^3.15",
-        "laminas/laminas-modulemanager": "^2.19",
         "laminas/laminas-servicemanager": "^3.24",
         "laminas/laminas-db": "^2.11",
         "symfony/console": "^7.3",
@@ -45,8 +44,7 @@
         "symfony/event-dispatcher": "^7.4",
         "twig/twig": "^3.0",
         "symfony/security-core": "^8.1",
-        "symfony/http-client": "^8.1",
-        "laminas/laminas-loader": "^2.12"
+        "symfony/http-client": "^8.1"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.3",

@@ -10,15 +10,11 @@
 
 namespace Application;
 
-use App\Laminas\ContainerServices;
-use App\JUser\Host\Session as JUserSession;
 use JUser\Host\SessionInterface as JUserSessionInterface;
 use App\Console\Command\BuildSitemapCommand;
 use App\Console\Command\BuildSitemapCommandFactory;
 use JTranslate\I18n\Translator\Translator as AppTranslator;
 use SionModel\Cache\Storage as CacheStorage;
-use SionModel\Cache\StorageFactory as CacheStorageFactory;
-use Psr\Container\ContainerInterface;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use SionModel\Cache\EntityChangeListeners;
 use Psr\Log\LoggerInterface;
@@ -26,36 +22,21 @@ use Psr\Log\LoggerInterface;
 return [
     'service_manager' => [
         'factories' => [
-            /*
-             * The session JUser reads and writes, as its own host contract rather than a
-             * laminas Container. Registered here, in the laminas container, because that is
-             * where JUser's own `Host\IdentityInterface` factory looks for it — and because
-             * one registration is what makes the Symfony kernel and the laminas container
-             * share a single adapter. Two would each memoize their own identity, and a
-             * magic-link redemption through one would leave the other anonymous.
-             */
-            JUserSessionInterface::class => static fn (ContainerInterface $c): JUserSession
-                => new JUserSession(new ContainerServices($c)),
+            //the session JUser reads and writes, as its own host contract; one
+            //registration is what makes the Symfony kernel and the laminas container share
+            //a single adapter
+            JUserSessionInterface::class => Service\JUserSessionFactory::class,
             //default persistent storage, configured in cache.local.php
             CacheStorage::class => Service\CacheFactory::class,
-            /*
-             * JTranslate's phrase cache. That module builds no cache of its own — it asks
-             * the host for a PSR-16 one by service id (`jtranslate.cache_service`) — so
-             * this is where its namespace and TTL are decided, from the same
-             * `jtranslate.cache_options` block the laminas storage was built from.
-             */
-            'JTranslate\Cache' => static function (ContainerInterface $c): CacheStorage {
-                /** @var array<string, mixed> $config */
-                $config = $c->get('Config');
-                $cache  = $config['jtranslate']['cache_options'] ?? [];
-
-                return CacheStorageFactory::fromConfig(is_array($cache) ? $cache : []);
-            },
+            //JTranslate's phrase cache, from the `jtranslate.cache_options` block
+            'JTranslate\Cache' => Service\JTranslateCacheFactory::class,
             //The sitemap builder. An App\ class registered from a laminas module config
             //because bin/console resolves commands out of this container — see
             //App\Console\Command\BuildSitemapCommandFactory for what it does and does not
             //build.
             BuildSitemapCommand::class => BuildSitemapCommandFactory::class,
+        ],
+        'invokables' => [
             /*
              * Told whenever any SionTable invalidates an entity, so the cached
              * BjyAuthorize ACL can go with it. Registered here rather than from the
@@ -64,17 +45,19 @@ return [
              * wires each table, and this config is what both containers load.
              *
              * An ordinary shared service, unlike SionModel's CacheFlushQueue — it holds
-             * no per-request state. Resolving it builds the ACL cache storage, which is
-             * an APCu handle and nothing more.
+             * no per-request state, and since the ACL cutover it starts empty: the new
+             * engine (App\Acl\Authorizer) assembles per request from plain arrays
+             * (~0.45ms) rather than caching an Acl object across requests, so a
+             * role/library/text change is picked up on the next request with nothing to
+             * invalidate. BjyAuthorize's cache, which this used to clear, is no longer
+             * written — nothing resolves its Authorize service.
+             *
+             * An invokable rather than the closure it was until 2026-09-21, which is what
+             * the class had always been: it takes no arguments and reads no config. A
+             * closure in a module config can only be cached by an exporter that can write
+             * one back out. {@see \SchoenstattTest\Integration\MergedConfigIsPlainDataTest}
              */
-            EntityChangeListeners::class => static function (ContainerInterface $c): EntityChangeListeners {
-                // Empty since the ACL cutover: the new engine (App\Acl\Authorizer) assembles
-                // per request from plain arrays (~0.45ms) rather than caching an Acl object
-                // across requests, so a role/library/text change is picked up on the next
-                // request with nothing to invalidate. BjyAuthorize's cache, which this used to
-                // clear, is no longer written — nothing resolves its Authorize service.
-                return new EntityChangeListeners();
-            },
+            EntityChangeListeners::class => EntityChangeListeners::class,
         ],
         'aliases' => [
             //this helps clarify throughout the app which kind of Logger we should expect.
