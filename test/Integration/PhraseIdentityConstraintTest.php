@@ -5,7 +5,7 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ContainerFactory;
 use JTranslate\Model\PhraseIdentity;
 use JTranslate\Model\TranslationsTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 
@@ -58,7 +58,7 @@ class PhraseIdentityConstraintTest extends TestCase
 {
     private Container $container;
 
-    private Adapter $adapter;
+    private Connection $adapter;
 
     private TranslationsTable $table;
 
@@ -81,9 +81,9 @@ class PhraseIdentityConstraintTest extends TestCase
         $this->container = $container;
 
         try {
-            /** @var Adapter $adapter */
-            $adapter = $container->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $container->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (\Throwable $e) {
             self::markTestSkipped(
                 'no reachable database: ' . $e->getMessage()
@@ -122,7 +122,7 @@ class PhraseIdentityConstraintTest extends TestCase
      */
     public function testTheConstraintRefusesADuplicateAndOnlyAnExactOne(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $this->insertPhrase('Book checkout');
@@ -154,7 +154,7 @@ class PhraseIdentityConstraintTest extends TestCase
                 . 'relation and it will silently make real phrases untranslatable.'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -169,7 +169,7 @@ class PhraseIdentityConstraintTest extends TestCase
      */
     public function testRetirementHidesAPhraseWithoutSilencingItOrLosingIt(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $phrase = 'Retirement round trip ' . bin2hex(random_bytes(6));
@@ -232,7 +232,7 @@ class PhraseIdentityConstraintTest extends TestCase
                 'the phrase came back without its translations, which makes retirement lossy after all'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -246,7 +246,7 @@ class PhraseIdentityConstraintTest extends TestCase
      */
     public function testReinsertingALivePhraseIsANoOp(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $phrase = 'Idempotent insert ' . bin2hex(random_bytes(6));
@@ -265,7 +265,7 @@ class PhraseIdentityConstraintTest extends TestCase
                 . '— any translation hanging off the old id would have been cascaded away'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -326,7 +326,7 @@ class PhraseIdentityConstraintTest extends TestCase
             . 'happily destroy it and its translations'
         );
 
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $threw = false;
@@ -338,7 +338,7 @@ class PhraseIdentityConstraintTest extends TestCase
             self::assertTrue($threw, 'deletePhrase() accepted another project\'s id');
             self::assertSame(1, $this->countRowsById($foreignId), 'the foreign phrase was deleted anyway');
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -346,7 +346,7 @@ class PhraseIdentityConstraintTest extends TestCase
 
     private function insertPhrase(string $phrase): int
     {
-        $this->adapter->query(
+        $this->adapter->execute(
             'INSERT INTO `trans_phrases` (`project`, `text_domain`, `phrase`, `phrase_hash`, `added_on`) '
             . 'VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
             [$this->project, $this->textDomain, $phrase, PhraseIdentity::raw($phrase)]
@@ -357,7 +357,7 @@ class PhraseIdentityConstraintTest extends TestCase
 
     private function insertTranslation(int $phraseId, string $locale, string $translation): void
     {
-        $this->adapter->query(
+        $this->adapter->execute(
             'INSERT INTO `trans_translations` (`translation_phrase_id`, `locale`, `translation`, `modified_on`) '
             . 'VALUES (?, ?, ?, UTC_TIMESTAMP())',
             [$phraseId, $locale, $translation]
@@ -423,7 +423,7 @@ class PhraseIdentityConstraintTest extends TestCase
      */
     private function aPhraseBelongingToAnotherProject(): ?array
     {
-        $result = $this->adapter->query(
+        $result = $this->adapter->select(
             'SELECT o.`text_domain`, o.`phrase` FROM `trans_phrases` o '
             . 'WHERE o.`project` <> ? '
             . '  AND NOT EXISTS (SELECT 1 FROM `trans_phrases` mine '
@@ -463,7 +463,7 @@ class PhraseIdentityConstraintTest extends TestCase
      */
     private function scalar(string $sql, array $parameters): int|string|null
     {
-        foreach ($this->adapter->query($sql, $parameters) as $row) {
+        foreach ($this->adapter->select($sql, $parameters) as $row) {
             $value = current((array) $row);
 
             return null === $value ? null : (is_numeric($value) ? (int) $value : (string) $value);

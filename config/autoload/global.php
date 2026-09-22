@@ -1,7 +1,7 @@
 <?php
 
-use Application\Service\DbAdapterServiceFactory;
-use Laminas\Db\Adapter\Adapter;
+use Application\Service\DbConnectionFactory;
+use SionModel\Db\Connection;
 
 /**
  * Global Configuration Override
@@ -125,12 +125,12 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            Adapter::class => DbAdapterServiceFactory::class,
+            Connection::class => DbConnectionFactory::class,
         ],
         'aliases' => [
             //legacy service name still consumed by JUser factories and the
             //bjy-authorize identity provider factory
-            'zfcuser_zend_db_adapter' => Adapter::class,
+            'zfcuser_zend_db_adapter' => Connection::class,
         ],
     ],
 ];

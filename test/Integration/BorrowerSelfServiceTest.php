@@ -9,7 +9,7 @@ use Books\Model\BorrowerTokenTable;
 use Books\Model\LibraryTable;
 use DateTimeImmutable;
 use DateTimeZone;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -44,7 +44,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 class BorrowerSelfServiceTest extends TestCase
 {
     private Container $container;
-    private Adapter $adapter;
+    private Connection $adapter;
     private LibraryTable $library;
     private BorrowerTokenTable $tokens;
     /** @var list<int> checkout ids this test created */
@@ -65,9 +65,9 @@ class BorrowerSelfServiceTest extends TestCase
         $this->container = $container;
 
         try {
-            /** @var Adapter $adapter */
-            $adapter = $container->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $container->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped(
                 'no reachable database: ' . $e->getMessage()
@@ -77,7 +77,7 @@ class BorrowerSelfServiceTest extends TestCase
         $this->adapter = $adapter;
 
         //db8.0 must have run; without it there is no token table and no renewal limit.
-        $has = $adapter->query(
+        $has = $adapter->select(
             "SELECT COUNT(*) AS n FROM information_schema.TABLES
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lib_borrower_tokens'",
             []
@@ -95,7 +95,7 @@ class BorrowerSelfServiceTest extends TestCase
 
         //A real book in a real library, so the library's options (period, limit) are
         //the ones production would use — but our own checkout row against it.
-        $row = $adapter->query(
+        $row = $adapter->select(
             'SELECT b.book_id, b.library_id FROM lib_books b
              JOIN lib_libraries l ON l.LibraryId = b.library_id LIMIT 1',
             []
@@ -106,28 +106,28 @@ class BorrowerSelfServiceTest extends TestCase
         $this->bookId    = (int) $row['book_id'];
         $this->libraryId = (int) $row['library_id'];
 
-        $person = $adapter->query('SELECT PersonId FROM sch_persons LIMIT 1', [])->current();
+        $person = $adapter->select('SELECT PersonId FROM sch_persons LIMIT 1', [])->current();
         $this->personId = (int) $person['PersonId'];
     }
 
     protected function tearDown(): void
     {
         foreach ($this->createdCheckouts as $id) {
-            $this->adapter->query('DELETE FROM lib_checkouts WHERE CheckoutId = ?', [$id]);
+            $this->adapter->execute('DELETE FROM lib_checkouts WHERE CheckoutId = ?', [$id]);
         }
         if (0 !== $this->personId) {
-            $this->adapter->query('DELETE FROM lib_borrower_tokens WHERE PersonId = ?', [$this->personId]);
+            $this->adapter->execute('DELETE FROM lib_borrower_tokens WHERE PersonId = ?', [$this->personId]);
         }
     }
 
     private function newCheckout(string $dueOn = '2020-01-01 23:59:59', int $timesRenewed = 0): int
     {
-        $this->adapter->query(
+        $this->adapter->execute(
             'INSERT INTO lib_checkouts (PersonId, BookId, CheckedOutOn, DueOn, TimesRenewed)
              VALUES (?, ?, UTC_TIMESTAMP(), ?, ?)',
             [$this->personId, $this->bookId, $dueOn, $timesRenewed]
         );
-        $id = (int) $this->adapter->query('SELECT LAST_INSERT_ID() AS id', [])->current()['id'];
+        $id = (int) $this->adapter->select('SELECT LAST_INSERT_ID() AS id', [])->current()['id'];
         $this->createdCheckouts[] = $id;
 
         return $id;
@@ -136,7 +136,7 @@ class BorrowerSelfServiceTest extends TestCase
     private function dueOnOf(int $checkoutId): string
     {
         return (string) $this->adapter
-            ->query('SELECT DueOn FROM lib_checkouts WHERE CheckoutId = ?', [$checkoutId])
+            ->select('SELECT DueOn FROM lib_checkouts WHERE CheckoutId = ?', [$checkoutId])
             ->current()['DueOn'];
     }
 
@@ -154,7 +154,7 @@ class BorrowerSelfServiceTest extends TestCase
         self::assertNotSame($before, $this->dueOnOf($id), 'the new due date must reach the database');
 
         $row = $this->adapter
-            ->query('SELECT TimesRenewed, LastRenewedOn FROM lib_checkouts WHERE CheckoutId = ?', [$id])
+            ->select('SELECT TimesRenewed, LastRenewedOn FROM lib_checkouts WHERE CheckoutId = ?', [$id])
             ->current();
         self::assertSame(1, (int) $row['TimesRenewed']);
         self::assertNotNull($row['LastRenewedOn'], 'LastRenewedOn must be stamped');
@@ -199,14 +199,14 @@ class BorrowerSelfServiceTest extends TestCase
 
         self::assertSame(LibraryTable::RENEW_LIMIT_REACHED, $result['status']);
         self::assertSame($maximum, (int) $this->adapter
-            ->query('SELECT TimesRenewed FROM lib_checkouts WHERE CheckoutId = ?', [$id])
+            ->select('SELECT TimesRenewed FROM lib_checkouts WHERE CheckoutId = ?', [$id])
             ->current()['TimesRenewed'], 'a refused renewal must not increment the counter');
     }
 
     public function testAReturnedBookIsNotRenewable(): void
     {
         $id = $this->newCheckout();
-        $this->adapter->query('UPDATE lib_checkouts SET CheckedInOn = UTC_TIMESTAMP() WHERE CheckoutId = ?', [$id]);
+        $this->adapter->execute('UPDATE lib_checkouts SET CheckedInOn = UTC_TIMESTAMP() WHERE CheckoutId = ?', [$id]);
 
         self::assertSame(LibraryTable::RENEW_ALREADY_RETURNED, $this->library->renewBook($id)['status']);
     }
@@ -243,7 +243,7 @@ class BorrowerSelfServiceTest extends TestCase
         $token = $this->tokens->issue($this->personId, $this->libraryId);
 
         $found = $this->adapter
-            ->query('SELECT COUNT(*) AS n FROM lib_borrower_tokens WHERE TokenHash = ?', [$token])
+            ->select('SELECT COUNT(*) AS n FROM lib_borrower_tokens WHERE TokenHash = ?', [$token])
             ->current();
         self::assertSame(0, (int) $found['n'], 'the token must be stored hashed, never in the clear');
     }
@@ -251,7 +251,7 @@ class BorrowerSelfServiceTest extends TestCase
     public function testAnExpiredTokenIsRefused(): void
     {
         $token = $this->tokens->issue($this->personId, $this->libraryId);
-        $this->adapter->query(
+        $this->adapter->execute(
             'UPDATE lib_borrower_tokens SET ExpiresOn = ? WHERE PersonId = ?',
             ['2020-01-01 00:00:00', $this->personId]
         );

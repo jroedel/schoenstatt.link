@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Books\Service;
 
 use Books\Model\BorrowerTokenTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -17,6 +17,6 @@ class BorrowerTokenTableFactory
 {
     public function __invoke(ContainerInterface $container): BorrowerTokenTable
     {
-        return new BorrowerTokenTable($container->get(Adapter::class));
+        return new BorrowerTokenTable($container->get(Connection::class));
     }
 }

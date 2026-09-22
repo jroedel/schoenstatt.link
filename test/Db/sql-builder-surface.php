@@ -89,11 +89,9 @@ return array (
   ),
   'select: limit and offset' => 
   array (
-    'sql' => 'SELECT `sch_changes`.* FROM `sch_changes` ORDER BY `UpdatedOn` DESC LIMIT ? OFFSET ?',
+    'sql' => 'SELECT `sch_changes`.* FROM `sch_changes` ORDER BY `UpdatedOn` DESC LIMIT 250 OFFSET 10',
     'values' => 
     array (
-      0 => 250,
-      1 => 10,
     ),
   ),
   'select: join, string ON, aliased columns' => 
@@ -131,14 +129,13 @@ return array (
   ),
   'select: nested OR under AND, with a limit' => 
   array (
-    'sql' => 'SELECT `lib_books`.* FROM `lib_books` WHERE `library_id` IN (?, ?) AND (`title` LIKE ? OR `author` LIKE ?) ORDER BY `library_id` ASC, `sort_text` ASC LIMIT ?',
+    'sql' => 'SELECT `lib_books`.* FROM `lib_books` WHERE `library_id` IN (?, ?) AND (`title` LIKE ? OR `author` LIKE ?) ORDER BY `library_id` ASC, `sort_text` ASC LIMIT 50',
     'values' => 
     array (
       0 => 1,
       1 => 2,
       2 => '%q%',
       3 => '%q%',
-      4 => 50,
     ),
   ),
   'select: a group inside a group' => 
@@ -149,6 +146,21 @@ return array (
       0 => 4,
       1 => 1,
       2 => 2,
+    ),
+  ),
+  'select: an empty clause contributes nothing' => 
+  array (
+    'sql' => 'SELECT `lib_libraries`.* FROM `lib_libraries` ORDER BY `LibraryName` ASC',
+    'values' => 
+    array (
+    ),
+  ),
+  'select: a clause built separately merges flat' => 
+  array (
+    'sql' => 'SELECT `lib_books`.* FROM `lib_books` WHERE `is_active` = ? OR `sort_text` IS NULL',
+    'values' => 
+    array (
+      0 => 1,
     ),
   ),
   'select: every array-form conversion at once' => 
@@ -173,6 +185,15 @@ return array (
     'sql' => 'SELECT `sch_visits`.* FROM `sch_visits` WHERE `VisitedAt` >= DATE_ADD(NOW(), INTERVAL -1 MONTH)',
     'values' => 
     array (
+    ),
+  ),
+  'select: an expression that binds its own value' => 
+  array (
+    'sql' => 'SELECT COUNT(*) AS `total` FROM `trans_phrases` AS `p` WHERE `p`.`project` = ? AND NOT EXISTS (SELECT 1 FROM `trans_translations` tx WHERE tx.translation_phrase_id = p.translation_phrase_id AND tx.locale = ? AND tx.translation <> \'\')',
+    'values' => 
+    array (
+      0 => 'schoenstatt.link',
+      1 => 'de_DE',
     ),
   ),
   'select: every comparison operator' => 
@@ -283,6 +304,26 @@ return array (
     array (
       0 => 1,
       1 => '2026-09-22',
+    ),
+  ),
+  'update: a clause built separately, all OR' => 
+  array (
+    'sql' => 'UPDATE `sch_publications` SET `CategoryId` = ? WHERE `PublicationId` = ? OR `MainPublicationId` = ? OR `TranslatedFromPublicationId` = ?',
+    'values' => 
+    array (
+      0 => 3,
+      1 => 11,
+      2 => 22,
+      3 => 22,
+    ),
+  ),
+  'delete: a clause built separately, merged onto a term already there' => 
+  array (
+    'sql' => 'DELETE FROM `trans_translations` WHERE `translation_phrase_id` = ? AND `locale` = ? AND `translation` IS NULL',
+    'values' => 
+    array (
+      0 => 7,
+      1 => 'de_DE',
     ),
   ),
 );

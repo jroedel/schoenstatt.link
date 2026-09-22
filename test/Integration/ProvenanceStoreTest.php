@@ -14,10 +14,10 @@ use App\Provenance\SourceClass;
 use App\Provenance\WriteGate;
 use DateTimeImmutable;
 use DateTimeZone;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
+use SionModel\Db\Connection;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use SionModel\Db\Sql\Delete;
 
 /**
  * `sch_provenance` round trips, and the derived field groups match the real configuration.
@@ -77,11 +77,10 @@ class ProvenanceStoreTest extends TestCase
     protected function tearDown(): void
     {
         try {
-            /** @var Adapter $adapter */
-            $adapter = $this->bridge()->get(Adapter::class);
-            $sql     = new Sql($adapter);
-            $delete  = $sql->delete(ProvenanceStore::TABLE)->where(['Entity' => self::TEST_ENTITY]);
-            $sql->prepareStatementForSqlObject($delete)->execute();
+            /** @var Connection $adapter */
+            $adapter = $this->bridge()->get(Connection::class);
+            $delete  = (new Delete(ProvenanceStore::TABLE))->where(['Entity' => self::TEST_ENTITY]);
+            $adapter->execute($delete);
         } catch (Throwable) {
             //Nothing to clean if there was no database to write to.
         }

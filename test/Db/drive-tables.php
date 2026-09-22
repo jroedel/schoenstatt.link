@@ -25,8 +25,9 @@ declare(strict_types=1);
 
 use App\Laminas\ContainerFactory;
 use Books\Model\LibraryTable;
+use JTranslate\Model\TranslationsTable;
 use JUser\Model\ApiTokenTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use SionModel\Db\Model\FilesTable;
 use SionModel\Mailing\Mailer;
 use Symfony\Component\Mime\Email;
@@ -42,10 +43,7 @@ Locale::setDefault('en_US');
 $appConfig = require 'config/application.config.php';
 $container = ContainerFactory::build($appConfig);
 
-/** @var Adapter $adapter */
-$adapter    = $container->get(Adapter::class);
-$connection = $adapter->getDriver()->getConnection();
-
+$connection = $container->get(Connection::class);
 $connection->beginTransaction();
 
 try {
@@ -81,8 +79,35 @@ try {
             ->subject('sql-surface')
             ->html('<p>sql-surface</p>')
     );
+
+    //**Phrase discovery only writes when a phrase is missing**, and against a database that
+    //already holds every phrase the pass renders it writes nothing at all — so four statement
+    //shapes came and went with the state of `trans_phrases` rather than with the code. A
+    //phrase nobody will ever render is missing on every run, which makes them constant.
+    /** @var TranslationsTable $translations */
+    $translations = $container->get(TranslationsTable::class);
+    //The acting-user provider reads a session, and there is none here; see
+    //writeMissingPhrasesToDb(), which resolves it once before the first write.
+    $translations->setActingUserId(null);
+    $translations->reportMissingTranslation([
+        'message'     => 'sql-surface: a phrase no page renders',
+        'text_domain' => 'default',
+        'locale'      => 'en_US',
+    ]);
+    $translations->writeMissingPhrasesToDb('sql-surface');
+
+    //And the translation write paths, which the insert above leaves untouched: writing one
+    //is the `ON DUPLICATE KEY UPDATE`, retracting it is the DELETE.
+    $phrase = $connection
+        ->select("SELECT `translation_phrase_id` FROM `trans_phrases` WHERE `origin_route` = 'sql-surface'")
+        ->current();
+    if (null !== $phrase) {
+        $phraseId = (int) $phrase['translation_phrase_id'];
+        $translations->updatePhrase($phraseId, ['de_DE' => 'sql-surface']);
+        $translations->updatePhrase($phraseId, ['de_DE' => null]);
+    }
 } finally {
-    $connection->rollback();
+    $connection->rollBack();
 }
 
-echo "drove files, user_api_token, lib_imports and mailings; rolled back\n";
+echo "drove files, user_api_token, lib_imports, mailings and the phrase writes; rolled back\n";

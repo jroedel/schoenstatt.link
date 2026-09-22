@@ -8,7 +8,7 @@ use App\Laminas\SionResult;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\SpreadsheetReader;
-use Laminas\Db\Sql\Predicate\PredicateInterface;
+use SionModel\Db\Sql\Predicate\PredicateInterface;
 use InvalidArgumentException;
 use Throwable;
 

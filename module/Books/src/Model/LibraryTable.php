@@ -5,20 +5,19 @@ use SionModel\Db\Model\SionTable;
 use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
 use JUser\Model\UserTable;
-use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Db\Sql\Select;
-use Laminas\Db\Sql\Predicate\Expression;
-use Laminas\Db\Sql\Where;
-use Laminas\Db\Sql\Predicate\Predicate;
-use Laminas\Db\Sql\Predicate\Like;
-use Laminas\Db\Sql\Predicate\Operator;
-use Laminas\Db\Sql\Predicate\PredicateSet;
-use Laminas\Db\Sql\Predicate\In;
+use SionModel\Db\Connection;
+use SionModel\Db\Sql\Select;
+use SionModel\Db\Sql\Expression;
+use SionModel\Db\Sql\Where;
+use SionModel\Db\Sql\Predicate\Like;
+use SionModel\Db\Sql\Predicate\Operator;
+use SionModel\Db\Sql\Predicate\In;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
-use Laminas\Db\Sql\Predicate\IsNull;
-use Laminas\Db\Sql\Predicate\IsNotNull;
+use SionModel\Db\Sql\Predicate\IsNull;
+use SionModel\Db\Sql\Predicate\IsNotNull;
 use Books\Filter\SortText;
+use SionModel\Db\Sql\Predicate\Group;
 
 class LibraryTable extends SionTable implements
     ProblemProviderInterface
@@ -122,7 +121,7 @@ class LibraryTable extends SionTable implements
      * @param array<string, mixed> $sionModelConfig
      */
     public function __construct(
-        AdapterInterface $dbAdapter,
+        Connection $dbAdapter,
         EntitiesService $entities,
         array $sionModelConfig,
         ?ActingUserProviderInterface $actingUserProvider,
@@ -456,30 +455,30 @@ ORDER BY `publisher`";
             if (is_numeric($query['libraryId'])) {
                 $libraryClause = new Operator(
                     $fieldMap['libraryId'],
-                    Operator::OPERATOR_EQUAL_TO,
+                    Operator::EQ,
                     $query['libraryId']
                 );
             }
         } elseif (isset($libraryId)) { //if the caller didn't specify a libraryId query param, set the current library
-            $libraryClause = new Operator($fieldMap['libraryId'], Operator::OPERATOR_EQUAL_TO, $libraryId);
+            $libraryClause = new Operator($fieldMap['libraryId'], Operator::EQ, $libraryId);
         }
         if (isset($libraryClause)) {
-            $where->addPredicate($libraryClause, PredicateSet::OP_AND);
+            $where->addPredicate($libraryClause, Where::OP_AND);
         }
 
         //Prepare the search predicate
         if (isset($query['search'])) {
             $search = $query['search'];
             $searchLike = sprintf("%%%s%%", $search);
-            $searchClause = new Predicate();
+            $searchClause = new Where();
             $searchClause->addPredicates([
                 new Like($fieldMap['authorsText'], $searchLike),
                 new Like($fieldMap['title'], $searchLike),
                 new Like($fieldMap['category'], $searchLike),
                 new Like($fieldMap['callNumber'], $searchLike),
-                new Operator($fieldMap['withinLibraryId'], Operator::OPERATOR_EQUAL_TO, $search),
-            ], PredicateSet::OP_OR);
-            $where->addPredicate($searchClause);
+                new Operator($fieldMap['withinLibraryId'], Operator::EQ, $search),
+            ], Where::OP_OR);
+            $where->addPredicate(new Group($searchClause));
         }
 
         // Prepare collectionId predicate
@@ -501,14 +500,14 @@ ORDER BY `publisher`";
             if (is_numeric($query['collectionId'])) {
                 $collectionIdClause = new Operator(
                     $fieldMap['collectionId'],
-                    Operator::OPERATOR_EQUAL_TO,
+                    Operator::EQ,
                     $query['collectionId']
                 );
             } elseif (null === $query['collectionId']) {
                 $collectionIdClause = new IsNull($fieldMap['collectionId']);
             }
             if (isset($collectionIdClause)) {
-                $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
+                $where->addPredicate($collectionIdClause, Where::OP_AND);
             }
         }
 
@@ -531,12 +530,12 @@ ORDER BY `publisher`";
             if (is_numeric($query['withinLibraryId'])) {
                 $withinLibraryIdClause = new Operator(
                     $fieldMap['withinLibraryId'],
-                    Operator::OPERATOR_EQUAL_TO,
+                    Operator::EQ,
                     $query['withinLibraryId']
                 );
             }
             if (isset($withinLibraryIdClause)) {
-                $where->addPredicate($withinLibraryIdClause, PredicateSet::OP_AND);
+                $where->addPredicate($withinLibraryIdClause, Where::OP_AND);
             }
         }
 
@@ -559,12 +558,12 @@ ORDER BY `publisher`";
             if (is_numeric($query['publicationId'])) {
                 $publicationIdClause = new Operator(
                     $fieldMap['publicationId'],
-                    Operator::OPERATOR_EQUAL_TO,
+                    Operator::EQ,
                     $query['publicationId']
                 );
             }
             if (isset($publicationIdClause)) {
-                $where->addPredicate($publicationIdClause, PredicateSet::OP_AND);
+                $where->addPredicate($publicationIdClause, Where::OP_AND);
             }
         }
 
@@ -587,12 +586,12 @@ ORDER BY `publisher`";
             if (is_string($query['category']) && 0 !== strlen($query['category'])) {
                 $categoryClause = new Operator(
                     $fieldMap['category'],
-                    Operator::OPERATOR_EQUAL_TO,
+                    Operator::EQ,
                     $query['category']
                 );
             }
             if (isset($categoryClause)) {
-                $where->addPredicate($categoryClause, PredicateSet::OP_AND);
+                $where->addPredicate($categoryClause, Where::OP_AND);
             }
         }
 
@@ -600,15 +599,15 @@ ORDER BY `publisher`";
         if (isset($query['title']) && 0 !== strlen($query['title'])) {
             $search = $query['title'];
             $searchLike = sprintf("%%%s%%", $search);
-            $titleClause = new Operator($fieldMap['title'], Operator::OPERATOR_EQUAL_TO, $query['title']);
-            $where->addPredicate($titleClause, PredicateSet::OP_AND);
+            $titleClause = new Operator($fieldMap['title'], Operator::EQ, $query['title']);
+            $where->addPredicate($titleClause, Where::OP_AND);
         }
 
         //Prepare author predicate
         if (isset($query['authorsText']) && 0 !== strlen($query['author'])) {
             $search = $query['author'];
-            $authorClause = new Operator($fieldMap['authorsText'], Operator::OPERATOR_EQUAL_TO, $query['author']);
-            $where->addPredicate($authorClause, PredicateSet::OP_AND);
+            $authorClause = new Operator($fieldMap['authorsText'], Operator::EQ, $query['author']);
+            $where->addPredicate($authorClause, Where::OP_AND);
         }
 
         //Prepare title predicate
@@ -616,7 +615,7 @@ ORDER BY `publisher`";
             $search = $query['inLanguage'];
             $searchLike = sprintf("%%%s%%", $search);
             $titleClause = new Like($fieldMap['inLanguage'], $query['inLanguage']);
-            $where->addPredicate($titleClause, PredicateSet::OP_AND);
+            $where->addPredicate($titleClause, Where::OP_AND);
         }
 
         //Prepare sortText predicate
@@ -624,9 +623,9 @@ ORDER BY `publisher`";
             if (! isset($query['sortText'])) {
                 $sortTextClause = new IsNull($fieldMap['sortText']);
             } else {
-                $sortTextClause = new Operator($fieldMap['sortText'], Operator::OPERATOR_EQUAL_TO, $query['sortText']);
+                $sortTextClause = new Operator($fieldMap['sortText'], Operator::EQ, $query['sortText']);
             }
-            $where->addPredicate($sortTextClause, PredicateSet::OP_AND);
+            $where->addPredicate($sortTextClause, Where::OP_AND);
         }
 
         //Prepare isActive predicate, default to true unless caller sets it to null
@@ -636,14 +635,14 @@ ORDER BY `publisher`";
             $query['isActive'] = true;
         }
         if (isset($query['isActive'])) {
-            $isActiveClause = new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
-            $where->addPredicate($isActiveClause, PredicateSet::OP_AND);
+            $isActiveClause = new Operator($fieldMap['isActive'], Operator::EQ, $query['isActive']);
+            $where->addPredicate($isActiveClause, Where::OP_AND);
         }
 
         //Prepare onlyPendingBooks
         if ($onlyPendingBooks) {
             $pendingBooksClause = new IsNotNull($fieldMap['newCallNumber']);
-            $where->addPredicate($pendingBooksClause, PredicateSet::OP_AND);
+            $where->addPredicate($pendingBooksClause, Where::OP_AND);
         }
 
         //@todo Prepare isCheckedOut
@@ -1857,7 +1856,7 @@ ORDER BY CreatedOn DESC";
     /**
      * Get a standardized select object to retrieve records from the database
      * @todo factor out
-     * @return \Laminas\Db\Sql\Select
+     * @return \SionModel\Db\Sql\Select
      */
     protected function getCheckoutSelectPrototype()
     {
@@ -2410,8 +2409,8 @@ ORDER BY CreatedOn DESC";
             'affected' => new Expression('COUNT(*)'),
         ]);
         $select->where([
-            new Operator('is_active', Operator::OPERATOR_EQUAL_TO, 1),
-            new Predicate([new IsNull('sort_text')], PredicateSet::OP_OR),
+            new Operator('is_active', Operator::EQ, 1),
+            new Group((new Where())->addPredicates([new IsNull('sort_text')], Where::OP_OR)),
         ]);
         $select->group(['library_id', 'collection_id']);
         $rows = $this->getTableGateway('lib_books')->selectWith($select);

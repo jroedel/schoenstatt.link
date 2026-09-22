@@ -6,7 +6,7 @@ namespace Books\Service;
 
 use App\Http\SymfonyRoutes;
 use Books\Model\DictionaryTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Routing\Generator\UrlGenerator;
 use Symfony\Component\Routing\RequestContext;
@@ -34,7 +34,7 @@ class DictionaryTableFactory
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null): DictionaryTable
     {
         $table = new DictionaryTable(
-            $container->get(Adapter::class),
+            $container->get(Connection::class),
             $container->get(EntitiesService::class),
             $container->get('SionModel\Config'),
             $container->get(ActingUserProviderInterface::class),

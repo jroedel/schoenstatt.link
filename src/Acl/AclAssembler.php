@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Acl;
 
 use App\Laminas\LaminasServices;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\ResultSet\ResultSetInterface;
+use SionModel\Db\Connection;
+use SionModel\Db\ResultSet;
 
 use function is_array;
 use function is_string;
@@ -52,16 +52,15 @@ final class AclAssembler
     /** @return array<string, string> role => direct parent role */
     private function roleHierarchy(): array
     {
-        /** @var Adapter $db */
-        $db = $this->laminas->get(Adapter::class);
-        $rows = $db->query(
+        /** @var Connection $db */
+        $db = $this->laminas->get(Connection::class);
+        $rows = $db->select(
             'SELECT r.role_id AS role, p.role_id AS parent
-               FROM user_role r LEFT JOIN user_role p ON p.id = r.parent_id',
-            Adapter::QUERY_MODE_EXECUTE
+               FROM user_role r LEFT JOIN user_role p ON p.id = r.parent_id'
         );
 
         $hierarchy = [];
-        if (! $rows instanceof ResultSetInterface) {
+        if (! $rows instanceof ResultSet) {
             return $hierarchy;
         }
         foreach ($rows as $row) {

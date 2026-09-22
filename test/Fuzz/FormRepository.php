@@ -626,30 +626,14 @@ final class FormRepository
     private function attachSqlRecorder(Container $container): void
     {
         try {
-            $adapter = $container->get(\Laminas\Db\Adapter\Adapter::class);
+            $adapter = $container->get(\SionModel\Db\Connection::class);
         } catch (Throwable) {
             return;
         }
 
-        $sql     = &$this->sql;
-        $adapter->setProfiler(new class ($sql) implements \Laminas\Db\Adapter\Profiler\ProfilerInterface {
-            /** @param list<string> $sql */
-            public function __construct(private array &$sql)
-            {
-            }
-
-            public function profilerStart($target): void
-            {
-                if ($target instanceof \Laminas\Db\Adapter\StatementContainerInterface) {
-                    $this->sql[] = $target->getSql();
-                } elseif (is_string($target)) {
-                    $this->sql[] = $target;
-                }
-            }
-
-            public function profilerFinish(): void
-            {
-            }
+        $sql = &$this->sql;
+        $adapter->watch(static function (string $statement) use (&$sql): void {
+            $sql[] = $statement;
         });
     }
 

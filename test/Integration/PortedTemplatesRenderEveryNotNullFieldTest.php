@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Controller\EntityCreateController;
 use App\Controller\EntityEditController;
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Form\Engine;
 use SchoenstattTest\Fuzz\FormRepository;
@@ -88,8 +88,8 @@ final class PortedTemplatesRenderEveryNotNullFieldTest extends TestCase
         try {
             $repository = FormRepository::instance();
             $container  = $repository->container();
-            /** @var AdapterInterface $adapter */
-            $adapter  = $container->get('Laminas\Db\Adapter\Adapter');
+            /** @var Connection $adapter */
+            $adapter  = $container->get('SionModel\Db\Connection');
             $required = $this->notNullColumns($adapter);
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
@@ -262,11 +262,11 @@ final class PortedTemplatesRenderEveryNotNullFieldTest extends TestCase
      *
      * @return array<string, array<string, true>>
      */
-    private function notNullColumns(AdapterInterface $adapter): array
+    private function notNullColumns(Connection $adapter): array
     {
         $columns = [];
 
-        $rows = $adapter->query(
+        $rows = $adapter->select(
             'SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS'
             . " WHERE TABLE_SCHEMA = DATABASE() AND IS_NULLABLE = 'NO' AND EXTRA NOT LIKE '%auto_increment%'",
             []

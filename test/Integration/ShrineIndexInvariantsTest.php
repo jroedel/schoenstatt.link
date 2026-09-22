@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Laminas\ServiceBridge;
 use App\Schoenstatt\ShrineIndex;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Locale;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -54,9 +54,9 @@ class ShrineIndexInvariantsTest extends TestCase
             self::markTestSkipped('no config/autoload/local.php, so no database configuration');
         }
         try {
-            /** @var Adapter $adapter */
-            $adapter = $this->bridge()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $this->bridge()->get(Connection::class);
+            $adapter->select('SELECT 1');
             $this->bridge()->get(SchoenstattTable::class);
         } catch (Throwable $e) {
             self::markTestSkipped(
