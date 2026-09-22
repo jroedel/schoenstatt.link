@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Books;
 
 use Books\Model\LibraryTable;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Adapter\Driver\ConnectionInterface;
-use Laminas\Db\Adapter\Driver\StatementInterface;
+use SionModel\Db\Connection;
 use Throwable;
 
 use function is_array;
@@ -79,7 +77,7 @@ final class LibraryDelete
      */
     public const INVALIDATES = ['checkout', 'book', 'collection', 'library-import', 'library'];
 
-    public function __construct(private readonly LibraryTable $table, private readonly Adapter $adapter)
+    public function __construct(private readonly LibraryTable $table, private readonly Connection $adapter)
     {
     }
 
@@ -164,9 +162,7 @@ final class LibraryDelete
     public function delete(int $libraryId, string $libraryName): array
     {
         $counts     = $this->dependents($libraryId);
-        $connection = $this->adapter->getDriver()->getConnection();
-
-        $connection->beginTransaction();
+        $this->adapter->beginTransaction();
         try {
             //Children first. lib_imports would go by its ON DELETE CASCADE anyway; doing
             //it explicitly keeps all five in one readable list and inside this transaction.
@@ -191,9 +187,9 @@ final class LibraryDelete
 
             $this->recordChanges($libraryId, $libraryName, $counts);
 
-            $connection->commit();
+            $this->adapter->commit();
         } catch (Throwable $e) {
-            $this->rollBack($connection);
+            $this->rollBack();
 
             throw $e instanceof LibraryDeleteFailed
                 ? $e
@@ -253,31 +249,15 @@ final class LibraryDelete
 
     private function count(string $sql, int $libraryId): int
     {
-        /** @var mixed $row */
-        $row = $this->statement($sql)->execute([$libraryId])->current();
+        $row = $this->adapter->select($sql, [$libraryId])->current();
 
-        return is_array($row) ? (int) ($row['c'] ?? 0) : 0;
+        return null === $row ? 0 : (int) ($row['c'] ?? 0);
     }
 
     /** @return int rows affected */
     private function execute(string $sql, int $libraryId): int
     {
-        return $this->statement($sql)->execute([$libraryId])->getAffectedRows();
-    }
-
-    /**
-     * A prepared statement, through the driver rather than `Adapter::query()`.
-     *
-     * `query()` declares `StatementInterface|ResultSet` — it returns a result set when
-     * called in execute mode — so every call site would need narrowing to hold `src/` to
-     * PHPStan level 8. Going through the driver says what is meant and returns one type.
-     */
-    private function statement(string $sql): StatementInterface
-    {
-        $statement = $this->adapter->getDriver()->createStatement($sql);
-        $statement->prepare();
-
-        return $statement;
+        return $this->adapter->execute($sql, [$libraryId]);
     }
 
     /**
@@ -287,10 +267,10 @@ final class LibraryDelete
      * would replace the one that explains what actually went wrong. The original is what
      * the caller needs.
      */
-    private function rollBack(ConnectionInterface $connection): void
+    private function rollBack(): void
     {
         try {
-            $connection->rollback();
+            $this->adapter->rollBack();
         } catch (Throwable) {
             //deliberately swallowed; see above
         }

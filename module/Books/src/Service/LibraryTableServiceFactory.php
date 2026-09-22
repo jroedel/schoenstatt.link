@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Books\Service;
 
 use Books\Model\LibraryTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Psr\Container\ContainerInterface;
 use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
@@ -36,7 +36,7 @@ class LibraryTableServiceFactory
             : $container->get(ProblemService::class)->getEntityProblemPrototype();
 
         $table = new LibraryTable(
-            $container->get(Adapter::class),
+            $container->get(Connection::class),
             $container->get(EntitiesService::class),
             $sionModelConfig,
             $container->get(ActingUserProviderInterface::class),

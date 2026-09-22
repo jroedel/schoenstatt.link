@@ -6,7 +6,7 @@ namespace Schoenstatt\Service;
 
 use JTranslate\Model\CountriesInfo;
 use JTranslate\Model\TranslationsTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use SionModel\I18n\TranslatesMessages;
 use Psr\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
@@ -42,7 +42,7 @@ class SchoenstattTableFactory
             : $container->get(ProblemService::class)->getEntityProblemPrototype();
 
         $table = new SchoenstattTable(
-            $container->get(Adapter::class),
+            $container->get(Connection::class),
             $container->get(EntitiesService::class),
             $sionModelConfig,
             $container->get(ActingUserProviderInterface::class),

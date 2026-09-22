@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Laminas\ServiceBridge;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Throwable;
 
 /**
@@ -30,7 +30,7 @@ use Throwable;
  *
  * ## `connect()`, not just `get()`
  *
- * Resolving `Adapter::class` proves only that credentials were readable. laminas-db
+ * Resolving `Connection::class` proves only that credentials were readable. laminas-db
  * connects lazily, so a wrong host or a stopped server survives the `get()` and fails
  * later, inside whatever query the test was really about — where it reads as a defect in
  * the code under test. Forcing the connection here makes it a skip.
@@ -56,12 +56,12 @@ trait RequiresDatabase
      * and a trait that built its own would be testing a different container from the one
      * the test then uses.
      */
-    private function requireDatabase(ServiceBridge $bridge): Adapter
+    private function requireDatabase(ServiceBridge $bridge): Connection
     {
         try {
-            /** @var Adapter $adapter */
-            $adapter = $bridge->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $bridge->get(Connection::class);
+            $adapter->select('SELECT 1');
 
             return $adapter;
         } catch (Throwable $e) {

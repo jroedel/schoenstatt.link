@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
@@ -38,9 +38,9 @@ class SortTextCoverageTest extends TestCase
             self::markTestSkipped('no config/autoload/local.php, so no database configuration');
         }
         try {
-            /** @var Adapter $adapter */
-            $adapter = $this->bridge()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $this->bridge()->get(Connection::class);
+            $adapter->select('SELECT 1');
             $this->bridge()->get(LibraryTable::class);
         } catch (Throwable $e) {
             self::markTestSkipped(
@@ -155,11 +155,10 @@ class SortTextCoverageTest extends TestCase
 
     private function countMissingSortText(): int
     {
-        /** @var Adapter $adapter */
-        $adapter = $this->bridge()->get(Adapter::class);
-        $result  = $adapter->query(
-            'SELECT COUNT(*) AS affected FROM lib_books WHERE is_active = 1 AND sort_text IS NULL',
-            Adapter::QUERY_MODE_EXECUTE
+        /** @var Connection $adapter */
+        $adapter = $this->bridge()->get(Connection::class);
+        $result  = $adapter->select(
+            'SELECT COUNT(*) AS affected FROM lib_books WHERE is_active = 1 AND sort_text IS NULL'
         );
         /** @var array{affected: int|string} $row */
         $row = $result->current();

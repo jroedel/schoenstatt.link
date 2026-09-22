@@ -9,13 +9,13 @@ use JUser\Form\CreateRoleForm;
 use JUser\Form\DeleteUserForm;
 use JUser\Form\EditUserForm;
 use JUser\Service\EditUserFormFactory;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
 use function is_readable;
+use SionModel\Db\Sql\Select;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -198,10 +198,9 @@ final class UserFormUniquenessTest extends TestCase
      */
     private static function anExistingRoleId(): string
     {
-        $sql    = new Sql(self::adapter());
-        $select = $sql->select('user_role')->columns(['role_id'])->limit(1);
+        $select = (new Select('user_role'))->columns(['role_id'])->limit(1);
 
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        $row = self::adapter()->select($select)->current();
 
         if (! $row) {
             self::markTestSkipped('this database holds no roles');
@@ -233,10 +232,10 @@ final class UserFormUniquenessTest extends TestCase
         return $form;
     }
 
-    private static function adapter(): Adapter
+    private static function adapter(): Connection
     {
-        /** @var Adapter $adapter */
-        $adapter = self::services()->get(Adapter::class);
+        /** @var Connection $adapter */
+        $adapter = self::services()->get(Connection::class);
 
         return $adapter;
     }
@@ -252,12 +251,11 @@ final class UserFormUniquenessTest extends TestCase
      */
     private static function anExistingUser(): array
     {
-        $sql    = new Sql(self::adapter());
-        $select = $sql->select('user')
+        $select = (new Select('user'))
             ->columns(['user_id', 'username', 'display_name'])
             ->limit(1);
 
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        $row = self::adapter()->select($select)->current();
 
         if (! $row) {
             self::markTestSkipped('this database holds no users');
@@ -300,7 +298,7 @@ final class UserFormUniquenessTest extends TestCase
         }
 
         try {
-            self::adapter()->getDriver()->getConnection()->connect();
+            self::adapter()->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }

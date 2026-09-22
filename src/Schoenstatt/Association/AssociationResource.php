@@ -111,7 +111,7 @@ final class AssociationResource
      *
      * Three shapes reach this from a hydrated row and none of them are JSON-native:
      * `DateTime` (foundationDate, updatedOn), `SionModel\Db\GeoPoint` (geoPoint) and
-     * the `Laminas\Db\Sql\Expression` a GeoPoint becomes on the way *in*. Dates get
+     * the `SionModel\Db\Sql\Expression` a GeoPoint becomes on the way *in*. Dates get
      * ISO-8601 because that is what an agent can send back and `ToDateTime` can
      * parse; everything else with a `__toString()` gets it, which is what turns a
      * GeoPoint into the `lat, long` string the form's `ToGeoPoint` filter accepts.

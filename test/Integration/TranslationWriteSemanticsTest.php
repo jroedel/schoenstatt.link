@@ -5,7 +5,7 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ContainerFactory;
 use JTranslate\Model\PhraseIdentity;
 use JTranslate\Model\TranslationsTable;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 
@@ -42,7 +42,7 @@ class TranslationWriteSemanticsTest extends TestCase
 {
     private Container $container;
 
-    private Adapter $adapter;
+    private Connection $adapter;
 
     private TranslationsTable $table;
 
@@ -62,9 +62,9 @@ class TranslationWriteSemanticsTest extends TestCase
         $this->container = $container;
 
         try {
-            /** @var Adapter $adapter */
-            $adapter = $container->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $container->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (\Throwable $e) {
             self::markTestSkipped(
                 'no reachable database: ' . $e->getMessage() . ' — needs the capsule up (docker compose up -d)'
@@ -96,7 +96,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testAnEmptyStringLeavesAStoredTranslationAlone(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Empty means leave alone ' . bin2hex(random_bytes(5)));
@@ -111,7 +111,7 @@ class TranslationWriteSemanticsTest extends TestCase
             self::assertSame('Nicht anfassen', $phrase['de_DE'] ?? null, 'an empty submission wiped German');
             self::assertSame('Novo', $phrase['pt_BR'] ?? null, 'the one language that was filled in was not written');
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -120,7 +120,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testWhitespaceOnlyAlsoLeavesAStoredTranslationAlone(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Whitespace means leave alone ' . bin2hex(random_bytes(5)));
@@ -133,7 +133,7 @@ class TranslationWriteSemanticsTest extends TestCase
 
             self::assertSame('Intacto', $this->table->getPhraseById($id)['es_ES'] ?? null);
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -146,7 +146,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testAnExplicitNullRetractsTheTranslation(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Null retracts ' . bin2hex(random_bytes(5)));
@@ -169,7 +169,7 @@ class TranslationWriteSemanticsTest extends TestCase
                 'retracting one language took another with it'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -178,7 +178,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testRetractingAnAbsentTranslationDoesNothing(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Null on nothing ' . bin2hex(random_bytes(5)));
@@ -187,7 +187,7 @@ class TranslationWriteSemanticsTest extends TestCase
 
             self::assertSame(0, $this->countTranslationRows($id, 'es_ES'));
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -200,7 +200,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testATranslationOfZeroIsStored(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Zero is a translation ' . bin2hex(random_bytes(5)));
@@ -209,7 +209,7 @@ class TranslationWriteSemanticsTest extends TestCase
 
             self::assertSame('0', $this->table->getPhraseById($id)['es_ES'] ?? null);
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -218,7 +218,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testResubmittingTheStoredTextWritesNothing(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('No-op update ' . bin2hex(random_bytes(5)));
@@ -228,7 +228,7 @@ class TranslationWriteSemanticsTest extends TestCase
 
             self::assertSame([], $results, 'an unchanged submission still issued a statement');
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -246,8 +246,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testAFailedDiscoveryLeavesNoHalfWrittenPhrase(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
-
+        $connection = $this->adapter;
         /** @var TranslationsTable $table */
         $table  = $this->container->build(TranslationsTable::class);
         $table->setActingUserId(null);
@@ -286,7 +285,7 @@ class TranslationWriteSemanticsTest extends TestCase
             //nested rollback resets the counter — so rolling back again would raise
             //"Must call beginTransaction() before you can rollback".
             if ($connection->inTransaction()) {
-                $connection->rollback();
+                $connection->rollBack();
             }
         }
     }
@@ -308,7 +307,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testAThreadSurvivesTheRediscoveryOfItsPhrase(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $text = 'Thread survives rediscovery ' . bin2hex(random_bytes(5));
@@ -322,7 +321,7 @@ class TranslationWriteSemanticsTest extends TestCase
             self::assertSame('Primera versión', $before[0]['old_translation']);
 
             //Rediscovery: the row goes, the same string comes back with a new id.
-            $this->adapter->query(
+            $this->adapter->execute(
                 'DELETE FROM `trans_phrases` WHERE `translation_phrase_id` = ?',
                 [$id]
             );
@@ -341,14 +340,14 @@ class TranslationWriteSemanticsTest extends TestCase
             //reconstructing events needs and is not the same as the id asked for.
             self::assertSame($id, (int) $after[0]['translation_phrase_id']);
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
     /** One language's thread, which is the shape an agent deciding about German wants. */
     public function testTheThreadCanBeNarrowedToOneLanguage(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Two languages argue ' . bin2hex(random_bytes(5)));
@@ -362,14 +361,14 @@ class TranslationWriteSemanticsTest extends TestCase
             self::assertCount(1, $spanish, 'the language filter did not narrow the thread');
             self::assertSame('Antes', $spanish[0]['old_translation']);
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
     /** Another project's phrase id answers an empty thread, not that project's. */
     public function testTheThreadOfAnotherProjectsPhraseIsEmpty(): void
     {
-        $foreign = $this->adapter->query(
+        $foreign = $this->adapter->select(
             'SELECT `translation_phrase_id` FROM `trans_phrases` WHERE `project` <> ? LIMIT 1',
             [$this->project]
         )->current();
@@ -394,7 +393,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testASupersededPhraseIsRetiredAndRediscoveryBringsItBack(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $text = 'Superseded description ' . bin2hex(random_bytes(5));
@@ -421,7 +420,7 @@ class TranslationWriteSemanticsTest extends TestCase
                 'a phrase that came back into use stayed retired, so a wrong guess is permanent'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -436,7 +435,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testARetirementIsNotedOnceAndOnlyOnce(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $text = 'Retirement is noted ' . bin2hex(random_bytes(5));
@@ -467,7 +466,7 @@ class TranslationWriteSemanticsTest extends TestCase
                 'repeated calls each wrote a row, so an application calling this on every save fills the table'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -480,7 +479,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testARetirementShowsInALanguageFilteredThread(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $text = 'Retirement crosses languages ' . bin2hex(random_bytes(5));
@@ -492,14 +491,14 @@ class TranslationWriteSemanticsTest extends TestCase
             self::assertCount(1, $german, 'the retirement is invisible to a language-filtered read');
             self::assertSame(TranslationsTable::OPERATION_RETIRE, $german[0]['operation']);
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
     /** Retiring by text is scoped to this project, like every other write here. */
     public function testRetiringByTextDoesNotReachAnotherProject(): void
     {
-        $foreign = $this->adapter->query(
+        $foreign = $this->adapter->select(
             'SELECT `phrase`, `text_domain` FROM `trans_phrases` WHERE `project` <> ? AND `retired_on` IS NULL LIMIT 1',
             [$this->project]
         )->current();
@@ -508,7 +507,7 @@ class TranslationWriteSemanticsTest extends TestCase
         }
         $foreign = (array) $foreign;
 
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             self::assertFalse(
@@ -516,7 +515,7 @@ class TranslationWriteSemanticsTest extends TestCase
                 'another project\'s phrase was retired from here'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -530,7 +529,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testRetiringAndUnretiringByIdAreEachRecordedOnce(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Retired by id ' . bin2hex(random_bytes(5)));
@@ -564,7 +563,7 @@ class TranslationWriteSemanticsTest extends TestCase
                 self::assertSame('', $row['old_translation']);
             }
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
@@ -591,7 +590,7 @@ class TranslationWriteSemanticsTest extends TestCase
      */
     public function testTwoRowsOfOneStringRetireSeparatelyIntoOneThread(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $text    = 'One string, two domains ' . bin2hex(random_bytes(5));
@@ -632,14 +631,14 @@ class TranslationWriteSemanticsTest extends TestCase
                 );
             }
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
     /** A retirement leaves every translation exactly where it was. */
     public function testRetiringByIdTouchesNoTranslation(): void
     {
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             $id = $this->insertPhrase('Retired with translations ' . bin2hex(random_bytes(5)));
@@ -657,14 +656,14 @@ class TranslationWriteSemanticsTest extends TestCase
                 'the phrase text itself moved'
             );
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
     /** By id is project-scoped too, for the reason retiring by text is. */
     public function testRetiringByIdDoesNotReachAnotherProject(): void
     {
-        $foreign = $this->adapter->query(
+        $foreign = $this->adapter->select(
             'SELECT `translation_phrase_id` FROM `trans_phrases` WHERE `project` <> ? AND `retired_on` IS NULL LIMIT 1',
             [$this->project]
         )->current();
@@ -673,7 +672,7 @@ class TranslationWriteSemanticsTest extends TestCase
         }
         $id = (int) ((array) $foreign)['translation_phrase_id'];
 
-        $connection = $this->adapter->getDriver()->getConnection();
+        $connection = $this->adapter;
         $connection->beginTransaction();
         try {
             self::assertFalse(
@@ -682,14 +681,14 @@ class TranslationWriteSemanticsTest extends TestCase
             );
             self::assertNull($this->retiredOn($id), 'and it was retired anyway');
         } finally {
-            $connection->rollback();
+            $connection->rollBack();
         }
     }
 
     private function retiredOn(int $phraseId): ?string
     {
         foreach (
-            $this->adapter->query(
+            $this->adapter->select(
                 'SELECT `retired_on` FROM `trans_phrases` WHERE `translation_phrase_id` = ?',
                 [$phraseId]
             ) as $row
@@ -706,14 +705,14 @@ class TranslationWriteSemanticsTest extends TestCase
     private function insertPhrase(string $phrase, ?string $textDomain = null): int
     {
         $textDomain ??= $this->textDomain;
-        $this->adapter->query(
+        $this->adapter->execute(
             'INSERT INTO `trans_phrases` (`project`, `text_domain`, `phrase`, `phrase_hash`, `added_on`) '
             . 'VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
             [$this->project, $textDomain, $phrase, PhraseIdentity::raw($phrase)]
         );
 
         foreach (
-            $this->adapter->query(
+            $this->adapter->select(
                 'SELECT `translation_phrase_id` FROM `trans_phrases` '
                 . 'WHERE `project` = ? AND `text_domain` = ? AND `phrase_hash` = ?',
                 [$this->project, $textDomain, PhraseIdentity::raw($phrase)]
@@ -727,7 +726,7 @@ class TranslationWriteSemanticsTest extends TestCase
 
     private function insertTranslation(int $phraseId, string $locale, string $translation): void
     {
-        $this->adapter->query(
+        $this->adapter->execute(
             'INSERT INTO `trans_translations` (`translation_phrase_id`, `locale`, `translation`, `modified_on`) '
             . 'VALUES (?, ?, ?, UTC_TIMESTAMP())',
             [$phraseId, $locale, $translation]
@@ -737,7 +736,7 @@ class TranslationWriteSemanticsTest extends TestCase
     private function countTranslationRows(int $phraseId, string $locale): int
     {
         foreach (
-            $this->adapter->query(
+            $this->adapter->select(
                 'SELECT COUNT(*) AS c FROM `trans_translations` WHERE `translation_phrase_id` = ? AND `locale` = ?',
                 [$phraseId, $locale]
             ) as $row
@@ -751,7 +750,7 @@ class TranslationWriteSemanticsTest extends TestCase
     private function countPhraseRows(string $phrase): int
     {
         foreach (
-            $this->adapter->query(
+            $this->adapter->select(
                 'SELECT COUNT(*) AS c FROM `trans_phrases` WHERE `project` = ? AND `phrase_hash` = ?',
                 [$this->project, PhraseIdentity::raw($phrase)]
             ) as $row

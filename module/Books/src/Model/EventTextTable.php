@@ -2,8 +2,8 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
-use Laminas\Db\Sql\Select;
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Sql\Select;
+use SionModel\Db\Connection;
 use SionModel\Mailing\HtmlToText;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
@@ -30,7 +30,7 @@ class EventTextTable extends SionTable
      * @param array<string, mixed> $config
      */
     public function __construct(
-        AdapterInterface $dbAdapter,
+        Connection $dbAdapter,
         EntitiesService $entities,
         array $sionModelConfig,
         ?ActingUserProviderInterface $actingUserProvider,

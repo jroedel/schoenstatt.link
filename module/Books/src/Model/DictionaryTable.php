@@ -2,13 +2,13 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use App\Text\Slug;
-use Laminas\Db\ResultSet\ResultSetInterface;
+use SionModel\Db\ResultSet;
 use Books\Exception\DuplicateKeyException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Laminas\Db\Sql\Select;
-use Laminas\Db\Sql\Expression;
+use SionModel\Db\Sql\Select;
+use SionModel\Db\Sql\Expression;
 use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
 
@@ -34,7 +34,7 @@ class DictionaryTable extends SionTable
      * @param array<string, mixed> $config
      */
     public function __construct(
-        AdapterInterface $dbAdapter,
+        Connection $dbAdapter,
         EntitiesService $entities,
         array $config,
         ?ActingUserProviderInterface $actingUserProvider,
@@ -87,7 +87,7 @@ class DictionaryTable extends SionTable
         $tableName  = $entitySpec->tableName;
         $gateway    = $this->getTableGateway($tableName);
         $result     = $gateway->select(['Slug' => $slug, 'Locale' => $locale]);
-        if (! $result instanceof ResultSetInterface || 0 === $result->count()) {
+        if (! $result instanceof ResultSet || 0 === $result->count()) {
             return false;
         }
         return true;

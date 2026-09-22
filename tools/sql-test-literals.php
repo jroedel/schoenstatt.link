@@ -24,7 +24,19 @@
 declare(strict_types=1);
 
 $roots = ['test', 'tools'];
-$seen  = [];
+
+/**
+ * A recording is not harness SQL.
+ *
+ * `test/Db/sql-builder-surface.php` holds the statements the builder writes, as string
+ * literals — which is exactly the shape this scanner looks for, and every one of them is a
+ * statement the application really issues. Left in, the two recordings cancel: a shape lands
+ * in the builder's recording and is subtracted out of the SQL surface's, so `--check` reports
+ * it as having disappeared from the application.
+ */
+$excluded = ['test/Db/sql-builder-surface.php'];
+
+$seen = [];
 
 foreach ($roots as $root) {
     if (! is_dir($root)) {
@@ -34,6 +46,10 @@ foreach ($roots as $root) {
     /** @var SplFileInfo $file */
     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root)) as $file) {
         if (! $file->isFile() || 'php' !== $file->getExtension()) {
+            continue;
+        }
+
+        if (in_array(str_replace('\\', '/', $file->getPathname()), $excluded, true)) {
             continue;
         }
 

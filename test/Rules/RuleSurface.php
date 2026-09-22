@@ -6,8 +6,7 @@ namespace SchoenstattTest\Rules;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
+use SionModel\Db\Connection;
 use SionModel\Validator\AbstractValidator;
 use SchoenstattTest\Fuzz\FormRepository;
 use SionModel\Form\Validation\InputFilter;
@@ -312,9 +311,8 @@ final class RuleSurface
      */
     private static function databaseQueries(): array
     {
-        /** @var Adapter $adapter */
-        $adapter = FormRepository::instance()->container()->get(Adapter::class);
-        $sql     = new Sql($adapter);
+        /** @var Connection $adapter */
+        $adapter = FormRepository::instance()->container()->get(Connection::class);
 
         $queries = [];
 
@@ -330,12 +328,9 @@ final class RuleSurface
                 'adapter' => $adapter,
             ]);
 
-            //The prepared form rather than `buildSqlString()`: the latter interpolates the
-            //`WHERE` value, and the value is unset until the validator has been asked
-            //something, so MySQL's platform quotes a null and PHP 8.5 deprecates it. The
-            //placeholder is the more honest recording anyway — what the rule asks the
-            //database is the query, not one interpolation of it.
-            $queries[$label] = $sql->prepareStatementForSqlObject($validator->getSelect())->getSql();
+            //The statement, not one interpolation of it: what the rule asks the database is
+            //the query, and the value it compares against is whatever the form submitted.
+            $queries[$label] = $validator->getSelect()->render()[0];
         }
 
         return $queries;

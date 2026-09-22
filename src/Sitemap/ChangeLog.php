@@ -7,7 +7,7 @@ namespace App\Sitemap;
 use App\Laminas\ServiceBridge;
 use DateTimeImmutable;
 use DateTimeZone;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Throwable;
 
 use function array_fill;
@@ -119,19 +119,10 @@ final class ChangeLog
      */
     private function query(string $sql, array $parameters): array
     {
-        /** @var Adapter $adapter */
-        $adapter = $this->laminas->get(Adapter::class);
+        /** @var Connection $adapter */
+        $adapter = $this->laminas->get(Connection::class);
 
-        $result = $adapter->createStatement($sql, $parameters)->execute();
-
-        $rows = [];
-        foreach ($result as $row) {
-            if (is_array($row)) {
-                $rows[] = $row;
-            }
-        }
-
-        return $rows;
+        return $adapter->select($sql, $parameters)->toArray();
     }
 
     /**

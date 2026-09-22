@@ -12,7 +12,7 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
 use App\View\Label;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Locale;
 use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -559,9 +559,9 @@ class EntityFormatterTest extends TestCase
             self::markTestSkipped('no config/autoload/local.php, so no database configuration');
         }
         try {
-            /** @var Adapter $adapter */
-            $adapter = $this->bridge()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $this->bridge()->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }

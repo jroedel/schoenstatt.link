@@ -7,14 +7,18 @@ namespace Books\Model;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
-use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Db\Sql\Sql;
+use SionModel\Db\Connection;
 
 use function bin2hex;
 use function hash;
 use function is_string;
 use function preg_match;
 use function random_bytes;
+use SionModel\Db\Sql\Delete;
+use SionModel\Db\Sql\Insert;
+use SionModel\Db\Sql\Select;
+use SionModel\Db\Sql\Update;
+use SionModel\Db\Sql\Predicate\Operator;
 
 /**
  * Scoped links that let a borrower see and renew their own books without an account.
@@ -55,7 +59,7 @@ class BorrowerTokenTable
     /** How long a link in an overdue notice keeps working. */
     public const LIFETIME = 'P30D';
 
-    public function __construct(private readonly AdapterInterface $adapter)
+    public function __construct(private readonly Connection $adapter)
     {
     }
 
@@ -69,15 +73,14 @@ class BorrowerTokenTable
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $token = bin2hex(random_bytes(self::TOKEN_BYTES));
 
-        $sql = new Sql($this->adapter);
-        $insert = $sql->insert('lib_borrower_tokens')->values([
+        $insert = (new Insert('lib_borrower_tokens'))->values([
             'TokenHash' => hash('sha256', $token),
             'PersonId'  => $personId,
             'LibraryId' => $libraryId,
             'CreatedOn' => $now->format('Y-m-d H:i:s'),
             'ExpiresOn' => $now->add(new DateInterval(self::LIFETIME))->format('Y-m-d H:i:s'),
         ]);
-        $sql->prepareStatementForSqlObject($insert)->execute();
+        $this->adapter->execute($insert);
 
         return $token;
     }
@@ -97,24 +100,23 @@ class BorrowerTokenTable
         }
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
-        $sql = new Sql($this->adapter);
-        $select = $sql->select('lib_borrower_tokens')
+        $select = (new Select('lib_borrower_tokens'))
             ->columns(['PersonId', 'LibraryId'])
             ->where([
                 'TokenHash'   => hash('sha256', $token),
                 'RevokedOn'   => null,
             ]);
-        $select->where->greaterThan('ExpiresOn', $now->format('Y-m-d H:i:s'));
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        $select->where(new Operator('ExpiresOn', Operator::GT, $now->format('Y-m-d H:i:s')));
+        $row = $this->adapter->select($select)->current();
 
         if (! is_array($row) || ! isset($row['PersonId'], $row['LibraryId'])) {
             return null;
         }
 
-        $update = $sql->update('lib_borrower_tokens')
+        $update = (new Update('lib_borrower_tokens'))
             ->set(['LastUsedOn' => $now->format('Y-m-d H:i:s')])
             ->where(['TokenHash' => hash('sha256', $token)]);
-        $sql->prepareStatementForSqlObject($update)->execute();
+        $this->adapter->execute($update);
 
         return ['personId' => (int) $row['PersonId'], 'libraryId' => (int) $row['LibraryId']];
     }
@@ -126,12 +128,11 @@ class BorrowerTokenTable
     public function revokeForPerson(int $personId, ?DateTimeImmutable $now = null): int
     {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $sql = new Sql($this->adapter);
-        $update = $sql->update('lib_borrower_tokens')
+        $update = (new Update('lib_borrower_tokens'))
             ->set(['RevokedOn' => $now->format('Y-m-d H:i:s')])
             ->where(['PersonId' => $personId, 'RevokedOn' => null]);
 
-        return $sql->prepareStatementForSqlObject($update)->execute()->getAffectedRows();
+        return $this->adapter->execute($update);
     }
 
     /**
@@ -141,10 +142,9 @@ class BorrowerTokenTable
     public function pruneExpired(?DateTimeImmutable $now = null): int
     {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $sql = new Sql($this->adapter);
-        $delete = $sql->delete('lib_borrower_tokens');
-        $delete->where->lessThan('ExpiresOn', $now->sub(new DateInterval('P30D'))->format('Y-m-d H:i:s'));
+        $delete = new Delete('lib_borrower_tokens');
+        $delete->where(new Operator('ExpiresOn', Operator::LT, $now->sub(new DateInterval('P30D'))->format('Y-m-d H:i:s')));
 
-        return $sql->prepareStatementForSqlObject($delete)->execute()->getAffectedRows();
+        return $this->adapter->execute($delete);
     }
 }

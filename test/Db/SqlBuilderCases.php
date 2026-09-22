@@ -7,6 +7,7 @@ namespace SchoenstattTest\Db;
 use SionModel\Db\Sql\Delete;
 use SionModel\Db\Sql\Expression;
 use SionModel\Db\Sql\Insert;
+use SionModel\Db\Sql\Predicate\Group;
 use SionModel\Db\Sql\Predicate\In;
 use SionModel\Db\Sql\Predicate\IsNull;
 use SionModel\Db\Sql\Predicate\Like;
@@ -112,24 +113,45 @@ final class SqlBuilderCases
                     ['CollectionName', 'Abbreviation']
                 ),
 
+            //`Group` is what puts the brackets in, and it is stated rather than inferred:
+            //merged flat, this would read `A AND B OR C`, and `A OR B OR C AND D` is not what
+            //"any of these, and that" means — the shape that has already cost this repository
+            //one round of wrong results.
             'select: nested OR under AND, with a limit' => static function (): Select {
                 $any = (new Where())->addPredicates(
                     [new Like('title', '%q%'), new Like('author', '%q%')],
                     Where::OP_OR
                 );
 
+                $where = (new Where())->addPredicate(new In('library_id', [1, 2]))->addPredicate(new Group($any));
+
                 return (new Select('lib_books'))
-                    ->where(new In('library_id', [1, 2]))
-                    ->where($any)
+                    ->where($where)
                     ->order(['library_id', 'sort_text'])
                     ->limit(50);
             },
 
             'select: a group inside a group' => static function (): Select {
                 $deep  = (new Where())->addPredicates(['a' => 1, 'b' => 2], Where::OP_OR);
-                $inner = (new Where())->addPredicate($deep)->addPredicate(new IsNull('c'), Where::OP_OR);
+                $inner = (new Where())->addPredicate(new Group($deep))->addPredicate(new IsNull('c'), Where::OP_OR);
 
-                return (new Select('t'))->where(['d' => 4])->where($inner);
+                $where = (new Where())->addPredicates(['d' => 4])->addPredicate(new Group($inner));
+
+                return (new Select('t'))->where($where);
+            },
+
+            //The clause a `Where` handed to `Select::where()` becomes, merged flat and not
+            //wrapped. An empty one contributes nothing: wrapped, it rendered `WHERE ()`, and
+            //every page that built its conditions conditionally hit it.
+            'select: an empty clause contributes nothing' => static fn(): Select
+                => (new Select('lib_libraries'))->where(new Where())->order(['LibraryName']),
+
+            'select: a clause built separately merges flat' => static function (): Select {
+                $where = (new Where())
+                    ->addPredicate(new Operator('is_active', Operator::EQ, 1))
+                    ->addPredicate(new IsNull('sort_text'), Where::OP_OR);
+
+                return (new Select('lib_books'))->where($where);
             },
 
             'select: every array-form conversion at once' => static fn(): Select
@@ -142,6 +164,23 @@ final class SqlBuilderCases
             'select: an expression as a whole condition' => static fn(): Select
                 => (new Select('sch_visits'))
                     ->where([new Expression('`VisitedAt` >= DATE_ADD(NOW(), INTERVAL -1 MONTH)')]),
+
+            //The phrase listing's untranslated filter: an expression that binds a value of its
+            //own. An `Expression` that carried no parameters could not say this, and the `?`
+            //would arrive at the server with nothing bound to it.
+            'select: an expression that binds its own value' => static fn(): Select
+                => (new Select(['p' => 'trans_phrases']))
+                    ->columns(['total' => new Expression('COUNT(*)')])
+                    ->where(
+                        (new Where())
+                            ->equalTo('p.project', 'schoenstatt.link')
+                            ->addPredicate(new Expression(
+                                'NOT EXISTS (SELECT 1 FROM `trans_translations` tx'
+                                . ' WHERE tx.translation_phrase_id = p.translation_phrase_id'
+                                . " AND tx.locale = ? AND tx.translation <> '')",
+                                ['de_DE']
+                            ))
+                    ),
 
             'select: every comparison operator' => static function (): Select {
                 $select = new Select('t');
@@ -213,6 +252,28 @@ final class SqlBuilderCases
                     ->where(['user_id' => 1])
                     ->where(new IsNull('revoked_on'))
                     ->where(new Operator('expires_on', Operator::LT, '2026-09-22')),
+
+            //The shape `TableGateway::update()`/`delete()` pass: a clause assembled by the
+            //caller and handed over whole. It merges flat, the way `Select` has always taken
+            //one — `Update` and `Delete` refused it outright until 2026-09-22, which is a
+            //throw on the only path that reaches it (a publication's category cascading to
+            //its editions and translations) and nowhere a page or a driver goes.
+            'update: a clause built separately, all OR' => static function (): Update {
+                $where = new Where();
+                $where->addPredicate(new Operator('PublicationId', Operator::EQ, 11), Where::OP_OR);
+                $where->addPredicate(new Operator('MainPublicationId', Operator::EQ, 22), Where::OP_OR);
+                $where->addPredicate(new Operator('TranslatedFromPublicationId', Operator::EQ, 22), Where::OP_OR);
+
+                return (new Update('sch_publications'))->set(['CategoryId' => 3])->where($where);
+            },
+
+            'delete: a clause built separately, merged onto a term already there' => static function (): Delete {
+                $where = new Where();
+                $where->equalTo('locale', 'de_DE');
+                $where->isNull('translation');
+
+                return (new Delete('trans_translations'))->where(['translation_phrase_id' => 7])->where($where);
+            },
         ];
     }
 }

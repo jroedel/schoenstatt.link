@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Form\EngineSurface;
 use SchoenstattTest\Fuzz\FormRepository;
@@ -146,9 +146,9 @@ final class EngineSurfaceTest extends TestCase
     private static function requireDatabase(): void
     {
         try {
-            /** @var AdapterInterface $adapter */
-            $adapter = FormRepository::instance()->container()->get('Laminas\Db\Adapter\Adapter');
-            $adapter->query('SELECT 1', []);
+            /** @var Connection $adapter */
+            $adapter = FormRepository::instance()->container()->get('SionModel\Db\Connection');
+            $adapter->select('SELECT 1', []);
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }

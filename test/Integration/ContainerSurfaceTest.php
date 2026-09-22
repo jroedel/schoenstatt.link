@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Services\Container;
 use App\Laminas\ContainerFactory;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use SchoenstattTest\Container\ContainerSurface;
@@ -53,9 +53,9 @@ final class ContainerSurfaceTest extends TestCase
         $container = ContainerFactory::build($appConfig);
 
         try {
-            /** @var Adapter $adapter */
-            $adapter = $container->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $container->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no reachable database: ' . $e->getMessage());
         }

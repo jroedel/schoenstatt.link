@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use SionModel\Form\Element\Checkbox;
 use SionModel\Form\Element\Select;
 use SionModel\Form\Fieldset;
@@ -116,8 +116,8 @@ final class EmptyStringToTypedColumnTest extends TestCase
 
         try {
             $container = $repository->container();
-            /** @var AdapterInterface $adapter */
-            $adapter = $container->get('Laminas\Db\Adapter\Adapter');
+            /** @var Connection $adapter */
+            $adapter = $container->get('SionModel\Db\Connection');
             $types   = $this->columnTypes($adapter);
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
@@ -261,11 +261,11 @@ final class EmptyStringToTypedColumnTest extends TestCase
      *
      * @return array<string, array<string, string>>
      */
-    private function columnTypes(AdapterInterface $adapter): array
+    private function columnTypes(Connection $adapter): array
     {
         $types = [];
 
-        $rows = $adapter->query(
+        $rows = $adapter->select(
             'SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM information_schema.COLUMNS'
             . ' WHERE TABLE_SCHEMA = DATABASE()',
             []
