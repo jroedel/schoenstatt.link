@@ -36,9 +36,9 @@ records the statement shapes themselves; `./tools/sql-surface.sh` regenerates it
   `/sm/view-changes` can show a different set on two identical requests and a row can be
   invisible on every one of them. The boundary currently falls on a band of 1, which is why
   nothing has been seen. `ChangeID` is the primary key and is monotonic with insertion, so a
-  tiebreaker is available. The same page's rows are cached, and
-  [[locale-sorted-under-locale-less-key]]'s sibling failure — a flapping cached order — is
-  what this produces when it does bite.
+  tiebreaker is available. The same page's rows are cached, so what this produces when it
+  bites is a cached order that flaps — the failure mode that has already cost this
+  repository a round of phantom regressions in `tools/port-baseline.php`.
 
 - **`SionTable::getEntityChanges()` has no `LIMIT`.** Same file, line 1511 —
   `SELECT * FROM sch_changes WHERE ChangedEntity = ? AND ChangedIDValue = ? ORDER BY
