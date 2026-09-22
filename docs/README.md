@@ -17,6 +17,7 @@ history. Working conventions (capsule, test suites, coding standard, git) are in
 | [api-v3.md](api-v3.md) | the API for automated agents: tokens and roles, endpoints, field and validation contracts, the v1/v2 410 |
 | [libraries.md](libraries.md) | the lending feature: roles and per-library checks, checkout, borrower links, notices, deleting a library |
 | [library-imports.md](library-imports.md) | cataloguing from a spreadsheet: the template, the three rules, the console command |
+| [sql-observations.md](sql-observations.md) | queries that look wrong or expensive, measured and parked — not a plan to change them |
 | [sitemap.md](sitemap.md) | the static sitemap and the five-language canonical/hreflang contract |
 | [database-charset.md](database-charset.md) | InnoDB + `utf8mb4_unicode_520_ci`: why, the connection charset, the traps |
 | [shrine-data.md](shrine-data.md) | the shrine/association dataset: what a shrine earns, correctness workstreams, decisions taken |
