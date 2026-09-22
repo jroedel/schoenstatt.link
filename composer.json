@@ -24,7 +24,6 @@
         "ext-intl": "*",
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
-        "laminas/laminas-translator": "^1.0",
         "laminas/laminas-stdlib": "^3.21",
         "laminas/laminas-db": "^2.11",
         "symfony/console": "^7.3",

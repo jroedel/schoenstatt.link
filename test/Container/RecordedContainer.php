@@ -39,7 +39,7 @@ final class RecordedContainer
         'App\Modules\ModuleConfig',
         'JTranslate\I18n\Translator\Translator',
         'JTranslate\Model\TranslationsTable',
-        'Laminas\Translator\TranslatorInterface',
+        'SionModel\I18n\TranslatesMessages',
     ];
 
     /** @return array<string,array<string,mixed>> */

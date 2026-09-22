@@ -116,21 +116,20 @@ under `module/*/src` that a Symfony-served request reaches.
   ignored. The 58 factory classes kept their `__invoke()` and lost an `implements` clause,
   and `test/Container/container-surface.php` is the recording that pins all 103 names.
 - **What laminas still does**, and therefore what this plan removes: the database layer
-  (`laminas-db`, under `SionModel\Db\Model\SionTable`), `laminas-stdlib` beneath it, and
-  the `Laminas\Translator\TranslatorInterface` our translator and our validators share.
+  (`laminas-db`, under `SionModel\Db\Model\SionTable`) and `laminas-stdlib` beneath it.
   laminas-i18n went at step 3, laminas-view at step 4, the whole form stack at iteration A,
-  and the module system, the session and the container on 2026-09-21.
+  and the module system, the session, the container and the translator interface on
+  2026-09-21.
 - `App\Laminas\ServiceBridge` is the seam: a lazily built container a Symfony controller
   asks for laminas-side services. It outlived step 7 — the container it builds is ours now,
   but the services in it are still the laminas-db tables — and disappears with step 8.
 
 ## 2. The dependency picture (first measured 2026-09-09 after step 0; counts re-measured 2026-09-11)
 
-**3** `laminas/*` packages are installed, down from 37, and every one is a direct line of
-ours: `db`, `stdlib`, `translator`. Nothing here is transitive any more — the last two that
-were, `config` and `loader`, left on 2026-09-21 with `laminas-modulemanager`, and
-`eventmanager` followed the same day with `laminas-session`, which was the only thing that
-had ever wanted one.
+**2** `laminas/*` packages are installed, down from 37, and both are a direct line of ours:
+`db` and `stdlib`. Nothing here is transitive any more — the last two that were, `config`
+and `loader`, left on 2026-09-21 with `laminas-modulemanager`, and `eventmanager` followed
+the same day with `laminas-session`, which was the only thing that had ever wanted one.
 
 The two facts that shape the order, and step 0 confirmed both:
 
@@ -162,9 +161,9 @@ ceiling.
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
 — the count of the last is the progress metric. Step 0 took it 37 → 32, step 1a 32 → 28,
 step 1b 28 → 27; steps 1c, 2, 3 and 4 took it to 17, step 6 to 16, and iteration A — the
-seven packages of the form stack at once — to 9, and 2026-09-21 to **3**: the module
-system, the session and the container, with `config`, `loader` and `eventmanager` falling
-out behind them.
+seven packages of the form stack at once — to 9, and 2026-09-21 to **2**: the module
+system, the session, the container and the translator interface, with `config`, `loader`
+and `eventmanager` falling out behind them.
 
 **Most of what step 1 listed was blocked behind later steps, and the measurement said so.**
 `laminas-uri` was required by `laminas-http` *and* `laminas-router`; `laminas-http` was what
@@ -208,12 +207,12 @@ deletes.
 | 1b ✅ | navigation (config-only: nothing resolved the service) | 3 config files | **done 2026-09-09.** `App\View\NavigationTree` already built the tree from the `navigation` config key, which stays |
 | 1c ✅ | json ✅ (with laminas-view at step 4), serializer ✅ (with laminas-cache at step 2), http ✅ (with laminas-router at step 6), uri ✅ (with the form stack at iteration A) | 8 files, 18 references | **done 2026-09-11.** `SionModel\Uri\Http`, which `SionTable::filterUrl()` rewrites stored URLs with. Fourteen of the 18 references were a `uriHandler` element option nothing read, and they left with the package |
 | 2 ◐ | laminas-cache + 3 adapters + serializer ✅, laminas-authentication ✅, laminas-session (**blocked**, see below) | ~48 files | **cache and authentication done 2026-09-09.** `SionModel\Cache\Storage` on APCu and the filesystem, ours; `JUser\Authentication\SessionIdentity` behind the `Host\IdentityInterface` the module already declared. The `psr/cache` 1 pin is lifted |
-| 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours, implementing `Laminas\Translator\TranslatorInterface`. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
+| 3 ✅ | laminas-i18n | 25 files | **done 2026-09-09.** `JTranslate\I18n\Translator\Translator`, ours. symfony/translation was the plan and was rejected on measurement — see docs/translation.md. The `.lang.php` catalog format is unchanged |
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. laminas-escaper could not leave here — laminas-form (`^2`) and laminas-uri (`^2.9`) required it — and left with both at iteration A |
 | 5 ✅ | laminas-form, inputfilter, filter, validator, hydrator, escaper — and laminas-uri with them | form 77 files, inputfilter 60, validator 65, filter 49; 42 forms, 441 elements | **done 2026-09-11** as iteration A: engine, element model, form model and rule library, all ours. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, `SionModel\Form\Element\*`, `SionModel\{Validator,Filter}\*`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
 | 7 ✅ | laminas-servicemanager — modulemanager, config, loader, session and eventmanager left ahead of it the same day | servicemanager 82 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`) | **done 2026-09-21.** `App\Services\Container`, ours, PSR-11 (§6) — not Symfony DI. The factories kept `__invoke()` and lost an `implements`; `test/Container/container-surface.php` records all 103 names. `stdlib` did *not* leave here: laminas-db holds it |
-| 8 | laminas-db, and `stdlib` and `translator` with it | db 99 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; translator 32 files; stdlib 9 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after |
+| 8 | laminas-db, and `stdlib` with it | db 99 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; stdlib 9 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after. `laminas-translator` was grouped here and left early, on 2026-09-21 |
 
 **Step 4 was not gated on step 5, though it looked it.** Every `Laminas\Form\View\Helper\*`
 class extended `Laminas\I18n\View\Helper\AbstractTranslatorHelper`, so it was tempting to
@@ -241,17 +240,21 @@ the session itself — `App\Http\SessionListener` starting a manager per request
 need nothing from the ServiceManager. It took `laminas-eventmanager` with it, because
 nothing else had ever required one.
 
-`laminas-translator` is not glue: it is a zero-dependency interface
-package we chose, named in **32 files**, and it
-leaves only when we declare the interface ourselves — the cheapest package in the tree and
-the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodules**
-(SionModel, JUser, JTranslate); see §6 before starting any of them.
+`laminas-translator` was not glue: a zero-dependency interface package we chose, named in
+32 files — the cheapest package in the tree and the last one nothing forced. It left on
+2026-09-21 by our declaring the contract ourselves, and **where** it went is the part worth
+keeping: SionModel and JTranslate are peers, neither requires the other, and the one
+implementation was in JTranslate while five of the six consumers were in SionModel. So the
+contract went to the consumer — `SionModel\I18n\TranslatesMessages`, "what this package
+needs of a translator" — and `App\I18n\Translator` binds it to JTranslate's translator in
+the host, which is the only place that can see both. Step 8 rewrites code in the **shared
+submodules** (SionModel, JUser, JTranslate); see §6 before starting it.
 
 ### What is left, and in what order it ships
 
-Every step but 8 is done: the module system, the session and the container all went on
-2026-09-21, so **3 packages remain** — the database layer, `stdlib` beneath it, and the
-translator interface. The numbering above is the order the work was *planned* in, which is
+Every step but 8 is done: the module system, the session, the container and the translator
+interface all went on 2026-09-21, so **2 packages remain** — the database layer and
+`stdlib` beneath it. The numbering above is the order the work was *planned* in, which is
 not the order it can be released in, so what is left is iteration C, the database.
 
 **[laminas-exit-iterations.md](laminas-exit-iterations.md) is that plan**: what each

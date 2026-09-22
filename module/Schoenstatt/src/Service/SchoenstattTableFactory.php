@@ -7,7 +7,7 @@ namespace Schoenstatt\Service;
 use JTranslate\Model\CountriesInfo;
 use JTranslate\Model\TranslationsTable;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Translator\TranslatorInterface;
+use SionModel\I18n\TranslatesMessages;
 use Psr\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use SionModel\Service\ActingUserProviderInterface;
@@ -35,7 +35,7 @@ class SchoenstattTableFactory
         //the one translator, asked for directly. This reached it through the `translate`
         //view helper until laminas-view was removed; the helper only ever handed back what
         //the container had put into it.
-        $translator = $container->get(TranslatorInterface::class);
+        $translator = $container->get(TranslatesMessages::class);
 
         $problemPrototype = empty($sionModelConfig['problem_specifications'])
             ? null

@@ -71,8 +71,8 @@ return [
              * The historical short name for the translator, which three factories still
              * resolve. An alias rather than a factory since 2026-09: there is one
              * translator and every other name for it — `MvcTranslator`,
-             * `jtranslate_translator`, `Laminas\Translator\TranslatorInterface` — is an
-             * alias of the same class, so a second factory here would build a second
+             * `jtranslate_translator` — is an alias of the same class, so a second
+             * factory here would build a second
              * translator with no catalogs and no missing-phrase listener.
              */
             'translator' => AppTranslator::class,

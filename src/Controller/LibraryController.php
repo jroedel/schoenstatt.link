@@ -12,7 +12,7 @@ use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use SionModel\Form\Element\Select;
 use JTranslate\Model\TranslationsTable;
-use Laminas\Translator\TranslatorInterface;
+use JTranslate\I18n\Translator\Translator;
 use SionModel\Problem\EntityProblem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -143,7 +143,7 @@ final class LibraryController
     /** The page's own text domain, which is where its format strings live. */
     private function translate(string $message): string
     {
-        /** @var TranslatorInterface $translator */
+        /** @var Translator $translator */
         $translator = $this->laminas->get('MvcTranslator');
 
         return $translator->translate($message, 'Books');

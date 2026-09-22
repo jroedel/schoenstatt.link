@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\Translator\TranslatorInterface;
+use SionModel\I18n\TranslatesMessages;
 use Schoenstatt\Model\AssociationKind;
 use Schoenstatt\Model\SchoenstattTable;
 
@@ -14,7 +14,7 @@ class AssociationKindsService
     protected $associationKinds = [];
 
     /**
-     * @var TranslatorInterface $translator
+     * @var TranslatesMessages $translator
      */
     protected $translator;
     /**
@@ -23,7 +23,7 @@ class AssociationKindsService
      */
     protected $languageLocaleMap;
 
-    public function __construct($associationKindSpecifications, TranslatorInterface $translator, array $config)
+    public function __construct($associationKindSpecifications, TranslatesMessages $translator, array $config)
     {
         $this->translator = $translator;
         $this->languageLocaleMap = $config['slm_locale']['aliases'];
