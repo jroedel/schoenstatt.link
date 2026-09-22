@@ -19,7 +19,7 @@ use JUser\Routing\Routes;
 use JUser\Service\ApiTokenService;
 use JUser\Service\LoginTokenService;
 use JUser\Service\Mailer;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -1065,7 +1065,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
      * null and so cannot be handed the mistake at all.
      *
      * **The database adapter.** `juser.db_adapter` is honoured rather than short-circuited to
-     * `Adapter::class`: this application sets it to exactly that, so the two agree today, and
+     * `Connection::class`: this application sets it to exactly that, so the two agree today, and
      * a host pointing JUser at a second database would find the difference only here.
      */
     private function userAdmin(): UserAdmin
@@ -1237,12 +1237,12 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     }
 
     /** See {@see userAdmin()} on why the indirection is honoured rather than short-circuited. */
-    private function juserDbAdapter(): Adapter
+    private function juserDbAdapter(): Connection
     {
         /** @var mixed $juser */
         $juser = $this->laminas()->config()['juser'] ?? [];
         /** @var mixed $service */
-        $service = is_array($juser) ? ($juser['db_adapter'] ?? Adapter::class) : Adapter::class;
+        $service = is_array($juser) ? ($juser['db_adapter'] ?? Connection::class) : Connection::class;
 
         if (! is_string($service) || ! $this->laminas()->has($service)) {
             throw new RuntimeException(
@@ -1250,7 +1250,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             );
         }
 
-        /** @var Adapter $adapter */
+        /** @var Connection $adapter */
         $adapter = $this->laminas()->get($service);
 
         return $adapter;
@@ -1289,7 +1289,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     {
         return new LibraryDelete(
             $this->laminas()->get(LibraryTable::class),
-            $this->laminas()->get(Adapter::class)
+            $this->laminas()->get(Connection::class)
         );
     }
 

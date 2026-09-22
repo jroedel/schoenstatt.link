@@ -55,7 +55,7 @@ class PhraseDiscoveryTest extends TestCase
         $this->container = $container;
 
         try {
-            $container->get(\Laminas\Db\Adapter\Adapter::class)->getDriver()->getConnection()->connect();
+            $container->get(\SionModel\Db\Connection::class)->select('SELECT 1');
             /** @var TranslationsTable $table */
             $table = $container->get(TranslationsTable::class);
         } catch (\Throwable $e) {

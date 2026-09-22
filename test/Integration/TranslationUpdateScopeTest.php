@@ -4,8 +4,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Laminas\ContainerFactory;
 use JTranslate\Model\TranslationsTable;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Adapter\Driver\ConnectionInterface;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 
@@ -41,8 +40,8 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *
  * Why this test has to be an integration test, and what it costs
  * -------------------------------------------------------------
- * updatePhrase() has no seam: it builds its own Laminas\Db\Sql objects against
- * the adapter and reads the phrase through getTranslations(), which issues raw
+ * updatePhrase() has no seam: it builds its own SionModel\Db\Sql objects against
+ * the connection and reads the phrase through getTranslations(), which issues raw
  * SQL. Proving the WHERE clause targets the right row means letting a real
  * database answer, so this test resolves the real service out of a real
  * application container. It deliberately stops short of bootstrap(): the
@@ -51,7 +50,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * stack), and bootstrapping would drag in the MVC listeners for no benefit.
  *
  * **The database is left exactly as it was found.** The whole write happens
- * inside a transaction on the shared Laminas DB adapter, rolled back in a
+ * inside a transaction on the shared SionModel\Db\Connection, rolled back in a
  * `finally` block, so the capsule's imported production data is unchanged whether this test
  * passes, fails, or throws. The rollback is only a real guarantee if the
  * transaction is on the same connection the table writes through, so that
@@ -86,14 +85,14 @@ class TranslationUpdateScopeTest extends TestCase
 
     private Container $container;
 
-    private Adapter $adapter;
+    private Connection $adapter;
 
     private TranslationsTable $table;
 
     protected function setUp(): void
     {
         //Before anything touches the container: without config/autoload/local.php
-        //there is no `db` key, so DbAdapterServiceFactory raises four warnings
+        //there is no `db` key, so DbConnectionFactory raises four warnings
         //building the adapter — and phpunit.xml.dist sets failOnWarning, so the
         //try/catch below cannot save it. That is why this suite was red on CI, which
         //has no local config.
@@ -111,9 +110,9 @@ class TranslationUpdateScopeTest extends TestCase
         $this->container = $container;
 
         try {
-            /** @var Adapter $adapter */
-            $adapter = $container->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $container->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (\Throwable $e) {
             self::markTestSkipped(
                 'no reachable database: ' . $e->getMessage()
@@ -145,8 +144,7 @@ class TranslationUpdateScopeTest extends TestCase
     {
         [$locale, $victimId, $victimRowId, $targetId, $targetRowId] = $this->twoPhrasesSharingALocale();
 
-        $connection = $this->adapter->getDriver()->getConnection();
-        $connection->beginTransaction();
+        $this->adapter->beginTransaction();
         try {
             $victimBefore = $this->readTranslationRow($victimRowId);
             $targetBefore = $this->readTranslationRow($targetRowId);
@@ -162,7 +160,7 @@ class TranslationUpdateScopeTest extends TestCase
             $victimAfter = $this->readTranslationRow($victimRowId);
             $targetAfter = $this->readTranslationRow($targetRowId);
         } finally {
-            $connection->rollback();
+            $this->adapter->rollBack();
         }
 
         self::assertSame(
@@ -201,7 +199,7 @@ class TranslationUpdateScopeTest extends TestCase
     /**
      * The rollback in the test above is only worth anything if the transaction
      * and the writes share a connection. They do because the ServiceManager
-     * hands out one shared Adapter instance and TranslationsTableFactory builds
+     * hands out one shared Connection instance and TranslationsTableFactory builds
      * both table gateways from it — but "shared" is a configuration decision
      * someone could change (a delegator, a second named adapter), and the
      * failure mode would be silent: the writes would commit and the rollback
@@ -218,7 +216,12 @@ class TranslationUpdateScopeTest extends TestCase
             . 'the rollback protecting the database would be a no-op. Do not silence this — find out which '
             . 'adapter service it got.'
         );
-        self::assertInstanceOf(ConnectionInterface::class, $this->adapter->getDriver()->getConnection());
+        //One PDO handle, not two: a transaction opened on the connection is visible on the
+        //same object the table writes through. `Connection` has no driver layer that could
+        //hand out a second handle, which is what the old assertion was checking for.
+        $this->adapter->beginTransaction();
+        self::assertTrue($this->adapter->inTransaction());
+        $this->adapter->rollBack();
     }
 
     /**
@@ -276,7 +279,7 @@ class TranslationUpdateScopeTest extends TestCase
      */
     private function readTranslationRow(int $translationId): array
     {
-        $result = $this->adapter->query(
+        $result = $this->adapter->select(
             'SELECT `translation_id`, `translation_phrase_id`, `locale`, `translation`, `modified_by`, '
             . '`modified_on` FROM `trans_translations` WHERE `translation_id` = ?',
             [$translationId]

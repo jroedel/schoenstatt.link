@@ -180,14 +180,12 @@ laminas-eventmanager, laminas-servicemanager — all on 2026-09-21, in four depl
 
 ## C — the database layer (2 → 0)
 
-**Removes:** laminas-db, laminas-stdlib.
+**Removes:** laminas-db ✅ (2026-09-22), laminas-stdlib.
 
-1. **`App\Db\Connection`, a thin PDO wrapper of ours** — not Doctrine DBAL; see
-   laminas-exit.md §6. 99 files name `Laminas\Db` and `SionModel\Db\Model\SionTable` is
-   2,412 lines over `TableGateway`/`Sql`, but the query logic is already in `SionTable`;
-   what laminas-db supplies beneath it is largely a parameter binder and a result iterator.
-   Open with a census of which `TableGateway`/`Sql` features are actually reached, by call
-   site.
+1. **`SionModel\Db\Connection`, a thin PDO wrapper of ours** — not Doctrine DBAL; see
+   laminas-exit.md §6. It landed in the submodule rather than in `App\` because
+   `SionTable` and the four modules' tables are all SionModel or module code, and a host
+   namespace beneath them would have been a dependency in the wrong direction.
 2. **`laminas-stdlib`** is nine references across nine files — `ArraySerializableInterface`,
    `StringUtils`, `PriorityList`, `InitializableInterface` and `ArrayUtils` — and falls out
    once its parents have gone.

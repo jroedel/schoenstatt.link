@@ -7,8 +7,9 @@ namespace App\Provenance;
 use App\Laminas\ServiceBridge;
 use DateTimeImmutable;
 use DateTimeZone;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
+use SionModel\Db\Connection;
+use SionModel\Db\Sql\Insert;
+use SionModel\Db\Sql\Select;
 
 use function is_array;
 use function is_object;
@@ -64,12 +65,11 @@ final class ProvenanceStore
      */
     public function record(Assertion $assertion): int
     {
-        $sql    = new Sql($this->adapter());
-        $insert = $sql->insert(self::TABLE)->values($assertion->toRow());
+        $insert = (new Insert(self::TABLE))->values($assertion->toRow());
 
-        $result = $sql->prepareStatementForSqlObject($insert)->execute();
+        $this->adapter()->execute($insert);
 
-        return (int) $result->getGeneratedValue();
+        return $this->adapter()->lastInsertId();
     }
 
     /**
@@ -81,9 +81,7 @@ final class ProvenanceStore
      */
     public function latestFor(string $entity, int $entityId, string $fieldGroup): ?Assertion
     {
-        $sql    = new Sql($this->adapter());
-        $select = $sql->select()
-            ->from(self::TABLE)
+        $select = (new Select(self::TABLE))
             ->where([
                 'Entity'     => $entity,
                 'EntityId'   => $entityId,
@@ -95,7 +93,7 @@ final class ProvenanceStore
             ->order(['RecordedOn' => 'DESC', 'ProvenanceId' => 'DESC'])
             ->limit(1);
 
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        $row = $this->adapter()->select($select)->current();
 
         //laminas-db answers **false** for an empty set, not null, so a `!== null` test here
         //would report a hit on every miss. Same shape as App\Api\BotIdentity.
@@ -117,14 +115,12 @@ final class ProvenanceStore
      */
     public function currentFor(string $entity, int $entityId): array
     {
-        $sql    = new Sql($this->adapter());
-        $select = $sql->select()
-            ->from(self::TABLE)
+        $select = (new Select(self::TABLE))
             ->where(['Entity' => $entity, 'EntityId' => $entityId])
             ->order(['RecordedOn' => 'ASC', 'ProvenanceId' => 'ASC']);
 
         $current = [];
-        foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
+        foreach ($this->adapter()->select($select) as $row) {
             /** @var array<string, mixed> $row */
             $assertion = Assertion::fromRow((array) $row);
             //Ascending order plus unconditional overwrite leaves the newest per group. The
@@ -151,14 +147,12 @@ final class ProvenanceStore
             $where['FieldGroup'] = $fieldGroup;
         }
 
-        $sql    = new Sql($this->adapter());
-        $select = $sql->select()
-            ->from(self::TABLE)
+        $select = (new Select(self::TABLE))
             ->where($where)
             ->order(['RecordedOn' => 'DESC', 'ProvenanceId' => 'DESC']);
 
         $history = [];
-        foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
+        foreach ($this->adapter()->select($select) as $row) {
             /** @var array<string, mixed> $row */
             $history[] = Assertion::fromRow((array) $row);
         }
@@ -167,14 +161,14 @@ final class ProvenanceStore
     }
 
     /**
-     * `Adapter::class`, not `AdapterInterface::class` — the application registers the
+     * `Connection::class`, not `Connection::class` — the application registers the
      * concrete adapter and the interface resolves to a different instance. Same note as
      * App\Api\BotIdentity, and getting it wrong is a second connection rather than an error.
      */
-    private function adapter(): Adapter
+    private function adapter(): Connection
     {
-        /** @var Adapter $adapter */
-        $adapter = $this->laminas->get(Adapter::class);
+        /** @var Connection $adapter */
+        $adapter = $this->laminas->get(Connection::class);
 
         return $adapter;
     }

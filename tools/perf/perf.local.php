@@ -31,7 +31,7 @@ $cacheServices = [
 ];
 
 $delegators = [
-    Laminas\Db\Adapter\Adapter::class => [AdapterProfilerDelegator::class],
+    SionModel\Db\Connection::class => [AdapterProfilerDelegator::class],
 ];
 foreach ($cacheServices as $service) {
     $delegators[$service] = [CacheProbeDelegator::class];

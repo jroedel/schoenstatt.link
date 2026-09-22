@@ -47,6 +47,10 @@ module/SionModel/src/Uri
 # `ToAscii` needs before iconv, and the slug and relative-time tables.
 module/SionModel/src/I18n/RelativeTime.php
 module/SionModel/src/I18n/TranslatesMessages.php
+module/SionModel/src/Db/Sql
+module/SionModel/src/Db/Connection.php
+module/SionModel/src/Db/ResultSet.php
+module/SionModel/src/Db/TableGateway.php
 module/SionModel/src/Text
 module/SionModel/src/Form/Validation
 module/SionModel/src/Form/CheckboxDomain.php

@@ -7,9 +7,9 @@ namespace App\Api;
 use App\Laminas\ServiceBridge;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
 use RuntimeException;
+use SionModel\Db\Connection;
+use SionModel\Db\Sql\Select;
 use Throwable;
 
 use function is_array;
@@ -148,16 +148,14 @@ final class BotIdentity
      */
     private function accountIsActive(int $userId): bool
     {
-        /** @var Adapter $adapter */
-        $adapter = $this->laminas->get(Adapter::class);
+        /** @var Connection $adapter */
+        $adapter = $this->laminas->get(Connection::class);
 
-        $sql    = new Sql($adapter);
-        $select = $sql->select()
-            ->from('user')
+        $select = (new Select('user'))
             ->columns(['user_id'])
             ->where(['user_id' => $userId, 'state' => 1]);
 
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        $row = $adapter->select($select)->current();
 
         //`is_array || is_object`, matching holdsRole() below: laminas-db answers **false**
         //for an empty set, and every `!== null` test against that inverts the answer.
@@ -255,11 +253,10 @@ final class BotIdentity
      */
     private function tokenIsLive(string $jti, int $userId): bool
     {
-        /** @var Adapter $adapter */
-        $adapter = $this->laminas->get(Adapter::class);
+        /** @var Connection $adapter */
+        $adapter = $this->laminas->get(Connection::class);
 
-        $sql    = new Sql($adapter);
-        $select = $sql->select('user_api_token')
+        $select = (new Select('user_api_token'))
             ->columns(['token_id'])
             ->where([
                 'jti'        => $jti,
@@ -267,7 +264,7 @@ final class BotIdentity
                 'revoked_on' => null,
             ]);
 
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        $row = $adapter->select($select)->current();
 
         //Expiry is deliberately not re-checked here: php-jwt has already rejected
         //an expired token on its own `exp` claim before this method is reached, and
@@ -293,20 +290,18 @@ final class BotIdentity
      */
     private function holdsRole(int $userId, string $requiredRole): bool
     {
-        //`Adapter::class`, not `AdapterInterface::class`: the application registers the
+        //`Connection::class`, not `Connection::class`: the application registers the
         //concrete class and nothing aliases the interface, so asking for the interface
         //is a ServiceNotCreatedException rather than a missing-role answer.
-        /** @var Adapter $adapter */
-        $adapter = $this->laminas->get(Adapter::class);
+        /** @var Connection $adapter */
+        $adapter = $this->laminas->get(Connection::class);
 
-        $sql    = new Sql($adapter);
-        $select = $sql->select()
-            ->from(['l' => 'user_role_linker'])
+        $select = (new Select(['l' => 'user_role_linker']))
             ->columns(['user_id'])
             ->join(['r' => 'user_role'], 'l.role_id = r.id', [])
             ->where(['l.user_id' => $userId, 'r.role_id' => $requiredRole]);
 
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        $row = $adapter->select($select)->current();
 
         //`is_array`, not `null !== $row`: laminas-db's result returns **false** for an
         //empty set, and `false !== null` is true — so the first version of this line

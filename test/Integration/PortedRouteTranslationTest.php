@@ -10,7 +10,7 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\TranslatorConfigurator;
 use App\Laminas\ViewHelpers;
 use App\Twig\LaminasExtension;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use JTranslate\I18n\Translator\Translator;
 use Locale;
 use PHPUnit\Framework\TestCase;
@@ -342,9 +342,9 @@ class PortedRouteTranslationTest extends TestCase
      */
     private function aModuleOnlyPhrase(): string
     {
-        /** @var Adapter $adapter */
-        $adapter = $this->bridge()->get(Adapter::class);
-        $rows    = $adapter->query(
+        /** @var Connection $adapter */
+        $adapter = $this->bridge()->get(Connection::class);
+        $rows    = $adapter->select(
             'SELECT p.phrase FROM trans_phrases p'
             . ' JOIN trans_translations t ON t.translation_phrase_id = p.translation_phrase_id'
             . ' WHERE p.text_domain = ? AND p.retired_on IS NULL AND t.locale = ?'
@@ -436,9 +436,9 @@ class PortedRouteTranslationTest extends TestCase
             self::markTestSkipped('no config/autoload/local.php, so no database configuration');
         }
         try {
-            /** @var Adapter $adapter */
-            $adapter = $this->bridge()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $this->bridge()->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }

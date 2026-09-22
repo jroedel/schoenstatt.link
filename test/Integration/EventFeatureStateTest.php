@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Http\SymfonyRoutes;
 use App\Laminas\ContainerFactory;
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -228,7 +228,7 @@ class EventFeatureStateTest extends TestCase
     {
         $adapter = $this->adapterOrSkip();
 
-        $result = $adapter->query('SELECT COUNT(*) AS `linked` FROM `texts` WHERE `LegacyEventId` IS NOT NULL', []);
+        $result = $adapter->select('SELECT COUNT(*) AS `linked` FROM `texts` WHERE `LegacyEventId` IS NOT NULL', []);
         $row    = $result->current();
 
         self::assertSame(
@@ -239,7 +239,7 @@ class EventFeatureStateTest extends TestCase
         );
     }
 
-    private function adapterOrSkip(): AdapterInterface
+    private function adapterOrSkip(): Connection
     {
         if (! is_readable(__DIR__ . '/../../config/autoload/local.php')) {
             self::markTestSkipped('no local configuration; this test needs a database');
@@ -250,9 +250,9 @@ class EventFeatureStateTest extends TestCase
 
             $serviceManager = ContainerFactory::build($appConfig);
 
-            /** @var AdapterInterface $adapter */
-            $adapter = $serviceManager->get('Laminas\Db\Adapter\Adapter');
-            $adapter->query('SELECT 1', []);
+            /** @var Connection $adapter */
+            $adapter = $serviceManager->get('SionModel\Db\Connection');
+            $adapter->select('SELECT 1', []);
 
             return $adapter;
         } catch (Throwable $e) {

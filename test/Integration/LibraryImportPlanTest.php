@@ -11,7 +11,7 @@ use App\Laminas\ContainerFactory;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\SpreadsheetReader;
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -69,9 +69,9 @@ class LibraryImportPlanTest extends TestCase
 
             $services = ContainerFactory::build($appConfig);
 
-            /** @var AdapterInterface $adapter */
-            $adapter = $services->get('Laminas\Db\Adapter\Adapter');
-            $adapter->query('SELECT 1', []);
+            /** @var Connection $adapter */
+            $adapter = $services->get('SionModel\Db\Connection');
+            $adapter->select('SELECT 1', []);
 
             return self::$services = $services;
         } catch (Throwable $e) {
@@ -92,9 +92,9 @@ class LibraryImportPlanTest extends TestCase
 
     private function bookCount(): int
     {
-        /** @var AdapterInterface $adapter */
-        $adapter = $this->services()->get('Laminas\Db\Adapter\Adapter');
-        $result  = $adapter->query('SELECT COUNT(*) AS c FROM lib_books', [])->current();
+        /** @var Connection $adapter */
+        $adapter = $this->services()->get('SionModel\Db\Connection');
+        $result  = $adapter->select('SELECT COUNT(*) AS c FROM lib_books', [])->current();
 
         return (int) $result['c'];
     }

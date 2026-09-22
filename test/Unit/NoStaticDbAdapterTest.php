@@ -59,6 +59,14 @@ use const T_INLINE_HTML;
  *   injected adapter into the registry before building the form — honestly documented
  *   as the wrong answer, and the write this test now forbids.
  *
+ * ## What changed when laminas-db left (2026-09-22)
+ *
+ * The class no longer exists — `laminas/laminas-db` is not installed, and the db
+ * layer is `SionModel\Db\*`. So a reintroduced read would now be a fatal rather
+ * than the silence described above, and this scan is cheaper than the fatal. It is
+ * kept because the invariant it states is still the one that matters: a form reaches
+ * its connection through a constructor argument, never through a process-global.
+ *
  * ## It reads tokens, not text
  *
  * The class name still appears in prose: several of the docblocks explaining the

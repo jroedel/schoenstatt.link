@@ -117,6 +117,13 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   `SionModel\{Validator,Filter}\*` with `SionModel\Uri\Http`. A rule name becomes an
   object through a flat `Registry` — no plugin manager, no container, no module loading —
   which is what lets the associations API validate with none of those present.
+- **The database layer is ours** (2026-09-22): `SionModel\Db\Connection` over one PDO,
+  `SionModel\Db\ResultSet`, `SionModel\Db\TableGateway` and the builder
+  `SionModel\Db\Sql\*`. `Update` and `Delete` refuse an empty `WHERE`; `LIMIT`/`OFFSET`
+  are written into the statement, not bound; `Predicate\Group` brackets an OR group at
+  the call site. Two recordings hold it: `test/Db/sql-surface.txt` (what the server
+  actually receives, `./tools/sql-surface.sh --check`) and `test/Db/sql-builder-surface.php`
+  (what the builder writes, no database needed).
 - `App\Laminas\ServiceBridge` lazily builds the container (`App\Services\Container`, ours
   since 2026-09-21) for the laminas-side
   services ported code still needs (config, tables, translator). Nothing must build it on

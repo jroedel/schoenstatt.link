@@ -11,7 +11,7 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
 use JTranslate\I18n\TranslatableMessage;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use JTranslate\I18n\Translator\Translator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -68,9 +68,9 @@ class MessengerDataIsNotTranslatedTest extends TestCase
             self::markTestSkipped('no config/autoload/local.php, so no service configuration');
         }
         try {
-            /** @var Adapter $adapter */
-            $adapter = $this->bridge()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $this->bridge()->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no reachable database: ' . $e->getMessage());
         }

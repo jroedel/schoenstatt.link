@@ -10,7 +10,7 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Laminas\HostMessages;
 use App\Twig\TwigFactory;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Locale;
 use PHPUnit\Framework\TestCase;
 use Schoenstatt\Model\SchoenstattTable;
@@ -64,9 +64,9 @@ class ShrineTemplateTest extends TestCase
             self::markTestSkipped('no config/autoload/local.php, so no database configuration');
         }
         try {
-            /** @var Adapter $adapter */
-            $adapter = $this->bridge()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = $this->bridge()->get(Connection::class);
+            $adapter->select('SELECT 1');
             $this->bridge()->get(SchoenstattTable::class);
         } catch (Throwable $e) {
             self::markTestSkipped(

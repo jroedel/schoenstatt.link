@@ -56,11 +56,6 @@ return [
         'patres_api_person_list_uri' => 'https://schoenstatt-fathers.link/api/persons',
         'patres_api_get_person_uri' => 'https://schoenstatt-fathers.link/api/persons/%s',
     ],
-    'service_manager' => [
-        'factories' => [
-            \Laminas\Db\Adapter\Adapter::class => \Application\Service\DbAdapterServiceFactory::class,
-        ],
-    ],
     'recaptcha' => [
         'name' => 'recaptcha',
         'privKey' => 'local-dev-dummy',

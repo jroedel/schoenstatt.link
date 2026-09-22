@@ -1,7 +1,7 @@
 <?php
 namespace Books;
 
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Books\Mailing\BooksMailer;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\PatresGateway;
@@ -59,7 +59,7 @@ return [
         ],
     ],
     'books' => [
-        'books_db_adapter' => Adapter::class,
+        'books_db_adapter' => Connection::class,
         'book_format_type_value_options' => [
             'AudiobookFormat'   => 'AudiobookFormat',
             'EBook'             => 'EBook',

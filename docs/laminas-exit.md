@@ -115,21 +115,28 @@ under `module/*/src` that a Symfony-served request reaches.
   `ContainerFactory` between them ask for; an unsupported key is rejected rather than
   ignored. The 58 factory classes kept their `__invoke()` and lost an `implements` clause,
   and `test/Container/container-surface.php` is the recording that pins all 103 names.
-- **What laminas still does**, and therefore what this plan removes: the database layer
-  (`laminas-db`, under `SionModel\Db\Model\SionTable`) and `laminas-stdlib` beneath it.
-  laminas-i18n went at step 3, laminas-view at step 4, the whole form stack at iteration A,
-  and the module system, the session, the container and the translator interface on
-  2026-09-21.
+- **The database layer is ours** (2026-09-22). `SionModel\Db\Connection` wraps one PDO;
+  `SionModel\Db\Sql\*` writes the statements and `SionModel\Db\TableGateway` is the
+  four-method seam `SionTable` and the module tables sit on. `test/Db/sql-surface.txt`
+  records every statement shape the application sends and `./tools/sql-surface.sh --check`
+  is the gate; `test/Db/sql-builder-surface.php` records what the builder writes for the
+  34 statement shapes the four repositories assemble.
+- **What laminas still does**, and therefore all this plan has left to remove:
+  `laminas-stdlib`, nine references across nine files. laminas-i18n went at step 3,
+  laminas-view at step 4, the whole form stack at iteration A, the module system, the
+  session, the container and the translator interface on 2026-09-21, and laminas-db on
+  2026-09-22.
 - `App\Laminas\ServiceBridge` is the seam: a lazily built container a Symfony controller
   asks for laminas-side services. It outlived step 7 — the container it builds is ours now,
-  but the services in it are still the laminas-db tables — and disappears with step 8.
+  but the services in it are still the tables — and disappears when those move to the
+  Symfony container.
 
 ## 2. The dependency picture (first measured 2026-09-09 after step 0; counts re-measured 2026-09-11)
 
-**2** `laminas/*` packages are installed, down from 37, and both are a direct line of ours:
-`db` and `stdlib`. Nothing here is transitive any more — the last two that were, `config`
-and `loader`, left on 2026-09-21 with `laminas-modulemanager`, and `eventmanager` followed
-the same day with `laminas-session`, which was the only thing that had ever wanted one.
+**1** `laminas/*` package is installed, down from 37, and it is a direct line of ours:
+`stdlib`. Nothing here is transitive any more — the last two that were, `config` and
+`loader`, left on 2026-09-21 with `laminas-modulemanager`, and `eventmanager` followed the
+same day with `laminas-session`, which was the only thing that had ever wanted one.
 
 The two facts that shape the order, and step 0 confirmed both:
 
@@ -161,9 +168,10 @@ ceiling.
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
 — the count of the last is the progress metric. Step 0 took it 37 → 32, step 1a 32 → 28,
 step 1b 28 → 27; steps 1c, 2, 3 and 4 took it to 17, step 6 to 16, and iteration A — the
-seven packages of the form stack at once — to 9, and 2026-09-21 to **2**: the module
-system, the session, the container and the translator interface, with `config`, `loader`
-and `eventmanager` falling out behind them.
+seven packages of the form stack at once — to 9, 2026-09-21 to 2 (the module system, the
+session, the container and the translator interface, with `config`, `loader` and
+`eventmanager` falling out behind them), and laminas-db on 2026-09-22 to **1**. `stdlib`
+did not fall out with it: our own `composer.json` requires it directly.
 
 **Most of what step 1 listed was blocked behind later steps, and the measurement said so.**
 `laminas-uri` was required by `laminas-http` *and* `laminas-router`; `laminas-http` was what
@@ -211,8 +219,8 @@ deletes.
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. laminas-escaper could not leave here — laminas-form (`^2`) and laminas-uri (`^2.9`) required it — and left with both at iteration A |
 | 5 ✅ | laminas-form, inputfilter, filter, validator, hydrator, escaper — and laminas-uri with them | form 77 files, inputfilter 60, validator 65, filter 49; 42 forms, 441 elements | **done 2026-09-11** as iteration A: engine, element model, form model and rule library, all ours. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, `SionModel\Form\Element\*`, `SionModel\{Validator,Filter}\*`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
-| 7 ✅ | laminas-servicemanager — modulemanager, config, loader, session and eventmanager left ahead of it the same day | servicemanager 82 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`) | **done 2026-09-21.** `App\Services\Container`, ours, PSR-11 (§6) — not Symfony DI. The factories kept `__invoke()` and lost an `implements`; `test/Container/container-surface.php` records all 103 names. `stdlib` did *not* leave here: laminas-db holds it |
-| 8 | laminas-db, and `stdlib` with it | db 99 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; stdlib 9 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after. `laminas-translator` was grouped here and left early, on 2026-09-21 |
+| 7 ✅ | laminas-servicemanager — modulemanager, config, loader, session and eventmanager left ahead of it the same day | servicemanager 82 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`) | **done 2026-09-21.** `App\Services\Container`, ours, PSR-11 (§6) — not Symfony DI. The factories kept `__invoke()` and lost an `implements`; `test/Container/container-surface.php` records all 103 names |
+| 8 ◐ | laminas-db ✅; `stdlib` did not come with it | db 99 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; stdlib 9 references | **laminas-db done 2026-09-22.** `SionModel\Db\*`, a thin PDO wrapper of ours (§6), gated on `test/Db/sql-surface.txt` — MariaDB's general log across a smoke run, the integration suite, the console commands and `test/Db/drive-tables.php`, 177 statement shapes, unchanged across the cutover. `laminas-translator` was grouped here and left early, on 2026-09-21. `stdlib` is a direct line of ours and is what iteration C has left |
 
 **Step 4 was not gated on step 5, though it looked it.** Every `Laminas\Form\View\Helper\*`
 class extended `Laminas\I18n\View\Helper\AbstractTranslatorHelper`, so it was tempting to
@@ -438,8 +446,13 @@ packages out, none in:
   `App\Kernel` hand-wires, which is a second cost on top of the dependency.
 - **The database layer is a thin PDO wrapper of ours**, not Doctrine DBAL.
   `SionModel\Db\Model\SionTable` is 2,412 lines that already hold the query logic; what
-  laminas-db supplies underneath it is largely a parameter binder and a result iterator.
+  laminas-db supplied underneath it was largely a parameter binder and a result iterator.
   DBAL is heavier than that seam needs, and 94 files would have to learn its abstractions.
+  Built 2026-09-22: `Connection` (PDO, binding by PHP type, counted transaction nesting),
+  `ResultSet` (plain arrays), `TableGateway` (four methods) and `Sql\*` — `Select`,
+  `Insert`, `Update`, `Delete`, `Where`, `Expression`, `Identifier` and eight predicates.
+  `Update` and `Delete` refuse an empty `WHERE`, and `Predicate\Group` is where
+  `A OR B AND C` is bracketed at the call site rather than by a class hierarchy.
 
 Nothing is open.
 

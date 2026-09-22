@@ -342,12 +342,6 @@ return array (
     'instance' => 'JUser\\Service\\Mailer',
     'shared' => true,
   ),
-  'Laminas\\Db\\Adapter\\Adapter' => 
-  array (
-    'type' => 'Laminas\\Db\\Adapter\\Adapter',
-    'instance' => 'Laminas\\Db\\Adapter\\Adapter',
-    'shared' => true,
-  ),
   'MvcTranslator' => 
   array (
     'type' => 'JTranslate\\I18n\\Translator\\Translator',
@@ -463,6 +457,12 @@ return array (
   array (
     'type' => 'SionModel\\Console\\Command\\FlushPersistentCacheCommand',
     'instance' => 'SionModel\\Console\\Command\\FlushPersistentCacheCommand',
+    'shared' => true,
+  ),
+  'SionModel\\Db\\Connection' => 
+  array (
+    'type' => 'SionModel\\Db\\Connection',
+    'instance' => 'SionModel\\Db\\Connection',
     'shared' => true,
   ),
   'SionModel\\Db\\Model\\FilesTable' => 
@@ -591,8 +591,8 @@ return array (
   ),
   'jtranslate_db_adapter' => 
   array (
-    'type' => 'Laminas\\Db\\Adapter\\Adapter',
-    'instance' => 'Laminas\\Db\\Adapter\\Adapter',
+    'type' => 'SionModel\\Db\\Connection',
+    'instance' => 'SionModel\\Db\\Connection',
     'shared' => true,
   ),
   'jtranslate_translator' => 
@@ -617,8 +617,8 @@ return array (
   ),
   'zfcuser_zend_db_adapter' => 
   array (
-    'type' => 'Laminas\\Db\\Adapter\\Adapter',
-    'instance' => 'Laminas\\Db\\Adapter\\Adapter',
+    'type' => 'SionModel\\Db\\Connection',
+    'instance' => 'SionModel\\Db\\Connection',
     'shared' => true,
   ),
 );

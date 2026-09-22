@@ -8,10 +8,10 @@ use App\Laminas\HostMessages;
 use App\Laminas\ServiceBridge;
 use Books\Form\TextSearchForm;
 use Books\Model\EventTextTable;
-use Laminas\Db\Sql\Predicate\Like;
-use Laminas\Db\Sql\Predicate\Operator;
-use Laminas\Db\Sql\Predicate\Predicate;
-use Laminas\Db\Sql\Predicate\PredicateSet;
+use SionModel\Db\Sql\Predicate\Group;
+use SionModel\Db\Sql\Predicate\Like;
+use SionModel\Db\Sql\Predicate\Operator;
+use SionModel\Db\Sql\Where;
 use SionModel\Entity\Entity;
 use SionModel\Messaging\FlashMessages;
 use SionModel\Service\EntitiesService;
@@ -84,19 +84,19 @@ final class TextsController
                 //and is what App\Laminas\EntityFormatter already uses.
                 $fieldMap = $this->entitySpec()->updateColumns;
 
-                $where = new PredicateSet();
+                $where = new Where();
                 if (isset($data['search'])) {
                     $search     = (string) $data['search'];
                     $searchLike = sprintf('%%%s%%', $search);
-                    $clause     = new Predicate();
+                    $clause     = new Where();
                     $clause->addPredicates([
                         new Like($fieldMap['title'], $searchLike),
                         new Like($fieldMap['markdownText'], $searchLike),
                         new Like($fieldMap['publicNotes'], $searchLike),
                         //an exact match on the id, so a bare number finds one text
-                        new Operator($fieldMap['textId'], Operator::OPERATOR_EQUAL_TO, $search),
-                    ], PredicateSet::OP_OR);
-                    $where->addPredicate($clause);
+                        new Operator($fieldMap['textId'], Operator::EQ, $search),
+                    ], Where::OP_OR);
+                    $where->addPredicate(new Group($clause));
                 }
 
                 /** @var array<mixed> $objects */

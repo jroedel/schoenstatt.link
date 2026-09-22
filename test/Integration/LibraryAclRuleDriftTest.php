@@ -7,7 +7,7 @@ namespace SchoenstattTest\Integration;
 use App\Books\LibraryAclRules;
 use App\Laminas\ContainerFactory;
 use Books\Model\LibraryTable;
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -62,9 +62,9 @@ class LibraryAclRuleDriftTest extends TestCase
 
             $services = ContainerFactory::build($appConfig);
 
-            /** @var AdapterInterface $adapter */
-            $adapter = $services->get('Laminas\Db\Adapter\Adapter');
-            $adapter->query('SELECT 1', []);
+            /** @var Connection $adapter */
+            $adapter = $services->get('SionModel\Db\Connection');
+            $adapter->select('SELECT 1', []);
 
             return self::$services = $services;
         } catch (Throwable $e) {
