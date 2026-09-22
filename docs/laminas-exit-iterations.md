@@ -5,23 +5,24 @@ order the remaining work can actually **ship** in. The numbering there — steps
 the order it was planned in, and what is left of it does not line up with what can be
 released together, which is what this file supplies.
 
-**3 `laminas/*` packages are installed**, down from 37. Every step but 8 is done.
+**2 `laminas/*` packages are installed**, down from 37. Every step but 8 is done.
 Iteration C is what is left:
 
 | | removes | leaves | content |
 |---|---|---|---|
 | **A** ✅ | form, inputfilter, filter, validator, hydrator, escaper, uri | 9 | the form model, and our own validator and filter classes |
-| **B** ✅ | modulemanager, config, loader · session, eventmanager · servicemanager | 3 | the module system, the session and the container |
-| **C** | db, stdlib, translator | 0 | the database layer |
+| **B** ✅ | modulemanager, config, loader · session, eventmanager · servicemanager · translator | 2 | the module system, the session, the container and the translator contract |
+| **C** | db, stdlib | 0 | the database layer |
 
-**Iteration B shipped in four parts, not one (2026-09-21).** The grouping in this table
-was wrong three times in the same direction. The module system turned out to be separable
+**Iteration B shipped in four parts, not one (2026-09-21), and took a fifth package the
+table had put in C.** The grouping here was wrong four times in the same direction. The module system turned out to be separable
 from the container — `laminas-modulemanager`, `laminas-config` and `laminas-loader` left
 with `brick/varexporter` and `webimpress/safe-writer` behind them — then the session turned
 out to be separable too, taking `laminas-eventmanager` with it, because nothing else had
 ever required one; and the container, measured, turned out to be five configuration keys
-rather than the plugin-manager hierarchy the plan had budgeted for. Each part deployed on
-its own.
+rather than the plugin-manager hierarchy the plan had budgeted for; and `laminas-translator`,
+grouped with the database because `stdlib` is, turned out to need nothing from it and left
+with the container. Each part deployed on its own.
 
 Each iteration is **one superproject PR over three submodule PRs, and one deploy**. Nothing
 new is added: both design decisions were taken 2026-09-11 in favour of our own code, so the
@@ -165,10 +166,21 @@ laminas-eventmanager, laminas-servicemanager — all on 2026-09-21, in four depl
    same instance collapses to one label, so an alias that stopped resolving or a service
    built twice shows up) and a probe of the state each delegator sets. Generated through
    laminas, then through ours, and the two files were byte-identical.
+3. **The translator contract, done.** One interface, two methods, and only `translate()`
+   had a caller — `translatePlural()` had none in the application or any of the three
+   libraries, and went with the package. Where the replacement lives is the part worth
+   keeping: SionModel and JTranslate are peers, neither requires the other, the one
+   implementation was in JTranslate and five of the six consumers were in SionModel. So the
+   contract went to the **consumer** — `SionModel\I18n\TranslatesMessages`, "what this
+   package needs of a translator", the same shape as its existing
+   `Mailing\TemplateRendererInterface` — and `App\I18n\Translator` binds it to JTranslate's
+   translator in the host, the only place that can see both. Putting it in JTranslate
+   instead would have read better by domain and cost SionModel a hard dependency on the
+   translation package.
 
-## C — the database layer (3 → 0)
+## C — the database layer (2 → 0)
 
-**Removes:** laminas-db, laminas-stdlib, laminas-translator.
+**Removes:** laminas-db, laminas-stdlib.
 
 1. **`App\Db\Connection`, a thin PDO wrapper of ours** — not Doctrine DBAL; see
    laminas-exit.md §6. 99 files name `Laminas\Db` and `SionModel\Db\Model\SionTable` is
@@ -176,11 +188,7 @@ laminas-eventmanager, laminas-servicemanager — all on 2026-09-21, in four depl
    what laminas-db supplies beneath it is largely a parameter binder and a result iterator.
    Open with a census of which `TableGateway`/`Sql` features are actually reached, by call
    site.
-2. **`laminas-translator`** is a zero-dependency interface package, named in 32 files:
-   declare the interface ourselves and change the imports. It is also the interface
-   `SionModel\Validator\AbstractValidator::setDefaultTranslator()` type-hints, so the
-   validator messages move with it.
-3. **`laminas-stdlib`** is nine references across nine files — `ArraySerializableInterface`,
+2. **`laminas-stdlib`** is nine references across nine files — `ArraySerializableInterface`,
    `StringUtils`, `PriorityList`, `InitializableInterface` and `ArrayUtils` — and falls out
    once its parents have gone.
 

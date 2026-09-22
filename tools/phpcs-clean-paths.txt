@@ -46,6 +46,7 @@ module/SionModel/src/Uri
 # What the removed packages used to do, in our own code (2026-09-21): the UTF-8 repair
 # `ToAscii` needs before iconv, and the slug and relative-time tables.
 module/SionModel/src/I18n/RelativeTime.php
+module/SionModel/src/I18n/TranslatesMessages.php
 module/SionModel/src/Text
 module/SionModel/src/Form/Validation
 module/SionModel/src/Form/CheckboxDomain.php

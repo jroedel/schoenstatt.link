@@ -5,7 +5,7 @@ use SionModel\Filter\ToAscii;
 use SionModel\Db\Model\SionTable;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
-use Laminas\Translator\TranslatorInterface;
+use SionModel\I18n\TranslatesMessages;
 use Laminas\Db\Adapter\AdapterInterface;
 use Laminas\Db\TableGateway\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;
@@ -122,7 +122,7 @@ class SchoenstattTable extends SionTable implements
     protected $entityProblemPrototype;
 
     /**
-     * @var TranslatorInterface $translator
+     * @var TranslatesMessages $translator
      */
     protected $translator;
 
@@ -630,7 +630,7 @@ class SchoenstattTable extends SionTable implements
         static $translationPhraseTranslationCounts;
 
         $id = $this->filterDbId($row['AssociationId']);
-        if (! $this->translator instanceof TranslatorInterface) {
+        if (! $this->translator instanceof TranslatesMessages) {
             throw new \Exception('No translator instance!');
         }
         //Resolved once per row-processing call rather than per token: the getter is cheap
@@ -2238,7 +2238,7 @@ ORDER BY `LastName`, `FirstName`, `PersonId`";
 ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`, `RoleId`";
 
         $results = $this->fetchSome(null, $sql, null);
-        $isTranslatorReady = $this->translator instanceof TranslatorInterface;
+        $isTranslatorReady = $this->translator instanceof TranslatesMessages;
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['RoleId']);

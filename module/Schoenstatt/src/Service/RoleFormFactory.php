@@ -21,7 +21,7 @@ class RoleFormFactory
     {
         /** @var SchoenstattTable $table **/
         $table = $container->get(SchoenstattTable::class);
-        /** @var \Laminas\Translator\TranslatorInterface $translator */
+        /** @var \SionModel\I18n\TranslatesMessages $translator */
         $translator = $container->get('translator');
 
         $associations = $table->getAssociationValueOptions();

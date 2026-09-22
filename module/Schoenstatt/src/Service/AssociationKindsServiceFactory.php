@@ -2,7 +2,7 @@
 namespace Schoenstatt\Service;
 
 use Psr\Container\ContainerInterface;
-use Laminas\Translator\TranslatorInterface;
+use SionModel\I18n\TranslatesMessages;
 
 /**
  * Factory responsible of constructing the central collection of AssociationKind specs
@@ -27,7 +27,7 @@ class AssociationKindsServiceFactory
         //the one translator, asked for directly. This reached it through the `translate`
         //view helper until laminas-view was removed; the helper only ever handed back what
         //the container had put into it.
-        $translator = $container->get(TranslatorInterface::class);
+        $translator = $container->get(TranslatesMessages::class);
         $kindsService = new AssociationKindsService($kindsConfig, $translator, $config);
         return $kindsService;
     }

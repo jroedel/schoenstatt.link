@@ -13,7 +13,6 @@ use App\Twig\TwigFactory;
 use JTranslate\I18n\TranslatableMessage;
 use Laminas\Db\Adapter\Adapter;
 use JTranslate\I18n\Translator\Translator;
-use Laminas\Translator\TranslatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Messaging\FlashMessages;
@@ -90,7 +89,7 @@ class MessengerDataIsNotTranslatedTest extends TestCase
         $this->requireApcu();
 
         /** @var Translator $translator */
-        $translator = $this->bridge()->get(TranslatorInterface::class);
+        $translator = $this->bridge()->get(Translator::class);
         $asked      = [];
         //The spy replaces the discovery listener for the duration, so this test records
         //what was asked for without writing a phrase row. Restored in the finally below,
