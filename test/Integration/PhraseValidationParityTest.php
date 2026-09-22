@@ -8,7 +8,7 @@ use App\Laminas\ContainerFactory;
 use JTranslate\Form\EditPhraseForm;
 use JTranslate\Form\PhraseValidator;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SionModel\Form\Validation\FormSpecification;
@@ -68,7 +68,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 final class PhraseValidationParityTest extends TestCase
 {
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     /** The locales this site writes, resolved once from the merged config. */
     private static ?array $locales = null;
@@ -333,7 +333,7 @@ final class PhraseValidationParityTest extends TestCase
      * whole class down including the data provider. At runtime those caches are the
      * reason per-request module loading is affordable; in a test they buy nothing.
      */
-    private static function services(): ServiceManager
+    private static function services(): Container
     {
         if (null !== self::$services) {
             return self::$services;

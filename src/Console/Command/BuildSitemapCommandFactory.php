@@ -11,7 +11,6 @@ use App\Sitemap\GuestAccess;
 use App\Sitemap\SitemapGenerator;
 use App\View\NavigationTree;
 use App\View\PreferredUrls;
-use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 
 use function dirname;
@@ -43,7 +42,7 @@ use function is_string;
  * `ChangeLog` takes from the bridge lazily, and `isStale()` is reached without ever touching
  * the navigation.
  */
-final class BuildSitemapCommandFactory implements FactoryInterface
+final class BuildSitemapCommandFactory
 {
     /**
      * @param string $requestedName

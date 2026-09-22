@@ -12,7 +12,6 @@ use Books\Service\DriveGateway;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
 use Books\Model\DictionaryTable;
-use Laminas\ServiceManager\Factory\InvokableFactory;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 $textColumns = [
@@ -281,7 +280,12 @@ return [
             Form\DictionaryEntryForm::class     => Service\DictionaryEntryFormFactory::class,
             Model\MusicTable::class             => Service\MusicTableFactory::class,
             Form\CompositionForm::class         => Service\CompositionFormFactory::class,
-            Service\SpreadsheetReader::class    => InvokableFactory::class,
+        ],
+        //A constructor with no arguments. `Laminas\ServiceManager\Factory\InvokableFactory`
+        //said this until 2026-09-21, when the container it belonged to left; `invokables` is
+        //the key that says it without naming a class from a package.
+        'invokables' => [
+            Service\SpreadsheetReader::class => Service\SpreadsheetReader::class,
         ],
     ],
     'sion_model' => [

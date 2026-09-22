@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Laminas;
 
 use JTranslate\Model\TranslationsTable;
-use Laminas\ServiceManager\Factory\DelegatorFactoryInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -41,7 +40,7 @@ use Psr\Container\ContainerInterface;
  * faithfulness of that reproduction is checked as a whole. Calling the setter twice with
  * the same map costs one `glob()`.
  */
-final class TranslationsTableConfigurator implements DelegatorFactoryInterface
+final class TranslationsTableConfigurator
 {
     /**
      * @param string $name

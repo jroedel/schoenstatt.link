@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use SionModel\Cache\CacheFlushQueue;
 
 /**
@@ -17,7 +17,7 @@ use SionModel\Cache\CacheFlushQueue;
  * each dependency at the moment its route moves would turn one migration into
  * many. This class is the seam that defers that choice.
  *
- * Built the way bin/console builds it: configure a ServiceManager, load the
+ * Built the way bin/console builds it: configure a container, load the
  * modules, and **never** call bootstrap(). Bootstrapping is what attaches the MVC
  * listeners, resolves a route and dispatches; none of that is wanted here, and
  * running it would put a second laminas application in front of a request Symfony
@@ -39,11 +39,11 @@ use SionModel\Cache\CacheFlushQueue;
  *
  * There is no sharing with LegacyBridge's application, and there does not need to
  * be: a request is either routed to a ported controller or handed to the bridge,
- * never both, so at most one ServiceManager is ever built per request.
+ * never both, so at most one container is ever built per request.
  */
 final class ServiceBridge implements LaminasServices
 {
-    private ?ServiceManager $services = null;
+    private ?Container $services = null;
 
     /**
      * @param array<string, mixed> $appConfig the merged config/application.config.php
@@ -92,10 +92,10 @@ final class ServiceBridge implements LaminasServices
 
     /**
      * A bridge over a container somebody else built — the fuzz harness, which needs the
-     * raw ServiceManager to swap a session config in and attach a query profiler before
+     * raw container to swap a session config in and attach a query profiler before
      * anything resolves.
      */
-    public static function around(ServiceManager $services): self
+    public static function around(Container $services): self
     {
         $bridge           = new self([]);
         $bridge->services = $services;
@@ -103,7 +103,7 @@ final class ServiceBridge implements LaminasServices
         return $bridge;
     }
 
-    private function services(): ServiceManager
+    private function services(): Container
     {
         //Config caches on: this is the per-request path, and merging every module's
         //config on every request is what the cache exists to avoid. Console runs and

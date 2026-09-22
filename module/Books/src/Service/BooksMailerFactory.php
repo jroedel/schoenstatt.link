@@ -1,8 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Books\Mailing\BooksMailer;
 use Books\Model\BorrowerTokenTable;
 use Books\Model\LibraryTable;
@@ -14,7 +13,7 @@ use Schoenstatt\Model\SchoenstattTable;
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class BooksMailerFactory implements FactoryInterface
+class BooksMailerFactory
 {
     /**
      * Create an object

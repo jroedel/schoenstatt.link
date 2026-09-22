@@ -9,7 +9,7 @@ use App\Http\SymfonyRoutes;
 use App\JUser\Host\RouteResolver;
 use App\Laminas\ContainerFactory;
 use App\Laminas\ContainerServices;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
@@ -64,7 +64,7 @@ class RouteMatchParityTest extends TestCase
     /** Matched by laminas, deliberately not a destination here. */
     private const KNOWN_REFUSALS = ['comments/create'];
 
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     public function testTheResolverAgreesWithTheLaminasRouter(): void
     {
@@ -158,7 +158,7 @@ class RouteMatchParityTest extends TestCase
         self::assertNull($resolver->routeFor('/api/v1/whatever'));
     }
 
-    private function services(): ServiceManager
+    private function services(): Container
     {
         if (null !== self::$services) {
             return self::$services;

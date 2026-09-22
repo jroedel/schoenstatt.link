@@ -7,7 +7,6 @@ namespace App\Laminas;
 use JTranslate\I18n\Translator\Translator;
 use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
-use Laminas\ServiceManager\Factory\DelegatorFactoryInterface;
 use SionModel\Validator\AbstractValidator;
 use Locale;
 use Psr\Container\ContainerInterface;
@@ -91,7 +90,7 @@ use function str_replace;
  * `getcwd()` is the original's, and safe: both entry points chdir() to the project
  * root (public/index.php:12, bin/console:35).
  */
-final class TranslatorConfigurator implements DelegatorFactoryInterface
+final class TranslatorConfigurator
 {
     /** What onBootstrap falls back to. Untranslated phrases then read as English, not as nothing. */
     public const FALLBACK_LOCALE = 'en_US';

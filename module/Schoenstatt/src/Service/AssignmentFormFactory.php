@@ -1,8 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Form\AssignmentForm;
 use Schoenstatt\Model\SchoenstattTable;
 
@@ -11,7 +10,7 @@ use Schoenstatt\Model\SchoenstattTable;
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class AssignmentFormFactory implements FactoryInterface
+class AssignmentFormFactory
 {
     /**
      * Create an object

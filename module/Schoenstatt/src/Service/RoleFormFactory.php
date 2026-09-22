@@ -1,8 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\RoleForm;
 
@@ -11,7 +10,7 @@ use Schoenstatt\Form\RoleForm;
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class RoleFormFactory implements FactoryInterface
+class RoleFormFactory
 {
     /**
      * Create an object

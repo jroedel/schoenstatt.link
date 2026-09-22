@@ -10,7 +10,7 @@ use App\Laminas\ContainerFactory;
 use App\Laminas\ServiceBridge;
 use SionModel\Form\Element\Registry;
 use SionModel\Form\Fieldset;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
@@ -37,7 +37,7 @@ use Throwable;
  * application uses: `BookFormFactory` is what fills in the author, collection,
  * publisher, language and category value options, and an empty `InArray` haystack
  * is a different validation surface from a populated one. Where a form has a
- * registered factory, this class resolves it through the ServiceManager so the
+ * registered factory, this class resolves it through the container so the
  * subject under test is the real thing.
  *
  * The container is built the way `bin/console` and every integration test build it:
@@ -100,7 +100,7 @@ final class FormRepository
 
     private static ?self $instance = null;
 
-    private ?ServiceManager $container = null;
+    private ?Container $container = null;
 
     /** @var array<string, class-string>|null */
     private ?array $discovered = null;
@@ -521,7 +521,7 @@ final class FormRepository
      *
      * @return array<class-string, array{0: Fieldset, 1: string}>
      */
-    private function containerFormsByProducedClass(ServiceManager $container): array
+    private function containerFormsByProducedClass(Container $container): array
     {
         $config = $this->quietly(static fn(): array => (array) $container->get('config'));
 
@@ -600,7 +600,7 @@ final class FormRepository
 
     // -------------------------------------------------------------- container
 
-    public function container(): ServiceManager
+    public function container(): Container
     {
         if (null !== $this->container) {
             return $this->container;
@@ -610,7 +610,7 @@ final class FormRepository
 
         // Config caches off: the module listener must never write data/config/, a cache
         // owned by the wrong user sitting next to a real deployment.
-        $container = $this->quietly(static fn (): ServiceManager => ContainerFactory::build($appConfig, false));
+        $container = $this->quietly(static fn (): Container => ContainerFactory::build($appConfig, false));
 
         $this->quietly(function () use ($container): void {
             $this->attachSqlRecorder($container);
@@ -623,7 +623,7 @@ final class FormRepository
      * Record every SQL statement the shared adapter runs, so a test can prove the
      * harness never wrote anything.
      */
-    private function attachSqlRecorder(ServiceManager $container): void
+    private function attachSqlRecorder(Container $container): void
     {
         try {
             $adapter = $container->get(\Laminas\Db\Adapter\Adapter::class);

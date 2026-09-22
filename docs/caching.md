@@ -68,7 +68,7 @@ in memory and on a queue; the queue is written out **after the response has been
 serializing a large result set never charges the visitor. Under `App\Kernel` the queue is
 `SionModel\Cache\CacheFlushQueue`, drained by `App\Http\SionCacheFlushListener` on
 `KernelEvents::TERMINATE`. Tables **enrol themselves into the queue from their factory** —
-there is no way to ask a `ServiceManager` whether a service was instantiated, so a listener
+there is no way to ask the container whether a service was instantiated, so a listener
 that resolved tables by name would build all of them, each with a database adapter, on
 `/_health`. (Fixed 2026-08-22; before that a Symfony-served route wrote nothing, because the
 only flush point was a laminas `MvcEvent::FINISH` listener, and nobody noticed because

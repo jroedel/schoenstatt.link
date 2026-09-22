@@ -10,7 +10,7 @@ use JUser\Model\UserTable;
 use JUser\Page\UserAdmin;
 use JUser\Service\ApiTokenService;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -47,7 +47,7 @@ require_once __DIR__ . '/JUserHostFakes.php';
  */
 final class JUserUserAdminTest extends TestCase
 {
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     private UserTable $users;
     private Adapter $adapter;
@@ -232,7 +232,7 @@ final class JUserUserAdminTest extends TestCase
         };
     }
 
-    private function container(): ServiceManager
+    private function container(): Container
     {
         if (null !== self::$services) {
             return self::$services;

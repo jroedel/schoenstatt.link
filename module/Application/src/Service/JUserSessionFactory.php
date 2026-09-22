@@ -6,7 +6,6 @@ namespace Application\Service;
 
 use App\JUser\Host\Session as JUserSession;
 use App\Session\HttpSession;
-use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -24,7 +23,7 @@ use Psr\Container\ContainerInterface;
  * thing `brick/varexporter` — and with it `laminas/laminas-modulemanager` — was doing for
  * this application. {@see \SchoenstattTest\Integration\MergedConfigIsPlainDataTest}
  */
-class JUserSessionFactory implements FactoryInterface
+class JUserSessionFactory
 {
     /**
      * @param string $requestedName

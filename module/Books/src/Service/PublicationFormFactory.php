@@ -1,8 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Books\Form\PublicationForm;
 use Books\Model\PublicationsTable;
 use SionModel\I18n\LanguageSupport;
@@ -10,7 +9,7 @@ use SionModel\I18n\LanguageSupport;
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class PublicationFormFactory implements FactoryInterface
+class PublicationFormFactory
 {
     /**
      * Create an object

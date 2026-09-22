@@ -1,8 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Books\Model\MusicTable;
 use SionModel\I18n\LanguageSupport;
 use Books\Form\CompositionForm;
@@ -10,7 +9,7 @@ use Books\Form\CompositionForm;
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class CompositionFormFactory implements FactoryInterface
+class CompositionFormFactory
 {
     /**
      * Create an object

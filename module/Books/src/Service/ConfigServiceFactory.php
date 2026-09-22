@@ -1,15 +1,14 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * Factory responsible of retrieving an array containing the Books configuration
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class ConfigServiceFactory implements FactoryInterface
+class ConfigServiceFactory
 {
     /**
      * Create an object
