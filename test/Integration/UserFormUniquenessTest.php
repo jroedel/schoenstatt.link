@@ -11,7 +11,7 @@ use JUser\Form\EditUserForm;
 use JUser\Service\EditUserFormFactory;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
@@ -46,7 +46,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 final class UserFormUniquenessTest extends TestCase
 {
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     /**
      * A create-user submission is refused for a username that already exists.
@@ -278,7 +278,7 @@ final class UserFormUniquenessTest extends TestCase
      * Config and module-map caches off, as in every integration test here: leaving them
      * on makes module loading write `data/config`, which a CI runner does not have.
      */
-    private static function services(): ServiceManager
+    private static function services(): Container
     {
         if (null !== self::$services) {
             return self::$services;

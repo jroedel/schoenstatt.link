@@ -1,8 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Form\ImportFatherForm;
 
 /**
@@ -10,7 +9,7 @@ use Schoenstatt\Form\ImportFatherForm;
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class ImportFatherFormFactory implements FactoryInterface
+class ImportFatherFormFactory
 {
     /**
      * Create an object

@@ -1,15 +1,14 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Books\Model\DictionaryTable;
 use Books\Form\DictionaryEntryForm;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class DictionaryEntryFormFactory implements FactoryInterface
+class DictionaryEntryFormFactory
 {
     /**
      * Create an object

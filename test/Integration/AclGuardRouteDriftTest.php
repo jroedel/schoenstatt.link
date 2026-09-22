@@ -4,7 +4,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Http\SymfonyRoutes;
 use App\Laminas\ContainerFactory;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../vendor/autoload.php';

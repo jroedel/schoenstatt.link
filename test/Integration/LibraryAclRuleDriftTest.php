@@ -8,7 +8,7 @@ use App\Books\LibraryAclRules;
 use App\Laminas\ContainerFactory;
 use Books\Model\LibraryTable;
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
@@ -39,7 +39,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class LibraryAclRuleDriftTest extends TestCase
 {
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     /**
      * Built the way bin/console does it: load modules, never bootstrap(). Config caching
@@ -47,7 +47,7 @@ class LibraryAclRuleDriftTest extends TestCase
      * data/config/, and a cache file owned by the wrong user next to a real deployment is
      * worse than a slow test.
      */
-    private function services(): ServiceManager
+    private function services(): Container
     {
         if (null !== self::$services) {
             return self::$services;

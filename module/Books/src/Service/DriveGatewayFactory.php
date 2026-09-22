@@ -1,13 +1,12 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class DriveGatewayFactory implements FactoryInterface
+class DriveGatewayFactory
 {
     /**
      * Create an object

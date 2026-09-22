@@ -12,7 +12,7 @@ use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\SpreadsheetReader;
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PHPUnit\Framework\TestCase;
@@ -52,11 +52,11 @@ class LibraryImportPlanTest extends TestCase
 {
     private const LIBRARY = 7;
 
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
     /** @var list<string> */
     private array $written = [];
 
-    private function services(): ServiceManager
+    private function services(): Container
     {
         if (null !== self::$services) {
             return self::$services;

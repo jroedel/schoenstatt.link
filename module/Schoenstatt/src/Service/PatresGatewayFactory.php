@@ -1,8 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Form\PersonForm;
 use SionModel\Form\Validation\FormSpecification;
 use Schoenstatt\Model\SchoenstattTable;
@@ -12,7 +11,7 @@ use Schoenstatt\Model\SchoenstattTable;
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class PatresGatewayFactory implements FactoryInterface
+class PatresGatewayFactory
 {
     /**
      * Create an object

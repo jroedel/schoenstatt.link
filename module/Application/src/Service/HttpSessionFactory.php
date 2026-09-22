@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Application\Service;
 
 use App\Session\HttpSession;
-use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 
 use function is_array;
@@ -22,7 +21,7 @@ use function is_array;
  * `session_config` key keeps its name and its values; what changed is that applying them
  * can no longer throw.
  */
-class HttpSessionFactory implements FactoryInterface
+class HttpSessionFactory
 {
     /**
      * @param string $requestedName

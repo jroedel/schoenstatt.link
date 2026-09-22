@@ -6,7 +6,7 @@ use App\Laminas\ContainerFactory;
 use JTranslate\Model\PhraseIdentity;
 use JTranslate\Model\TranslationsTable;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -40,7 +40,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class TranslationWriteSemanticsTest extends TestCase
 {
-    private ServiceManager $container;
+    private Container $container;
 
     private Adapter $adapter;
 

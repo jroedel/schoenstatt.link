@@ -4,8 +4,7 @@ schoenstatt.link
 A database application for Schoenstatt-related topics — shrines, the movement,
 literature and libraries, and music — served in five locales. PHP 8.5 against
 MariaDB 10.11; a hand-wired Symfony HTTP kernel (`App\Kernel`, `src/`) serves
-every page and the `/api/v3` API, with laminas-servicemanager, laminas-db and
-laminas-form underneath it as libraries. Live at <https://schoenstatt.link>.
+every page and the `/api/v3` API, with laminas-db underneath it as a library. Live at <https://schoenstatt.link>.
 
 Getting started
 ---------------

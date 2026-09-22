@@ -1,15 +1,14 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class PersonTagsValueOptionsFactory implements FactoryInterface
+class PersonTagsValueOptionsFactory
 {
     /**
      * Create an object

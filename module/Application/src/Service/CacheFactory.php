@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Application\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 use SionModel\Cache\Storage;
 use SionModel\Cache\StorageFactory;
@@ -20,7 +19,7 @@ use function is_array;
  * comes back: `SionModel\Cache\ApcuStorage` or `FilesystemStorage`, neither of which needs
  * laminas-cache or its serializer plugin.
  */
-class CacheFactory implements FactoryInterface
+class CacheFactory
 {
     /**
      * @param string $requestedName
