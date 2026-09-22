@@ -101,6 +101,11 @@ echo "running the console commands"
 docker compose exec -T -u www-data app php bin/console jtranslate:migrate >/dev/null 2>&1
 docker compose exec -T -u www-data app php bin/console sitemap:build >/dev/null 2>&1
 
+# The four tables nothing above reaches, driven through their own table classes inside a
+# transaction that is rolled back. See test/Db/drive-tables.php for why that is sound.
+echo "driving the tables no page reaches"
+docker compose exec -T -u www-data app php -d memory_limit=1G test/Db/drive-tables.php >/dev/null 2>&1
+
 db "SET GLOBAL general_log='OFF';"
 
 RAW=$(mktemp)
