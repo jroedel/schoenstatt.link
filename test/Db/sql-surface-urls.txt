@@ -17,6 +17,9 @@
 /en/associations
 /en/persons
 /en/persons/search
+# An entity show page, not just the index: it is the only thing that reads `relationships`,
+# and the path redirects to its slug, which is why the capture follows redirects.
+/en/persons/1
 /en/roles
 /en/assignments/search
 /en/timeline
@@ -25,6 +28,7 @@
 # Literature — PublicationsTable, EventTextTable, DictionaryTable
 /en/literature
 /en/literature/search
+/en/literature/1
 /en/literature/150-preguntas-sobre-schoenstatt
 /en/texts
 /en/dictionary
