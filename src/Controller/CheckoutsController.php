@@ -8,7 +8,7 @@ use App\Books\LibraryPage;
 use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
-use Laminas\Translator\TranslatorInterface;
+use JTranslate\I18n\Translator\Translator;
 use RuntimeException;
 use Schoenstatt\Model\SchoenstattTable;
 use Symfony\Component\HttpFoundation\Request;
@@ -102,7 +102,7 @@ final class CheckoutsController
     /** The page's own text domain, which is where its format strings live. */
     private function translate(string $message): string
     {
-        /** @var TranslatorInterface $translator */
+        /** @var Translator $translator */
         $translator = $this->laminas->get('MvcTranslator');
 
         return $translator->translate($message, 'Books');

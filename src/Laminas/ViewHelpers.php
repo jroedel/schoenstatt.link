@@ -21,7 +21,7 @@ use JTranslate\View\Helper\LanguageName;
 use App\View\Helper\DateFormat;
 use App\View\Helper\Translate;
 use App\View\Label;
-use Laminas\Translator\TranslatorInterface;
+use SionModel\I18n\TranslatesMessages;
 use Schoenstatt\Service\AssociationKindsService;
 use Schoenstatt\View\Helper\FormatAssociation;
 use Schoenstatt\View\Helper\FormatEntity;
@@ -91,7 +91,7 @@ final class ViewHelpers
     private ?FormatField $formatField = null;
     private ?Address $address = null;
     private ?DiffForHumans $diffForHumans = null;
-    private ?TranslatorInterface $translator = null;
+    private ?TranslatesMessages $translator = null;
     private ?Translate $translateHelper = null;
     private ?Flag $flag = null;
     private ?CountryName $countryName = null;
@@ -537,17 +537,17 @@ final class ViewHelpers
      * container always has a translator — but the helpers accept null so that a host
      * without one renders source text instead of failing.
      */
-    private function translator(): ?TranslatorInterface
+    private function translator(): ?TranslatesMessages
     {
         if (null !== $this->translator) {
             return $this->translator;
         }
-        if (! $this->laminas->has(TranslatorInterface::class)) {
+        if (! $this->laminas->has(TranslatesMessages::class)) {
             return null;
         }
-        $translator = $this->laminas->get(TranslatorInterface::class);
+        $translator = $this->laminas->get(TranslatesMessages::class);
 
-        return $this->translator = $translator instanceof TranslatorInterface ? $translator : null;
+        return $this->translator = $translator instanceof TranslatesMessages ? $translator : null;
     }
 
     /**

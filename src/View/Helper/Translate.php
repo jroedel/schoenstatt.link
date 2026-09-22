@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\View\Helper;
 
-use Laminas\Translator\TranslatorInterface;
+use SionModel\I18n\TranslatesMessages;
 
 /**
  * The `translate` view helper, formerly `Laminas\I18n\View\Helper\Translate`.
@@ -34,7 +34,7 @@ use Laminas\Translator\TranslatorInterface;
  */
 final class Translate
 {
-    private ?TranslatorInterface $translator = null;
+    private ?TranslatesMessages $translator = null;
 
     private string $textDomain = 'default';
 
@@ -47,7 +47,7 @@ final class Translate
         return $this->translator->translate($message, $textDomain ?? $this->textDomain, $locale);
     }
 
-    public function setTranslator(?TranslatorInterface $translator = null, ?string $textDomain = null): self
+    public function setTranslator(?TranslatesMessages $translator = null, ?string $textDomain = null): self
     {
         $this->translator = $translator;
         if (null !== $textDomain) {
@@ -57,7 +57,7 @@ final class Translate
         return $this;
     }
 
-    public function getTranslator(): ?TranslatorInterface
+    public function getTranslator(): ?TranslatesMessages
     {
         return $this->translator;
     }

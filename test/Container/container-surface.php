@@ -348,13 +348,6 @@ return array (
     'instance' => 'Laminas\\Db\\Adapter\\Adapter',
     'shared' => true,
   ),
-  'Laminas\\Translator\\TranslatorInterface' => 
-  array (
-    'type' => 'JTranslate\\I18n\\Translator\\Translator',
-    'instance' => 'JTranslate\\I18n\\Translator\\Translator',
-    'shared' => true,
-    'probe' => 'locale=en_US fallback=en_US',
-  ),
   'MvcTranslator' => 
   array (
     'type' => 'JTranslate\\I18n\\Translator\\Translator',
@@ -518,6 +511,12 @@ return array (
   array (
     'type' => 'SionModel\\I18n\\LanguageSupport',
     'instance' => 'SionModel\\I18n\\LanguageSupport',
+    'shared' => true,
+  ),
+  'SionModel\\I18n\\TranslatesMessages' => 
+  array (
+    'type' => 'App\\I18n\\Translator',
+    'instance' => 'SionModel\\I18n\\TranslatesMessages',
     'shared' => true,
   ),
   'SionModel\\Logger' => 

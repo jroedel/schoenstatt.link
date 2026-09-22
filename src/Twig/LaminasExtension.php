@@ -15,7 +15,6 @@ use JTranslate\I18n\MessageRenderer;
 use DateTime;
 use DateTimeInterface;
 use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
-use Laminas\Translator\TranslatorInterface;
 use IntlDateFormatter;
 use Symfony\Component\HttpFoundation\RequestStack;
 use SionModel\Entity\Entity;
@@ -220,7 +219,7 @@ final class LaminasExtension extends AbstractExtension
      */
     public function translate(string $message, ?string $domain = null): string
     {
-        /** @var TranslatorInterface $translator */
+        /** @var JTranslateTranslator $translator */
         $translator = $this->laminas->get('MvcTranslator');
 
         if (null !== $domain) {
@@ -263,9 +262,10 @@ final class LaminasExtension extends AbstractExtension
      */
     private function catalogValue(string $domain, string $message): ?string
     {
-        //the one translator, which `MvcTranslator` and the rest are aliases of:
-        //getAllMessages() is not on TranslatorInterface
-        $translator = $this->laminas->get(TranslatorInterface::class);
+        //the translator itself, not `SionModel\I18n\TranslatesMessages`: getAllMessages()
+        //is not on that contract, and the object registered under it is a binding class
+        //that has only translate()
+        $translator = $this->laminas->get(JTranslateTranslator::class);
         if (! $translator instanceof JTranslateTranslator) {
             return null;
         }

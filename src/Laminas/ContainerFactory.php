@@ -6,14 +6,15 @@ namespace App\Laminas;
 
 use App\Acl\AclProvider;
 use App\Acl\IsAllowed;
-use JTranslate\Model\TranslationsTable;
+use App\I18n\Translator as AppTranslator;
+use App\Modules\ModuleConfig;
+use App\Services\Container;
 use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
 use JTranslate\I18n\Translator\TranslatorFactory as JTranslateTranslatorFactory;
-use Laminas\Translator\TranslatorInterface;
-use App\Services\Container;
-use App\Modules\ModuleConfig;
+use JTranslate\Model\TranslationsTable;
 use Psr\Container\ContainerInterface;
 use SionModel\Cache\CacheFlushQueue;
+use SionModel\I18n\TranslatesMessages;
 
 use function is_array;
 
@@ -40,8 +41,7 @@ use function is_array;
  * ported code asks for them by those names:
  *
  * - `MvcTranslator` — an alias for `JTranslate\I18n\Translator\Translator`, the one
- *   translator; `jtranslate_translator` and `Laminas\Translator\TranslatorInterface` are
- *   the same object under other names;
+ *   translator, as is `jtranslate_translator`;
  * - `config`, `Config`, `configuration` — the merged module configuration.
  *
  * And the two delegators the application needs on every code path: {@see TranslatorConfigurator}
@@ -105,13 +105,20 @@ final class ContainerFactory
         //named it and 27 config entries still do — and `jtranslate_translator` is
         //JTranslate's own name for the same object.
         //
-        //Since 2026-09 that object is `JTranslate\I18n\Translator\Translator`, which
-        //implements the `Laminas\Translator` interface — one file, no implementation, and
-        //what `SionModel\Validator\AbstractValidator::setDefaultTranslator()` type-hints —
-        //so validators take it directly, with no adapter in between.
+        //Since 2026-09 that object is `JTranslate\I18n\Translator\Translator`. It
+        //implemented `Laminas\Translator\TranslatorInterface` until 2026-09-21, which is
+        //what SionModel's classes type-hinted, so they took it directly. SionModel states
+        //its own contract now — `SionModel\I18n\TranslatesMessages` — and `App\I18n\Translator`
+        //binds the two, because the two packages are peers and neither can see the other.
+        //It delegates and holds no state, so there is still one translator.
         $services->configure([
             'factories'  => [
                 JTranslateTranslator::class => JTranslateTranslatorFactory::class,
+                //The contract SionModel, JUser, Books and Schoenstatt resolve. Application
+                //code asks for `MvcTranslator` instead: some of it needs the translator's
+                //own methods, which are not on the contract.
+                TranslatesMessages::class   => static fn (ContainerInterface $container): AppTranslator
+                    => new AppTranslator($container->get(JTranslateTranslator::class)),
                 //The ambient authorization question, shared for the request. Registered on
                 //the container rather than on a view-helper manager (where BjyAuthorize put
                 //it, and where it stayed until laminas-view was removed) so that the one
@@ -121,9 +128,8 @@ final class ContainerFactory
                     => new IsAllowed(new AclProvider(new ContainerServices($container))),
             ],
             'aliases'    => [
-                TranslatorInterface::class => JTranslateTranslator::class,
-                'MvcTranslator'            => JTranslateTranslator::class,
-                'jtranslate_translator'    => JTranslateTranslator::class,
+                'MvcTranslator'         => JTranslateTranslator::class,
+                'jtranslate_translator' => JTranslateTranslator::class,
             ],
             'delegators' => [
                 JTranslateTranslator::class => [TranslatorConfigurator::class],
