@@ -191,7 +191,7 @@ final class PersonController
 
     private function translate(string $message): string
     {
-        /** @var \Laminas\Translator\TranslatorInterface $translator */
+        /** @var \JTranslate\I18n\Translator\Translator $translator */
         $translator = $this->laminas->get('MvcTranslator');
 
         return $translator->translate($message);

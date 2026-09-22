@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use App\I18n\Translator as AppTranslator;
 use JTranslate\I18n\Translator\Translator;
 use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
@@ -57,17 +58,20 @@ use function str_replace;
  * something first asks for the translator, which is precisely when it is needed.
  *
  * It also cannot be forgotten. Templates reach the translator through
- * App\Twig\LaminasExtension and models get it injected by their own factories;
- * both resolve `MvcTranslator` from this container, so both are covered by one
- * hook. A listener would have had to be remembered by whoever added the next
- * consumer.
+ * App\Twig\LaminasExtension and models get it injected by their own factories; every one
+ * of those paths ends at the same object, so all are covered by one hook. A listener would
+ * have had to be remembered by whoever added the next consumer.
  *
- * Proven safe to attach to one id alone because there is only one translator:
- * `MvcTranslator`, `jtranslate_translator`, `Laminas\Translator\TranslatorInterface` and
- * `SchoenstattTable::$translator` were measured to be the *same instance*. They are all
- * aliases of `JTranslate\I18n\Translator\Translator`, which is the id this delegator is
- * registered on — aliases resolve before delegators are looked up, so registering it on
- * any of the other names would silently never run.
+ * Safe to attach to one id alone because there is only one translator. `MvcTranslator`,
+ * `jtranslate_translator` and `SchoenstattTable::$translator` were measured to be the
+ * *same instance*; the first two are aliases of `JTranslate\I18n\Translator\Translator`,
+ * which is the id this delegator is registered on — aliases resolve before delegators are
+ * looked up, so registering it on any of the other names would silently never run.
+ *
+ * `SionModel\I18n\TranslatesMessages` resolves to {@see \App\I18n\Translator}, which is a
+ * different object but not a second translator: it holds nothing and delegates to this
+ * one, so what is configured here is what it answers with. Its factory resolves the class
+ * id, so this delegator has already run by the time it is built.
  *
  * ## Faithfulness
  *
@@ -181,7 +185,12 @@ final class TranslatorConfigurator
         //still being set and ours was not, so 35 forms said "The form submitted did not
         //originate from the expected site" where the catalog says "The form submitted was
         //expired, please resubmit".
-        AbstractValidator::setDefaultTranslator($inner, 'default');
+        //`new` rather than `$container->get(TranslatesMessages::class)`: that factory asks
+        //for the translator this delegator is in the middle of building, so resolving it
+        //here would recurse. Two binding objects then exist for the one translator, which
+        //costs nothing and cannot drift — the class holds no state, and both delegate to
+        //`$inner`.
+        AbstractValidator::setDefaultTranslator(new AppTranslator($inner), 'default');
 
         //The same map the writer side gets from App\Laminas\TranslationsTableConfigurator,
         //a delegator on the table itself — because a caller that *exports* catalogs must

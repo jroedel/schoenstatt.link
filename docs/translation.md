@@ -272,11 +272,16 @@ catalogs, whose format is unchanged.
 have needed a custom loader for the catalog format, a decorator to detect a catalogue miss
 (it has no missing-translation event, and discovery depends on one) and an adapter to the
 interface the form validators want — while ICU formatting, pluralization and its other
-loaders went unused. Ours implements `Laminas\Translator\TranslatorInterface`, an
-interface-only package of one file, which is what
-`SionModel\Validator\AbstractValidator::setDefaultTranslator()` type-hints. That is how a
-validator's message gets translated without either side knowing about the other, and it is
-the last laminas package this module names.
+loaders went unused.
+
+Ours implements no interface at all. It did implement `Laminas\Translator\TranslatorInterface`
+until 2026-09-21 — an interface-only package of one file, and the last laminas package this
+module named. Nothing inside JTranslate ever consumed that abstraction, so what replaced it
+is a contract on the **consumer** side: `SionModel\I18n\TranslatesMessages` states what
+SionModel needs of a translator, `App\I18n\Translator` binds the two, and
+`SionModel\Validator\AbstractValidator::setDefaultTranslator()` type-hints the contract.
+That is how a validator's message gets translated without either side knowing about the
+other — SionModel and JTranslate are peers and neither requires the other.
 
 Three properties are load-bearing and silent when wrong:
 

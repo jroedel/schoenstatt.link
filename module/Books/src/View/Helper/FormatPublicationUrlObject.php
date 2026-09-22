@@ -3,7 +3,7 @@
 
 namespace Books\View\Helper;
 
-use Laminas\Translator\TranslatorInterface;
+use SionModel\I18n\TranslatesMessages;
 use SionModel\Uri\Http;
 use SionModel\View\Helper\FormatUrlObject;
 
@@ -14,7 +14,7 @@ class FormatPublicationUrlObject extends FormatUrlObject
      * is gone and the translator arrives here instead. Null renders the label in its source
      * language, which is what a catalog miss gives anyway.
      */
-    public function __construct(private readonly ?TranslatorInterface $translator = null)
+    public function __construct(private readonly ?TranslatesMessages $translator = null)
     {
     }
 

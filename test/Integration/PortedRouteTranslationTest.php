@@ -12,7 +12,6 @@ use App\Laminas\ViewHelpers;
 use App\Twig\LaminasExtension;
 use Laminas\Db\Adapter\Adapter;
 use JTranslate\I18n\Translator\Translator;
-use Laminas\Translator\TranslatorInterface;
 use Locale;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -141,7 +140,7 @@ class PortedRouteTranslationTest extends TestCase
     {
         $this->requireDatabase();
 
-        $translator = $this->bridge()->get(TranslatorInterface::class);
+        $translator = $this->bridge()->get(Translator::class);
         self::assertInstanceOf(Translator::class, $translator);
 
         self::assertSame(
@@ -177,7 +176,7 @@ class PortedRouteTranslationTest extends TestCase
 
         $phrase = $this->aModuleOnlyPhrase();
 
-        $translator = $this->bridge()->get(TranslatorInterface::class);
+        $translator = $this->bridge()->get(Translator::class);
         self::assertInstanceOf(Translator::class, $translator);
 
         $inModuleDomain = $translator->translate($phrase, 'Schoenstatt');
@@ -220,7 +219,7 @@ class PortedRouteTranslationTest extends TestCase
         $this->requireDatabase();
 
         /** @var Translator $translator */
-        $translator = $this->bridge()->get(TranslatorInterface::class);
+        $translator = $this->bridge()->get(Translator::class);
 
         $domains = [];
         //replaces JTranslate's reporter for the duration, which would otherwise write a row
@@ -279,7 +278,7 @@ class PortedRouteTranslationTest extends TestCase
     {
         $this->requireDatabase();
         /** @var Translator $translator */
-        $translator = $this->bridge()->get(TranslatorInterface::class);
+        $translator = $this->bridge()->get(Translator::class);
         $domains    = [];
         //replaces JTranslate's reporter for the duration; see the sibling test above
         $translator->clearMissingTranslationListeners();
