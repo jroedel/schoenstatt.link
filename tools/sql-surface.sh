@@ -32,6 +32,18 @@ CHECK=0
 
 db() { docker compose exec -T db mariadb -uroot -proot -N -B -e "$1" 2>/dev/null; }
 
+# True when any line of $2 is a substring of $1. A statement built by concatenation reaches
+# tools/sql-test-literals.php as its first fragment only, so an exact match would subtract
+# almost nothing.
+contains_literal() {
+    local shape=$1 file=$2 literal
+    while IFS= read -r literal; do
+        [ ${#literal} -ge 30 ] || continue
+        case "$shape" in *"$literal"*) return 0 ;; esac
+    done < "$file"
+    return 1
+}
+
 if ! docker compose ps --format '{{.Service}} {{.State}}' 2>/dev/null | grep -q '^db running'; then
     echo "the capsule is not running: docker compose up -d" >&2
     exit 1
@@ -66,20 +78,59 @@ done < "$URLS"
 
 echo "captured $COUNT pages"
 
+# The HTTP pass on its own, kept: it is the one driver that issues nothing but the
+# application's SQL, and it is what decides a tie below.
+HTTP_RAW=$(mktemp)
+db "SELECT command_type, REPLACE(REPLACE(CONVERT(argument USING utf8mb4), '\t', ' '), '\n', ' ') FROM mysql.general_log ORDER BY event_time" > "$HTTP_RAW"
+HTTP=$(mktemp)
+docker compose exec -T app php tools/sql-normalise.php < "$HTTP_RAW" > "$HTTP"
+
 # The write paths and every table no anonymous page reaches. Its output goes nowhere: what
 # is wanted is the SQL it issues on the way.
 echo "running the integration suite"
+db "TRUNCATE TABLE mysql.general_log;"
 docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar --testsuite integration >/dev/null 2>&1
 
 db "SET GLOBAL general_log='OFF';"
 
 RAW=$(mktemp)
-trap 'rm -f "$RAW"' EXIT
+trap 'rm -f "$RAW" "$HTTP_RAW" "$HTTP" "$INT" "$LITERALS"' EXIT
 db "SELECT command_type, REPLACE(REPLACE(CONVERT(argument USING utf8mb4), '\t', ' '), '\n', ' ') FROM mysql.general_log ORDER BY event_time" > "$RAW"
 
+INT=$(mktemp)
+docker compose exec -T app php tools/sql-normalise.php < "$RAW" > "$INT"
+
+# The integration suite issues SQL of its own — fixture counts and the like — and those
+# statements are not the application's, so a recording holding them moves whenever a test is
+# edited. They are subtracted here rather than kept in a hand-maintained ignore list, which
+# would rot. A shape the HTTP pass also produced is never dropped: that pass runs nothing but
+# the application, so it settles any case where a test happens to write out a statement the
+# application also makes.
+LITERALS=$(mktemp)
+docker compose exec -T app php tools/sql-test-literals.php \
+    | docker compose exec -T app php tools/sql-normalise.php > "$LITERALS"
+
 TMP=$(mktemp)
-docker compose exec -T app php tools/sql-normalise.php < "$RAW" > "$TMP"
+DROPPED=0
+while IFS= read -r SHAPE; do
+    if grep -qxF "$SHAPE" "$HTTP"; then
+        printf '%s\n' "$SHAPE" >> "$TMP"
+        continue
+    fi
+    if contains_literal "$SHAPE" "$LITERALS"; then
+        DROPPED=$((DROPPED + 1))
+        continue
+    fi
+    printf '%s\n' "$SHAPE" >> "$TMP"
+done < "$INT"
+
+# The HTTP pass in full: the log is truncated between the two phases, so its shapes are not
+# in $INT and the loop above never sees the ones only it produces.
+cat "$HTTP" >> "$TMP"
+
+sort -u -o "$TMP" "$TMP"
 SHAPES=$(wc -l < "$TMP" | tr -d ' ')
+echo "kept $SHAPES statement shapes, dropped $DROPPED issued by the tests themselves"
 
 if [ "$SHAPES" -lt 150 ]; then
     echo "only $SHAPES statement shapes captured — the log was not recording" >&2
