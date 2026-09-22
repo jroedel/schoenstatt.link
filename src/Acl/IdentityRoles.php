@@ -6,8 +6,8 @@ namespace App\Acl;
 
 use App\Laminas\LaminasServices;
 use JUser\Host\IdentityInterface;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\ResultSet\ResultSetInterface;
+use SionModel\Db\Connection;
+use SionModel\Db\ResultSet;
 
 use function is_array;
 use function is_object;
@@ -60,12 +60,12 @@ final class IdentityRoles
      */
     public function rolesForUser(int $userId): array
     {
-        $db = $this->laminas->get(Adapter::class);
-        if (! $db instanceof Adapter) {
+        $db = $this->laminas->get(Connection::class);
+        if (! $db instanceof Connection) {
             return [];
         }
 
-        $result = $db->query(
+        $result = $db->select(
             'SELECT ur.role_id AS role
                FROM user_role_linker l
                INNER JOIN user_role ur ON ur.id = l.role_id
@@ -74,7 +74,7 @@ final class IdentityRoles
         );
 
         $roles = [];
-        if ($result instanceof ResultSetInterface) {
+        if ($result instanceof ResultSet) {
             foreach ($result as $row) {
                 $name = is_array($row) ? ($row['role'] ?? null) : (is_object($row) ? ($row->role ?? null) : null);
                 if (is_string($name) && '' !== $name) {

@@ -4,19 +4,18 @@ namespace Books\Model;
 use SionModel\Db\Model\SionTable;
 use SionModel\Filter\ToAscii;
 use Schoenstatt\Model\SchoenstattTable;
-use Laminas\Db\Sql\Predicate\IsNotNull;
-use Laminas\Db\Sql\Predicate\Literal;
-use Laminas\Db\Sql\Select;
-use Laminas\Db\Sql\Predicate\Expression;
+use SionModel\Db\Sql\Predicate\IsNotNull;
+use SionModel\Db\Sql\Predicate\Literal;
+use SionModel\Db\Sql\Select;
+use SionModel\Db\Sql\Expression;
 use SionModel\Db\Model\PredicatesTable;
-use Laminas\Db\Sql\Where;
-use Laminas\Db\Sql\Predicate\PredicateSet;
-use Laminas\Db\Sql\Predicate\Operator;
-use Laminas\Db\Sql\Predicate\In;
-use Laminas\Db\Sql\Predicate\IsNull;
-use Laminas\Db\Sql\Predicate\Predicate;
-use Laminas\Db\Sql\Predicate\Like;
+use SionModel\Db\Sql\Where;
+use SionModel\Db\Sql\Predicate\Operator;
+use SionModel\Db\Sql\Predicate\In;
+use SionModel\Db\Sql\Predicate\IsNull;
+use SionModel\Db\Sql\Predicate\Like;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use SionModel\Db\Sql\Predicate\Group;
 
 class PublicationsTable extends SionTable
 {
@@ -306,7 +305,7 @@ ORDER BY `Publisher`";
         $select = $this->getSelectPrototype('publication');
         $where = new Where();
 
-        $combination = (isset($options['orCombination']) && $options['orCombination']) ? PredicateSet::OP_OR : PredicateSet::OP_AND;
+        $combination = (isset($options['orCombination']) && $options['orCombination']) ? Where::OP_OR : Where::OP_AND;
 
         /*
          * The terms that come from $query go in here, joined by $combination; the filters
@@ -324,21 +323,21 @@ ORDER BY `Publisher`";
          * 44 parent publications were reaching "Other editions" through the gap. Nesting the
          * group is what parenthesises it.
          */
-        $queryWhere = new Predicate();
+        $queryWhere = new Where();
 
         //Prepare the search predicate
         if (isset($query['search'])) {
             $search = $query['search'];
             $searchLike = sprintf("%%%s%%", $search);
-            $searchClause = new Predicate();
+            $searchClause = new Where();
             $searchClause->addPredicates([
                 new Like($fieldMap['title'], $searchLike),
                 new Like($fieldMap['authorsText'], $searchLike),
                 new Like($fieldMap['category'], $searchLike),
                 new Like($fieldMap['publisher'], $searchLike),
                 new Like($fieldMap['description'], $searchLike),
-            ], PredicateSet::OP_OR);
-            $queryWhere->addPredicate($searchClause);
+            ], Where::OP_OR);
+            $queryWhere->addPredicate(new Group($searchClause));
         }
 
         // Prepare collectionId predicate
@@ -358,7 +357,7 @@ ORDER BY `Publisher`";
                 }
             }
             if (is_numeric($query['categoryId'])) {
-                $categoryIdClause = new Operator($fieldMap['categoryId'], Operator::OPERATOR_EQUAL_TO, $query['categoryId']);
+                $categoryIdClause = new Operator($fieldMap['categoryId'], Operator::EQ, $query['categoryId']);
             }
             if (isset($categoryIdClause)) {
                 $queryWhere->addPredicate($categoryIdClause, $combination);
@@ -382,7 +381,7 @@ ORDER BY `Publisher`";
                 }
             }
             if (is_numeric($query['publicationId'])) {
-                $publicationIdClause = new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
+                $publicationIdClause = new Operator($fieldMap['publicationId'], Operator::EQ, $query['publicationId']);
             }
             if (isset($publicationIdClause)) {
                 $queryWhere->addPredicate($publicationIdClause, $combination);
@@ -406,7 +405,7 @@ ORDER BY `Publisher`";
                 }
             }
             if (is_numeric($query['mainPublicationId'])) {
-                $mainPublicationIdClause = new Operator($fieldMap['mainPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['mainPublicationId']);
+                $mainPublicationIdClause = new Operator($fieldMap['mainPublicationId'], Operator::EQ, $query['mainPublicationId']);
             }
             if (isset($mainPublicationIdClause)) {
                 $queryWhere->addPredicate($mainPublicationIdClause, $combination);
@@ -430,7 +429,7 @@ ORDER BY `Publisher`";
                 }
             }
             if (is_numeric($query['translatedFromPublicationId'])) {
-                $translatedFromPublicationIdClause = new Operator($fieldMap['translatedFromPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['translatedFromPublicationId']);
+                $translatedFromPublicationIdClause = new Operator($fieldMap['translatedFromPublicationId'], Operator::EQ, $query['translatedFromPublicationId']);
             }
             if (isset($translatedFromPublicationIdClause)) {
                 $queryWhere->addPredicate($translatedFromPublicationIdClause, $combination);
@@ -456,13 +455,13 @@ ORDER BY `Publisher`";
         //Prepare inLanguage predicate
         if (isset($query['inLanguage'])) {
             $inLanguageClause = new In($fieldMap['inLanguage'], $query['inLanguage']);
-            $where->addPredicate($inLanguageClause, PredicateSet::OP_AND); //I don't think it would ever make sense combine with OR here
+            $where->addPredicate($inLanguageClause, Where::OP_AND); //I don't think it would ever make sense combine with OR here
         }
 
         //Prepare isSubEdition predicate, by default, don't filter
         if (isset($options['noSubEditions']) && $options['noSubEditions']) {
             $noSubEditionClause = new IsNull($fieldMap['mainPublicationId']);
-            $where->addPredicate($noSubEditionClause, PredicateSet::OP_AND);
+            $where->addPredicate($noSubEditionClause, Where::OP_AND);
         }
 
         /*
@@ -475,14 +474,14 @@ ORDER BY `Publisher`";
          */
         if (! isset($options['includeDataSources']) || ! $options['includeDataSources']) {
             $isFromDataSourceClause = new IsNull($fieldMap['dataSource']);
-            $where->addPredicate($isFromDataSourceClause, PredicateSet::OP_AND);
+            $where->addPredicate($isFromDataSourceClause, Where::OP_AND);
         }
 
         //The query group is added last but binds first: one nested predicate, parenthesised,
         //ANDed with the filters above. Skipped when empty so an unfiltered search does not
         //emit a bare `()`.
         if ($queryWhere->count() > 0) {
-            $where->addPredicate($queryWhere, PredicateSet::OP_AND);
+            $where->addPredicate(new Group($queryWhere), Where::OP_AND);
         }
 
         //Set the where clause
@@ -556,7 +555,7 @@ ORDER BY `Publisher`";
         ]);
         $select->where(new Operator(
             'sch_publications.ResourceId',
-            Operator::OPERATOR_EQUAL_TO,
+            Operator::EQ,
             'publication_public'
         ));
 
@@ -614,7 +613,7 @@ ORDER BY `Publisher`";
         $select = new Select('sch_publications');
         $select->columns(['PublicationId']);
         $select->where([
-            new Operator('ResourceId', Operator::OPERATOR_EQUAL_TO, 'publication_public'),
+            new Operator('ResourceId', Operator::EQ, 'publication_public'),
             new IsNotNull('MergedIntoPublicationId'),
         ]);
 
@@ -1207,18 +1206,18 @@ ORDER BY `Publisher`";
         $gateway = $this->getTableGateway('sch_publications');
         $where = new Where();
         if (isset($mainPublicationId)) {
-            $clause = new Operator('PublicationId', Operator::OPERATOR_EQUAL_TO, $mainPublicationId);
-            $where->addPredicate($clause, PredicateSet::OP_OR);
+            $clause = new Operator('PublicationId', Operator::EQ, $mainPublicationId);
+            $where->addPredicate($clause, Where::OP_OR);
         }
         if (isset($translatedFromPublicationId)) {
-            $clause = new Operator('PublicationId', Operator::OPERATOR_EQUAL_TO, $translatedFromPublicationId);
-            $where->addPredicate($clause, PredicateSet::OP_OR);
+            $clause = new Operator('PublicationId', Operator::EQ, $translatedFromPublicationId);
+            $where->addPredicate($clause, Where::OP_OR);
         }
 
-        $clause = new Operator('MainPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
-        $where->addPredicate($clause, PredicateSet::OP_OR);
-        $clause = new Operator('TranslatedFromPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
-        $where->addPredicate($clause, PredicateSet::OP_OR);
+        $clause = new Operator('MainPublicationId', Operator::EQ, $publicationId);
+        $where->addPredicate($clause, Where::OP_OR);
+        $clause = new Operator('TranslatedFromPublicationId', Operator::EQ, $publicationId);
+        $where->addPredicate($clause, Where::OP_OR);
         $gateway->update(['CategoryId' => $categoryId], $where);
     }
 

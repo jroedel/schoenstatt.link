@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Db\Adapter\AdapterInterface;
+use SionModel\Db\Connection;
 use SionModel\Form\Element\Select;
 use SionModel\Form\Fieldset;
 use SionModel\Form\Form;
@@ -136,9 +136,9 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
         try {
             $repository = FormRepository::instance();
             $container  = $repository->container();
-            /** @var AdapterInterface $adapter */
-            $adapter = $container->get('Laminas\Db\Adapter\Adapter');
-            $adapter->query('SELECT 1', []);
+            /** @var Connection $adapter */
+            $adapter = $container->get('SionModel\Db\Connection');
+            $adapter->select('SELECT 1', []);
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }
@@ -275,8 +275,8 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
     public function testNoRecordPointsAtAnotherLibrarysCollection(): void
     {
         try {
-            $adapter = FormRepository::instance()->container()->get('Laminas\Db\Adapter\Adapter');
-            $adapter->query('SELECT 1', []);
+            $adapter = FormRepository::instance()->container()->get('SionModel\Db\Connection');
+            $adapter->select('SELECT 1', []);
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }
@@ -299,7 +299,7 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
         $findings = [];
         foreach ($checks as $label => $sql) {
             $count = 0;
-            foreach ($adapter->query($sql, []) as $row) {
+            foreach ($adapter->select($sql, []) as $row) {
                 $count = (int) $row['c'];
             }
             if (0 !== $count) {
@@ -399,7 +399,7 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
      *
      * @return list<string>
      */
-    private function distinctValues(AdapterInterface $adapter, string $table, string $column): array
+    private function distinctValues(Connection $adapter, string $table, string $column): array
     {
         $sql = sprintf(
             'SELECT DISTINCT BINARY `%s` AS v FROM `%s` WHERE `%s` IS NOT NULL AND `%s` <> \'\'',
@@ -410,7 +410,7 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
         );
 
         $values = [];
-        foreach ($adapter->query($sql, []) as $row) {
+        foreach ($adapter->select($sql, []) as $row) {
             foreach (explode('|', (string) $row['v']) as $part) {
                 if ('' !== $part) {
                     $values[$part] = true;

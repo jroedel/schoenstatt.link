@@ -5889,7 +5889,7 @@ return array (
   ),
   'database-query' => 
   array (
-    'NoRecordExists' => 'SELECT `sch_persons`.`PersonId` AS `PersonId` FROM `sch_persons` WHERE `PersonId` = :where1',
-    'RecordExists' => 'SELECT `sch_persons`.`PersonId` AS `PersonId` FROM `sch_persons` WHERE `PersonId` = :where1',
+    'NoRecordExists' => 'SELECT `sch_persons`.`PersonId` AS `PersonId` FROM `sch_persons` WHERE `PersonId` = ?',
+    'RecordExists' => 'SELECT `sch_persons`.`PersonId` AS `PersonId` FROM `sch_persons` WHERE `PersonId` = ?',
   ),
 );

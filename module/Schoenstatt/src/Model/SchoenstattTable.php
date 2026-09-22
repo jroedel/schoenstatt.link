@@ -6,11 +6,11 @@ use SionModel\Db\Model\SionTable;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
 use SionModel\I18n\TranslatesMessages;
-use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Db\TableGateway\TableGateway;
+use SionModel\Db\Connection;
+use SionModel\Db\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;
-use Laminas\Db\Sql\Select;
-use Laminas\Db\Sql\Expression;
+use SionModel\Db\Sql\Select;
+use SionModel\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
 use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Service\EntitiesService;
@@ -18,7 +18,7 @@ use SionModel\Db\GeoPoint;
 use SionModel\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
 use Spatie\SchemaOrg\Schema;
-use Laminas\Db\Sql\Predicate\PredicateSet;
+use SionModel\Db\Sql\Where;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
 use Spatie\SchemaOrg\PropertyValue;
 use Spatie\SchemaOrg\CatholicChurch;
@@ -26,8 +26,8 @@ use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Spatie\OpeningHours\OpeningHours;
 use App\Json;
 use SionModel\Validator\Timezone;
-use Laminas\Db\Sql\Predicate\IsNull;
-use Laminas\Db\Sql\Predicate\IsNotNull;
+use SionModel\Db\Sql\Predicate\IsNull;
+use SionModel\Db\Sql\Predicate\IsNotNull;
 use Spatie\SchemaOrg\Place;
 use Spatie\SchemaOrg\PlaceOfWorship;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
@@ -35,6 +35,7 @@ use Spatie\SchemaOrg\Organization;
 use Schoenstatt\Validator\EventsJson;
 use JTranslate\Model\TranslationsTable;
 use App\Text\Slug;
+use SionModel\Db\Sql\Predicate\Operator;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -182,7 +183,7 @@ class SchoenstattTable extends SionTable implements
      * now does no I/O at all.
      */
     public function __construct(
-        AdapterInterface $dbAdapter,
+        Connection $dbAdapter,
         EntitiesService $entities,
         array $sionModelConfig,
         ?ActingUserProviderInterface $actingUserProvider,
@@ -1742,9 +1743,9 @@ class SchoenstattTable extends SionTable implements
         //render this", and only the records can answer it.
         $gateway = $this->getTableGateway('sch_associations');
         $others  = $gateway->select(function (Select $select) use ($old, $entityData) {
-            $select->where->equalTo('PublicNotes', $old);
+            $select->where(new Operator('PublicNotes', Operator::EQ, $old));
             if (isset($entityData['associationId'])) {
-                $select->where->notEqualTo('AssociationId', $entityData['associationId']);
+                $select->where(new Operator('AssociationId', Operator::NEQ, $entityData['associationId']));
             }
         });
         if ($others->count() > 0) {

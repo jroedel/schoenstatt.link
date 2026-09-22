@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace SchoenstattTest\Integration;
 
 use App\Laminas\ServiceBridge;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use ReflectionObject;
@@ -60,8 +60,8 @@ final class SionTableWiringCompletenessTest extends TestCase
             self::markTestSkipped('no config/autoload/local.php, so no database configuration');
         }
         try {
-            $adapter = $this->bridge()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            $adapter = $this->bridge()->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }

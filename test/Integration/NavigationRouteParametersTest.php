@@ -6,7 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use App\Laminas\ContainerFactory;
 use Application\Navigation\PageBuilder;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -166,9 +166,9 @@ class NavigationRouteParametersTest extends TestCase
         }
 
         try {
-            /** @var Adapter $adapter */
-            $adapter = self::services()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = self::services()->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }

@@ -8,7 +8,7 @@ use App\Books\LibraryPage;
 use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
-use Laminas\Db\Sql\Predicate;
+use SionModel\Db\Sql\PredicateInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -49,11 +49,11 @@ final class LibraryCollectionsController
      * annotation is the thing that is wrong; this states the shape at one place instead of
      * suppressing it at each call.
      *
-     * @return array<Predicate\PredicateInterface>
+     * @return array<PredicateInterface>
      */
     private function predicate(int $libraryId): array
     {
-        /** @var array<Predicate\PredicateInterface> $map */
+        /** @var array<PredicateInterface> $map */
         $map = ['libraryId' => $libraryId];
 
         return $map;

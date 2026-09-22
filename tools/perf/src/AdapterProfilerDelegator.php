@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattPerf;
 
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -27,8 +27,8 @@ final class AdapterProfilerDelegator
         Collector::boot();
 
         $adapter = $callback();
-        if ($adapter instanceof Adapter) {
-            $adapter->setProfiler(new DbProfiler());
+        if ($adapter instanceof Connection) {
+            $adapter->watch(new DbProfiler());
         }
 
         return $adapter;

@@ -444,13 +444,12 @@ final class FormValidationContractTest extends TestCase
 
         return FormRepository::instance()->quietly(static function () use ($container): ?array {
             try {
-                $adapter = $container->get(\Laminas\Db\Adapter\Adapter::class);
-                $result  = $adapter->query(
+                $adapter = $container->get(\SionModel\Db\Connection::class);
+                $result  = $adapter->select(
                     'SELECT TABLE_NAME, COLUMN_NAME, CHARACTER_MAXIMUM_LENGTH
                        FROM information_schema.COLUMNS
                       WHERE TABLE_SCHEMA = DATABASE()
-                        AND CHARACTER_MAXIMUM_LENGTH IS NOT NULL',
-                    \Laminas\Db\Adapter\Adapter::QUERY_MODE_EXECUTE
+                        AND CHARACTER_MAXIMUM_LENGTH IS NOT NULL'
                 );
             } catch (\Throwable) {
                 return null;

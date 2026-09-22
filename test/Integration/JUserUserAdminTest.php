@@ -9,7 +9,7 @@ use JUser\Model\PersonValueOptionsProviderInterface;
 use JUser\Model\UserTable;
 use JUser\Page\UserAdmin;
 use JUser\Service\ApiTokenService;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +50,7 @@ final class JUserUserAdminTest extends TestCase
     private static ?Container $services = null;
 
     private UserTable $users;
-    private Adapter $adapter;
+    private Connection $adapter;
     private ApiTokenService $apiTokens;
 
     protected function setUp(): void
@@ -60,7 +60,7 @@ final class JUserUserAdminTest extends TestCase
         }
         try {
             $this->users     = $this->container()->get(UserTable::class);
-            $this->adapter   = $this->container()->get(Adapter::class);
+            $this->adapter   = $this->container()->get(Connection::class);
             $this->apiTokens = $this->container()->get(ApiTokenService::class);
         } catch (Throwable $e) {
             self::markTestSkipped(

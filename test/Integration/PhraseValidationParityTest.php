@@ -7,7 +7,7 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ContainerFactory;
 use JTranslate\Form\EditPhraseForm;
 use JTranslate\Form\PhraseValidator;
-use Laminas\Db\Adapter\Adapter;
+use SionModel\Db\Connection;
 use App\Services\Container;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -52,7 +52,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *    `GlobalAdapterFeature::getStaticAdapter()` while building its `RecordExists`
  *    validator, and nothing populated that registry on a Symfony-served route, so
  *    PhraseValidator wrote to it before building the form and this test did the same.
- *    The form takes an `Adapter` as of 2026-08-14 and both are gone.
+ *    The form takes an `Connection` as of 2026-08-14 and both are gone.
  *    testCsrfIsTheOnlyInputTheApiDoesNotEnforce carries the remaining one, and its
  *    name is now literally true.
  *
@@ -93,8 +93,8 @@ final class PhraseValidationParityTest extends TestCase
     private static function form(): EditPhraseForm
     {
         $services = self::services();
-        /** @var Adapter $adapter */
-        $adapter = $services->get(Adapter::class);
+        /** @var Connection $adapter */
+        $adapter = $services->get(Connection::class);
 
         /** @var array<string, mixed> $config */
         $config     = $services->get('config');
@@ -362,9 +362,9 @@ final class PhraseValidationParityTest extends TestCase
         }
 
         try {
-            /** @var Adapter $adapter */
-            $adapter = self::services()->get(Adapter::class);
-            $adapter->getDriver()->getConnection()->connect();
+            /** @var Connection $adapter */
+            $adapter = self::services()->get(Connection::class);
+            $adapter->select('SELECT 1');
         } catch (Throwable $e) {
             self::markTestSkipped('no database: ' . $e->getMessage());
         }

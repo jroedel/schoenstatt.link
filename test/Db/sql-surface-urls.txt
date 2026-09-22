@@ -1,0 +1,46 @@
+# The pages the SQL recording is taken from. One path per line; `#` comments and blank
+# lines ignored. Read by tools/sql-surface.sh.
+#
+# Chosen to reach every table the application queries, not to be a second smoke suite:
+# what is recorded is the SQL each page issues, and two pages that differ only in their
+# markup issue the same statements. One locale is enough for the same reason — the locale
+# changes which catalog is read, not which query is built.
+#
+# A page added here grows the recording, which is the point: a table nothing in this list
+# reaches has no contract, and the SQL it issues can change unnoticed. tools/sql-surface.sh
+# warns when a path stops answering, because a 404 silently removes its queries.
+
+# Shrines, associations, people, roles and assignments — SchoenstattTable, the largest reader
+/en/shrines
+/en/wayside-shrines
+/en/SL100319A/original-schoenstatt-shrine
+/en/associations
+/en/persons
+/en/persons/search
+# An entity show page, not just the index: it is the only thing that reads `relationships`,
+# and the path redirects to its slug, which is why the capture follows redirects.
+/en/persons/1
+/en/roles
+/en/assignments/search
+/en/timeline
+/en/movement
+
+# Literature — PublicationsTable, EventTextTable, DictionaryTable
+/en/literature
+/en/literature/search
+/en/literature/1
+/en/literature/150-preguntas-sobre-schoenstatt
+/en/texts
+/en/dictionary
+
+# Libraries and circulation — LibraryTable
+/en/libraries
+
+# The change log and the data-problem sweep — ChangesTable, PredicatesTable
+/en/sm/view-changes
+/en/sm/data-problems
+
+# Home, the navigation tree and the static pages, which read enough to be worth pinning
+/en/
+/en/acknowledgements
+/en/developers

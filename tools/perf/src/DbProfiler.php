@@ -4,59 +4,25 @@ declare(strict_types=1);
 
 namespace SchoenstattPerf;
 
-use Laminas\Db\Adapter\Profiler\ProfilerInterface;
-use Laminas\Db\Adapter\StatementContainerInterface;
-
 /**
- * Times every statement the laminas-db driver executes and hands it to {@see Collector}.
+ * Times every statement the connection executes and hands it to {@see Collector}.
  *
- * laminas-db ships `Laminas\Db\Adapter\Profiler\Profiler`, which accumulates every statement
- * in an array and hands it back at the end. That is the wrong shape here for one reason: a
- * page rendering a few thousand rows produces a few thousand entries and the array outweighs
- * the thing being measured. This keeps a running total and a folded histogram instead, so the
- * profiler's own footprint does not distort what it reports.
+ * `Laminas\Db\Adapter\Profiler\ProfilerInterface` until 2026-09-22: a start/finish pair
+ * where the listener had to narrow a `StatementContainerInterface` before it could read the
+ * SQL, and where a finish arriving without a start had to be tolerated. `Connection::watch()`
+ * hands over the statement and its elapsed time in one call, after the fact, so neither
+ * problem exists any more and the class is the one line that was ever the point.
+ *
+ * laminas-db also shipped a `Profiler` that accumulated every statement in an array. That was
+ * the wrong shape here: a page rendering a few thousand rows produces a few thousand entries
+ * and the array outweighs the thing being measured. `Collector` keeps a running total and a
+ * folded histogram, so the measurement\'s own footprint does not distort what it reports.
  */
-final class DbProfiler implements ProfilerInterface
+final class DbProfiler
 {
-    private ?string $sql = null;
-
-    private float $startedAt = 0.0;
-
-    /**
-     * @param string|StatementContainerInterface $target
-     * @return $this
-     */
-    public function profilerStart($target)
+    /** @param list<mixed> $values */
+    public function __invoke(string $sql, array $values, float $seconds): void
     {
-        //`is_string()` rather than a bare cast: the interface documents `string|
-        //StatementContainerInterface`, but laminas-db hands a plain object through in at
-        //least one path and a profiler that fatals is worse than one that says "(unknown)".
-        if ($target instanceof StatementContainerInterface) {
-            $this->sql = (string) $target->getSql();
-        } else {
-            /** @phpstan-ignore-next-line the docblock says string; reality is looser */
-            $this->sql = is_string($target) ? $target : '(unknown)';
-        }
-        $this->startedAt = microtime(true);
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function profilerFinish()
-    {
-        if (null === $this->sql) {
-            //A finish with no start means someone else called us out of order. Silently
-            //dropping the sample is right: a profiler that throws turns a measurement run
-            //into an outage report about the profiler.
-            return $this;
-        }
-
-        Collector::recordQuery($this->sql, microtime(true) - $this->startedAt);
-        $this->sql = null;
-
-        return $this;
+        Collector::recordQuery($sql, $seconds);
     }
 }
