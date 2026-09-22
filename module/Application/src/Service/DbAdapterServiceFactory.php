@@ -1,15 +1,14 @@
 <?php
 namespace Application\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class DbAdapterServiceFactory implements FactoryInterface
+class DbAdapterServiceFactory
 {
 
     /**
@@ -63,7 +62,7 @@ class DbAdapterServiceFactory implements FactoryInterface
      *
      * @param mixed $config the merged configuration
      * @return array<string, mixed>
-     * @throws \Laminas\ServiceManager\Exception\ServiceNotCreatedException
+     * @throws \App\Services\ServiceNotCreated
      */
     private function credentials($config): array
     {
@@ -72,7 +71,7 @@ class DbAdapterServiceFactory implements FactoryInterface
             : null;
 
         if (null === $dbParams) {
-            throw new \Laminas\ServiceManager\Exception\ServiceNotCreatedException(
+            throw new \App\Services\ServiceNotCreated(
                 'No `db` configuration: the database credentials live in'
                 . ' config/autoload/local.php, which is gitignored and machine-specific.'
                 . ' Run ./config.sh to create one from the .dist file.'
@@ -86,7 +85,7 @@ class DbAdapterServiceFactory implements FactoryInterface
             }
         }
         if ([] !== $missing) {
-            throw new \Laminas\ServiceManager\Exception\ServiceNotCreatedException(sprintf(
+            throw new \App\Services\ServiceNotCreated(sprintf(
                 'The `db` configuration in config/autoload/local.php is missing: %s.',
                 implode(', ', $missing)
             ));

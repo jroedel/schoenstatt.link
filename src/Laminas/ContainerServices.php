@@ -7,10 +7,10 @@ namespace App\Laminas;
 use Psr\Container\ContainerInterface;
 
 /**
- * {@see LaminasServices} over an existing PSR container — the laminas ServiceManager itself.
+ * {@see LaminasServices} over an existing PSR container — the application container itself.
  *
  * Used where the code already runs *inside* that container and must not build a second one:
- * a view-helper factory registered in laminas config receives the app ServiceManager as its
+ * a view-helper factory registered in laminas config receives the app container as its
  * argument (see the note in App\Laminas\ViewHelpers about factory identity), so the
  * `isAllowed` helper is assembled with `new ContainerServices($container)` rather than a
  * fresh `ServiceBridge`.

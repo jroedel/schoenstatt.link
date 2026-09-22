@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Application\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 use SionModel\Cache\Storage;
 use SionModel\Cache\StorageFactory;
@@ -22,7 +21,7 @@ use function is_array;
  * the `cache_options` block. A named factory rather than the closure it was until
  * 2026-09-21; see {@see JUserSessionFactory} for why that mattered.
  */
-class JTranslateCacheFactory implements FactoryInterface
+class JTranslateCacheFactory
 {
     /**
      * @param string $requestedName

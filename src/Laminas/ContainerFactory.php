@@ -10,15 +10,17 @@ use JTranslate\Model\TranslationsTable;
 use JTranslate\I18n\Translator\Translator as JTranslateTranslator;
 use JTranslate\I18n\Translator\TranslatorFactory as JTranslateTranslatorFactory;
 use Laminas\Translator\TranslatorInterface;
+use App\Services\Container;
 use App\Modules\ModuleConfig;
-use Laminas\ServiceManager\ServiceManager;
+use Psr\Container\ContainerInterface;
 use SionModel\Cache\CacheFlushQueue;
 
 use function is_array;
 
 /**
- * Builds the laminas `ServiceManager` this application still keeps for the module
- * configs, the tables, the forms and the translator — without laminas-mvc.
+ * Builds the container this application still keeps for the module configs, the tables,
+ * the forms and the translator — without laminas-mvc, and since 2026-09-21 without
+ * laminas-servicemanager: {@see \App\Services\Container} is what it fills now.
  *
  * This is what `Laminas\Mvc\Service\ServiceManagerConfig` plus the MVC service listener
  * used to do, cut down to the part that is not the MVC layer: the merged module
@@ -69,7 +71,7 @@ final class ContainerFactory
         bool $configCaches = false,
         ?PhraseFlush $phraseFlush = null,
         ?CacheFlushQueue $cacheFlushQueue = null
-    ): ServiceManager {
+    ): Container {
         $appConfig['module_listener_options'] ??= [];
         if (! $configCaches) {
             $appConfig['module_listener_options']['config_cache_enabled'] = false;
@@ -78,12 +80,12 @@ final class ContainerFactory
         $moduleConfig = ModuleConfig::fromApplicationConfig($appConfig, $configCaches);
         $merged       = $moduleConfig->merged();
 
-        $services = new ServiceManager();
+        $services = new Container();
         $services->setAllowOverride(true);
         $services->configure(self::bootstrapConfig($merged, $appConfig));
         $services->configure(is_array($appConfig['service_manager'] ?? null) ? $appConfig['service_manager'] : []);
         $services->setService('ApplicationConfig', $appConfig);
-        $services->setService(ServiceManager::class, $services);
+        $services->setService(Container::class, $services);
         $services->setService(ModuleConfig::class, $moduleConfig);
 
         //What `Laminas\ModuleManager\Listener\ServiceListener` did on loadModules.post,
@@ -115,7 +117,7 @@ final class ContainerFactory
                 //it, and where it stayed until laminas-view was removed) so that the one
                 //instance serves the ported controllers, App\Sion\* and App\Laminas\ViewHelpers
                 //alike — two AclProviders in a request assemble the ACL twice.
-                IsAllowed::class            => static fn (ServiceManager $container): IsAllowed
+                IsAllowed::class            => static fn (ContainerInterface $container): IsAllowed
                     => new IsAllowed(new AclProvider(new ContainerServices($container))),
             ],
             'aliases'    => [

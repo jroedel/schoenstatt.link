@@ -1,10 +1,9 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 
-class ConfigServiceFactory implements FactoryInterface
+class ConfigServiceFactory
 {
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {

@@ -7,7 +7,7 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ContainerFactory;
 use Application\Navigation\PageBuilder;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
@@ -58,7 +58,7 @@ use function trim;
  */
 class NavigationRouteParametersTest extends TestCase
 {
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     public function testNoNavigationPageDeclaresAnEmptyRouteParameter(): void
     {
@@ -136,7 +136,7 @@ class NavigationRouteParametersTest extends TestCase
         ))->branches('en_US');
     }
 
-    private static function services(): ServiceManager
+    private static function services(): Container
     {
         if (null !== self::$services) {
             return self::$services;

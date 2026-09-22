@@ -6,7 +6,7 @@ use App\Laminas\ContainerFactory;
 use JTranslate\Model\TranslationsTable;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Adapter\Driver\ConnectionInterface;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -84,7 +84,7 @@ class TranslationUpdateScopeTest extends TestCase
      */
     private string $marker;
 
-    private ServiceManager $container;
+    private Container $container;
 
     private Adapter $adapter;
 

@@ -7,7 +7,7 @@ namespace SchoenstattTest\Integration;
 use App\Books\LibraryScopedForms;
 use App\Laminas\ServiceBridge;
 use Books\Form\BookForm;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use SchoenstattTest\Form\Engine;
@@ -117,7 +117,7 @@ final class CallNumberRequirementTest extends TestCase
         return (int) $statement->fetchColumn();
     }
 
-    private static ?ServiceManager $container = null;
+    private static ?Container $container = null;
     private static ?PDO $pdo                  = null;
 
     private static function forms(): LibraryScopedForms
@@ -125,7 +125,7 @@ final class CallNumberRequirementTest extends TestCase
         return new LibraryScopedForms(ServiceBridge::around(self::container()));
     }
 
-    private static function container(): ServiceManager
+    private static function container(): Container
     {
         if (null === self::$container) {
             /** @var array<string, mixed> $appConfig */

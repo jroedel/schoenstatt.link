@@ -1,8 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 
 /**
@@ -10,7 +9,7 @@ use Schoenstatt\Model\SchoenstattTable;
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class BorrowersValueOptionsService implements FactoryInterface
+class BorrowersValueOptionsService
 {
     /**
      * Create an object
