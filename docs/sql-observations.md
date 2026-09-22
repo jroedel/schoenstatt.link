@@ -13,6 +13,16 @@ history holds the story.
 Row counts are from the capsule's production export, read on the date given. `test/Db/sql-surface.txt`
 records the statement shapes themselves; `./tools/sql-surface.sh` regenerates it.
 
+**A read of a whole table is not on its own a finding.** Most of them are the caching
+strategy: `SionTable::queryObjects()` sets a cache key **only** when `$query` and `$options`
+are both empty (line 409), so "reads the table unfiltered" and "is cached in APCu under
+`query-objects-<entity>`" are the same branch by construction — the table is read once and
+every later caller is served from the cache, and adding a `WHERE` to one of those would
+trade a cached read for an uncached one. What is worth a second look is an unfiltered read
+that goes through some *other* path: a hand-built `Sql`/`Select` with no predicate, or a
+gateway `select()` outside `queryObjects()`, where nothing caches the result and it is read
+again on every request. Say which of the two an item is, and how it was determined.
+
 ## Open
 
 - **Nothing is prepared server-side. Every statement arrives interpolated.** Measured
