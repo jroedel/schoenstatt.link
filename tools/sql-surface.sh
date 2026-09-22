@@ -69,9 +69,12 @@ while read -r LINE; do
     # the order of this file. Flushing per page is what makes the result a property of the
     # pages rather than of their sequence.
     flush || exit 1
-    STATUS=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE$LINE")
+    # -L, and 200 only. An entity path redirects to its slug, and a redirect counted as a
+    # success records the queries of the redirect — which are none — while the page itself
+    # is never fetched. That silently cost the recording every table only a show page reads.
+    STATUS=$(curl -sSL -o /dev/null -w '%{http_code}' "$BASE$LINE")
     case "$STATUS" in
-        200|30[0-9]) COUNT=$((COUNT + 1)) ;;
+        200) COUNT=$((COUNT + 1)) ;;
         *) echo "  warn  $LINE answered $STATUS; its queries are missing from the recording" >&2 ;;
     esac
 done < "$URLS"
@@ -90,6 +93,13 @@ docker compose exec -T app php tools/sql-normalise.php < "$HTTP_RAW" > "$HTTP"
 echo "running the integration suite"
 db "TRUNCATE TABLE mysql.general_log;"
 docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar --testsuite integration >/dev/null 2>&1
+
+# The console, which reaches what neither a page nor a test does. Both are read-only in
+# effect: the migration runner finds its table already at the latest version and only reads
+# the ledger, and the sitemap builder writes files rather than rows.
+echo "running the console commands"
+docker compose exec -T -u www-data app php bin/console jtranslate:migrate >/dev/null 2>&1
+docker compose exec -T -u www-data app php bin/console sitemap:build >/dev/null 2>&1
 
 db "SET GLOBAL general_log='OFF';"
 
