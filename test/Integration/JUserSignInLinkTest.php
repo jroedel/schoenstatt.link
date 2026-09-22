@@ -15,7 +15,7 @@ use JUser\Model\UserTable;
 use JUser\Page\SignIn;
 use JUser\Service\LoginTokenService;
 use JUser\Service\Mailer;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Throwable;
@@ -57,7 +57,7 @@ require_once __DIR__ . '/JUserHostFakes.php';
  */
 final class JUserSignInLinkTest extends TestCase
 {
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     private LoginTokenService $tokens;
     private UserTable $users;
@@ -248,7 +248,7 @@ final class JUserSignInLinkTest extends TestCase
         return new User(['userId' => 7, 'email' => 'someone@example.com', 'active' => 1]);
     }
 
-    private function container(): ServiceManager
+    private function container(): Container
     {
         if (null !== self::$services) {
             return self::$services;

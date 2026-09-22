@@ -1,14 +1,13 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Books\Form\SearchForm;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class SearchFormFactory implements FactoryInterface
+class SearchFormFactory
 {
     /**
      * Create an object

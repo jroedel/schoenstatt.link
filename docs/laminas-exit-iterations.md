@@ -5,26 +5,27 @@ order the remaining work can actually **ship** in. The numbering there — steps
 the order it was planned in, and what is left of it does not line up with what can be
 released together, which is what this file supplies.
 
-**4 `laminas/*` packages are installed**, down from 37. Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6
-are done; 2 has only `session` left. Everything remaining regroups into two iterations:
+**3 `laminas/*` packages are installed**, down from 37. Every step but 8 is done.
+Iteration C is what is left:
 
 | | removes | leaves | content |
 |---|---|---|---|
 | **A** ✅ | form, inputfilter, filter, validator, hydrator, escaper, uri | 9 | the form model, and our own validator and filter classes |
-| **B** | modulemanager, config, loader ✅ · session, eventmanager ✅ · servicemanager | 3 | the module system, the session and the container |
+| **B** ✅ | modulemanager, config, loader · session, eventmanager · servicemanager | 3 | the module system, the session and the container |
 | **C** | db, stdlib, translator | 0 | the database layer |
 
-**Iteration B shipped in three parts, not one (2026-09-21).** The grouping in this table
-was wrong twice in the same direction. The module system turned out to be separable from
-the container — `laminas-modulemanager`, `laminas-config` and `laminas-loader` left with
-`brick/varexporter` and `webimpress/safe-writer` behind them — and then the session turned
+**Iteration B shipped in four parts, not one (2026-09-21).** The grouping in this table
+was wrong three times in the same direction. The module system turned out to be separable
+from the container — `laminas-modulemanager`, `laminas-config` and `laminas-loader` left
+with `brick/varexporter` and `webimpress/safe-writer` behind them — then the session turned
 out to be separable too, taking `laminas-eventmanager` with it, because nothing else had
-ever required one. **Only the container is left**, and it is the part that was always going
-to be hardest; nothing now ships alongside it.
+ever required one; and the container, measured, turned out to be five configuration keys
+rather than the plugin-manager hierarchy the plan had budgeted for. Each part deployed on
+its own.
 
-Each is **one superproject PR over three submodule PRs, and one deploy**. Nothing new is
-added: both remaining design decisions were taken 2026-09-11 in favour of our own code, so
-the exit is 37 packages out and none in.
+Each iteration is **one superproject PR over three submodule PRs, and one deploy**. Nothing
+new is added: both design decisions were taken 2026-09-11 in favour of our own code, so the
+exit is 37 packages out and none in.
 
 ## Why this order
 
@@ -120,10 +121,10 @@ laminas reported three. `uri-surface.php` moved 6 lines, all an exception class 
   two `Regex` specifications delete `regexInvalid` and arrays and booleans pass those fields
   silently. Reproduced exactly and left visible.
 
-## B — the module system, the session and the container (9 → 3)
+## B — the module system, the session and the container (9 → 3), done 2026-09-21
 
-**Removes:** laminas-modulemanager, laminas-config, laminas-loader, laminas-session,
-laminas-eventmanager (all done 2026-09-21), laminas-servicemanager.
+**Removed:** laminas-modulemanager, laminas-config, laminas-loader, laminas-session,
+laminas-eventmanager, laminas-servicemanager — all on 2026-09-21, in four deploys.
 
 0. **The module system, done.** `App\Modules\ModuleConfig` merges the module configs and
    caches them; `App\Laminas\ContainerFactory` applies the merged `service_manager` key
@@ -144,22 +145,26 @@ laminas-eventmanager (all done 2026-09-21), laminas-servicemanager.
    to a hand-written old-format session that came back signed in.
    symfony/http-foundation was not used: it would have been a second session implementation
    beside PHP's own, and the stored format is PHP's.
-2. **The container.** 83 files name `Laminas\ServiceManager`, and 58 classes implement one
-   of its factory contracts — 56 `FactoryInterface` and 2 `DelegatorFactoryInterface`.
-   Ours is a PSR-11 implementation reading factories, aliases and invokables from the
-   merged config; the factories become `__invoke($container)`; the `data/config/` merge
-   cache is unchanged, and `App\Modules\ModuleConfig` already owns it. Module and config
-   loading left at step 0 above, so what remains here is the container alone.
+2. **The container, done.** `App\Services\Container` — PSR-11, about 200 lines. The
+   measurement is why it is that short: across the merged configuration of all six modules
+   plus what `ContainerFactory` adds, the container is **five keys** — `services`,
+   `factories`, `invokables`, `aliases`, `delegators`. No abstract factory, no initializer
+   and no per-name `shared` flag survived; the last abstract factory went with
+   laminas-session and the last initializer with laminas-eventmanager. Unsupported keys are
+   rejected rather than ignored. The 58 factory classes kept their `__invoke()` and lost an
+   `implements` clause — nothing ever checked `instanceof FactoryInterface`.
 
-**This is the highest-risk deploy of the three.** A container fault is site-wide, and its
-shape is a fatal under HTTP 200 rather than an error — a few hundred bytes of 200 on every
-page. It ships the way step 0's batch 2 did: **our services shadow laminas' under the same
-ids and deploy with the package still installed**, so the swap is observable before
-anything is removed, and a second commit removes it.
+   **The trap was not the container.** `laminas/laminas-servicemanager/src/autoload.php`
+   `class_alias`es `Interop\Container\ContainerInterface` onto the PSR-11 interface, and
+   38 files in this tree type-hinted the Interop name. Removing the package removes the
+   alias, so every one of them had to be rewritten in the same commit; JUser had already
+   hit this and its README records it.
 
-Also required here: `bin/console` builds its container the same way and must keep doing so
-with the config caches **off**, and no `data/config/*` file may appear owned by the deploy
-user after a console run.
+   Proved as a recording, like the session before it: `test/Container/container-surface.php`
+   holds all 103 names with their types, their **sharing groups** (every name yielding the
+   same instance collapses to one label, so an alias that stopped resolving or a service
+   built twice shows up) and a probe of the state each delegator sets. Generated through
+   laminas, then through ours, and the two files were byte-identical.
 
 ## C — the database layer (3 → 0)
 

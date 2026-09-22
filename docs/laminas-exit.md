@@ -109,23 +109,28 @@ under `module/*/src` that a Symfony-served request reaches.
   `Laminas\Stdlib\ArrayObject` per namespace, so the session had to leave **before**
   `laminas-stdlib` rather than after it, while an old session still deserialises into a real
   object. `test/Session/session-surface.php` is the recording that pins it.
-- **What laminas still does**, and therefore what this plan removes: the service
-  container (`laminas-servicemanager` — a direct requirement since step 0), the database
-  layer
-  (`laminas-db`, under `SionModel\Db\Model\SionTable`), the session, and the
-  `Laminas\Translator\TranslatorInterface` our translator and our validators share.
-  laminas-i18n went at step 3, laminas-view at step 4, and the whole form stack at
-  iteration A.
-- `App\Laminas\ServiceBridge` is the seam: a lazily built laminas `ServiceManager` a
-  Symfony controller asks for laminas-side services. It disappears at step 7.
+- **The container is ours** (2026-09-21). `App\Services\Container` — PSR-11, five keys:
+  `services`, `factories`, `invokables`, `aliases`, `delegators`, shared by default, with
+  `build()` for a fresh instance. That is the whole of what the merged configuration and
+  `ContainerFactory` between them ask for; an unsupported key is rejected rather than
+  ignored. The 58 factory classes kept their `__invoke()` and lost an `implements` clause,
+  and `test/Container/container-surface.php` is the recording that pins all 103 names.
+- **What laminas still does**, and therefore what this plan removes: the database layer
+  (`laminas-db`, under `SionModel\Db\Model\SionTable`), `laminas-stdlib` beneath it, and
+  the `Laminas\Translator\TranslatorInterface` our translator and our validators share.
+  laminas-i18n went at step 3, laminas-view at step 4, the whole form stack at iteration A,
+  and the module system, the session and the container on 2026-09-21.
+- `App\Laminas\ServiceBridge` is the seam: a lazily built container a Symfony controller
+  asks for laminas-side services. It outlived step 7 — the container it builds is ours now,
+  but the services in it are still the laminas-db tables — and disappears with step 8.
 
 ## 2. The dependency picture (first measured 2026-09-09 after step 0; counts re-measured 2026-09-11)
 
-**4** `laminas/*` packages are installed, down from 37, and every one is a direct line of
-ours: `db`, `servicemanager`, `stdlib`, `translator`. Nothing here is transitive any more —
-the last two that were, `config` and `loader`, left on 2026-09-21 with
-`laminas-modulemanager`, and `eventmanager` followed the same day with `laminas-session`,
-which was the only thing that had ever wanted one.
+**3** `laminas/*` packages are installed, down from 37, and every one is a direct line of
+ours: `db`, `stdlib`, `translator`. Nothing here is transitive any more — the last two that
+were, `config` and `loader`, left on 2026-09-21 with `laminas-modulemanager`, and
+`eventmanager` followed the same day with `laminas-session`, which was the only thing that
+had ever wanted one.
 
 The two facts that shape the order, and step 0 confirmed both:
 
@@ -133,9 +138,10 @@ The two facts that shape the order, and step 0 confirmed both:
 `php composer.phar why-not laminas/laminas-servicemanager 4.0.0` named fourteen cappers
 before step 0 and ten after it, every one a current laminas component **at its latest
 release** requiring `laminas-servicemanager ^3.x` only — laminas-cache, filter, form, i18n,
-inputfilter, router, session, text, validator, view. **All ten are now gone**, the last of
-them `laminas-session` on 2026-09-21, so nothing caps servicemanager at 3.x except our own
-direct `^3.24` line — which iteration B removes with the container. Re-measured that day:
+inputfilter, router, session, text, validator, view. All ten went, the last of them
+`laminas-session` on 2026-09-21, leaving only our own direct `^3.24` line — and that left
+the same day with the container, so `why-not` has nothing to answer any more. The last
+measurement it gave, before the removal, is the one worth keeping:
 
     $ composer why-not laminas/laminas-servicemanager 4.0.0
     jroedel/schoenstatt.link       dev-master requires laminas/laminas-servicemanager (^3.24)
@@ -156,7 +162,9 @@ ceiling.
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`
 — the count of the last is the progress metric. Step 0 took it 37 → 32, step 1a 32 → 28,
 step 1b 28 → 27; steps 1c, 2, 3 and 4 took it to 17, step 6 to 16, and iteration A — the
-seven packages of the form stack at once — to **9**.
+seven packages of the form stack at once — to 9, and 2026-09-21 to **3**: the module
+system, the session and the container, with `config`, `loader` and `eventmanager` falling
+out behind them.
 
 **Most of what step 1 listed was blocked behind later steps, and the measurement said so.**
 `laminas-uri` was required by `laminas-http` *and* `laminas-router`; `laminas-http` was what
@@ -204,7 +212,7 @@ deletes.
 | 4 ✅ | laminas-view and laminas-json (which only laminas-view required) | 28 helpers + the `HelperPluginManager`/`PhpRenderer` machinery | **done 2026-09-09.** Every helper is a plain class constructed by `App\Laminas\ViewHelpers`; `url` is `$router->assemble()`, escaping is `SionModel\View\Escape`. laminas-escaper could not leave here — laminas-form (`^2`) and laminas-uri (`^2.9`) required it — and left with both at iteration A |
 | 5 ✅ | laminas-form, inputfilter, filter, validator, hydrator, escaper — and laminas-uri with them | form 77 files, inputfilter 60, validator 65, filter 49; 42 forms, 441 elements | **done 2026-09-11** as iteration A: engine, element model, form model and rule library, all ours. Not Symfony Form: `SionModel\Form\Validation\InputFilter` over `FormSpecification`, `SionModel\Form\Element\*`, `SionModel\{Validator,Filter}\*`. The fuzz harness (`test/Fuzz`) and `ConstrainedChoiceFieldsFitTheirDataTest` are the safety net; `AssociationValidationParityTest` keeps web and API validation identical |
 | 6 ✅ | laminas-router, and laminas-http with it | 1,640 lines of `router` config across six files | **done 2026-09-09.** Symfony router only; `laminas_path()` → `path()`; ACL resources keep the route names. The ACL baseline was byte-identical after the deletion and that proved nothing — five tests read `$config['router']['routes']` directly and every one broke |
-| 7 | laminas-servicemanager — modulemanager, config, loader, session and eventmanager left ahead of it on 2026-09-21 | servicemanager 82 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`) | **Our own PSR-11 container** (§6), not Symfony DI. `stdlib` does *not* leave here: laminas-db holds it. Nothing else ships with it any more, which was not the plan and is the better shape |
+| 7 ✅ | laminas-servicemanager — modulemanager, config, loader, session and eventmanager left ahead of it the same day | servicemanager 82 files and 58 factory classes (56 `FactoryInterface`, 2 `DelegatorFactoryInterface`) | **done 2026-09-21.** `App\Services\Container`, ours, PSR-11 (§6) — not Symfony DI. The factories kept `__invoke()` and lost an `implements`; `test/Container/container-surface.php` records all 103 names. `stdlib` did *not* leave here: laminas-db holds it |
 | 8 | laminas-db, and `stdlib` and `translator` with it | db 99 files, `SionTable` 2,412 lines over `TableGateway`/`Sql`; translator 32 files; stdlib 9 references | **A thin PDO wrapper of ours** (§6). Verify by diffing MariaDB's general log across a full smoke run, before and after |
 
 **Step 4 was not gated on step 5, though it looked it.** Every `Laminas\Form\View\Helper\*`
@@ -241,11 +249,10 @@ the last one nothing forces. Steps 2 to 8 rewrite code in the **shared submodule
 
 ### What is left, and in what order it ships
 
-Steps 0, 1a, 1b, 1c, 3, 4, 5 and 6 are done, and 2 is finished: the module system and the
-session both went on 2026-09-21, so **4 packages remain** — the container, the database
-layer, `stdlib` beneath both, and the translator interface. The numbering above is the order the work was *planned* in, which is not the order
-it can be released in, so the remainder ships as two iterations — the session and the
-container, then the database.
+Every step but 8 is done: the module system, the session and the container all went on
+2026-09-21, so **3 packages remain** — the database layer, `stdlib` beneath it, and the
+translator interface. The numbering above is the order the work was *planned* in, which is
+not the order it can be released in, so what is left is iteration C, the database.
 
 **[laminas-exit-iterations.md](laminas-exit-iterations.md) is that plan**: what each
 iteration removes, which orderings the dependency graph forces and which one is chosen, and
@@ -503,9 +510,9 @@ granted on every library. The identity's roles are read from `linkUser()` (names
 - Forms render through `SionModel\Form\BootstrapFormRenderer` (`form_row`, `form_open`…
   via `SionModel\Twig\FormExtension`), byte-compatible with the old TwbBundle markup.
 
-### Per-request laminas bridging (until step 7)
+### Per-request laminas bridging (until step 8)
 
-`ServiceBridge` builds the laminas container lazily and never bootstraps it. Two things
+`ServiceBridge` builds the laminas-side container lazily and never bootstraps it. Two things
 that used to happen on `MvcEvent::EVENT_FINISH` are Symfony listeners on
 `kernel.terminate`: `App\Http\PhraseFlushListener` (missing phrases → `trans_phrases`,
 armed by `TranslatorConfigurator`) and `App\Http\SionCacheFlushListener` (draining

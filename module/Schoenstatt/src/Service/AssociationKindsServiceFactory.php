@@ -1,8 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Laminas\Translator\TranslatorInterface;
 
 /**
@@ -10,7 +9,7 @@ use Laminas\Translator\TranslatorInterface;
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class AssociationKindsServiceFactory implements FactoryInterface
+class AssociationKindsServiceFactory
 {
     /**
      * Create an object

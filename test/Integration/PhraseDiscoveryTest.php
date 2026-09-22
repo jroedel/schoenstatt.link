@@ -7,7 +7,7 @@ use JTranslate\I18n\Translator\TranslatorEventListener;
 use JTranslate\Model\TranslationsTable;
 use JUser\Host\IdentityInterface;
 use JUser\Service\IdentityActingUserProvider;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -39,7 +39,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class PhraseDiscoveryTest extends TestCase
 {
-    private ServiceManager $container;
+    private Container $container;
 
     private TranslationsTable $table;
 
@@ -121,7 +121,7 @@ class PhraseDiscoveryTest extends TestCase
     public function testTheActingUserProviderAnswersNullWhenTheServiceCannotBeBuilt(): void
     {
         $calls     = 0;
-        $container = new class ($calls) implements \Interop\Container\ContainerInterface {
+        $container = new class ($calls) implements \Psr\Container\ContainerInterface {
             public function __construct(public int &$calls)
             {
             }

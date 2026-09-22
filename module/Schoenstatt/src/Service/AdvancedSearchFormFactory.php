@@ -3,15 +3,14 @@ namespace Schoenstatt\Service;
 
 use JTranslate\Model\CountriesInfo;
 use JTranslate\View\Helper\CountryName;
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Form\AdvancedSearchForm;
 
 /**
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class AdvancedSearchFormFactory implements FactoryInterface
+class AdvancedSearchFormFactory
 {
     /**
      * Create an object

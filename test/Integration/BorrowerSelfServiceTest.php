@@ -10,7 +10,7 @@ use Books\Model\LibraryTable;
 use DateTimeImmutable;
 use DateTimeZone;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -43,7 +43,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  */
 class BorrowerSelfServiceTest extends TestCase
 {
-    private ServiceManager $container;
+    private Container $container;
     private Adapter $adapter;
     private LibraryTable $library;
     private BorrowerTokenTable $tokens;

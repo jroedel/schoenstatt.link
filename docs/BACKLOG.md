@@ -16,9 +16,11 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   runs 8.5. FrameworkBundle's own blocker is
   already gone: laminas-cache held `psr/cache` at `^1` and left with step 2.
 - Progress metric: `composer show --locked | grep laminas` (37 on 2026-09-09, 9 on
-  2026-09-11, **4** on 2026-09-21); also run `why-not php 8.5.0` and
-  `why-not laminas/laminas-servicemanager 4.0.0` around each step.
-- The parked ~102-factory Interop→Psr sweep stays parked; the factories leave with step 7.
+  2026-09-11, 4 and then **3** on 2026-09-21); also run `why-not php 8.5.0` around each
+  step. `why-not laminas/laminas-servicemanager 4.0.0` has nothing left to answer.
+- The parked ~102-factory Interop→Psr sweep is **done**: it had to be, because the alias
+  `Interop\Container\ContainerInterface` was declared by laminas-servicemanager's own
+  `src/autoload.php` and went with the package.
 
 ## Now
 

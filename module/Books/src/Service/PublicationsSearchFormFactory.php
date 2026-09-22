@@ -1,15 +1,14 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Books\Form\PublicationsSearchForm;
 use SionModel\I18n\LanguageSupport;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class PublicationsSearchFormFactory implements FactoryInterface
+class PublicationsSearchFormFactory
 {
     /**
      * Create an object

@@ -7,7 +7,7 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ContainerFactory;
 use App\Http\SymfonyRoutes;
 use App\Laminas\RouteUrl;
-use Laminas\ServiceManager\ServiceManager;
+use App\Services\Container;
 use PHPUnit\Framework\TestCase;
 use SionModel\Entity\Entity;
 use SionModel\Service\EntitiesService;
@@ -126,7 +126,7 @@ class EntitySpecRoutesAreAssemblableTest extends TestCase
         'createActionRedirectRoute' => ['defaultRouteParams'],
     ];
 
-    private static ?ServiceManager $services = null;
+    private static ?Container $services = null;
 
     /**
      * The list above has to name real properties, or this class passes by looking at
@@ -306,7 +306,7 @@ class EntitySpecRoutesAreAssemblableTest extends TestCase
         return new RouteUrl('');
     }
 
-    private static function services(): ServiceManager
+    private static function services(): Container
     {
         if (null !== self::$services) {
             return self::$services;

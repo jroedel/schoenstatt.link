@@ -117,7 +117,8 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   `SionModel\{Validator,Filter}\*` with `SionModel\Uri\Http`. A rule name becomes an
   object through a flat `Registry` — no plugin manager, no container, no module loading —
   which is what lets the associations API validate with none of those present.
-- `App\Laminas\ServiceBridge` lazily builds the laminas `ServiceManager` for the laminas-side
+- `App\Laminas\ServiceBridge` lazily builds the container (`App\Services\Container`, ours
+  since 2026-09-21) for the laminas-side
   services ported code still needs (config, tables, translator). Nothing must build it on
   `/_health`. Every container is built by `App\Laminas\ContainerFactory` (bridge, console,
   tools, tests); it defines `ViewHelperManager` and `MvcTranslator` itself.
@@ -253,7 +254,7 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   values, messages), `test/Element/element-surface.php` (every element's answers),
   `test/Rules/rule-surface.php` (every rule over a fixed corpus),
   `test/Rules/uri-surface.php` (URLs through `Http` and `SionTable::filterUrl()`).
-- Integration tests build the ServiceManager the way `bin/console` does, never
+- Integration tests build the container the way `bin/console` does, never
   `bootstrap()`, with config caches **off** (CI has no writable `data/config`) and skip
   without a database. `bin/console` is the headless seam: commands via the `console.commands`
   config key.

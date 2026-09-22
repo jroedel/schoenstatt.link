@@ -54,7 +54,7 @@ $warnings = [];
 
 /**
  * The merged module configuration, obtained the way bin/console does it: build
- * the ServiceManager and load modules, but never call bootstrap().
+ * the container and load modules, but never call bootstrap().
  *
  * Bootstrapping would instantiate table services and need a live application;
  * the config cache must be off or the module listener writes data/config/ and a

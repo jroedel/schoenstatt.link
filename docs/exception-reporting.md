@@ -9,7 +9,7 @@ before any configuration is loaded: a shutdown and uncaught-exception handler th
 to `data/exceptions/` under default settings with no container at all. `App\Kernel::handle()`
 then calls `FatalErrorHandler::upgrade()` with a **lazy** resolver that, only once something
 has already failed, pulls `SionModel\Service\ErrorHandling` and
-`SionModel\Error\RequestContext` out of the laminas `ServiceManager`
+`SionModel\Error\RequestContext` out of the laminas-side container
 (`App\Laminas\ServiceBridge`) — the configured store, the request context and the email. If
 the resolver itself throws, the handler takes the container-free path rather than losing the
 record; the fallback of last resort is one line in `data/logs/bootstrap-fatal.log`.

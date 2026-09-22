@@ -1,15 +1,14 @@
 <?php
 namespace Books\Service;
 
-use Laminas\ServiceManager\Factory\FactoryInterface;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Books\Model\EventTextTable;
 use Books\Form\TextForm;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class TextFormFactory implements FactoryInterface
+class TextFormFactory
 {
     /**
      * Create an object
