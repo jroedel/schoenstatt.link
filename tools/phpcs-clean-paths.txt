@@ -19,9 +19,9 @@
 src
 config/symfony
 
-# Left src/ for the SionModel submodule on 2026-08-21. Still Symfony-side code
-# holding the same standard — only the path stopped saying so. SionModel's own
-# phpcs.xml covers them, which is exactly why they are easy to forget here.
+# Left src/ for module/SionModel on 2026-08-21. Still Symfony-side code holding the
+# same standard — only the path stopped saying so. SionModel's own phpcs.xml covers
+# them, which is exactly why they are easy to forget here.
 module/SionModel/src/Cache
 module/SionModel/src/Data
 module/SionModel/src/Form/BootstrapFormRenderer.php

@@ -53,8 +53,7 @@ ${XDG_CACHE_HOME:-~/.cache}/schoenstatt.link-deploy      # override with DEPLOY_
 ```
 
 cloned from your repository once (hardlinked objects, so it costs neither network nor
-disk), then on every run fetched, hard-reset to `origin/master`, and brought to the pinned
-submodule commits with `git submodule update --init --recursive --force`. That tree is
+disk), then on every run fetched and hard-reset to `origin/master`. That tree is
 what `tools/deploy.sh` packages. Two things are **linked** back to your tree rather than
 duplicated: `.deploy.local`, so the DDL password exists once on disk, and `data/deploy/`,
 so the table snapshots a migration takes stay in one place across deploys. Both links are
@@ -63,9 +62,6 @@ tree with anything untracked in it.
 
 Consequences worth knowing:
 
-- The submodules in the deploy checkout are **detached** at what master pins. That is
-  correct there and wrong in yours, where the workflow in CLAUDE.md needs them on
-  `modernization`. Nothing in a deploy runs in your tree.
 - Everything from `tools/deploy.sh` onwards is **master's copy**, read from the deploy
   checkout. Only `tools/prod-deploy.sh` comes from your working tree, so a change to the
   deploy machinery is exercised by `make prod-deploy` only once it is merged.
@@ -78,17 +74,10 @@ Consequences worth knowing:
    every run. Two old refusals disappear with it — the tree cannot be dirty, and master
    cannot be *ahead* of origin, so a local-only commit can no longer reach production even
    by accident.
-3. **Do the submodule checkouts match what master pins?** The one that matters — see
-   below. In your tree this had to refuse, because the correct repair depends on which
-   side is right; in a checkout that exists to hold exactly what master pins, `--force` is
-   the whole answer, and the status check after it is a post-condition.
-4. **Is every pinned submodule commit merged into `origin/modernization`?** That is the
-   same question as "has this submodule's PR been pulled". A commit merely *pushed* to a
-   feature branch is unreviewed and may yet be rebased or abandoned.
-5. **Is the deploy checkout clean?** The post-condition `deploy.sh` will insist on, asked
+3. **Is the deploy checkout clean?** The post-condition `deploy.sh` will insist on, asked
    where the answer is still comprehensible rather than three steps into a deploy.
-6. **Which open pull requests are not in this tree?** A warning, never a refusal.
-7. **Can this build be verified at all?** See below.
+4. **Which open pull requests are not in this tree?** A warning, never a refusal.
+5. **Can this build be verified at all?** See below.
 
 `CHECKS_ONLY=1` exists because the checks are the part worth exercising, and every other
 way of doing that ends one step away from a live deploy. Piping the script through `head`
@@ -104,7 +93,7 @@ reporting on the release. So it runs where the capsule is, under one condition.
 
 | your tree | what happens |
 |---|---|
-| clean, on the deployed commit, submodules matching | `ci-local` runs here; `deploy.sh` is told the revision is proven and does not repeat it |
+| clean and on the deployed commit | `ci-local` runs here; `deploy.sh` is told the revision is proven and does not repeat it |
 | anything else | nothing can verify this build; `deploy.sh` is told that instead, counts it an unusual deploy and asks before the swap |
 
 `CI=1` refuses rather than warns, and runs the **full** `ci-local` (smoke, fuzz and
@@ -118,31 +107,13 @@ that, and the deploy succeeds either way — so `test/Deploy/deploy-checkout-tes
 the real block out of `tools/deploy.sh` through all six of its paths, and checks that
 every mutating `git` command in `tools/prod-deploy.sh` names the deploy checkout.
 
-### Why check 3 is the one that matters
+### Why the deploy checkout exists
 
-**A release is `git ls-files --recurse-submodules` over the working tree**, not over HEAD.
-So the submodule code that ships is whatever is checked out inside `module/*` — and
-`git checkout master` does **not** move a submodule's working tree. Those stay wherever
-they were left, which on this project is usually `modernization`, often several merges
-ahead of what master pins.
-
-Deploying in that state ships the application from master and its shared libraries from
-somewhere else. On 2026-09-09 the same mismatch, in the capsule, produced an empty 200 on
-every page. In production it would be that, live, on a tree no branch can reproduce.
-
-### Bumping the pointers: `make dev-bump-submodules`
-
-```bash
-make dev-bump-submodules              # verify, bump, commit, push
-make dev-bump-submodules DRY_RUN=1    # verify and report, change nothing
-```
-
-Run it on the superproject feature branch after the submodule PRs merge. It proves each
-submodule's branch is an **ancestor** of `origin/modernization` — never GitHub's merge
-status, because a stacked PR merges into its own base and can report MERGED while its
-commits sit on the feature branch — fast-forwards each submodule, pins the merge commits,
-and pushes to the open superproject PR. It also says so when the merged tree differs from
-the branch `ci-local` ran against.
+**A release is `git ls-files` over the working tree**, not over HEAD. What ships is
+whatever is checked out, so a deploy run from a tree that is mid-edit, on the wrong branch,
+or carrying a commit that exists nowhere else ships exactly that. The deploy checkout makes
+all three impossible rather than merely detected, and leaves your tree free to carry on
+working during a deploy.
 
 ## Flags
 
@@ -178,7 +149,7 @@ yourself, clean, is what lets `ci-local` verify it first.
 
 | # | step | where | notes |
 |---|---|---|---|
-| 1 | Preflight | local | on `master`; tree clean; `pull --ff-only`; local master not ahead of origin; the three submodules clean, **at the commit the superproject pins, and pushed**. Under `make prod-deploy` all of this is true by construction of the deploy checkout |
+| 1 | Preflight | local | on `master`; tree clean; `pull --ff-only`; local master not ahead of origin. Under `make prod-deploy` all of this is true by construction of the deploy checkout |
 | 2 | Verification | local | `tools/ci-local.sh --ci` (lint, `composer --no-dev` rehearsal, PHPStan, PSR-12, unit, integration, `test/Deploy/*`) — skipped here when `make prod-deploy` already ran it in the capsule's tree |
 | 3 | Back up `public/.htaccess` | server | to `shared/data/htaccess-backups/` |
 | 4 | Build | server | `rsync` into `releases/<ts>-<sha>/`, `--link-dest` hardlinked against the previous release; `.revision` written; `public/index.php` broken out of its hardlink (`cp -p` + `mv -f`) |
@@ -199,7 +170,7 @@ yourself, clean, is what lets `ci-local` verify it first.
 Any failure before the swap leaves production untouched; nothing irreversible
 happens before step 13 passes.
 
-**The release is exactly `git ls-files --recurse-submodules`.** The transfer list
+**The release is exactly `git ls-files`.** The transfer list
 comes from git, not the working directory, so local cruft cannot reach production,
 and untracked files on the server inside `public/` are **deleted by a swap** —
 search-engine verification files live in `shared/public/` (see The layout).
