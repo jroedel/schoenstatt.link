@@ -22,6 +22,7 @@ use function date;
 use function get_debug_type;
 use function is_array;
 use function is_scalar;
+use function is_string;
 use function ksort;
 use function md5;
 use function preg_replace;
@@ -79,11 +80,20 @@ require_once __DIR__ . '/../Fuzz/FormRepository.php';
  * read from the database; recording them whole would make the file unreadable and would
  * put the capsule's data in the repository. The digest still moves when an option list
  * changes shape, and the samples still catch a change in how keys or labels are produced.
+ *
+ * Six of those selects are filled from the persons table, and there the sample was four
+ * living people's names. {@see redactPersons()} replaces a sampled label that is somebody's
+ * name with `<person>`, keeping the key; for those six the samples therefore catch a change
+ * in how keys are produced, and the digest — taken before the redaction — still catches a
+ * change in the labels.
  */
 final class ElementSurface
 {
     /** What a Csrf token is replaced by. */
     private const TOKEN = '<csrf-token>';
+
+    /** What a sampled option label that names a person is replaced by. */
+    private const PERSON = '<person>';
 
     /** What today's date is replaced by, wherever it appears as a value or an attribute. */
     private const TODAY = '<today>';
@@ -268,9 +278,39 @@ final class ElementSurface
         return [
             'count'  => count($keys),
             'digest' => md5(serialize($options)),
-            'first'  => self::normaliseAll(array_slice($options, 0, 3, true)),
-            'last'   => self::normaliseAll(array_slice($options, -1, 1, true)),
+            'first'  => self::redactPersons(self::normaliseAll(array_slice($options, 0, 3, true))),
+            'last'   => self::redactPersons(self::normaliseAll(array_slice($options, -1, 1, true))),
         ];
+    }
+
+    /**
+     * Replace a sampled label that is somebody's name with {@see PERSON}.
+     *
+     * The samples exist to catch a change in how keys and labels are produced, and for
+     * 130 of the 136 database-filled selects the labels are publishers, book titles and
+     * subject terms — the catalogue, already public, and worth keeping legible in a diff.
+     * Six are filled from the persons table, and there the same three-and-one sample was
+     * four living people's names in a file a public repository keeps forever.
+     *
+     * The key survives, so a change in how keys are produced still shows; the digest is
+     * taken before this runs, so a change in how *labels* are produced still moves it.
+     * What is lost is being able to read the new label off the diff for those six, which
+     * is the trade this makes deliberately.
+     *
+     * @param array<int|string, mixed> $sample
+     * @return array<int|string, mixed>
+     */
+    private static function redactPersons(array $sample): array
+    {
+        $persons = FormRepository::personLabels();
+
+        foreach ($sample as $key => $label) {
+            if (is_string($label) && isset($persons[$label])) {
+                $sample[$key] = self::PERSON;
+            }
+        }
+
+        return $sample;
     }
 
     /** A one-line summary for a failure message. */

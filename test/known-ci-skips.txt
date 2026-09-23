@@ -40,6 +40,14 @@ SchoenstattTest\Integration\ElementSurfaceTest                       # records e
 SchoenstattTest\Integration\EngineSurfaceTest                        # records the engine's verdict, values and messages
 SchoenstattTest\Integration\FormMarkupTest                           # records rendered markup, option lists included
 
+# --- Asks about the real corpus, not about a baseline ------------------------
+# Same trigger, different reason, so it is not one of the five above. It reads
+# every person in the database and asserts that no tracked file names one. The
+# seed invents its persons (Alder, Birch, Cedar), so running it there would
+# assert that the repository does not mention three names nobody has — which is
+# true, and proves nothing about the 325 that are real. It runs in ci-local.
+SchoenstattTest\Integration\NoTrackedFileNamesAPersonTest            # the seed's persons are invented
+
 # --- Needs a row the seed does not invent yet --------------------------------
 # The worklist. Each line is one shape of data away from running.
 BooksTest\Integration\PublicationLinkingTest                         # no publication in the seed has sub-editions

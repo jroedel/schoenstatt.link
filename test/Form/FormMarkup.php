@@ -26,6 +26,7 @@ use function count;
 use function date;
 use function implode;
 use function gc_collect_cycles;
+use function html_entity_decode;
 use function ksort;
 use function md5;
 use function preg_match_all;
@@ -35,6 +36,9 @@ use function restore_error_handler;
 use function set_error_handler;
 use function sprintf;
 use function str_replace;
+
+use const ENT_HTML5;
+use const ENT_QUOTES;
 
 require_once __DIR__ . '/../Fuzz/FormRepository.php';
 require_once __DIR__ . '/FormData.php';
@@ -107,8 +111,9 @@ require_once __DIR__ . '/FormData.php';
  *
  * ## What is normalised, and why each rule is narrow
  *
- * Three rules, and each erases something that differs between two runs of the *same*
- * code rather than something that could differ between laminas and its replacement:
+ * Four rules. The first three erase something that differs between two runs of the *same*
+ * code rather than something that could differ between laminas and its replacement; the
+ * fourth keeps somebody's name out of a file a public repository keeps forever:
  *
  * 1. **A CSRF token** is a fresh hash on every read.
  * 2. **Today's date** is `MassCheckoutFieldset`'s default, so a baseline taken yesterday
@@ -119,6 +124,10 @@ require_once __DIR__ . '/FormData.php';
  *    would put the capsule's export in the repository and churn whenever it moved. The
  *    digest still moves when the list does, the `<select>` attributes stay exact, and the
  *    options themselves are what `test/Element/element-surface.php` already digests.
+ * 4. **An option that names a person** keeps its `value` and loses its text. Six of those
+ *    136 selects are filled from the persons table; everything else is the catalogue.
+ *    {@see redactPersons()} has the reasoning and why membership of
+ *    `getPersonValueOptions()` decides it rather than the shape of the label.
  *
  * ## Translation is the identity function, deliberately
  *
@@ -138,6 +147,9 @@ final class FormMarkup
 
     /** What today's date is replaced by, wherever it appears as a value or an attribute. */
     private const TODAY = '<today>';
+
+    /** What an `<option>` label that names a person is replaced by. */
+    private const PERSON = '<person>';
 
     /** Beyond this many `<option>` tags in one run, the middle becomes a digest. */
     private const OPTIONS_KEPT = 4;
@@ -467,7 +479,47 @@ final class FormMarkup
         $markup = (string) preg_replace('/\b[0-9a-f]{32}-[0-9a-f]{32}\b/', self::TOKEN, $markup);
         $markup = str_replace(date('Y-m-d'), self::TODAY, $markup);
 
-        return self::digestOptions($markup);
+        //Redaction runs AFTER the digest, so the md5 of the collapsed middle is still
+        //taken over the real labels and still moves when one of them changes.
+        return self::redactPersons(self::digestOptions($markup));
+    }
+
+    /**
+     * Replace the text of an `<option>` that names a person with {@see PERSON}.
+     *
+     * The six selects filled from the persons table are the only place in this file where
+     * a label is somebody's personal data rather than the catalogue's — a publisher, a book
+     * title, a subject term, all of them already public on the site. Their first three
+     * options and their last survive the collapse above, and that was four living people's
+     * names in a file a public repository keeps forever.
+     *
+     * Membership of `SchoenstattTable::getPersonValueOptions()` is what decides, not the
+     * shape of the label: `A. Deichertsche Verlagsbuchhandlung, Leipzig` is a `Last, First`
+     * match and a publisher, and a person recorded with one name is not one.
+     *
+     * `value` survives untouched, so a change in how option keys are produced still shows
+     * in the diff — the same trade `ElementSurface::redactPersons()` makes.
+     */
+    private static function redactPersons(string $markup): string
+    {
+        $persons = FormRepository::personLabels();
+        if ([] === $persons) {
+            return $markup;
+        }
+
+        return (string) preg_replace_callback(
+            '#(<option\b[^>]*>)(.*?)(</option>)#s',
+            static function (array $m) use ($persons): string {
+                //The renderer escapes labels, so `&quot;` and friends have to come back
+                //before the comparison — `„Der Elsässer&quot;, …` is a real option.
+                $label = html_entity_decode($m[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+                return isset($persons[$label])
+                    ? $m[1] . self::PERSON . $m[3]
+                    : $m[0];
+            },
+            $markup
+        );
     }
 
     /**

@@ -4952,16 +4952,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Contact person</label><select name="contactPersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="contactPersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
       'label' => '<label for="contactPersonId">Contact person</label>',
       'errors' => '',
@@ -4971,27 +4971,27 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Contact person</label><select name="contactPersonId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="contactPersonId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
-      'select_without_options' => '<select name="contactPersonId"><option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
+      'select_without_options' => '<select name="contactPersonId"><option value="633" selected><person></option>
 </select>',
     ),
     'invalid' => 
     array (
       'row' => '<div class="form-group "><label>Contact person</label><select name="contactPersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select><ul class="help-block"><li>The input was not found in the haystack</li></ul></div>',
       'errors' => '<ul class="help-block"><li>The input was not found in the haystack</li></ul>',
     ),
@@ -5026,16 +5026,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Default checkout person</label><select name="defaultCheckoutPersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select><p class="help-block">When books are checked in without a preceding checkout, they&#039;ll be checked out under this person.</p></div>',
       'element' => '<select name="defaultCheckoutPersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
       'label' => '<label for="defaultCheckoutPersonId">Default checkout person</label>',
       'errors' => '',
@@ -5045,27 +5045,27 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Default checkout person</label><select name="defaultCheckoutPersonId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select><p class="help-block">When books are checked in without a preceding checkout, they&#039;ll be checked out under this person.</p></div>',
       'element' => '<select name="defaultCheckoutPersonId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
-      'select_without_options' => '<select name="defaultCheckoutPersonId"><option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
+      'select_without_options' => '<select name="defaultCheckoutPersonId"><option value="633" selected><person></option>
 </select>',
     ),
     'invalid' => 
     array (
       'row' => '<div class="form-group "><label>Default checkout person</label><select name="defaultCheckoutPersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">When books are checked in without a preceding checkout, they&#039;ll be checked out under this person.</p></div>',
       'errors' => '<ul class="help-block"><li>The input was not found in the haystack</li></ul>',
     ),
@@ -9009,16 +9009,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Person reference</label><select name="personId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="personId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
       'label' => '<label for="personId">Person reference</label>',
       'errors' => '',
@@ -9028,18 +9028,18 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Person reference</label><select name="personId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="personId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
-      'select_without_options' => '<select name="personId"><option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
+      'select_without_options' => '<select name="personId"><option value="633" selected><person></option>
 </select>',
     ),
     'invalid' => 
@@ -9946,16 +9946,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Person</label><select name="personId" required class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="personId" required class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
       'label' => '<label for="personId">Person</label>',
       'errors' => '',
@@ -9965,27 +9965,27 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Person</label><select name="personId" required class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="personId" required class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
-      'select_without_options' => '<select name="personId" required><option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
+      'select_without_options' => '<select name="personId" required><option value="633" selected><person></option>
 </select>',
     ),
     'invalid' => 
     array (
       'row' => '<div class="form-group "><label>Person</label><select name="personId" required class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select><ul class="help-block"><li>Value is required and can&#039;t be empty</li></ul></div>',
       'errors' => '<ul class="help-block"><li>Value is required and can&#039;t be empty</li></ul>',
     ),
@@ -11822,16 +11822,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Person</label><select name="personId" required disabled class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="personId" required disabled class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
       'label' => '<label for="personId">Person</label>',
       'errors' => '',
@@ -11841,18 +11841,18 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Person</label><select name="personId" required disabled class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="personId" required disabled class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
-      'select_without_options' => '<select name="personId" required disabled><option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
+      'select_without_options' => '<select name="personId" required disabled><option value="633" selected><person></option>
 </select>',
     ),
     'invalid' => 
@@ -13529,16 +13529,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Spouse</label><select name="spousePersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="spousePersonId" class="form-control"><option value=""></option>
-<option value="633">Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633"><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
       'label' => '<label for="spousePersonId">Spouse</label>',
       'errors' => '',
@@ -13548,18 +13548,18 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Spouse</label><select name="spousePersonId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select></div>',
       'element' => '<select name="spousePersonId" class="form-control"><option value=""></option>
-<option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
-<option value="630">Abella, Santiago</option>
+<option value="633" selected><person></option>
+<option value="630"><person></option>
 <!-- 322 more options, 74c9cfd0eedcbad440fe9952f9981ae0 -->
-<option value="529">Álamos, Victor</option>
+<option value="529"><person></option>
 </select>',
-      'select_without_options' => '<select name="spousePersonId"><option value="633" selected>Abarca Vallejos, Sergio Franco Alexander</option>
+      'select_without_options' => '<select name="spousePersonId"><option value="633" selected><person></option>
 </select>',
     ),
     'invalid' => 
