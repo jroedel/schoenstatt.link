@@ -59,6 +59,15 @@ final class ElementSurfaceTest extends TestCase
 
     public function testEveryElementAnswersWhatTheBaselineRecords(): void
     {
+        //Recorded against the capsule's corpus, so it answers a different question against
+        //any other one: `authors` alone offers 1,890 options there and six here. The seed
+        //exists so the rest of this suite can run without a production export, not so this
+        //baseline can be re-recorded per environment — regenerating it per corpus would
+        //leave it asserting nothing. See test/known-ci-skips.txt.
+        if ('seed' === getenv('SCHOENSTATT_TEST_CORPUS')) {
+            self::markTestSkipped('recorded against the capsule corpus; this database is the CI seed');
+        }
+
         /** @var array<string, array<string, mixed>> $baseline */
         $baseline = require __DIR__ . '/../Element/element-surface.php';
         $actual   = ElementSurface::collect();

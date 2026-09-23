@@ -73,9 +73,11 @@ if ('' === $xmlPath) {
 
 if (! $bare) {
     echo "check-ci-skips: --bare not given, so nothing was checked.\n"
-        . "  This baseline is about what a runner with NO DATABASE cannot run. Against a\n"
-        . "  capsule log every verdict in it inverts, so the check refuses to guess which\n"
-        . "  kind of log it was handed. CI passes --bare; nothing else should.\n";
+        . "  This baseline is about what a runner on the CI SEED cannot run. Against a\n"
+        . "  capsule log every verdict in it inverts — the five corpus-bound classes skip\n"
+        . "  there only because SCHOENSTATT_TEST_CORPUS is set, and do not skip here — so\n"
+        . "  the check refuses to guess which kind of log it was handed. CI passes --bare;\n"
+        . "  nothing else should.\n";
     exit(0);
 }
 

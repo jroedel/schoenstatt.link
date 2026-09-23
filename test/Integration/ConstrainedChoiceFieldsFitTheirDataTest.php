@@ -133,6 +133,15 @@ final class ConstrainedChoiceFieldsFitTheirDataTest extends TestCase
 
     public function testEveryStoredValueIsStillOfferedByItsField(): void
     {
+        //Recorded against the capsule's corpus, so it answers a different question against
+        //any other one: `authors` alone offers 1,890 options there and six here. The seed
+        //exists so the rest of this suite can run without a production export, not so this
+        //baseline can be re-recorded per environment — regenerating it per corpus would
+        //leave it asserting nothing. See test/known-ci-skips.txt.
+        if ('seed' === getenv('SCHOENSTATT_TEST_CORPUS')) {
+            self::markTestSkipped('recorded against the capsule corpus; this database is the CI seed');
+        }
+
         try {
             $repository = FormRepository::instance();
             $container  = $repository->container();
