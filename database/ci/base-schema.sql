@@ -958,6 +958,27 @@ CREATE TABLE `sch_dictionary_users` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `sch_migration`
+--
+
+DROP TABLE IF EXISTS `sch_migration`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sch_migration` (
+  `filename` varchar(190) NOT NULL,
+  `sha256` char(64) NOT NULL,
+  `phase` varchar(8) NOT NULL,
+  `kind` varchar(8) NOT NULL,
+  `applied_on` datetime NOT NULL,
+  `applied_by` varchar(64) NOT NULL,
+  `duration_ms` int(10) unsigned DEFAULT NULL,
+  `row_counts` text DEFAULT NULL,
+  `note` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`filename`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `sch_persons`
 --
 
