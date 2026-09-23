@@ -54,18 +54,17 @@
 # exercise 8.5.
 #
 # HOW MUCH THIS ACTUALLY COVERS, because a green tick here overstates it.
-# Measured 2026-09-08 on master: the integration job runs `Tests: 1334,
-# Assertions: 3085, Skipped: 195`; the same suite in the docker capsule runs
-# `Tests: 1364, Assertions: 7214, Skipped: 14`. So CI executes about 43% of the
-# assertions, and 181 more tests skip here than locally.
+# Measured 2026-09-23 on master: unit runs `2365 tests, 4266 assertions` and
+# integration `Tests: 1403, Assertions: 4144, Skipped: 37`. The capsule runs those
+# two plus smoke (`671 tests, 77672 assertions`) and the fuzz harness, so CI is
+# 3,768 tests of 4,487 — but only 8,410 assertions of ~89,000, because the smoke
+# suite asserts roughly 116 times per test. The test figure is the honest one for
+# "how much is checked"; the assertion figure is why nobody should read a green
+# tick as a full rehearsal.
 #
-# That gap is structural and is not going to close. `database/` holds ninety
-# incremental migrations and NO base schema; the capsule's data is a gitignored
-# production export; and a good number of these tests assert against real rows —
-# 527 events, the per-library ACL rules derived from lib_libraries, the
-# sort-text coverage. A MariaDB service container would not make them pass, it
-# would make them fail, which is why one is not configured here and adding one
-# is not a pending task.
+# What remains out of reach here is not a database — there is one below, since
+# 2026-09-23 — but a *running application*. Smoke, fuzz and smoke-prod.sh drive
+# Apache, APCu and a live session, and a service container does not provide those.
 #
 # What is enforced instead is that the gap stays *named*:
 # tools/check-ci-skips.php pins the set of classes that skip, against
