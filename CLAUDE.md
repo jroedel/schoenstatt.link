@@ -163,8 +163,9 @@ other, so "everything passed" and "everything that could run passed" are differe
 
 ## Production
 
-- Hetzner shared hosting (`dedi2934.your-server.de`), PHP **8.5.9** CGI/FastCGI, three PHP
-  pools, MariaDB 10.11, app at `~/public_html/schoenstatt.link/`, docroot `public/`.
+- Hetzner shared hosting (`$DEPLOY_SSH_HOST`, `$DEPLOY_SSH_USER` — both in `.deploy.local`,
+  never in a tracked file), PHP **8.5.9** CGI/FastCGI, three PHP pools, MariaDB 10.11, app
+  at `~/public_html/schoenstatt.link/`, docroot `public/`.
 - OPcache on (`validate_timestamps=On`, `revalidate_freq=2`, 128 MB, interned strings 32 MB);
   APCu 5.1.27, `apc.shm_size=256M`, `apc.ttl=0` (a failed allocation wipes the segment).
   `redis` and `oauth` deliberately disabled. ICU 72.1 (`lib-icu` pin is accurate).

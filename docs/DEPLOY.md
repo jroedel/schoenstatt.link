@@ -528,7 +528,7 @@ Rules, each of which fails silently if broken:
   to `SHARED_PUBLIC` in `tools/deploy-bootstrap.sh`; inspect random-hex `.php`
   files first — that is also what a webshell looks like.
 
-The shell account (`ourlink`, uid 1023) **is the web-server user**, so nothing
+The shell account (`$DEPLOY_SSH_USER`, uid 1023) **is the web-server user**, so nothing
 chmods anything. Apache follows the symlinked docroot and honours `.htaccess` at
 the target. A release costs ~36 MB of code plus ~128 MB of vendor, mostly hardlinked.
 
@@ -538,14 +538,14 @@ by wildcard — `shared/` sits beside them with 1.2 GB of uploads and every `*.l
 
 ## Server facts
 
-- **Production runs PHP 8.5.9, CGI/FastCGI**, MariaDB 10.11, on Hetzner
-  `dedi2934.your-server.de`. OPcache on (`validate_timestamps=1`,
+- **Production runs PHP 8.5.9, CGI/FastCGI**, MariaDB 10.11, on Hetzner shared
+  hosting (`$DEPLOY_SSH_HOST`). OPcache on (`validate_timestamps=1`,
   `revalidate_freq=2`, 128 MB, 10000 files), APCu 5.1.27 (`apc.shm_size=256M`,
   `apc.ttl=0`, `apc.entries_hint=4096`), `memory_limit=512M`,
   `max_execution_time=240`, `display_errors=Off`. ICU 72.1 (the capsule has 76.1).
 - Port **222** is the shell account and the only identity a deploy uses. Port 22
   is a restricted SFTP jail (no exec) and nothing uses it.
-- **php.ini changes are the one case that needs `pkill -u ourlink -f php`**
+- **php.ini changes are the one case that needs `pkill -u $DEPLOY_SSH_USER -f php`**
   (workers re-read ini on respawn; cost is a cold OPcache, no downtime). Deploys
   never need it while `validate_timestamps=1`; at 0, every deploy would.
 - `.htaccess` cannot set PHP directives here (`php_value` is mod_php); a tracked
@@ -554,7 +554,7 @@ by wildcard — `shared/` sits beside them with 1.2 GB of uploads and every `*.l
 ### The per-account `php.ini`
 
 ```
-/home/httpd/php85-ini/ourlink/php.ini      # root-owned; every change is a konsoleH ticket
+/home/httpd/php85-ini/<account>/php.ini   # root-owned; every change is a konsoleH ticket
 ```
 
 **One directory per PHP version** (`php53-ini` … `php85-ini`): flipping the version

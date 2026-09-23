@@ -102,7 +102,7 @@ everyone" and "every request by one account is a 500" would be the same bug.
 ## Item size: an item too big to store is worse than no item
 
 Production APCu is one fixed shared segment: `apc.shm_size` **256M**, `apc.ttl` **0**,
-APCu 5.1.27, in `/home/httpd/php85-ini/ourlink/php.ini` (root-owned; the path carries the
+APCu 5.1.27, in `/home/httpd/php85-ini/<account>/php.ini` (root-owned; the path carries the
 PHP version, so every konsoleH version flip reverts it — diff after any switch).
 
 With `apc.ttl = 0`, a failed allocation does not evict selectively:
@@ -169,7 +169,7 @@ counter behind.
   `/_health` for its own `.revision` (`test/Deploy/opcache-swap-test.sh` is the repro;
   `opcache.revalidate_path=1` does **not** fix it, measured).
 - `validateTimestamps` decides whether a deploy needs a pool restart. On (current): changed
-  files are noticed within seconds. Off: every deploy needs `pkill -u ourlink -f php`.
+  files are noticed within seconds. Off: every deploy needs `pkill -u $DEPLOY_SSH_USER -f php`.
 - `startTimeUnix` is the only per-segment identity OPcache exposes. This host runs **at
   least three** PHP pools with a segment each, and a request answers for whichever served
   it; `uptimeSeconds` cannot serve, since it differs between two polls of the same segment.
