@@ -1,0 +1,238 @@
+<?php
+
+namespace JTranslate\Form;
+
+use SionModel\Db\Connection;
+use SionModel\Form\Form;
+use SionModel\Form\InputFilterProviderInterface;
+use SionModel\Validator\Db\RecordExists;
+use SionModel\Form\CsrfSpec;
+
+class EditPhraseForm extends Form implements InputFilterProviderInterface
+{
+    /**
+     * Matches trans_translations.translation, varchar(2000) NOT NULL. MariaDB
+     * counts varchar length in characters and so does StringLength, so the two
+     * bounds are the same number and not an approximation.
+     */
+    public const TRANSLATION_MAX_LENGTH = 2000;
+/**
+     * Matches trans_phrases.phrase, varchar(2000) NOT NULL.
+     */
+    public const PHRASE_MAX_LENGTH = 2000;
+/**
+     *
+     * @var array
+     */
+    protected $locales;
+/**
+     *
+     * @var string
+     */
+    protected $phrasesTableName;
+/**
+     *
+     * @var string
+     */
+    protected $translationsTableName;
+/**
+     *
+     * @var array
+     */
+    protected $inputFilterSpecification;
+    /**
+     * @param Connection $adapter the adapter the `RecordExists` validator on `phraseId`
+     *                needs. Required, and passed in rather than read from
+     *                `Laminas\Db\TableGateway\Feature\GlobalAdapterFeature`'s static
+     *                registry, which only `JUser\Module::onBootstrap()` ever
+     *                populated — so this form threw for every input, benign
+     *                included, in any process that had not booted laminas-mvc.
+     *                `PhraseValidator` existed partly to hide that.
+     */
+    public function __construct(
+        $locales,
+        $phrasesTableName,
+        $translationsTableName,
+        private readonly Connection $adapter
+    ) {
+        // we want to ignore the name passed
+        parent::__construct('edit_phrase');
+        $this->locales = $locales;
+        $this->phrasesTableName = $phrasesTableName;
+        $this->translationsTableName = $translationsTableName;
+
+        //Filters and validators belong in getInputFilterSpecification() below,
+        //not here: Laminas\Form\Factory::configureElement() reads only name,
+        //options and attributes from an element definition, so a 'filters' key
+        //written at this level is silently discarded. Every element in this form
+        //used to declare one that way and none of them ever ran.
+        $this->add([
+            'name' => 'phraseId',
+            'type' => 'Hidden',
+        ]);
+        $this->add([
+            'name' => 'phrase',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Phrase',
+            ],
+            'attributes' => [
+                'rows' => 2,
+                'readonly' => true,
+            ],
+        ]);
+
+        foreach ($locales as $key => $value) {
+            $this->add([
+                'name' => $key,
+                'type' => 'Textarea',
+                'options' => [
+                    'label' => $value,
+                ],
+                'attributes' => [
+                    'rows' => 2,
+                ],
+            ]);
+            $this->add([
+                'name' => $key . 'Id',
+                'type' => 'Hidden',
+            ]);
+        }
+
+        $this->add([
+            'name' => 'security',
+            'type' => 'csrf',
+        ]);
+        $this->add([
+            'name' => 'submit',
+            'type' => 'Submit',
+            'attributes' => [
+                'value' => 'Submit',
+                'id' => 'submit',
+                'class' => 'btn-primary'
+            ],
+        ]);
+    }
+
+    public function getLocales()
+    {
+        return $this->locales;
+    }
+
+    /**
+     *
+     * @param array $locales
+     * @return self
+     */
+    public function setLocales($locales)
+    {
+        $this->locales = $locales;
+        return $this;
+    }
+
+    /**
+     * Every element of this form is specified here, on purpose.
+     *
+     * Laminas\Form\Form::attachInputFilterDefaults() builds an input per element
+     * first and then lets this specification overwrite by name, so a field named
+     * here gets *only* what this method says. The corollary is the reason each
+     * locale field is listed: an element that is absent from this specification
+     * and whose type does not implement InputProviderInterface — a plain
+     * Textarea or Hidden, which is all of them below — is given
+     * ['required' => false] and nothing else. No filter, no length bound, raw
+     * input straight through. Only phraseId used to be specified here, so the
+     * translation textareas accepted any string of any length and wrote it to
+     * trans_translations.translation, a varchar(2000) NOT NULL, from where it is
+     * rendered on every page of the site in that locale.
+     *
+     * @see \SionModel\Form\InputFilterProviderInterface::getInputFilterSpecification()
+     */
+    public function getInputFilterSpecification()
+    {
+        if ($this->inputFilterSpecification) {
+            return $this->inputFilterSpecification;
+        }
+
+        $specification = [
+            'security' => CsrfSpec::forElement($this->get('security')),
+            'phraseId' => [
+                'required' => true,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToInt'],
+                ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\Digits'],
+                    [
+                        'name'    => 'SionModel\Validator\Db\RecordExists',
+                        'options' => [
+                            'table' => $this->phrasesTableName,
+                            'field' => 'translation_phrase_id',
+                            'adapter' => $this->adapter,
+                            'messages' => [
+                                RecordExists::ERROR_NO_RECORD_FOUND => 'Phrase not found in database'
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            //Read-only in the browser, which is a hint and not a control: the
+            //field is still posted and still has to be bounded. Nothing writes
+            //it back, so it is only checked, never trusted.
+            'phrase' => [
+                'required' => false,
+                'allow_empty' => true,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\StringTrim'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'SionModel\Validator\StringLength',
+                        'options' => ['max' => self::PHRASE_MAX_LENGTH],
+                    ],
+                ],
+            ],
+        ];
+        foreach (array_keys($this->locales) as $key) {
+            //An empty translation is how the editor says "leave this locale alone",
+            //so empty is allowed and only the length is enforced.
+            //
+            //There is deliberately **no ToNull filter here, and there must never be
+            //one.** TranslationsTable::updatePhrase() reads an explicit null as
+            //"retract this translation" and deletes the row; `''` is what it reads as
+            //"leave alone". Every locale is rendered as a textarea on every edit, so a
+            //translator who fills in one language posts `''` for the other three — and
+            //a filter that turned those into null would delete three translations per
+            //save. StringTrim alone is what keeps the two meanings apart, which is why
+            //whitespace-only input arrives here as `''` and not as null.
+            $specification[$key] = [
+                'required' => false,
+                'allow_empty' => true,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\StringTrim'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'SionModel\Validator\StringLength',
+                        'options' => ['max' => self::TRANSLATION_MAX_LENGTH],
+                    ],
+                ],
+            ];
+        //Kept validated although updatePhrase() no longer reads them for
+            //anything: they are posted, so leaving them unspecified would leave
+            //an unbounded field on the form for the next person to start
+            //trusting again.
+            $specification[$key . 'Id'] = [
+                'required' => false,
+                'allow_empty' => true,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToInt'],
+                ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\Digits'],
+                ],
+            ];
+        }
+
+        return $this->inputFilterSpecification = $specification;
+    }
+}
