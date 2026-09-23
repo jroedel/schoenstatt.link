@@ -66,3 +66,20 @@ again on every request. Say which of the two an item is, and how it was determin
   have already been taken, so the page shows fewer rows than it asked for and no error says
   why. Measured 2026-09-22: **0 of 23 entity specifications set a `name` that differs from
   its key**, so this is latent, not live. It becomes live the day someone adds one.
+
+- **`relatedAssociations()` builds `Parent IN ()` from an empty result set, and throws.**
+  `SchoenstattTable::relatedAssociations()` opens with
+  `$query = ['parentId' => array_keys($objects)]` (line 561). `SionTable::queryObjects()`
+  turns any array value into an `In` (line 437), and `SionModel\Db\Sql\Predicate\In`
+  refuses an empty set, correctly, because `sch_associations.Parent IN ()` is a syntax
+  error. So an association query that legitimately matches **nothing** raises
+  `InvalidPredicate` instead of returning no rows. The same method guards its other array
+  eight lines below — `if (! empty($interestingIds))` — so one of the two was simply
+  missed. The live path is `shrinesOfKind()`, which calls `queryObjects()` with a `kind`
+  and then `linkAssociations()` on whatever came back; only `getAssociations()` passes
+  `$objectsAreEveryAssociation = true` and skips it. Measured 2026-09-23 in the capsule:
+  both kinds it is called with have rows — `sch-shrine` 207, `sch-wayside-shrine` 43 — so
+  this is **latent, not live**, and it needs one kind to reach zero rows to become a 500 on
+  `/shrines`. It is not latent against an empty database, where it is what makes 13 of the
+  integration suite's tests error. **Not known:** whether any other caller reaches
+  `linkAssociations()` with an empty set from a narrower filter than `kind`.
