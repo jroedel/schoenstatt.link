@@ -10,8 +10,8 @@
 #
 # It used to hold 39 classes, 37 of which skipped because the runner could not
 # CONNECT to a database at all — `database/` held incremental migrations and no
-# schema, so nothing in the repository could build one. `database/base-schema.sql`
-# and `database/ci-seed.sql` now can, and the job went from 3,085 assertions and
+# schema, so nothing in the repository could build one. `database/ci/base-schema.sql`
+# and `database/ci/ci-seed.sql` now can, and the job went from 3,085 assertions and
 # 195 skipped tests to ~4,227 and 38.
 #
 # What is left is a different kind of gap, and a healthier one: every entry below
