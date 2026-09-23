@@ -23,7 +23,7 @@
 # The same .deploy.local tools/deploy.sh reads, so the app path cannot drift from
 # the thing that created the layout. Sourced, never printed: it holds the
 # database password.
-_EXC_CONFIG="$(dirname "${BASH_SOURCE[0]}")/../.deploy.local"
+_EXC_CONFIG="${DEPLOY_CONFIG:-$(dirname "${BASH_SOURCE[0]}")/../.deploy.local}"
 if [ -f "$_EXC_CONFIG" ]; then
     # shellcheck disable=SC1090
     . "$_EXC_CONFIG"
