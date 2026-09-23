@@ -93,9 +93,15 @@ fi
 
 # `lint` reads files and connects to nothing, so it must not require credentials —
 # it runs in CI, where there is no .deploy.local and never will be.
-CONFIG=$REPO_ROOT/.deploy.local
+#
+# DEPLOY_CONFIG, because tools/deploy.sh honours it and shells out to this script at both
+# migration phases. A runner writes the credentials outside the workspace and exports the
+# path; without this line that export reaches deploy.sh and stops there, and the deploy
+# dies at the pre-migration step with `.deploy.local is missing` — which is what happened
+# on the first real deploy from Actions, 2026-09-23.
+CONFIG=${DEPLOY_CONFIG:-$REPO_ROOT/.deploy.local}
 if [ "$ACTION" != lint ]; then
-    [ -f "$CONFIG" ] || fail ".deploy.local is missing. Run ./config.sh, then fill in the TODOs."
+    [ -f "$CONFIG" ] || fail "$CONFIG is missing. Run ./config.sh, then fill in the TODOs."
     # shellcheck disable=SC1090
     . "$CONFIG"
 fi

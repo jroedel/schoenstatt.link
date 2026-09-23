@@ -49,7 +49,7 @@ done
 # Same configuration file as the deploy, same two values out of it. Sourced
 # rather than parsed because that is what tools/deploy.sh does and a second
 # dialect of the same file is a bug waiting to happen.
-CONFIG=.deploy.local
+CONFIG=${DEPLOY_CONFIG:-.deploy.local}
 if [ -f "$CONFIG" ]; then
     # shellcheck disable=SC1090
     . "$CONFIG"
