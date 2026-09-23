@@ -68,7 +68,7 @@ fail() { printf '\n%sABORT: %s%s\n' "$C_ERR" "$1" "$C_OFF" >&2; exit 1; }
 # ----------------------------------------------------------------- flags ----
 
 ACTION=${1:-status}
-case $ACTION in status|plan|apply|backfill|reseal) shift ;; *) ACTION=status ;; esac
+case $ACTION in status|plan|apply|backfill|reseal|lint) shift ;; *) ACTION=status ;; esac
 
 ENV_NAME=production PHASE='' DRY_RUN=0 ASSUME_YES=0 THROUGH='' TARGET_FILE=''
 while [ $# -gt 0 ]; do
@@ -91,10 +91,14 @@ fi
 
 # ---------------------------------------------------------------- config ----
 
+# `lint` reads files and connects to nothing, so it must not require credentials —
+# it runs in CI, where there is no .deploy.local and never will be.
 CONFIG=$REPO_ROOT/.deploy.local
-[ -f "$CONFIG" ] || fail ".deploy.local is missing. Run ./config.sh, then fill in the TODOs."
-# shellcheck disable=SC1090
-. "$CONFIG"
+if [ "$ACTION" != lint ]; then
+    [ -f "$CONFIG" ] || fail ".deploy.local is missing. Run ./config.sh, then fill in the TODOs."
+    # shellcheck disable=SC1090
+    . "$CONFIG"
+fi
 
 CTRL_PATH=''
 TUNNEL_UP=0
@@ -313,6 +317,60 @@ migration_files() {
 }
 
 applied_set() { sql "SELECT \`filename\` FROM \`sch_migration\`;" | tr -d '\r'; }
+
+# ================================================================= lint =====
+#
+# What belongs in database/, checked with no database and no credentials.
+#
+# `migration_files()` is a glob: ANY .sql at the top of database/ is a migration,
+# and validate() runs over every unapplied one BEFORE the phase filter narrows to
+# the ones this run will apply. So a file that is not a migration at all — a
+# schema recording, a seed, something dropped there to look at — aborts `apply`,
+# and therefore aborts the deploy, at the pre-migration step, on the server, with
+# the release already built. It fails safe, before the swap, but it fails late
+# and for a reason that has nothing to do with the release. database/ci/ exists
+# so such files have somewhere to live; -maxdepth 1 does not reach it.
+#
+# The test is the FILENAME, not the headers. 73 of the 86 migrations — everything
+# through db7.7 — carry no headers at all: they predate the convention and were
+# backfilled into the ledger, so validate() never sees them and never should.
+# What every real migration does have is the name db<major>.<minor>.sql, and that
+# is what a stray file fails.
+#
+# A file that IS named like a migration and carries SOME header is checked in
+# full, which catches a new migration whose headers are half written — the case
+# that otherwise surfaces as an abort mid-deploy.
+if [ "$ACTION" = lint ]; then
+    step "database/ holds migrations and nothing else"
+    NAMED=0 CHECKED=0 STRAY=0
+    while read -r f; do
+        [ -n "$f" ] || continue
+        case $f in
+            db[0-9]*.[0-9]*.sql) NAMED=$((NAMED + 1)) ;;
+            *)
+                STRAY=$((STRAY + 1))
+                warn "$f is not named like a migration (db<major>.<minor>.sql)"
+                continue
+                ;;
+        esac
+        # Some header means somebody meant this to be a modern migration, so hold
+        # it to the whole convention. None means a historical file; leave it be.
+        if grep -q '^-- @' "$MIGRATION_DIR/$f"; then
+            validate "$MIGRATION_DIR/$f"
+            CHECKED=$((CHECKED + 1))
+        fi
+    done < <(migration_files)
+
+    if [ "$STRAY" -gt 0 ]; then
+        fail "$STRAY file(s) in database/ are not migrations, and tools/deploy.sh will
+abort its pre-migration step on the first one it reaches.
+
+Anything that is not a migration belongs in database/ci/ — the schema recording and
+the CI seed live there for exactly this reason."
+    fi
+    ok "$NAMED migration(s) named correctly; $CHECKED with headers fully checked"
+    exit 0
+fi
 
 # =============================================================== status =====
 
