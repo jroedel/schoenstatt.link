@@ -26,7 +26,7 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
 
 - **konsoleH ticket, second half**: `apc.ttl` is still 0, so a failed APCu allocation
   expunges the whole segment instead of evicting (`apc.shm_size` 256M did land). One-line
-  ask against `/home/httpd/php85-ini/ourlink/php.ini`; that path is per PHP version, so a
+  ask against `/home/httpd/php85-ini/<account>/php.ini`; that path is per PHP version, so a
   konsoleH version flip silently reverts every tuned value.
 - **An admin-created account is never told it exists.** `/users/create` sends nothing; the
   person can still sign in by address and inherit the roles. Decide rather than leave it.

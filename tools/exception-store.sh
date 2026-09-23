@@ -29,14 +29,34 @@ if [ -f "$_EXC_CONFIG" ]; then
     . "$_EXC_CONFIG"
 fi
 
-APP_PATH=${DEPLOY_APP_PATH:-public_html/schoenstatt.link}
+# WHERE THE TARGET'S IDENTITY COMES FROM: .deploy.local, and nowhere else. Until
+# 2026-09 this file carried the production host, shell account and application
+# path as compiled-in fallbacks, so the two scripts that source it worked with no
+# configuration at all — and the complete address of the server sat in a tracked
+# file, defeating the one thing .deploy.local exists to do. Refusing is the point:
+# a wrong endpoint must be a message, not a silent attempt against a default.
+_exc_missing=
+for _exc_var in DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_APP_PATH; do
+    [ -n "${!_exc_var:-}" ] || _exc_missing="$_exc_missing $_exc_var"
+done
+if [ -n "$_exc_missing" ]; then
+    echo "ERROR: missing from $_EXC_CONFIG:$_exc_missing" >&2
+    echo "Copy .deploy.local.dist to .deploy.local and fill it in (config.sh does this)," >&2
+    echo "or point DEPLOY_CONFIG at the file that holds them." >&2
+    # Sourced by fetch-exceptions.sh and clear-exceptions.sh, both `set -e`, so a
+    # non-zero return from the `.` stops the caller before it reaches a server.
+    return 1 2>/dev/null || exit 1
+fi
+unset _exc_missing _exc_var
+
+APP_PATH=$DEPLOY_APP_PATH
 REMOTE_EXC_DIR="$APP_PATH/shared/data/exceptions"
 LEGACY_EXC_DIR="$APP_PATH/data/exceptions"
 
-# Port 22 on this host is a restricted SFTP jail with no exec; the full shell is
-# on 222.
-EXC_REMOTE=${DEPLOY_SSH_USER:+$DEPLOY_SSH_USER@}${DEPLOY_SSH_HOST:-dedi2934.your-server.de}
-[ -n "${DEPLOY_SSH_USER:-}" ] || EXC_REMOTE="ourlink@${DEPLOY_SSH_HOST:-dedi2934.your-server.de}"
+# Port 22 on the managed host is a restricted SFTP jail with no exec; the full
+# shell is on 222, which is what .deploy.local.dist ships as the default. A port
+# number names no server, so this one keeps a fallback.
+EXC_REMOTE="$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST"
 EXC_PORT=${DEPLOY_SSH_PORT:-222}
 
 # Resolve which of the two directories is actually there, on the server, and fail

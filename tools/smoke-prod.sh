@@ -552,7 +552,7 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
             # With timestamp validation off, a deploy is invisible to OPcache until
             # the pool is restarted, which would serve the previous release forever.
             if grep -q '"validateTimestamps":false' "$BODY"; then
-                echo "WARN  opcache.validate_timestamps is off — deploys need 'pkill -u ourlink -f php'" >&2
+                echo "WARN  opcache.validate_timestamps is off — deploys need 'pkill -u <shell account> -f php'" >&2
             fi
         else
             echo "WARN  OPcache is disabled — every request is recompiling PHP" >&2
