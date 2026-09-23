@@ -316,6 +316,69 @@ A DROP COLUMN, DROP TABLE or NOT NULL tightening that older code cannot survive 
     esac
 }
 
+# ------------------------------------------------------- snapshot target ----
+#
+# A production snapshot goes to the SERVER, not to $BACKUP_DIR.
+#
+# $BACKUP_DIR is $REPO_ROOT/data/deploy/backups — the checkout of whatever machine is
+# running the deploy. That is right for `make prod-deploy`, where it lands in the
+# operator's tree and stays. On a GitHub runner it is /home/runner/work/..., destroyed
+# when the job ends: the dump was taken, reported `ok` with its size, and deleted minutes
+# later. The log looked more protected than the deploy was (#297).
+#
+# It is a sibling of shared/data/ and shared/public/ on purpose. tools/deploy.sh symlinks
+# everything under those two into every release, and a database dump has no business
+# inside the application tree — not because it is reachable (the docroot is public/) but
+# because nothing in the app should be able to open it by walking data/.
+SNAPSHOT_DIR_REMOTE="${DEPLOY_APP_PATH:-}/shared/migration-snapshots"
+
+# Run a command on the deploy host, reusing the control socket connect() already opened
+# for the tunnel. No second authentication, and it cannot be called before connect().
+remote() {
+    [ -n "$CTRL_PATH" ] || fail "remote() called with no ssh control socket — connect() must run first."
+    ssh -S "$CTRL_PATH" -p "${DEPLOY_SSH_PORT:-222}" \
+        "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" "$@"
+}
+
+# Take the pre-migration snapshot, and do not return until it exists somewhere that
+# outlives this process. Every failure path aborts BEFORE the migration runs, which is the
+# whole point: a snapshot that might not be there is not a snapshot.
+take_snapshot() {
+    local f=$1 tables=$2 name=$3
+    local tmp sum_local sum_remote size
+
+    tmp=$(mktemp "${TMPDIR:-/tmp}/migrate-snap-XXXXXX")
+    # shellcheck disable=SC2086
+    if ! mysqldump --defaults-extra-file="$DEFAULTS_FILE" --single-transaction --quick \
+            "$DB_NAME" $(printf '%s' "$tables" | tr ',' ' ') 2>/dev/null | gzip > "$tmp"; then
+        rm -f "$tmp"
+        fail "could not snapshot [$tables] before $f. Nothing was applied."
+    fi
+    sum_local=$(sha256sum "$tmp" | cut -d' ' -f1)
+    size=$(du -h "$tmp" | cut -f1)
+
+    if [ "$ENV_NAME" != production ]; then
+        mkdir -p "$BACKUP_DIR"
+        mv "$tmp" "$BACKUP_DIR/$name"
+        ok "snapshot $name ($size)"
+        return 0
+    fi
+
+    remote "mkdir -p '$SNAPSHOT_DIR_REMOTE'" >/dev/null 2>&1 \
+        || { rm -f "$tmp"; fail "could not create $SNAPSHOT_DIR_REMOTE on the server. Nothing was applied."; }
+    if ! remote "cat > '$SNAPSHOT_DIR_REMOTE/$name'" < "$tmp"; then
+        rm -f "$tmp"
+        fail "could not upload the snapshot of [$tables] to the server. Nothing was applied."
+    fi
+    # Verified, not assumed. A truncated upload over a dropped connection is a plausible
+    # file of the wrong length, and `cat >` reports nothing about it.
+    sum_remote=$(remote "sha256sum '$SNAPSHOT_DIR_REMOTE/$name' 2>/dev/null | cut -d' ' -f1" || true)
+    rm -f "$tmp"
+    [ "$sum_remote" = "$sum_local" ] || fail "the snapshot on the server does not match what was sent
+(local $sum_local, server ${sum_remote:-absent}). Nothing was applied."
+    ok "snapshot $name ($size) on the server, sha256 verified"
+}
+
 # ------------------------------------------------------------- inventory ----
 
 migration_files() {
@@ -588,13 +651,7 @@ for f in "${TODO[@]}"; do
 
     # ---- snapshot ----------------------------------------------------------
     if [ "$TABLES" != none ]; then
-        mkdir -p "$BACKUP_DIR"
-        SNAP=$BACKUP_DIR/$RUN_TS-$ENV_NAME-${f%.sql}.sql.gz
-        # shellcheck disable=SC2086
-        mysqldump --defaults-extra-file="$DEFAULTS_FILE" --single-transaction --quick \
-            "$DB_NAME" $(printf '%s' "$TABLES" | tr ',' ' ') 2>/dev/null | gzip > "$SNAP" \
-            || fail "could not snapshot [$TABLES] before $f. Nothing was applied."
-        ok "snapshot $(basename "$SNAP") ($(du -h "$SNAP" | cut -f1))"
+        take_snapshot "$f" "$TABLES" "$RUN_TS-$ENV_NAME-${f%.sql}.sql.gz"
     else
         dim "declares '@tables: none' — no snapshot taken"
     fi
@@ -677,28 +734,77 @@ ok "all $PHASE-deploy migrations applied on $ENV_NAME"
 #
 # Deletions are always named. A retention policy that prunes silently reads, a
 # year later, as "we never had a backup of that".
-prune_backups() {
-    [ -d "$BACKUP_DIR" ] || return 0
-    local keep_runs=${DEPLOY_KEEP_BACKUP_RUNS:-2}
-    local keep_days=${DEPLOY_KEEP_BACKUP_DAYS:-30}
-    local protected file run freed=0 deleted=0
+# Which snapshots to drop. Pure: names on stdin, names to delete on stdout, no filesystem
+# and no server. That is what lets test/Deploy/snapshot-retention-test.sh exercise the
+# policy on synthetic input instead of on a real backup directory — and the policy now has
+# two callers, local and remote, which is exactly when a duplicated rule starts to rot.
+#
+# Age comes from the filename's run stamp, not from mtime. The stamp is when the snapshot
+# was TAKEN; an mtime is when the file was last written, which a copy, a restore or an
+# rsync changes. On the server there is no mtime worth trusting at all.
+prunable() {
+    local keep_runs=$1 cutoff=$2
+    local input protected name run
+    input=$(cat)
+    [ -n "$input" ] || return 0
 
-    protected=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*-$ENV_NAME-*.sql.gz" -printf '%f\n' 2>/dev/null \
+    protected=$(printf '%s\n' "$input" \
         | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p' | sort -ru | head -n "$keep_runs")
 
-    while IFS= read -r file; do
-        [ -n "$file" ] || continue
-        run=$(printf '%s' "$(basename "$file")" | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p')
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        run=$(printf '%s' "$name" | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p')
+        [ -n "$run" ] || continue
         # floor 1: among the most recent runs for this environment
-        printf '%s\n' "$protected" | grep -qxF "$run" && continue
+        if printf '%s\n' "$protected" | grep -qxF "$run"; then continue; fi
         # floor 2: younger than the day limit
-        [ -n "$(find "$file" -maxdepth 0 -mtime "+$keep_days" 2>/dev/null)" ] || continue
-        freed=$((freed + $(stat -c '%s' "$file")))
-        rm -f "$file" && deleted=$((deleted + 1)) && info "pruned $(basename "$file")"
-    done < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*-$ENV_NAME-*.sql.gz" 2>/dev/null | sort)
+        if [[ ! "$run" < "$cutoff" ]]; then continue; fi
+        printf '%s\n' "$name"
+    done <<EOF
+$input
+EOF
+}
+
+# The cutoff as a run stamp, so the comparison above is a string compare and needs no
+# epoch arithmetic on either side of the ssh connection.
+prune_cutoff() {
+    date -d "${1} days ago" +%Y%m%d-%H%M%S 2>/dev/null \
+        || date -v "-${1}d" +%Y%m%d-%H%M%S   # BSD/macOS
+}
+
+# A snapshot's disappearance is always named. A retention policy that prunes silently
+# reads, a year later, as "we never had a backup of that".
+prune_backups() {
+    local keep_runs=${DEPLOY_KEEP_BACKUP_RUNS:-2}
+    local keep_days=${DEPLOY_KEEP_BACKUP_DAYS:-30}
+    local cutoff doomed name deleted=0
+    cutoff=$(prune_cutoff "$keep_days")
+
+    if [ "$ENV_NAME" = production ]; then
+        doomed=$(remote "ls -1 '$SNAPSHOT_DIR_REMOTE' 2>/dev/null" 2>/dev/null \
+            | grep -E "^[0-9]{8}-[0-9]{6}-$ENV_NAME-.*\.sql\.gz$" \
+            | prunable "$keep_runs" "$cutoff" || true)
+        while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            remote "rm -f '$SNAPSHOT_DIR_REMOTE/$name'" >/dev/null 2>&1 \
+                && deleted=$((deleted + 1)) && info "pruned $name (server)"
+        done <<EOF
+$doomed
+EOF
+    else
+        [ -d "$BACKUP_DIR" ] || return 0
+        doomed=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*-$ENV_NAME-*.sql.gz" -printf '%f\n' 2>/dev/null \
+            | prunable "$keep_runs" "$cutoff" || true)
+        while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            rm -f "$BACKUP_DIR/$name" && deleted=$((deleted + 1)) && info "pruned $name"
+        done <<EOF
+$doomed
+EOF
+    fi
 
     if [ "$deleted" -gt 0 ]; then
-        dim "$deleted snapshot(s) removed, $((freed / 1048576)) MiB freed (keeping the last $keep_runs runs and everything under $keep_days days)"
+        dim "$deleted snapshot(s) removed (keeping the last $keep_runs runs and everything under $keep_days days)"
     fi
 }
 prune_backups
