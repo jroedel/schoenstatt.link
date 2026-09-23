@@ -231,6 +231,13 @@ other, so "everything passed" and "everything that could run passed" are differe
   `cs-fix` broadly. `php -l` every touched file.
 - **Authorization changes are diffed**: `docker compose exec -T app php tools/acl-table.php
   --format=json` against `docs/acl-baseline.json`.
+- **The schema is recorded**: `database/base-schema.sql` is the application's DDL with no
+  rows in it, written by `./tools/schema-dump.sh` and guarded by `ci-local.sh schema`,
+  which both re-dumps the capsule to check the recording is current and builds a scratch
+  database from it to check it still loads. Regenerate it in the same PR as any migration
+  that changes the schema. It is the one artefact that lets anything outside this machine
+  build the database, so CI can have one; nothing else in `database/` can (34 of the 48
+  tables are created by a migration, the other 14 only ever existed on a server).
 - **Forms**: `php composer.phar fuzz`, contract "no new gaps"; `fuzz-baseline` regenerates
   `test/Fuzz/known-form-gaps.php` — read every added line. **The specification is the whole
   of it**: `getInputFilterSpecification()` is what the engine reads, and a field it does not
