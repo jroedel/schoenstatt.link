@@ -142,6 +142,21 @@ jobs:
         with:
           php-version: "8.5"
           coverage: none
+      - name: Cache composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      # The unit suite was vendor-free until 2026-09-11, when
+      # test/Unit/ElementModelBehaviourTest arrived requiring vendor/autoload.php --
+      # and that one `require` is what registers composer's autoloader for the WHOLE
+      # suite at collection time, which is why thirty other unit tests can name app
+      # classes without requiring anything themselves. Without an install the job dies
+      # at collection with exit 255 and no test result at all. It went unnoticed
+      # because Actions was disabled two days earlier.
+      - name: Install from lock
+        run: php composer.phar install --no-dev --no-interaction --no-progress
       - name: Fetch the pinned phpunit phar
         run: bash tools/get-phars.sh phpunit
       - name: Run the unit suite
@@ -235,9 +250,29 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/base-schema.sql
           mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/ci-seed.sql
+      - name: Create the writable directories
+        # The same three config.sh creates, and for the same reason: they are gitignored,
+        # so a fresh checkout has none of them. Without data/config the merged-config write
+        # in App\Modules\ModuleConfig fails its rename() and emits a PHP warning per test
+        # that builds a container -- 21 of them -- and phpunit.xml.dist sets
+        # failOnWarning="true", so the suite reports every assertion passing and still exits
+        # non-zero. Nothing in the output says "directory".
+        run: mkdir -p data/config data/logs data/cache/twig
       - name: Point the application at it
         # Written rather than committed, because config/autoload/local.php is per-machine
         # by design and 27 of these classes skip on `is_readable()` of exactly this path.
+        #
+        # `driver_options` must be PRESENT, even empty. Two different callers disagree
+        # about that and only one of them is lenient: SionModel\Db\Connection::fromCredentials
+        # requires database/hostname/username/password and treats driver_options as
+        # optional, while App\Application\Service\DbConnectionFactory requires all five and
+        # refuses the service without it. Leaving it out cost a full CI run: the container
+        # could not build a connection, so 191 tests skipped and the database sat unused
+        # while every step reported success.
+        #
+        # The init command is the capsule's, for the reason docker/local.docker.php gives:
+        # in MariaDB `utf8` means utf8mb3, so a connection opened without this truncates
+        # anything outside the BMP on the way out of utf8mb4 tables.
         run: |
           cat > config/autoload/local.php <<'PHP'
           <?php
@@ -249,7 +284,19 @@ jobs:
                   'database' => 'ourlink_db1',
                   'username' => 'schoenstatt',
                   'password' => 'schoenstatt',
+                  'driver_options' => [
+                      (class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : \PDO::MYSQL_ATTR_INIT_COMMAND)
+                          => 'SET NAMES utf8mb4;',
+                  ],
               ],
+              // Dummy values, not secrets -- the capsule's are dummies too. Without them
+              // CacheStatusEndpointTest, HealthRevisionTest and JwtRoundTripTest skip on
+              // configuration rather than on anything about a runner, which would be three
+              // baseline lines documenting nothing but an omission here. The cypher key is
+              // 32 bytes because php-jwt refuses a shorter one.
+              'sion_model' => ['api_keys' => ['ci-only-api-key']],
+              'schoenstatt' => ['api_keys' => ['ci-only-api-key']],
+              'ApiRequest' => ['jwtAuth' => ['cypherKey' => 'ci-only-cypher-key-32-bytes-long!']],
           ];
           PHP
       - name: Run the integration suite
@@ -262,6 +309,13 @@ jobs:
           php -d memory_limit=1G tools/phpunit.phar --testsuite integration
           --log-junit integration-junit.xml
         env:
+          # CallNumberRequirementTest builds a PDO of its own rather than going through the
+          # container, and its fallback host is the capsule's service name -- `getenv('DB_HOST')
+          # ?: 'db'`. On a runner that resolves to nothing, so the seam has to be fed.
+          DB_HOST: 127.0.0.1
+          DB_NAME: ourlink_db1
+          DB_USER: schoenstatt
+          DB_PASS: schoenstatt
           # Says which corpus this is. Five classes compare against baselines recorded on
           # the capsule's 498 associations -- `authors` alone offers 1,890 options there
           # and six here -- so against the seed they would answer a different question.
