@@ -1,0 +1,216 @@
+# Deploy schoenstatt.link from a runner.
+#
+# WHAT THIS IS NOT, YET: push-to-deploy. The only trigger is `workflow_dispatch`, and the
+# job runs in the `production` GitHub Environment, which is where the required reviewer
+# lives. A deploy is still a person's decision — the difference is that the decision is a
+# button rather than a laptop holding the credentials. Adding `push: branches: [master]`
+# is the last step of #263 and should wait until this has run clean several times.
+#
+# WHY IT CAN NEVER RUN FROM A PULL REQUEST: it has no `pull_request` trigger. That matters
+# beyond taste. This repository is going public (#259), and on a public repository the one
+# reliable way to keep a fork's pull request away from these secrets is not to give it a
+# trigger that could reach them.
+#
+# THE SECRETS ARE THE WHOLE CONFIGURATION. tools/deploy.sh sources a file of shell
+# assignments; this writes that file from GitHub secrets into RUNNER_TEMP rather than into
+# the workspace, and points the script at it with DEPLOY_CONFIG. Two reasons: nothing later
+# can sweep it up with the checkout, and `git status` stays clean, which the script's own
+# preflight insists on.
+#
+# WHAT STOPS TWO DEPLOYS COLLIDING: `concurrency` serialises this workflow against itself,
+# and tools/deploy.sh takes an atomic lock on the server (shared/deploy.lock), which covers
+# the case GitHub cannot see — someone running `make prod-deploy` from a laptop at the same
+# moment.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preflight and plan only; the server is not modified"
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-production
+  # NOT cancel-in-progress. A run halfway through a symlink swap and a migration is the one
+  # thing that must never be killed to make room for a newer one.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # to ask whether CI passed on the commit being deployed
+
+jobs:
+  deploy:
+    name: ${{ inputs.dry_run && 'Dry run' || 'Deploy master' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          # tools/deploy.sh reads `git log`, compares against origin/master, and builds the
+          # release from `git ls-files`. A shallow clone answers the first two wrongly.
+          fetch-depth: 0
+
+      - name: Put the checkout on master, at the commit that was dispatched
+        # tools/deploy.sh refuses anything that is not a branch literally named `master`
+        # (":1002" — a --ref deploy is meant to be loud), and a runner's checkout is a
+        # detached HEAD. `checkout -B` makes that true without depending on what
+        # actions/checkout does with a branch ref.
+        #
+        # The equality check is the part that matters. If master moved between the dispatch
+        # and now, the commit CI proved green and the commit deploy.sh would ship are
+        # different, and deploy.sh would notice but only WARN — and -y forces past a
+        # warning. So it is refused here instead. Re-dispatch; the new tip needs its own
+        # green run anyway.
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet origin master
+          REMOTE=$(git rev-parse origin/master)
+          if [ "$REMOTE" != "$SHA" ]; then
+            echo "::error::master has moved since this run was dispatched \
+          (dispatched ${SHA:0:7}, origin/master is now ${REMOTE:0:7}). Re-dispatch." >&2
+            exit 1
+          fi
+          git checkout -B master "$SHA"
+          git status --porcelain
+
+      - name: Require CI green on this exact commit
+        # tools/deploy.sh normally verifies a release by running ci-local. It cannot here —
+        # ci-local drives the Docker capsule, and there is no capsule on a runner. So the
+        # gate is this repository's CI, and this step is what makes that a checked fact
+        # rather than a comment: it asks whether ci.yml has a successful run for this very
+        # SHA, and refuses if not. A green run on the branch is not the same claim.
+        #
+        # CI covers roughly 43% of the assertions — it has no database for most jobs — so
+        # this is a floor, not a full rehearsal. The required reviewer on the `production`
+        # environment is the rest of it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          RUN_ID=$(gh api -X GET \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$SHA" -f status=success \
+            --jq '.workflow_runs | sort_by(.run_number) | last | .id // empty')
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::CI has no successful run for $SHA. Deploy refused." >&2
+            exit 1
+          fi
+          echo "ci.yml run $RUN_ID passed on ${SHA:0:7}"
+          echo "CI_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+
+      - name: Write the deploy configuration
+        # Outside the workspace on purpose — see the header. Mode 0600 because the file
+        # holds the maintenance API key and a database password with DDL rights; also
+        # because tools/deploy.sh checks the mode and counts anything looser an unusual
+        # deploy, which on a runner means a warning nobody reads.
+        env:
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
+          DEPLOY_APP_PATH: ${{ secrets.DEPLOY_APP_PATH }}
+          DEPLOY_BASE_URL: ${{ secrets.DEPLOY_BASE_URL }}
+          DEPLOY_API_KEY: ${{ secrets.DEPLOY_API_KEY }}
+          DEPLOY_CANARY_COOKIE: ${{ secrets.DEPLOY_CANARY_COOKIE }}
+          DEPLOY_DB_NAME: ${{ secrets.DEPLOY_DB_NAME }}
+          DEPLOY_DB_USER: ${{ secrets.DEPLOY_DB_USER }}
+          DEPLOY_DB_PASS: ${{ secrets.DEPLOY_DB_PASS }}
+          DEPLOY_DB_TUNNEL_PORT: ${{ secrets.DEPLOY_DB_TUNNEL_PORT }}
+        run: |
+          umask 077
+          CONF="$RUNNER_TEMP/deploy.local"
+          {
+            printf 'DEPLOY_SSH_USER=%q\n'       "$DEPLOY_SSH_USER"
+            printf 'DEPLOY_SSH_HOST=%q\n'       "$DEPLOY_SSH_HOST"
+            printf 'DEPLOY_SSH_PORT=%q\n'       "${DEPLOY_SSH_PORT:-222}"
+            printf 'DEPLOY_APP_PATH=%q\n'       "$DEPLOY_APP_PATH"
+            printf 'DEPLOY_BASE_URL=%q\n'       "$DEPLOY_BASE_URL"
+            printf 'DEPLOY_API_KEY=%q\n'        "$DEPLOY_API_KEY"
+            printf 'DEPLOY_CANARY_COOKIE=%q\n'  "$DEPLOY_CANARY_COOKIE"
+            printf 'DEPLOY_DB_NAME=%q\n'        "$DEPLOY_DB_NAME"
+            printf 'DEPLOY_DB_USER=%q\n'        "$DEPLOY_DB_USER"
+            printf 'DEPLOY_DB_PASS=%q\n'        "$DEPLOY_DB_PASS"
+            printf 'DEPLOY_DB_TUNNEL_PORT=%q\n' "$DEPLOY_DB_TUNNEL_PORT"
+          } > "$CONF"
+          chmod 600 "$CONF"
+          # Names only. Never the values, and never `cat` — this log becomes world-readable
+          # the day the repository goes public.
+          printf 'wrote %s holding: ' "$CONF"
+          sed 's/=.*//' "$CONF" | tr '\n' ' '
+          printf '\n'
+
+      - name: Trust the host key
+        # Pinned from a secret, not discovered. `StrictHostKeyChecking=no` would turn a
+        # documented atomic deploy into a trust-on-first-use one; tools/deploy.sh refuses
+        # rather than guesses everywhere else, and this is the same rule.
+        # Produce the value with:  ssh-keyscan -p <port> -H <host>
+        env:
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts || { echo "DEPLOY_KNOWN_HOSTS is empty" >&2; exit 1; }
+
+      - name: Install the deploy key
+        # Deliberately not webfactory/ssh-agent or any other third-party action: this is
+        # the step that handles the private key, and it is four lines of our own. The key
+        # must be generated WITHOUT a passphrase — there is no agent and nobody to type
+        # one. Its protection is that it lives in a GitHub secret and that the account it
+        # opens is reachable only on port 222.
+        #
+        # ~/.ssh/config rather than a flag, because tools/deploy.sh builds its own ssh
+        # command and passes its own -e string to rsync; a config entry reaches both
+        # without the script needing to know it is on a runner.
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          umask 077
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf 'Host *\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n' > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+          ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
+            || { echo "DEPLOY_SSH_KEY is not a usable passphrase-less private key" >&2; exit 1; }
+
+      - name: Deploy
+        # -y because tools/deploy.sh refuses to run without a TTY unless told to; the
+        # prompt exists for an UNUSUAL deploy, and on a runner there is nobody to answer
+        # it. What replaces it is the environment's required reviewer, who has already said
+        # yes before this step starts.
+        #
+        # DEPLOY_VERIFIED_SHA and _BY rather than --skip-tests. They say the same thing the
+        # bare flag would — do not run ci-local — but they say it truthfully: which
+        # revision was proven green, and by what. --skip-tests alone would make the script
+        # announce that nothing verified this build, which is both wrong and the one
+        # warning nobody should learn to ignore. The SHA also keeps the claim honest: if
+        # master moved between CI and this dispatch, deploy.sh says so rather than crediting
+        # the new commit with the old commit's green run.
+        #
+        # Every `${{ }}` here is read through `env:` and never interpolated into the script
+        # text. None of these values is attacker-controlled today, but a workflow that
+        # pastes expressions into a shell is one added input away from being injectable, and
+        # the habit is cheaper than the audit.
+        env:
+          DEPLOY_CONFIG: ${{ runner.temp }}/deploy.local
+          DEPLOY_LOCK_OWNER: github-actions/${{ github.run_id }}
+          DEPLOY_VERIFIED_SHA: ${{ github.sha }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          # CI_RUN_ID comes from the gate step above, so this names the run that actually
+          # proved the commit green rather than this deploy's own run.
+          export DEPLOY_VERIFIED_BY="GitHub Actions CI (run $CI_RUN_ID) passed"
+          if [ "$DRY_RUN" = "true" ]; then
+            ./tools/deploy.sh --dry-run -y
+          else
+            ./tools/deploy.sh -y
+          fi
+
+      - name: Remove the deploy configuration
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deploy.local"
