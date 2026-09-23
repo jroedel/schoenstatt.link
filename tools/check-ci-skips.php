@@ -8,15 +8,16 @@ declare(strict_types=1);
  * ## Why this exists
  *
  * On 2026-09-08 the integration job reported `Tests: 1334, Assertions: 3085, Skipped: 195`
- * and a green tick. The same suite in the docker capsule reports `Tests: 1364,
- * Assertions: 7214, Skipped: 14`. So CI runs **43% of the assertions** the capsule does,
- * and the green tick says nothing about the other 57%.
+ * and a green tick, against the capsule's `Tests: 1364, Assertions: 7214, Skipped: 14`.
+ * Most of that gap has since closed: `database/ci/base-schema.sql` and `ci-seed.sql` gave
+ * CI a database on 2026-09-23 and the job now reports `Tests: 1403, Assertions: 4144,
+ * Skipped: 37`.
  *
- * That gap is legitimate and cannot be closed: `database/` holds ninety incremental
- * migrations and no base schema, the capsule's data comes from a production export that is
- * gitignored, and a good number of these tests assert against real rows (527 events, the
- * per-library ACL rules, the sort-text coverage). A CI database would not make them pass;
- * it would make them fail.
+ * What is left does not close, and should not. Sixteen classes assert against the real
+ * corpus — the form and element recordings, the per-library ACL rules, the sort-text
+ * coverage — and the seed invents its rows precisely so that no production extract has to
+ * live in a public repository. Re-recording those baselines per corpus would leave them
+ * asserting nothing.
  *
  * What *can* be closed is the silence. The number 195 tells a reader nothing, and a test
  * that starts skipping for a **new** reason — an `is_readable()` guard added to a class

@@ -1,0 +1,7 @@
+# Review stays routed to the maintainer on every path. One line, because there is
+# one maintainer; split it the day that stops being true.
+#
+# GitHub only requests a review from a code owner automatically on a public
+# repository (or a private one on a paid plan), so until this repository is public
+# this file is a statement of intent rather than an active rule.
+*       @jroedel

@@ -85,9 +85,9 @@ jobs:
         # rather than a comment: it asks whether ci.yml has a successful run for this very
         # SHA, and refuses if not. A green run on the branch is not the same claim.
         #
-        # CI covers roughly 43% of the assertions — it has no database for most jobs — so
-        # this is a floor, not a full rehearsal. The required reviewer on the `production`
-        # environment is the rest of it.
+        # CI runs 3,768 tests of 4,487 — everything but the three suites that need a
+        # running application — so this is a floor, not a full rehearsal. The required
+        # reviewer on the `production` environment is the rest of it.
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}

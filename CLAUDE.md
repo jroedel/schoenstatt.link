@@ -207,9 +207,12 @@ other, so "everything passed" and "everything that could run passed" are differe
 
 - `./tools/ci-local.sh` mirrors CI's seven jobs (lint, `--no-dev` rehearsal, PHPStan 0,
   PSR-12 on `tools/phpcs-clean-paths.txt`, unit, integration, deploy tests) **and** runs
-  smoke, fuzz and `tools/smoke-prod.sh`, which CI cannot (no database there: CI executes
-  ~43% of the assertions; `tools/check-ci-skips.php --bare` pins which classes skip in
-  `test/known-ci-skips.txt`). Say in the PR body that ci-local ran.
+  smoke, fuzz and `tools/smoke-prod.sh`, which CI cannot — not for want of a database, it
+  has had one since 2026-09-23, but because those three need a *running application*. CI
+  runs 3,768 tests of 4,487 and 8,410 assertions of ~89,000; the two figures diverge
+  because the smoke suite asserts ~116 times per test.
+  `tools/check-ci-skips.php --bare` pins which classes skip in
+  `test/known-ci-skips.txt`. Say in the PR body that ci-local ran.
 - **Stages**: `ci-local.sh --list`. `qa` (phpcs + phpstan + unit, also `make qa`) is the
   fast triad for between edits; `--ci` is the seven CI jobs; one or more stage names run
   just those, always in canonical order.
