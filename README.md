@@ -76,3 +76,10 @@ Documentation
 - **[CLAUDE.md](CLAUDE.md)** — architecture, environment and working conventions.
 - **[docs/DEPLOY.md](docs/DEPLOY.md)** — the atomic deploy (`tools/deploy.sh`), migrations, rollback.
 - **[docs/BACKLOG.md](docs/BACKLOG.md)** — what is still to do, and why in that order.
+
+Licence
+-------
+
+BSD-3-Clause — see **[LICENSE.txt](LICENSE.txt)**. Two modules under `module/`
+carry their own MIT licence and the front-end assets under `public/` carry
+theirs; **[THIRD-PARTY.md](THIRD-PARTY.md)** records which, and where.
