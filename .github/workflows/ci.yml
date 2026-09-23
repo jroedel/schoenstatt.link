@@ -142,6 +142,21 @@ jobs:
         with:
           php-version: "8.5"
           coverage: none
+      - name: Cache composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      # The unit suite was vendor-free until 2026-09-11, when
+      # test/Unit/ElementModelBehaviourTest arrived requiring vendor/autoload.php --
+      # and that one `require` is what registers composer's autoloader for the WHOLE
+      # suite at collection time, which is why thirty other unit tests can name app
+      # classes without requiring anything themselves. Without an install the job dies
+      # at collection with exit 255 and no test result at all. It went unnoticed
+      # because Actions was disabled two days earlier.
+      - name: Install from lock
+        run: php composer.phar install --no-dev --no-interaction --no-progress
       - name: Fetch the pinned phpunit phar
         run: bash tools/get-phars.sh phpunit
       - name: Run the unit suite
@@ -266,6 +281,14 @@ jobs:
                           => 'SET NAMES utf8mb4;',
                   ],
               ],
+              // Dummy values, not secrets -- the capsule's are dummies too. Without them
+              // CacheStatusEndpointTest, HealthRevisionTest and JwtRoundTripTest skip on
+              // configuration rather than on anything about a runner, which would be three
+              // baseline lines documenting nothing but an omission here. The cypher key is
+              // 32 bytes because php-jwt refuses a shorter one.
+              'sion_model' => ['api_keys' => ['ci-only-api-key']],
+              'schoenstatt' => ['api_keys' => ['ci-only-api-key']],
+              'ApiRequest' => ['jwtAuth' => ['cypherKey' => 'ci-only-cypher-key-32-bytes-long!']],
           ];
           PHP
       - name: Run the integration suite

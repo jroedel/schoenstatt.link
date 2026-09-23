@@ -21,7 +21,11 @@
 #
 # Keep the reasons specific: "needs a row the seed lacks" is fine, "environment"
 # is not. And measure them — the first draft of the old file guessed four entries
-# from filenames and three of them were wrong.
+# from filenames and three of them were wrong. This list was re-pinned from CI run
+# 35872144567 rather than from the capsule, which is the only place it means
+# anything: two entries measured in the capsule (TranslationCatalogWriteTest and
+# TwigCacheDegradationTest, the latter skipping only because `docker compose exec`
+# runs as root) turned out to RUN on a runner, and came straight back out.
 
 # --- Compares against a baseline recorded on the capsule's corpus -------------
 # These five skip on SCHOENSTATT_TEST_CORPUS=seed, which the integration job sets
@@ -44,11 +48,9 @@ SchoenstattTest\Integration\PhraseIdentityConstraintTest             # the seed 
 SchoenstattTest\Integration\PhraseValidationParityTest               # the seed holds no phrases for the configured project
 SchoenstattTest\Integration\PortedRouteTranslationTest               # needs translated route text the seed has no phrases for
 SchoenstattTest\Integration\SortTextCoverageTest                     # every seeded book with no sort text has a format, so there is nothing to report
-SchoenstattTest\Integration\TranslationCatalogWriteTest              # writes catalogs from phrases the seed does not hold
 SchoenstattTest\Integration\TranslationUpdateScopeTest               # the seed holds no phrases, so TranslationsTable is not constructible
 SchoenstattTest\Integration\TranslationWriteSemanticsTest            # the seed holds no phrases, so TranslationsTable is not constructible
 SchoenstattTest\Integration\UserFormUniquenessTest                   # the seed holds no user_role rows
 
 # --- Not about the data ------------------------------------------------------
 SchoenstattTest\Integration\PatternValidatorContractTest             # only failing values carry messages; the passing ones have nothing to assert
-SchoenstattTest\Integration\TwigCacheDegradationTest                 # a process that is never denied a write cannot observe the degradation
