@@ -93,8 +93,9 @@ before verification, so it costs a fetch and nothing else.
 
 ### Verification: why it stays in your tree
 
-Nothing else verifies a build — GitHub Actions is out of minutes, so `ci-local` is the
-only check there is. It runs in the capsule, and `docker-compose.yml` bind-mounts **your**
+`ci-local` is the fuller check of the two — CI now runs on every push and has a database,
+but it still executes roughly 43% of the assertions. It runs in the capsule, and
+`docker-compose.yml` bind-mounts **your**
 tree into the capsule: running it from the deploy checkout would test your tree while
 reporting on the release. So it runs where the capsule is, under one condition.
 
@@ -423,11 +424,38 @@ retirement, because phrase discovery un-retires whatever the old code still look
 
 ### Snapshot retention and credentials
 
+**A production snapshot lives on the server**, in `shared/migration-snapshots/`, and the
+migration does not run until it is there and its `sha256` matches what was sent. Anything
+else is `data/deploy/backups/` in the deploying checkout, which is where capsule
+rehearsals go.
+
+That split exists because of where a deploy can run from. `data/deploy/backups/` is right
+for `make prod-deploy` — it lands in your tree and stays. On a GitHub runner it is
+`/home/runner/work/...`, destroyed with the job: the dump would be taken, reported `ok`
+with its size, and deleted minutes later, which reads in the log as more protection than
+the deploy had. The snapshot is the only undo for a `@destructive` migration, and
+`tools/deploy.sh` refuses a *code* rollback past one precisely because the database cannot
+go back on its own.
+
+`shared/migration-snapshots/` is a **sibling** of `shared/data/` and `shared/public/`, not
+inside them, because everything under those two is symlinked into every release. The
+docroot is `public/`, so nothing there was ever web-reachable — the point is that no
+application code should be able to reach a database dump by walking `data/`.
+
+Know what this does not protect against: the snapshot now sits on the host it was taken
+from. That is the right trade for the failure it exists for — a migration that did the
+wrong thing — and no protection at all against losing that host. The server's own backups
+are what cover the second case.
+
 `DEPLOY_KEEP_BACKUP_RUNS=2` (per environment) and `DEPLOY_KEEP_BACKUP_DAYS=30` are
 both floors: a snapshot is deleted only when it is *both* outside the last N runs
 for its environment *and* older than the day limit, so capsule rehearsals cannot
-push out the last production snapshot. Every deletion is named on screen. A single
-`sch_changes` dump is ~74 MB.
+push out the last production snapshot. A run is a group — both snapshots of one apply
+share a timestamp and are pruned together or not at all, or a restore finds one table and
+not the other. Age comes from the filename's run stamp rather than an mtime, which a copy
+or a restore would have moved. Every deletion is named on screen. A single
+`sch_changes` dump is ~74 MB. The policy is one function, `prunable()`, used by both the
+local and the server path and pinned by `test/Deploy/snapshot-retention-test.sh`.
 
 Full-DDL credentials live only in `.deploy.local` and are used through an **SSH
 tunnel** to the server's own `127.0.0.1:3306` (`DEPLOY_DB_TUNNEL_PORT` locally; if
@@ -447,6 +475,7 @@ public_html/schoenstatt.link/
   shared/public/{covers,associations,dh,BingSiteAuth.xml,google0e1110cae0fbf177.html}
   shared/config-autoload/{local.php,*.local.php}
   shared/deploy.lock/holder                          present only while a deploy is running
+  shared/migration-snapshots/                        pre-migration table dumps; NOT under shared/data
 ```
 
 `shared/deploy.lock` is a directory, taken with `mkdir` because that is atomic where
