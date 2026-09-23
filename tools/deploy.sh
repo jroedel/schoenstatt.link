@@ -937,10 +937,7 @@ ORIG_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 # Dirty-tree handling comes first: checking out --ref with a dirty tree either
 # fails or drags the changes along, and neither is a state to deploy from.
-# Submodule *dirtiness* is reported separately below with a better message;
-# --ignore-submodules=dirty still surfaces an uncommitted pointer bump, which
-# is a real superproject change and must block a deploy.
-DIRTY=$(git status --porcelain --ignore-submodules=dirty)
+DIRTY=$(git status --porcelain)
 if [ -n "$DIRTY" ]; then
     if [ "$DO_STASH" = 1 ]; then
         info "working tree is dirty; stashing:"
@@ -980,40 +977,6 @@ if [ -z "$GIT_REF" ]; then
         git pull --ff-only --quiet origin master
     fi
 fi
-
-# Submodules, in the order the failures matter.
-#
-# The pointer check is the one that would ship the wrong code: the release is
-# built from `git ls-files --recurse-submodules`, which reads the submodule
-# *working trees*, so a submodule sitting at a different commit than the
-# superproject records means the release contains code no commit describes. A
-# `git pull` that moves a pointer produces exactly that state.
-#
-# This deliberately does NOT run `git submodule update` to repair it. That
-# detaches HEAD, and the convention here is that the submodules stay checked
-# out on `modernization` (CLAUDE.md § Submodule workflow) — silently changing
-# the user's local state to make a deploy proceed is the wrong trade. Say what
-# is wrong and let them fix it the documented way.
-while read -r flag sha path _rest; do
-    [ -n "$path" ] || continue
-    case $flag in
-        ahead)    fail "$path is checked out at $(git -C "$path" rev-parse --short HEAD) but the superproject pins ${sha:0:7}. The release is built from the submodule working tree, so this would ship code no commit describes. Fix it on 'modernization' (see CLAUDE.md § Submodule workflow) — do not run 'git submodule update', which detaches." ;;
-        uninit)   fail "$path is not initialized. Run: git submodule update --init --recursive" ;;
-        conflict) fail "$path has merge conflicts." ;;
-    esac
-    [ -z "$(git -C "$path" status --porcelain)" ] \
-        || fail "$path has uncommitted changes. Deploy only committed state."
-    pinned=$(git -C "$path" rev-parse HEAD)
-    git -C "$path" fetch --quiet origin || warn "could not fetch $path; the pushed-check below may be stale."
-    if [ -z "$(git -C "$path" branch -r --contains "$pinned" 2>/dev/null)" ]; then
-        fail "$path is pinned at $(git -C "$path" rev-parse --short HEAD), which is not on any remote branch. Push it first — an unpushed pointer breaks composer install for everyone else."
-    fi
-# `git submodule status` encodes state as a single leading character, and a
-# clean submodule's is a space — which `read` would swallow, shifting every
-# field left. Name it instead.
-done < <(git submodule status | sed -e 's/^ /clean /' -e 's/^+/ahead /' \
-                                    -e 's/^-/uninit /' -e 's/^U/conflict /')
-ok "submodules clean, pinned where the superproject says, and pushed"
 
 SHA=$(git rev-parse HEAD)
 SHORT=$(git rev-parse --short HEAD)
@@ -1097,9 +1060,9 @@ fi
 # from the working directory, so untracked local cruft (a stale sitemap, a
 # scratch dump, an editor backup) can never reach production.
 FILE_LIST=$(mktemp "${TMPDIR:-/tmp}/deploy-files-XXXXXX")
-git ls-files --recurse-submodules -z > "$FILE_LIST"
+git ls-files -z > "$FILE_LIST"
 FILE_COUNT=$(tr -cd '\0' < "$FILE_LIST" | wc -c)
-info "$FILE_COUNT tracked files (superproject + three submodules)"
+info "$FILE_COUNT tracked files"
 
 if [ "$DRY_RUN" = 1 ]; then
     step "Dry run — what would transfer"

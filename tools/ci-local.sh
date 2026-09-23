@@ -45,17 +45,14 @@
 # WHY THE CACHE EXISTS, AND WHY YOU CAN TRUST IT: 29% of back-to-back runs happened with
 # zero file edits in between — 106 minutes re-verifying an unchanged tree. A stage that
 # passed is therefore skipped while the tree it passed against is unchanged. The key is
-# the part that has to be right: `sha256(git diff HEAD)` was the obvious choice and is
-# WRONG here, twice over. The superproject records a submodule only as
-# `Subproject commit <sha>-dirty`, so two different edits inside module/SionModel produce
-# byte-identical diffs — and the laminas exit is mostly submodule work. And `git diff
-# HEAD` omits untracked files entirely, so a new class plus its factory hashes the same
-# as a clean tree. Both were reproduced on master before this was written. The key below
-# is instead a content hash of every tracked AND untracked file, in the superproject and
-# in each submodule, plus the installed-package set — because vendor/ is gitignored build
-# output that survives a branch switch — and the merged config cache, because adding a
-# service factory changes what integration and smoke see without touching the tree. It
-# costs ~130ms over 1,783 files. `--no-cache` forces a full run; a deploy always passes it.
+# the part that has to be right: `sha256(git diff HEAD)` is the obvious choice and is
+# WRONG here, because it omits untracked files entirely — a new class plus its factory
+# hashes the same as a clean tree, which was reproduced on master before this was written.
+# The key below is instead a content hash of every tracked AND untracked file, plus the
+# installed-package set — because vendor/ is gitignored build output that survives a
+# branch switch — and the merged config cache, because adding a service factory changes
+# what integration and smoke see without touching the tree. It costs ~130ms over 1,911
+# files. `--no-cache` forces a full run; a deploy always passes it.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -171,10 +168,6 @@ tree_key() {
     {
         git rev-parse HEAD
         git ls-files -co --exclude-standard -z | xargs -0 sha256sum 2>/dev/null
-        for sm in $(git submodule --quiet foreach --recursive 'echo $displaypath' 2>/dev/null); do
-            ( cd "$sm" && git rev-parse HEAD \
-                && git ls-files -co --exclude-standard -z | xargs -0 sha256sum 2>/dev/null )
-        done
         # vendor/ is gitignored build output and survives a branch switch: the tree can be
         # unchanged while the installed packages are a different branch's.
         sha256sum vendor/composer/installed.json 2>/dev/null
@@ -302,9 +295,9 @@ stage_composer() {
             printf '        retry, or run `php composer.phar audit --locked` on the host\n'
             ;;
     esac
-    # The autoload sanity check, verbatim from ci.yml: five classes spanning the Symfony side,
-    # the app modules and all three submodules, so a PSR-4 break or an unpushed submodule
-    # pointer fails loudly. `App\Kernel` was `Laminas\Mvc\Application` until that package left.
+    # The autoload sanity check, verbatim from ci.yml: five classes spanning the Symfony side
+    # and every module, so a PSR-4 break fails loudly. `App\Kernel` was
+    # `Laminas\Mvc\Application` until that package left.
     OUT=$(in_capsule php -r '
         require "vendor/autoload.php";
         foreach ([
@@ -319,7 +312,7 @@ stage_composer() {
         echo "autoload ok";' 2>&1)
     record "autoload sanity" "$OUT"
     if says "$OUT" 'autoload ok'; then
-        ok "autoload sanity across the app and all three submodules"
+        ok "autoload sanity across the app and every module"
     else
         bad "autoload sanity — $OUT"
     fi

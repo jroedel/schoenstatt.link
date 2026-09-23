@@ -1,0 +1,518 @@
+JUser
+=====
+
+Passwordless user management: a magic-link sign-in flow, an admin surface for accounts
+and roles, and API-token issuance. Originally a fork of `manuakasam/SamUser`.
+
+**There is no password.** Signing in means asking for a link by email and clicking it;
+registering is the same request, because an address nobody has seen simply becomes an
+account. Redeeming a link is also what verifies the address, so there is no separate
+confirmation step. See `JUser\Service\LoginTokenService` for the token (only its sha256
+digest is stored, in `user.verification_token`, with an absolute UTC expiry alongside).
+
+**`user.state` and `user.email_verified` mean two different things, and since 2026-08-21
+they are kept apart.** `state` — the Active checkbox on `/users/{id}/edit` — means *may
+sign in*, enforced in three places inside this module and a fourth in the consuming
+application:
+
+| where | what it refuses |
+|---|---|
+| `Page\SignIn::issueAndSend()` | mails no link, and does not say so |
+| `Controller\VerifyController` | a link that was already in flight, with a 403 |
+| `Authentication\Storage\SessionUser::read()` | a session that is **already open**, on its next request |
+| the application's API identity | a bearer token for the account |
+
+The third is what makes `state = 0` mean "cannot act" rather than "cannot sign in again",
+and it needed nothing new: only the user id is in the session, so the row is re-read every
+request, and `isEmpty()` already clears the storage when a read comes back null.
+
+`email_verified` means *someone has proved they read mail here*, and redeeming a link sets
+it, in `UserTable::clearVerificationToken()`. A new account starts **active and
+unverified**, which is why open registration still works — created inactive, its very first
+magic link would be refused. An application rendering `EditUserForm` for *creation* must
+tick Active itself: the element declares `'value' => 0`, so left alone an administrator
+creates accounts that can never sign in and are never told why.
+
+Before that they were conflated: new accounts were created inactive and `verifyAction()`
+activated whatever it redeemed, so every deactivated account reactivated itself on its next
+sign-in link. The checkbox read like a ban control and was not one. **A consuming
+application upgrading past this needs one data migration first** — any account sitting at
+`state = 0` because it merely never confirmed must be moved to `state = 1`, or it becomes
+retroactively banned. In schoenstatt.link that was 32 of 292 accounts
+(`database/db8.6.sql`, run at the `pre` phase so there is no window in which they are
+refused).
+
+Requirements
+------------
+
+`SionModel` for the table layer and `JTranslate` for translation, plus Twig and
+symfony/http-foundation for the controllers and templates. `SlmLocale` is *not* a dependency
+— the locale configuration in `config/juser.global.php.dist` is there for the consuming
+application's convenience and this module reads none of it.
+
+**This module registers nothing with laminas-mvc as of 2026-08-21.** No controllers, no
+controller plugins, no view manager, and `Module` has no `onBootstrap()`: the session is the
+host's to start (see that class).
+
+**The `require` block is trimmed as of 2026-08-22**, which was the last piece of 3.0.0.
+Eleven of the eighteen `laminas/*` packages left it, together with BjyAuthorize. What
+remains is below, and the point of the table is that **every laminas entry left in `require`
+is a data or forms concern** — none of them is a framework one, and none of them is reachable
+from `JUser\Host\*`, `JUser\Page\*` or `JUser\Controller\*`.
+
+| package | what needs it |
+|---|---|
+| `laminas-db` | `UserTable`, `ApiTokenTable` and the role tables are `TableGateway`/`Sql` — 13 files, the largest single tie |
+| `laminas-form` | the six forms — 9 files |
+| `laminas-inputfilter` | their `getInputFilterSpecification()` — 6 files |
+| `laminas-validator` | `Db\NoRecordExists`, `Regex`, `StringLength` in those specs |
+| `laminas-filter` | **no `use` statement anywhere.** Named as strings — `['name' => 'StringTrim']` — in four form files and resolved through `FilterPluginManager`. Removing it breaks input trimming and *nothing fails*; it is here so the next dependency survey does not have to rediscover that. |
+| `laminas-i18n` | `TranslatorInterface`; the Mailer translates its subject and body |
+| `laminas-cache` | `CacheFactory`, which builds `JUser\Cache` |
+
+Non-laminas: `symfony/http-foundation` (11 files) and `twig/twig` (9) for the controllers
+and templates, `symfony/mailer` for the magic link, `firebase/php-jwt` for API tokens,
+`psr/container` (18 files) for the factories and `UserAdmin`'s form locator, and `psr/log`,
+which every call site guards with `isset()`.
+
+The packages in `require-dev` are what a laminas host brings, not what this module runs
+on. `JUser\Bridge\Laminas` — the namespace that held the laminas-shaped implementations of
+the `Host\` contracts — was **deleted in 2026-09**, and `laminas-authentication` and
+`laminas-view` went with it. What remains there is `laminas-session`, for the
+`SessionManager` this module's config still declares, and the packages a laminas host's own
+guards use.
+
+**Two caveats, so the list is not read as stronger than it is.**
+`laminas-servicemanager` still arrives transitively: `laminas-cache`, `laminas-form` and
+`laminas-inputfilter` each require it. And the two `jroedel/*` pins are **`dev-*`
+constraints in a tagged release** — see "The two dev pins" below, which is deliberate and
+is the thing most likely to surprise a consuming application.
+
+What this module does **not** use, despite older versions of this file saying so:
+ZfcUser, ZfcBase and GoalioRememberMe. The `ZfcUser*` class names that survive — the
+identity provider, the two view helpers, the `zfcuser/*` route names — are names, kept
+because renaming a route breaks every `url()` call and every guard entry that names it.
+
+### The two dev pins
+
+`composer.json` requires `jroedel/laminas-jtranslate: dev-modernization` and
+`jroedel/zf2-sion-model: dev-master`. **Two unstable branch constraints in a tagged
+release is deliberate, not an oversight**, and it is stated here because it is the first
+thing a consuming application hits: `composer require jroedel/laminas-juser` will not
+resolve on its own. Two root-level settings are needed, and the second is the classic trap:
+
+* `"minimum-stability": "dev"` with `"prefer-stable": true`, because a `stable` root
+  refuses a `dev-*` constraint arriving from a dependency;
+* **the three VCS repositories copied into the consuming application's own
+  `repositories` block.** Composer reads `repositories` from the **root package only** and
+  does *not* inherit them from dependencies, so the entries in this file do nothing for
+  anybody installing this package. The three are `jroedel/laminas-jtranslate`,
+  `jroedel/laminas-sion-model` and `kokspflanze/BjyAuthorize` (that last one only if you
+  install the `require-dev` set for a laminas host).
+
+The reason is that all three packages are being modernized together and none of the other
+two has a tag on its integration branch. Pinning JUser to a tag of theirs that does not
+exist would be worse than saying so. **This holds for the 3.0.x line**; the constraints
+become tags when those two repositories cut their own, and that is a 3.1 concern.
+
+What each is actually used for, so a host can judge the exposure:
+
+* **SionModel** — 7 files, and **not** confined to the bridge. `UserTable extends
+  SionModel\Db\Model\SionTable` is the deep one; also `Service\ActingUserProviderInterface`
+  at three sites, `Form\ChoiceDomain` in two forms, `Cache\LegacyCacheConfig`, and the
+  `SionModel\MailTransport` service id that `MailerFactory` asks the container for.
+* **JTranslate** — 4 files, all for `I18n\TranslatableMessage`. Note *where*: it appears in
+  the **signature** of `JUser\Host\FlashInterface`. So unlike SionModel this one is part of
+  the host contract itself, and a host cannot avoid it without changing that interface.
+
+The host contract
+-----------------
+
+3.0.0 reaches the application through six interfaces it declares in `JUser\Host\`, and
+through nothing else. Everything an application has to provide is on this list; anything
+not on it, this module owns.
+
+| interface | what the application provides | what it lets this module drop |
+|---|---|---|
+| `UrlBuilderInterface` | a path or an absolute URL for one of *its* route names | `laminas-router` |
+| `IdentityInterface` | who is signed in; make it so; forget it | `laminas-authentication` |
+| `SessionInterface` | a namespaced scratch space, plus regenerate and forget-me | `laminas-session` |
+| `FlashInterface` | a message for the next page, and one for this one | `laminas-mvc-plugin-flashmessenger` |
+| `RouteResolverInterface` | which route a path belongs to, if any | `laminas-http` |
+| `AccessInterface` | may *this account* reach that route, and may *this visitor* | `bjy-authorize`, `laminas-permissions-acl` |
+
+Each interface's docblock is the specification, including the parts that are easy to
+implement wrongly and impossible to detect: one flash-messenger instance per request, a
+locale prefix stripped before a path is resolved, identity re-read per request rather
+than cached for the session, and default-deny when an authorization question cannot be
+answered.
+
+Two of them exist in a shape that looks odd until you know why.
+`RouteResolverInterface` takes a path rather than being handed a router, because what
+has to be stripped off a path before it can be matched is a fact about the host's
+routing — measured on schoenstatt.link, where a locale-prefixed `?redirect=` matched
+nothing and quietly sent every visitor to the home page after signing in. And
+`AccessInterface` asks about a **named account** rather than the current visitor, because
+the one caller is deciding where to send someone who is anonymous as the question is
+asked and signed in a few lines later.
+
+### Wiring it up
+
+A host provides the six implementations, registers the Twig extension and the template
+path, and includes the route fragment:
+
+```php
+$twig->addExtension(new JUserExtension($urls, 'my-layout.html.twig'));
+$loader->addPath(JUserExtension::templatePath(), JUserExtension::TEMPLATE_NAMESPACE);
+
+(require '.../module/JUser/config/symfony-routes.php')(
+    function (string $name, string $path, $controller, RouteAudience $audience,
+              array $defaults = [], array $requirements = []): void {
+        // register with your router, and map $audience onto your authorization layer
+    }
+);
+```
+
+The fragment is a **closure that calls back**, not a `RouteCollection`, because a host
+needs to attach its own defaults and its own authorization to each route — see
+`config/symfony-routes.php` and `JUser\Routing\RouteAudience`.
+
+### The template contract
+
+The templates in this package are Twig and expect the environment to provide:
+
+* `juser_layout` — a global, from `JUser\Twig\JUserExtension`; every template does
+  `{% extends juser_layout %}`. The layout must define a `content` block and must render
+  messages, or `FlashInterface` is silent with no other symptom.
+* `juser_path(route, params, query)` — the same extension, over `UrlBuilderInterface`.
+* `translate(...)` and `csp_nonce()` — the application's. The nonce is needed by exactly one
+  page, the API-token screen, whose copy button is an inline script.
+* an `inline_scripts` block in the layout, for that same script, and a `content` block for
+  everything.
+* `juser_person_template` — optional, from the same extension. The user index has a Person
+  column and a person is the one thing on this surface that is entirely the host's: this
+  module has no person model, only `PersonValueOptionsProviderInterface` and whatever rows a
+  host answers it with. Unset leaves the column empty, which is already what a host with no
+  provider gets.
+* `form_open`, `form_close`, `form_row`, `form_hidden`, `form_submit`, `form_button` —
+  `SionModel\Twig\FormExtension` over `SionModel\Form\BootstrapFormRenderer`, which is
+  in that package precisely because it is not JUser-specific: any host rendering laminas
+  forms in Twig needs it.
+
+Using this in a Symfony-only application
+----------------------------------------
+
+This is what 3.x exists for, and it is worth stating what it costs, because "drop-in" is
+easy to over-read.
+
+**What you write:** six small adapters implementing `JUser\Host\*`, plus the Twig
+extension registration and the route fragment from "Wiring it up". The contract's docblocks
+are the specification — read them rather than inferring from the interface names, because
+three of the six have a failure mode that produces **no symptom at all**:
+
+* **one `FlashMessenger` instance per request**, or messages are silently dropped;
+* the **locale prefix stripped** before a path is resolved, or every `?redirect=` on the
+  site is refused while nothing errors;
+* the **router primed with a request URI**, or `force_canonical` throws — which affects
+  exactly one thing, the emailed sign-in link, i.e. the one output whose breakage is
+  invisible on every page.
+
+`schoenstatt.link`'s `src/JUser/Host/` is a worked example of all six, and
+`test/Integration/JUserHostContractTest` there pins the properties that fail silently.
+
+**What you do not install:** `laminas-mvc`, `laminas-view`, `laminas-authentication`,
+`laminas-permissions-acl`, `laminas-eventmanager`, `laminas-http` or BjyAuthorize. Nothing
+in `JUser\Page\*`, `JUser\Controller\*` or `JUser\Host\*` reaches for any of them.
+
+**What you still install:** the seven laminas data/forms packages in the table above, and
+the two `jroedel/*` dev pins. The forms are laminas forms, rendered through
+`SionModel\Form\BootstrapFormRenderer`; replacing them with Symfony Forms is 3.1's
+question, not 3.0.0's.
+
+**If your host is still laminas-mvc**, you write the six adapters yourself.
+`JUser\Bridge\Laminas` used to hold them and was deleted in 2026-09: keeping code for a
+laminas host is what the direction this module now follows rules out. The one thing that
+namespace carried which is worth having is
+`JUser\Authentication\SessionIdentity` — it is in `src/` now, it needs no laminas, and
+it keeps only the user id in the session so a deactivation takes effect on the next
+request.
+
+### Known blocker for reuse: the Mailer is not host-neutral
+
+`JUser\Service\Mailer` hardcodes this site's identity — the `From` address, the display
+name, and the string "Schoenstatt Link" inside the translated subject and body. A drop-in
+package cannot do that, and fixing it means new configuration keys plus new translation
+phrases in every locale, which is a change with its own review rather than something to
+fold into a port. It is listed here rather than quietly carried, because the first thing a
+second application notices is that its sign-in emails introduce themselves as somebody
+else.
+
+Installation
+------------
+
+```
+composer require jroedel/laminas-juser
+```
+
+1. Copy `config/juser.global.php.dist` and `config/juser.local.php.dist` into the
+   application's autoload directory and fill them in.
+2. Copy `config/acl.global.php.dist` if the application has no ACL config of its own.
+3. Enable the modules, in this order:
+
+```php
+return [
+    'modules' => [
+        // ...
+        'BjyAuthorize',
+        'JUser',
+        'SionModel',
+        'JTranslate',
+    ],
+];
+```
+
+4. The admin surface is at `/users`. **Check the guard entries** in your
+   `juser.global.php`: every `juser/*` route should name an administrator role, and the
+   `.dist` file is the reference for which routes exist.
+5. **Start the session** — this module no longer does. On a laminas host, do it *above*
+   module priority: a hook that asks BjyAuthorize for an identity bakes the identity's roles
+   into the ACL for the whole request, and an unstarted session bakes `guest`. Prune it with
+   `JUser\Session\SessionPruner::pruneIncompleteClassValues($_SESSION)` and swallow a
+   validation failure. See `JUser\Module`.
+6. **Wire the host contract** if you are serving these pages from Symfony rather than
+   through laminas-mvc: six implementations, the Twig extension and the route fragment. See
+   "The host contract" and "Wiring it up" above. This is what 3.x exists for, and a host
+   doing it needs none of the laminas-mvc setup in step 3.
+
+Releases
+--------
+
+The `modernization` branch is the maintained line. Note that **`1.0.0` (2022-07-19) is
+not an ancestor of it** — it belongs to the abandoned `1.0.x` branch — so the version
+numbers are not a single chain of history. That is deliberate and recorded here rather
+than tidied away, because `git describe` on `modernization` reports `0.1.0-…` and reads
+like the tags were lost.
+
+| version | what it is |
+|---|---|
+| **2.0.0** | The passwordless line: magic-link sign-in, `symfony/mailer`, API tokens, monolog, DB adapters injected into forms rather than fetched from a static registry, and the password-era columns and routes retired. Still a Laminas MVC module — it owns laminas routes, controllers and view scripts. |
+| **3.0.0** | Symfony-oriented, and a **drop-in**: this module owns its own controllers, templates, forms, route fragment and Twig extension, and reaches the application only through the six interfaces in `JUser\Host\`. **Eleven** of the eighteen `laminas/*` packages leave `require`, along with BjyAuthorize; the **seven** that stay are data and forms concerns, not framework ones. |
+
+It no longer serves any route through laminas-mvc. The laminas-shaped code was first
+separated into `JUser\Bridge\Laminas\` and then, in 2026-09, deleted outright — a shared
+library that keeps a laminas implementation keeps the laminas packages with it, and the
+direction is to drop them in place. The trim landed 2026-08-22 and 3.0.0 is
+feature-complete; see "Requirements" for what is left and why each entry is there.
+
+### Where the 3.0.0 work stands
+
+**Complete as of 2026-08-22.** The entries below are a log, newest first, and each is
+accurate as of its own date — so an older one saying a thing is "still to do" is history,
+not a live item. The two things 3.0.0 knowingly does *not* fix are the Mailer's hardcoded
+identity and the two `dev-*` pins, both described above.
+
+2026-08-22: **the `require` trim — what every step before this was for.** Twelve packages
+leave `require`: eight move to `require-dev` plus `suggest`, and four go entirely.
+
+| | packages |
+|---|---|
+| **`require-dev` + `suggest`** — needed only by `JUser\Bridge\Laminas` | `laminas-authentication`, `laminas-eventmanager`, `laminas-http`, `laminas-mvc`, `laminas-permissions-acl`, `laminas-session`, `laminas-view`, `bjy-authorize` |
+| **gone entirely** | `laminas-servicemanager`, `laminas-mvc-plugin-flashmessenger`, and (2026-08-21) `laminas-math`, `laminas-router` |
+| **still required** — all of it data and forms | `laminas-cache`, `laminas-db`, `laminas-filter`, `laminas-form`, `laminas-i18n`, `laminas-inputfilter`, `laminas-validator` |
+
+Two of those are worth explaining, because neither is a package anybody removed on purpose.
+
+**`laminas-servicemanager` was being held by one interface.** All fifteen factories
+implemented `FactoryInterface` and nothing else from the package; the ServiceManager calls
+a factory through `__invoke()` and never asks whether it implements anything, so the
+interface was documentation. Dropping it took the package out with it.
+
+**`Interop\Container\ContainerInterface` does not exist.** There is no such file in any
+installed package — the name resolves only because
+`laminas/laminas-servicemanager/src/autoload.php` runs
+`class_alias(Psr\Container\ContainerInterface::class, ...)`. So every factory here was
+typed on a compatibility shim owned by the very package this release stops requiring, and
+the sixteen `use` statements are now PSR-11 directly. That makes `psr/container` a declared
+dependency for the first time, which it always was in fact.
+
+**What this does not claim.** `laminas-servicemanager` still arrives transitively —
+`laminas-cache`, `laminas-form` and `laminas-inputfilter` each require it — so this is a
+statement about what JUser *asks for*, not about what ends up in `vendor/`. What it buys is
+real all the same: a host that implements the six `Host\` interfaces installs no
+`laminas-mvc`, no `laminas-view`, no `laminas-session`, no authentication or ACL stack, and
+nothing in `JUser\Page\*`, `JUser\Controller\*` or `JUser\Host\*` reaches for them.
+Untangling the form and cache layers is 3.1's problem, not 3.0.0's.
+
+2026-08-21: **two packages come out, and one of them was only ever holding dead code.**
+`laminas-math` and `laminas-router` are gone from `composer.json` — the first two entries to
+leave since the port began.
+
+* **`laminas-router`** was held by `Mailer`, which assembled the sign-in link itself.
+  `sendLoginLinkEmail()`, `getRouter()`, `setRouter()` and the router the factory primed are
+  all deleted; `sendLoginLink()`, which takes a finished URL, is the only entry point.
+  `MailerFactory` no longer reaches for the `Request` service either — a service that does
+  not exist under a Symfony dispatch, so the priming it did was a latent 500 rather than a
+  detail.
+* **`laminas-math`** had two call sites and one of them was reachable.
+  `ApiTokenService::generateJti()` draws 43 base62 characters from `random_int()` now, which
+  is the same distribution `Laminas\Math\Rand::getString()` produced and by the same
+  mechanism — `Rand` has called `random_int()` internally since PHP 7. The other,
+  `User::generateVerificationToken()`, went with `getVerificationToken()` and
+  `setNewVerificationToken()`: **a second, weaker token generator that nothing had called for
+  years.** The getter was the hazard — on an entity holding no token it minted one *lazily,
+  on read*, so a plain read had a side effect and returned a value that had never been
+  stored. The live magic-link token is `LoginTokenService::issueWebToken()`, 32 bytes of
+  `random_bytes()`, and it never went near either.
+
+A token generator is the one thing where "it still works" proves nothing: one that has
+quietly lost half its alphabet produces output indistinguishable from correct output. So the
+consuming application's `JUserApiTokenEntropyTest` pins the length, the alphabet, the
+reachability of every character in it and the absence of repeats — written against the
+`Rand` version and passing there **before** the swap, which is the only ordering that makes
+the swap evidence of anything.
+
+2026-08-21: **the laminas-shaped code is demoted, not deleted.** Fifteen classes moved into
+`JUser\Bridge\Laminas\` — the session storage, the auth-service factory, the historical
+`zfcuser_user_service`, SionModel's acting-user provider, the two `.phtml` view helpers, the
+BjyAuthorize identity and role providers, its role entity, and the unauthorized-strategy
+redirect. Every one of them exists because a laminas host runs it; a host built on anything
+else needs none. `src/Bridge/Laminas/README.md` is the table.
+
+**Class names did not change, only namespaces**, which is what makes it reviewable as a move:
+`git log --follow` still works and a name in a five-year-old incident note still finds the
+file. Nothing in `JUser\Page\*`, `JUser\Controller\*` or `JUser\Host\*` reaches into it —
+the dependency runs one way, a laminas host wiring these *as* implementations of the contract.
+
+What this unblocks is the `require` trim, which is the last thing before the tag: the packages
+these fifteen need become `require-dev` plus `suggest`.
+
+2026-08-21: **`LoginController` is gone, and with it the last thing here that needed
+laminas-mvc.** The controller, its factory, its four view scripts, the whole `view/` tree and
+the template map are deleted, and so are the `controllers`, `controller_plugins` and
+`view_manager` config sections. `Module::onBootstrap()` went too — starting a session is an
+application's job, and a module that hooks `MvcEvent` cannot be dropped into a host that has
+none.
+
+Two things a consuming application has to take over, and both bite silently if it does not:
+
+* **Start the session, and prune it.** A session that fails validation must be discarded
+  rather than fail the request, and one that *passes* can still hold a value whose class no
+  longer exists — which fatals at the first container access, not at `start()`, so nothing
+  wraps it. `JUser\Session\SessionPruner` is still here for exactly that.
+  **Where** it is started matters: on a laminas host it must run before any module hook that
+  asks BjyAuthorize for an identity, because `Authorize::load()` bakes the identity's roles
+  into the ACL for the whole request and an unstarted session bakes `guest`. On
+  schoenstatt.link that meant a listener attached above module priority rather than another
+  module's `onBootstrap()`.
+* **Replace the `zfcUserAuthentication` controller plugin.** It only ever wrapped the same
+  `AuthenticationService`. Its consumers use `identity()` from `laminas-mvc-plugin-identity`,
+  whose factory resolves `Laminas\Authentication\AuthenticationService` — which this
+  module's config aliases to its own service, so the answer is identical and `null` means
+  anonymous.
+
+What is still declared here: the routes (a name is what `url()` and a guard entry address),
+the view helpers (a host layout that has not been ported still calls `zfcUserDisplayName`),
+the services, and the session configuration.
+
+2026-08-21: **the user-administration surface has arrived too**, on the same terms —
+nothing dispatches it. `JUser\Controller\{UsersController, UserCreateController,
+UserEditController, UserDeleteController, ApiTokensController}` over `JUser\Page\UserAdmin`,
+six templates, and seven more routes in the fragment. This half has **no laminas twin at
+all**: `JUser\Controller\UsersController` and its view scripts were deleted when the
+consuming application ported these pages, so there is nothing to roll back to and nothing to
+keep in step.
+
+Three things the interfaces changed, beyond replacing the container lookups:
+
+* **`AccessInterface` grew a second method.** The index draws a pencil and a crown behind a
+  permission check, and that question is about *the visitor*, not about a named account — so
+  `visitorMayReachRoute()` sits beside `userMayReachRoute()` rather than being folded into
+  it. Folding them would mean this module resolving the current user's roles, which is
+  exactly what it does not know how to do. The controller asks **once per page** where the
+  laminas view asked once per row; same answer, since the question does not mention the row.
+* **A misconfigured person provider is no longer representable.** The version this came from
+  resolved a service id out of config and threw when it named something of the wrong type. A
+  host injecting a typed `PersonValueOptionsProviderInterface|null` makes that a compile-time
+  matter, so the check went where the resolution went — into the host's wiring.
+* **The forms come from a PSR-11 locator, not the constructor.** `EditUserForm` is shared and
+  both `setValidatorsForCreate()` and `prepareForEdit()` mutate the instance they are called
+  on, so a form captured in a constructor would have the create page hand the edit page a
+  form still carrying the create-only uniqueness validators. `UserAdmin::form()` is the one
+  place that fetch happens.
+
+2026-08-21: **the sign-in surface has arrived, and nothing dispatches it yet.**
+`JUser\Controller\{SignInController, VerifyController, LogoutController}` over
+`JUser\Page\{SignIn, RedirectTarget, CookieExplainer}`, five Twig templates under
+`templates/`, and the route fragment. Ported from the consuming application, which served
+them from its own `src/` from 2026-08-21, and rewritten against the interfaces — so the
+laminas `LoginController` and the application's copies both still exist and both still
+answer. Nothing here is reachable until a host wires it.
+
+Two things changed shape in the port and are worth reading before the code:
+
+* **`RedirectTarget` lost two thirds of its size** (318 lines to 113). The laminas router,
+  the ACL, the locale-prefix stripping and the role resolution moved behind
+  `RouteResolverInterface` and `AccessInterface`. What stayed is the part that must hold in
+  *any* host: two string rules about what a redirect may look like. They are the entire
+  defence against an off-site destination — resolving a route is none, since a router
+  matches a URL's path and discards its host — so they live here rather than in an adapter,
+  and `test/Integration/JUserRedirectTargetTest` in the consuming application drives them
+  against a resolver that says yes to everything.
+* **The emailed link is assembled from the host's URL builder**, not from a router inside
+  `Mailer`. `Mailer::sendLoginLink()` takes a finished absolute URL and is now the only
+  entry point: `sendLoginLinkEmail()`, which assembled one from a router the factory handed
+  it, was deleted along with the router itself. That old arrangement is what sent links out
+  with no locale prefix — the unprefixed twin of the real route, which 302s, spending a
+  single-use token on anything that would not follow the hop. Deleting rather than
+  deprecating is deliberate: a caller reaching for it now fails at the call site, where the
+  old one failed in a mailbox.
+
+**Known blocker for actual reuse:** `Mailer` hardcodes this site's identity — the `From`
+address, the display name, and "Schoenstatt Link" inside the translated body and subject. A
+drop-in package cannot, and fixing it means new config keys plus new phrases, so it is
+listed here rather than folded into a port.
+
+2026-08-21: **the contract above was declared, empty.** The six interfaces and
+`JUser\Twig\JUserExtension`, with nothing implementing or consuming them — landed first so
+that the port above reviews as a rewrite rather than as a move plus a rewrite. It is
+consumed now, by the sign-in surface; the right-hand column of the table is still a plan
+rather than a fact, because no dependency comes out of `composer.json` until the laminas
+controller goes.
+
+2026-08-21: **the user-administration surface is gone from this module.**
+`JUser\Controller\UsersController`, its factory and its six view scripts were deleted, and
+the seven `juser/*` routes are now served by the consuming application's Symfony kernel.
+The routes themselves stay declared here — a name is what `laminas_path()` and a
+BjyAuthorize guard address — but nothing in this module dispatches them.
+
+What is left between here and 3.0.0 is no longer a deletion. Under the drop-in goal this
+module takes **delivery** of the surface the application ported: eight Symfony
+controllers, ten Twig templates and four support classes, rewritten against the
+interfaces above and shipped with a route fragment a host includes. The application then
+switches over and deletes its copies — the only step a visitor can see, and the one that
+deploys alone.
+
+`JUser\Controller\LoginController` still goes, and it is still the piece that carries the
+dependencies: the four `zfcuser/*` sign-in routes and the three view scripts under
+`view/juser/login/` are the last consumers of `AbstractActionController`, of
+`laminas-router`'s route stack, of `laminas-view`'s renderer and of the flash-messenger
+plugin. It is deliberately kept until the ported sign-in surface has settled, because
+while the laminas routes stay declared, deleting the application's Symfony declarations
+puts it back in charge — the one rollback on this module's surface that does not need a
+deploy.
+
+The laminas-shaped code that remains useful is **demoted, not deleted**: `SessionUser`,
+`UserService`, `AuthServiceActingUserProvider`, the two view helpers, the two
+BjyAuthorize identity/role providers and `Entity\Role` become `JUser\Bridge\Laminas\`,
+which is how a laminas host implements the contract. Their packages move to `require-dev`
+plus `suggest`, so they still type-check and `require` still reads honestly.
+
+**One thing the table above does not say.** `bjy-authorize` leaving this module's
+`require` is not the same as leaving a site. Every route a laminas host serves still
+needs a guard and that guard is the host's; on schoenstatt.link 27 files import
+`BjyAuthorize` directly and about 51 touch its config key. It is also not the constraint
+people assume: bjy-authorize and `laminas-mvc` declare the *same* PHP ceiling
+(`~8.4.0`), and laminas-mvc pins `laminas-servicemanager` to 3.x on its own — so removing
+bjy lifts nothing that laminas-mvc is not already holding down. Dropping it site-wide
+means moving to Symfony Security voters, which is a separate decision on a separate
+schedule.

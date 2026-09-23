@@ -46,7 +46,7 @@ SionModel\Error\FatalErrorHandler::registerEarly(dirname(__DIR__));
 // laminas-development-mode's file: that package writes it from a `.dist`, it is not
 // installed, there is no `.dist` in the tree, the path is gitignored, and no commit has
 // ever carried one. So the branch could not fire, and a release is exactly
-// `git ls-files --recurse-submodules`, which can never contain it.
+// `git ls-files`, which can never contain it.
 $appConfig = require __DIR__ . '/../config/application.config.php';
 
 // Report all errors except E_DEPRECATED
