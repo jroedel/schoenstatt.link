@@ -396,11 +396,43 @@ stage_integration() {
     suite integration 2 "-d memory_limit=1G"
 }
 
+# Rebuild the capsule's sitemap, at most once per run.
+#
+# Two stages read those files and neither writes them: SitemapSmokeTest compares the
+# on-disk sitemap against the database, and tools/smoke-prod.sh filters the index by BASE
+# (so a sitemap generated for another host lists nothing it will match, which is the strict
+# behaviour and worth keeping). The build used to live inside stage_smoke_prod, which runs
+# *after* stage_smoke — so the smoke suite read whatever the previous run had left, and a
+# row created or deleted since was a failure nobody's change caused. It cost two runs.
+#
+# Returns non-zero when the build fails, and says so once; each caller decides what that
+# means for it.
+SITEMAP_BUILT=""
+build_capsule_sitemap() {
+    if [ -n "$SITEMAP_BUILT" ]; then
+        return "$SITEMAP_BUILT"
+    fi
+
+    local log
+    log=$(mktemp)
+    if in_capsule php bin/console sitemap:build --force --url=http://localhost:8080 > "$log" 2>&1; then
+        SITEMAP_BUILT=0
+    else
+        SITEMAP_BUILT=1
+        record "sitemap:build (FAILED)" "$(cat "$log")"
+        sed 's/^/    /' "$log"
+    fi
+    rm -f "$log"
+
+    return "$SITEMAP_BUILT"
+}
+
 stage_smoke() {
     # --- Beyond CI: the suites that need a live application ----------------
     # CI cannot run these at all — no Apache, no MariaDB, no APCu — which is exactly why
     # a local run is the stronger check. ONE process at a time; never fan this out.
     step "Smoke suite  (NOT in ci.yml — needs the running capsule)"
+    build_capsule_sitemap || warn "could not build the capsule sitemap, so SitemapSmokeTest is reading a stale one"
     suite smoke 3
 }
 
@@ -429,29 +461,29 @@ stage_smoke_prod() {
     # a sitemap generated for a different host lists nothing it will match. That is
     # the strict behaviour and worth keeping: in production a loc that does not start
     # with the canonical base is a real fault. `--url` costs 2.4s and keeps the check
-    # honest rather than teaching it to accept a foreign host.
+    # honest rather than teaching it to accept a foreign host. Since 2026-09-22 the build
+    # is `build_capsule_sitemap`, shared with stage_smoke and run once per invocation.
     #
     # The cache key is the capsule's own, from docker/local.docker.php. With it set,
     # the APCu and OPcache blocks run — which is precisely the code that broke.
     # SMOKE_PROD_CANARY_COOKIE is deliberately NOT set: the vhost's SetEnv masks the
     # .htaccess kernel lines, so neither canary works here (see CLAUDE.md).
     step "Post-deploy smoke script  (NOT in ci.yml — tools/smoke-prod.sh vs the capsule)"
-    sm_log=$(mktemp)
-    if in_capsule php bin/console sitemap:build --force --url=http://localhost:8080 > "$sm_log" 2>&1; then
-        if SMOKE_PROD_BASE_URL=http://localhost:8080 \
-           SMOKE_PROD_CACHE_KEY=local-dev-api-key \
-           bash tools/smoke-prod.sh > "$sm_log" 2>&1; then
-            record "smoke-prod.sh (ok)" "$(cat "$sm_log")"
-            ok "smoke-prod.sh: $(grep -c '^  ok  ' "$sm_log") checks passed against the capsule"
-        else
-            record "smoke-prod.sh (FAILED)" "$(cat "$sm_log")"
-            grep -E '^(FAIL|WARN)' "$sm_log" | sed 's/^/    /'
-            bad "smoke-prod.sh against the capsule (./tools/ci-local.sh --last)"
-        fi
-    else
-        record "sitemap:build (FAILED)" "$(cat "$sm_log")"
-        sed 's/^/    /' "$sm_log"
+    if ! build_capsule_sitemap; then
         warn "could not build the capsule sitemap, so smoke-prod.sh was not run"
+        return
+    fi
+
+    sm_log=$(mktemp)
+    if SMOKE_PROD_BASE_URL=http://localhost:8080 \
+       SMOKE_PROD_CACHE_KEY=local-dev-api-key \
+       bash tools/smoke-prod.sh > "$sm_log" 2>&1; then
+        record "smoke-prod.sh (ok)" "$(cat "$sm_log")"
+        ok "smoke-prod.sh: $(grep -c '^  ok  ' "$sm_log") checks passed against the capsule"
+    else
+        record "smoke-prod.sh (FAILED)" "$(cat "$sm_log")"
+        grep -E '^(FAIL|WARN)' "$sm_log" | sed 's/^/    /'
+        bad "smoke-prod.sh against the capsule (./tools/ci-local.sh --last)"
     fi
     rm -f "$sm_log"
 }

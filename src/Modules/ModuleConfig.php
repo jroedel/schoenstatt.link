@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules;
 
 use RuntimeException;
+use SionModel\Data\ArrayMerge;
 
 use function array_key_exists;
 use function chmod;
@@ -14,7 +15,6 @@ use function file_put_contents;
 use function glob;
 use function is_array;
 use function is_file;
-use function is_int;
 use function method_exists;
 use function rename;
 use function rtrim;
@@ -51,9 +51,11 @@ use function var_export;
  * ## What had to be reproduced exactly
  *
  * The merge order — each module in `config/modules.config.php` order, then each glob'd
- * file — and the merge rule, which is `Laminas\Stdlib\ArrayUtils::merge()`: **integer keys
- * append rather than overwrite**. That is what makes two modules' `factories` lists combine
- * and two modules' `listeners` lists concatenate, and getting it wrong is silent.
+ * file. The merge *rule* is {@see \SionModel\Data\ArrayMerge}, which this class held
+ * until 2026-09-22: **integer keys append rather than overwrite**, which is what makes two
+ * modules' `factories` lists combine and two modules' `listeners` lists concatenate, and
+ * getting it wrong is silent. It moved to SionModel because `ProblemService` needs the same
+ * rule and SionModel is the package both sides can see.
  *
  * Verified at the cutover by building the merged config both ways and diffing the
  * `var_export`s: identical, 21 top-level keys, 0 lines of difference.
@@ -246,42 +248,10 @@ final class ModuleConfig
 
         $merged = [];
         foreach ($configs as $config) {
-            $merged = self::merge($merged, $config);
+            $merged = ArrayMerge::merge($merged, $config);
         }
 
         return $merged;
-    }
-
-    /**
-     * `Laminas\Stdlib\ArrayUtils::merge()`, less the two marker-object branches.
-     *
-     * `MergeReplaceKey` and `MergeRemoveKey` are not used by any config file in this
-     * application or in the three submodules — checked at the cutover — and they were the
-     * only reason the rule needed laminas-stdlib's classes rather than the rule itself.
-     *
-     * The clause that matters is the integer one: a list under a shared key **appends**.
-     *
-     * @param array<array-key, mixed> $a
-     * @param array<array-key, mixed> $b
-     * @return array<array-key, mixed>
-     */
-    public static function merge(array $a, array $b): array
-    {
-        foreach ($b as $key => $value) {
-            if (array_key_exists($key, $a)) {
-                if (is_int($key)) {
-                    $a[] = $value;
-                } elseif (is_array($value) && is_array($a[$key])) {
-                    $a[$key] = self::merge($a[$key], $value);
-                } else {
-                    $a[$key] = $value;
-                }
-            } else {
-                $a[$key] = $value;
-            }
-        }
-
-        return $a;
     }
 
     /**

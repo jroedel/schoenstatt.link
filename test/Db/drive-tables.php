@@ -6,7 +6,12 @@
  * Run by tools/sql-surface.sh. Four tables — `files`, `lib_imports`, `mailings`,
  * `user_api_token` — are read or written only behind an authenticated session or a fixture
  * no driver sets up, and a table missing from `test/Db/sql-surface.txt` has no contract at
- * all: its SQL can change during the laminas-db replacement and nothing would say so.
+ * all: its SQL can change and nothing would say so.
+ *
+ * It also drives the reads and writes whose presence in the recording depends on the
+ * *state* of the database or of the cache rather than on the code — a phrase that is
+ * missing, a cached list that happens to be warm. Those are the ones that make `--check`
+ * flap, and a flapping gate teaches people to regenerate the recording.
  *
  * **Calling the table methods directly is not a compromise here.** The recording is a set of
  * statement *shapes*, not a sequence, and a method called from the console builds exactly
@@ -25,6 +30,7 @@ declare(strict_types=1);
 
 use App\Laminas\ContainerFactory;
 use Books\Model\LibraryTable;
+use Books\Model\PublicationsTable;
 use JTranslate\Model\TranslationsTable;
 use JUser\Model\ApiTokenTable;
 use SionModel\Db\Connection;
@@ -63,6 +69,18 @@ try {
     $libraries = $container->get(LibraryTable::class);
     $libraries->getLibraryImports();
     $libraries->getLibraryImport(1);
+
+    //**A cached read is in the recording only when its cache happens to be cold**, and this
+    //one made `--check` flap twice on 2026-09-22: `getMergedPublicationIds()` is read by the
+    //sitemap and nothing else, and any publication write expires it — so the run after a
+    //smoke suite issued the statement and the run after that did not, with no code change
+    //between them. A gate that flaps is not a gate, and the obvious way to quiet it is to
+    //regenerate the recording, which is exactly what must not happen. Expiring the key first
+    //makes the read cold on every run.
+    /** @var PublicationsTable $publications */
+    $publications = $container->get(PublicationsTable::class);
+    $publications->removeDependentCacheItems('publication');
+    $publications->getMergedPublicationIds();
 
     //`reportMailing()` returns early without a table, and the container builds this Mailer
     //without one — `SionModel\Service\MailerFactory` passes four arguments and the fifth is
@@ -110,4 +128,4 @@ try {
     $connection->rollBack();
 }
 
-echo "drove files, user_api_token, lib_imports, mailings and the phrase writes; rolled back\n";
+echo "drove files, user_api_token, lib_imports, mailings, the merged-publication read and the phrase writes; rolled back\n";
