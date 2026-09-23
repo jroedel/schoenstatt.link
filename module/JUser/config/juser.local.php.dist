@@ -1,0 +1,8 @@
+
+return [
+    'ApiRequest' => [
+        'jwtAuth' => [
+            'cypherKey' => 'CHANGE_ME_TO_VERY_RANDOM_AND_LONG_DATA',
+        ],
+    ],
+];
