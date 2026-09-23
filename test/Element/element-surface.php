@@ -4173,13 +4173,13 @@ return array (
       'digest' => 'd5d786e6b2cd20f22ce850baf06cd29e',
       'first' => 
       array (
-        630 => 'Abella, Santiago',
-        633 => 'Abarca Vallejos, Sergio Franco Alexander',
-        658 => 'Abud Sittler, Christián José',
+        630 => '<person>',
+        633 => '<person>',
+        658 => '<person>',
       ),
       'last' => 
       array (
-        529 => 'Álamos, Victor',
+        529 => '<person>',
       ),
     ),
     'emptyOption' => '',
@@ -4235,13 +4235,13 @@ return array (
       'digest' => 'd5d786e6b2cd20f22ce850baf06cd29e',
       'first' => 
       array (
-        630 => 'Abella, Santiago',
-        633 => 'Abarca Vallejos, Sergio Franco Alexander',
-        658 => 'Abud Sittler, Christián José',
+        630 => '<person>',
+        633 => '<person>',
+        658 => '<person>',
       ),
       'last' => 
       array (
-        529 => 'Álamos, Victor',
+        529 => '<person>',
       ),
     ),
     'emptyOption' => '',
@@ -7639,13 +7639,13 @@ return array (
       'digest' => 'd5d786e6b2cd20f22ce850baf06cd29e',
       'first' => 
       array (
-        630 => 'Abella, Santiago',
-        633 => 'Abarca Vallejos, Sergio Franco Alexander',
-        658 => 'Abud Sittler, Christián José',
+        630 => '<person>',
+        633 => '<person>',
+        658 => '<person>',
       ),
       'last' => 
       array (
-        529 => 'Álamos, Victor',
+        529 => '<person>',
       ),
     ),
     'emptyOption' => '',
@@ -8257,13 +8257,13 @@ return array (
       'digest' => 'd5d786e6b2cd20f22ce850baf06cd29e',
       'first' => 
       array (
-        630 => 'Abella, Santiago',
-        633 => 'Abarca Vallejos, Sergio Franco Alexander',
-        658 => 'Abud Sittler, Christián José',
+        630 => '<person>',
+        633 => '<person>',
+        658 => '<person>',
       ),
       'last' => 
       array (
-        529 => 'Álamos, Victor',
+        529 => '<person>',
       ),
     ),
     'emptyOption' => '',
@@ -9823,13 +9823,13 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'digest' => 'd5d786e6b2cd20f22ce850baf06cd29e',
       'first' => 
       array (
-        630 => 'Abella, Santiago',
-        633 => 'Abarca Vallejos, Sergio Franco Alexander',
-        658 => 'Abud Sittler, Christián José',
+        630 => '<person>',
+        633 => '<person>',
+        658 => '<person>',
       ),
       'last' => 
       array (
-        529 => 'Álamos, Victor',
+        529 => '<person>',
       ),
     ),
     'emptyOption' => '',
@@ -11174,13 +11174,13 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
       'digest' => 'd5d786e6b2cd20f22ce850baf06cd29e',
       'first' => 
       array (
-        630 => 'Abella, Santiago',
-        633 => 'Abarca Vallejos, Sergio Franco Alexander',
-        658 => 'Abud Sittler, Christián José',
+        630 => '<person>',
+        633 => '<person>',
+        658 => '<person>',
       ),
       'last' => 
       array (
-        529 => 'Álamos, Victor',
+        529 => '<person>',
       ),
     ),
     'emptyOption' => '',
