@@ -1,0 +1,16 @@
+/.buildpath
+/.settings/
+/.project
+/composer.phar
+/tests/
+/vendor/
+/composer.lock
+phploy.ini
+phploy.log
+.phploy
+
+
+# Compiled catalogs are derived from the database by jtranslate:export-catalogs.
+# They were checked in until 2.0 and had drifted to 9 phrases against the 26 the
+# database held; the data now ships as data/ui-phrases.php plus a migration.
+/language/
