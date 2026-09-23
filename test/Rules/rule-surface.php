@@ -5891,5 +5891,7 @@ return array (
   array (
     'NoRecordExists' => 'SELECT `sch_persons`.`PersonId` AS `PersonId` FROM `sch_persons` WHERE `PersonId` = ?',
     'RecordExists' => 'SELECT `sch_persons`.`PersonId` AS `PersonId` FROM `sch_persons` WHERE `PersonId` = ?',
+    'UniqueBarcodeInLibrary (create)' => 'SELECT `lib_books`.`book_id` AS `book_id`, `lib_books`.`title` AS `title` FROM `lib_books` WHERE `original_id` = ? AND `library_id` = ?',
+    'UniqueBarcodeInLibrary (edit)' => 'SELECT `lib_books`.`book_id` AS `book_id`, `lib_books`.`title` AS `title` FROM `lib_books` WHERE `original_id` = ? AND `library_id` = ? AND `book_id` <> ?',
   ),
 );

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Books;
 
 use App\Laminas\ServiceBridge;
+use SionModel\Db\Connection;
 use Books\Form\BookForm;
 use Books\Form\CollectionForm;
 use Books\Form\LibraryForm;
@@ -18,6 +19,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use SionModel\I18n\LanguageSupport;
 
 use function is_array;
+use function is_numeric;
 
 /**
  * The three Books edit forms whose laminas factories cannot run on a Symfony-served route.
@@ -138,7 +140,10 @@ final class LibraryScopedForms
         $libraryId = $this->libraryIdOf($entity, $object);
 
         return match ($entity) {
-            'book'       => $this->bookForm($libraryId),
+            //The row is in hand, so the barcode uniqueness rule can be told which book not
+            //to count as a collision with itself. `formForLibrary()` above has no row and
+            //passes nothing, which is right: on a create every existing barcode collides.
+            'book'       => $this->bookForm($libraryId, $this->bookIdOf($object)),
             'collection' => $this->collectionForm($libraryId),
             'library'    => $this->libraryForm($libraryId),
             default      => throw new RuntimeException("LibraryScopedForms does not build '$entity'."),
@@ -175,11 +180,30 @@ final class LibraryScopedForms
     }
 
     /**
+     * The book a row is, when the row is a book.
+     *
+     * `bookId` is the `book` entity's `entity_key_field`, so a loaded row always carries
+     * one. Null rather than a throw if it somehow does not: the consequence is a uniqueness
+     * check that also counts the row against itself, which refuses a save that changed
+     * nothing about the barcode — annoying, and still safe. A throw here would take down
+     * the edit page instead.
+     *
+     * @param array<string, mixed> $object
+     */
+    private function bookIdOf(array $object): ?int
+    {
+        /** @var mixed $value */
+        $value = $object['bookId'] ?? null;
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
      * `Books\Service\BookFormFactory::__invoke()` from `$table->setLibraryId()` onward.
      *
      * @return FormInterface
      */
-    private function bookForm(int $libraryId): FormInterface
+    private function bookForm(int $libraryId, ?int $editedBookId = null): FormInterface
     {
         $table = $this->libraryTable();
         $table->setLibraryId($libraryId);
@@ -187,7 +211,11 @@ final class LibraryScopedForms
         /** @var PublicationsTable $publications */
         $publications = $this->laminas->get(PublicationsTable::class);
 
-        $form = new BookForm();
+        /** @var Connection $adapter */
+        $adapter = $this->laminas->get(Connection::class);
+
+        $form = new BookForm($adapter);
+        $form->setEditedBookId($editedBookId);
         $this->setOptions($form, 'inLanguage', $this->languageNames());
         //`BookFormFactory` writes `getEditionValueOptions(false)`, and that argument goes
         //nowhere: the method is declared `getEditionValueOptions()` with no parameters, and

@@ -43,6 +43,10 @@ module/SionModel/src/Form/PrepareAwareInterface.php
 # beside it are what the elements used to contribute and now state for themselves.
 module/SionModel/src/Filter
 module/SionModel/src/Validator
+
+# The book barcode uniqueness rule (2026-09-23). module/Books is otherwise not
+# PSR-12 clean, so this is named file by file rather than as the module.
+module/Books/src/Validator
 module/SionModel/src/Uri
 # What the removed packages used to do, in our own code (2026-09-21): the UTF-8 repair
 # `ToAscii` needs before iconv, and the slug and relative-time tables.
