@@ -134,7 +134,8 @@ credentials in your inbox.
 ## The scripts
 
 Both use **port 222** (port 22 is a restricted SFTP jail with no exec — see
-[DEPLOY.md](DEPLOY.md)); default remote `ourlink@dedi2934.your-server.de`.
+[DEPLOY.md](DEPLOY.md)). The remote is `$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST` from
+`.deploy.local`; there is no default, and both scripts refuse rather than guess.
 
 **`tools/fetch-exceptions.sh [remote] [ssh_port] [--summary-only]`** mirrors the server's
 store into `data/exceptions-prod/` and prints a summary sorted newest-first. `rsync`
