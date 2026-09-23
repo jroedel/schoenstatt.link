@@ -94,7 +94,8 @@ before verification, so it costs a fetch and nothing else.
 ### Verification: why it stays in your tree
 
 `ci-local` is the fuller check of the two — CI now runs on every push and has a database,
-but it still executes roughly 43% of the assertions. It runs in the capsule, and
+but it still runs only unit and integration, because smoke, fuzz and smoke-prod need a
+running application: 3,768 tests of 4,487, 8,410 assertions of ~89,000. It runs in the capsule, and
 `docker-compose.yml` bind-mounts **your**
 tree into the capsule: running it from the deploy checkout would test your tree while
 reporting on the release. So it runs where the capsule is, under one condition.
@@ -192,8 +193,9 @@ asks the Actions API for a successful `ci.yml` run on the exact SHA being deploy
 refuses if there is none. A green run on the branch is a different claim and does not
 count. It then hands `tools/deploy.sh` `DEPLOY_VERIFIED_SHA` and `DEPLOY_VERIFIED_BY`
 instead of `--skip-tests`, so the script reports which run proved the commit and still
-warns if `master` moved in between. CI covers roughly 43% of the assertions (no database
-for most of it), which is why the branch restriction above is not decoration.
+warns if `master` moved in between. CI runs 3,768 of 4,487 tests — everything except the
+three suites that need a running application — which is why the branch restriction above is
+not decoration.
 
 ### The secrets
 
