@@ -66,6 +66,15 @@ function fail(string $message): never
  */
 function readKeys(string $file): array
 {
+    // The server runs `opcache.enable_cli=1` with `revalidate_freq=2`, so a `require`
+    // of a file written milliseconds ago compiles from the cache and returns what the
+    // file used to say. That is not a theoretical race: it is what made the first real
+    // rotation abort with "the file parsed but sion_model.api_keys is not what was
+    // intended" over an edit that had in fact been written correctly.
+    if (function_exists('opcache_invalidate')) {
+        opcache_invalidate($file, true);
+    }
+
     $config = (static fn(): mixed => require $file)();
 
     if (! is_array($config)) {
@@ -142,6 +151,9 @@ function writeChecked(string $file, string $contents): string
         fail('could not create a temporary file for the syntax check.');
     }
     file_put_contents($probe, $contents);
+    if (function_exists('opcache_invalidate')) {
+        opcache_invalidate($probe, true);
+    }
 
     try {
         $parsed = (static fn(): mixed => require $probe)();
@@ -169,6 +181,12 @@ function writeChecked(string $file, string $contents): string
     if (! copy($file, $backup)) {
         fail("could not write a backup at $backup; nothing was changed.");
     }
+    // On stderr, the moment it exists, so a caller knows the file may have been touched
+    // even if a later check fails. The shell wrapper used to report "nothing was changed"
+    // for a failure that happened *after* the write, which is the worst thing an error
+    // message can do.
+    fwrite(STDERR, "backup: $backup\n");
+
     if (false === file_put_contents($file, $contents)) {
         fail("could not write $file. The backup at $backup is the previous contents.");
     }
@@ -269,7 +287,13 @@ $backup = writeChecked($file, $src);
 // check is semantic, which is the point: a replacement that produced parseable nonsense
 // would pass `php -l` and fail here.
 $after = readKeys($file);
-$want  = 'add' === $action ? array_merge($keys['sion'], [$argument]) : [$argument];
+
+// `add` inserts beside the FIRST key, not at the end, so with more than one key the
+// expected order is not "the old list then the new one". Getting this wrong would abort a
+// correct edit on any server holding two keys — which is every server mid-rotation.
+$want = 'add' === $action
+    ? array_merge([$keys['sion'][0], $argument], array_slice($keys['sion'], 1))
+    : [$argument];
 
 if (array_values($after['sion']) !== array_values($want)) {
     fail("the file parsed but sion_model.api_keys is not what was intended. "
