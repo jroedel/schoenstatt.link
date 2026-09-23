@@ -558,6 +558,17 @@ class SchoenstattTable extends SionTable implements
      */
     protected function relatedAssociations(array $objects)
     {
+        //Nothing has parents or children when there is nothing. Without this the predicate
+        //below is `parentId IN ()`, which SionModel\Db\Sql\Predicate\In refuses — rightly,
+        //since `Parent IN ()` is a syntax error — so a query that legitimately matched no
+        //rows raised InvalidPredicate instead of returning none. The live caller is
+        //shrinesOfKind(), which asks for one `kind` and links whatever came back, so it
+        //needed only a kind with no rows to turn /shrines into a 500. The sibling array
+        //below has been guarded all along; this one was missed.
+        if ([] === $objects) {
+            return [];
+        }
+
         $query = ['parentId' => array_keys($objects)];
 
         //collect list of "interesting" associationIds
