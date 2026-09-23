@@ -231,7 +231,12 @@ other, so "everything passed" and "everything that could run passed" are differe
   `cs-fix` broadly. `php -l` every touched file.
 - **Authorization changes are diffed**: `docker compose exec -T app php tools/acl-table.php
   --format=json` against `docs/acl-baseline.json`.
-- **The schema is recorded**: `database/base-schema.sql` is the application's DDL with no
+- **`database/*.sql` is a migration and nothing else.** `tools/migrate.sh` globs that
+  directory, and validates every unapplied file *before* the phase filter, so a stray
+  `.sql` there aborts the deploy's pre-migration step on the server. CI artefacts live
+  in `database/ci/`; `./tools/migrate.sh lint` (no database, no credentials) and
+  `test/Deploy/migration-inventory-test.sh` hold the line.
+- **The schema is recorded**: `database/ci/base-schema.sql` is the application's DDL with no
   rows in it, written by `./tools/schema-dump.sh` and guarded by `ci-local.sh schema`,
   which both re-dumps the capsule to check the recording is current and builds a scratch
   database from it to check it still loads. Regenerate it in the same PR as any migration

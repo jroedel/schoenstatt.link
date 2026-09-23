@@ -379,7 +379,7 @@ stage_deploy() {
 
 stage_schema() {
     # --- NOT in ci.yml: the schema recording, which ci.yml is the point of ----
-    # database/base-schema.sql is what lets anything build this application's database
+    # database/ci/base-schema.sql is what lets anything build this application's database
     # from the repository. Two questions, and the second is the one worth the seconds:
     #
     #   1. Is the recording current? `--check` re-dumps the capsule and diffs.
@@ -395,11 +395,11 @@ stage_schema() {
     OUT=$(./tools/schema-dump.sh --check 2>&1)
     if [ $? -eq 0 ]; then
         record "schema-dump --check" "$OUT"
-        ok "database/base-schema.sql matches the capsule"
+        ok "database/ci/base-schema.sql matches the capsule"
     else
         record "schema-dump --check (FAILED)" "$OUT"
         printf '%s\n' "$OUT" | sed 's/^/    /'
-        bad "database/base-schema.sql is stale — ./tools/schema-dump.sh, then read the diff"
+        bad "database/ci/base-schema.sql is stale — ./tools/schema-dump.sh, then read the diff"
         return
     fi
 
@@ -411,11 +411,11 @@ stage_schema() {
         return
     fi
 
-    OUT=$(docker compose exec -T db mariadb -uroot -proot schema_probe < database/base-schema.sql 2>&1)
+    OUT=$(docker compose exec -T db mariadb -uroot -proot schema_probe < database/ci/base-schema.sql 2>&1)
     if [ $? -ne 0 ]; then
         record "schema round-trip (load FAILED)" "$OUT"
         printf '%s\n' "$OUT" | sed 's/^/    /'
-        bad "database/base-schema.sql does not load into an empty database"
+        bad "database/ci/base-schema.sql does not load into an empty database"
     else
         OUT=$(SCHEMA_DUMP_DB=schema_probe SCHEMA_DUMP_USER=root SCHEMA_DUMP_PASS=root \
             ./tools/schema-dump.sh --check 2>&1)

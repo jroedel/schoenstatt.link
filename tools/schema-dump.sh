@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Records the application's schema, into database/base-schema.sql.
+# Records the application's schema, into database/ci/base-schema.sql.
 #
 #     ./tools/schema-dump.sh            # rewrite the recording
 #     ./tools/schema-dump.sh --check    # regenerate into a temp file and diff, exit 1 on drift
@@ -43,7 +43,7 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
-OUT=database/base-schema.sql
+OUT=database/ci/base-schema.sql
 # Overridable so the recording can be re-dumped from a database built FROM it — the
 # round-trip ci-local runs — and so CI can point this at its own service container.
 DB=${SCHEMA_DUMP_DB:-ourlink_db1}

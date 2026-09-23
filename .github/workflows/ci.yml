@@ -37,7 +37,7 @@
 # stay clean. Deliberately NOT `composer cs-check`, whose scope has carried no
 # signal for years — the job's own comment has the numbers.
 #
-# deploy-machinery: the five test/Deploy/*-test.sh checks. Plain bash, no
+# deploy-machinery: the test/Deploy/*-test.sh checks. Plain bash, no
 # server, and local-only until 2026-09-08 for no reason other than that they
 # were written into tools/ci-local.sh and left there.
 #
@@ -192,8 +192,8 @@ jobs:
     # repository -- `database/` holds incremental migrations and, of the 48 tables the
     # application uses, only 34 are created by one -- so 37 test classes skipped here on a
     # failed CONNECTION rather than on missing rows, and the job ran ~43% of the
-    # assertions the capsule does. `database/base-schema.sql` is the schema and
-    # `database/ci-seed.sql` is a small set of invented rows; together they take this job
+    # assertions the capsule does. `database/ci/base-schema.sql` is the schema and
+    # `database/ci/ci-seed.sql` is a small set of invented rows; together they take this job
     # from 3,085 assertions to ~4,227 and from 195 skipped tests to 38.
     services:
       db:
@@ -248,8 +248,8 @@ jobs:
         # export is involved and none ever should be. ci-seed.sql empties what it fills, so
         # re-running it is a no-op rather than a duplicate-key error.
         run: |
-          mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/base-schema.sql
-          mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/ci-seed.sql
+          mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/ci/base-schema.sql
+          mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/ci/ci-seed.sql
       - name: Create the writable directories
         # The same three config.sh creates, and for the same reason: they are gitignored,
         # so a fresh checkout has none of them. Without data/config the merged-config write
@@ -425,9 +425,10 @@ jobs:
           coverage: none
       - name: test/Deploy/*-test.sh
         # tools/deploy.sh is the least-tested code in the repository that can do
-        # the most damage, and these five checks — the remote-call machinery, the
+        # the most damage, and these checks — the remote-call machinery, the
         # per-segment cache gate, the OPcache symlink-swap reproduction, the
-        # interned-strings sampler and the smoke script's cache-status parsing —
+        # interned-strings sampler, the smoke script's cache-status parsing and the
+        # migration inventory —
         # ran only in tools/ci-local.sh until now. They are plain bash and need
         # no server, so there was never a reason for CI not to run them; they
         # were simply written into the local runner and left there.
