@@ -24,8 +24,8 @@ case ${1:-} in
     *)       printf 'usage: %s --check | --yes\n' "$0" >&2; exit 1 ;;
 esac
 
-CONFIG=.deploy.local
-[ -f "$CONFIG" ] || { echo "ABORT: .deploy.local is missing. Run ./config.sh first." >&2; exit 1; }
+CONFIG=${DEPLOY_CONFIG:-.deploy.local}
+[ -f "$CONFIG" ] || { echo "ABORT: $CONFIG is missing. Run ./config.sh first." >&2; exit 1; }
 # shellcheck disable=SC1090
 . "$CONFIG"
 : "${DEPLOY_SSH_USER:?}" "${DEPLOY_SSH_HOST:?}" "${DEPLOY_SSH_PORT:=222}" "${DEPLOY_APP_PATH:?}"
