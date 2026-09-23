@@ -89,10 +89,26 @@
 # See docs/BACKLOG.md.
 name: CI
 
+# WHY THESE TRIGGERS: `push: branches: ["**"]` together with `pull_request:` fires BOTH on
+# every push to a branch with a PR open, so each push cost two identical runs. Billing is
+# per job, rounded up to the minute, and this workflow has seven jobs -- so a run is ~7
+# minutes however fast it is (a full run is ~80s of wall clock), and the doubled trigger
+# made it ~14. Narrowing `push` to master keeps the same coverage: a PR branch is covered
+# by `pull_request`, and master is covered on merge.
+#
+# `concurrency` then cancels a superseded run when a branch is pushed again, which is the
+# other half: three pushes in five minutes used to buy three full runs of which only the
+# last mattered. master is deliberately NOT cancelled -- every merged commit gets a real
+# answer -- which is what the group expression does by falling back to run_id there.
 on:
   push:
-    branches: ["**"]
+    branches: [master]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref == 'refs/heads/master' && github.run_id || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
