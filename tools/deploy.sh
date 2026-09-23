@@ -35,7 +35,19 @@
 # and brings back the confirmation prompt.
 #
 # Configuration is .deploy.local (gitignored, mode 0600), seeded from
-# .deploy.local.dist by config.sh. Credentials never reach the server.
+# .deploy.local.dist by config.sh. Credentials never reach the server. Set
+# DEPLOY_CONFIG to read it from somewhere else — what .github/workflows/deploy.yml
+# does, so the file it writes from GitHub secrets never lands in the working tree.
+#
+# UNATTENDED RUNS. Three things make this safe to drive from a CI runner, and all
+# three key off the environment rather than a flag, so a person at a terminal sees
+# no change: ssh gets BatchMode and StrictHostKeyChecking=yes when stdin is not a
+# tty (fail fast instead of prompting into a closed pipe); DEPLOY_CONFIG above; and
+# a mkdir lock on the server at shared/deploy.lock, which is the only thing that can
+# see a laptop deploy racing a dispatched one. DEPLOY_LOCK_OWNER labels the holder.
+# The confirmation prompt is NOT one of them — -y is still required, because what
+# replaces a human at the keyboard is the environment's required reviewer, not a
+# guess about how the script was invoked.
 #
 # Requires locally: git, rsync, ssh, curl. No PHP — the host CLI's missing
 # extensions were why phploy needed php8.0, and that wart goes away with it.
@@ -104,8 +116,12 @@ done
 
 # ---------------------------------------------------------------- config ----
 
-CONFIG=$REPO_ROOT/.deploy.local
-[ -f "$CONFIG" ] || fail ".deploy.local is missing. Run ./config.sh, then fill in the TODOs."
+# DEPLOY_CONFIG moves the credentials file off the working tree, which is what an
+# unattended run wants: a CI job writes it from secrets into a directory the workspace
+# never sees, so no later step can archive it and no stray `rm -rf` in the checkout can
+# take it with them. Unset, it is the usual per-machine file beside the repository.
+CONFIG=${DEPLOY_CONFIG:-$REPO_ROOT/.deploy.local}
+[ -f "$CONFIG" ] || fail "$CONFIG is missing. Run ./config.sh, then fill in the TODOs."
 
 # The file is sourced, so it can hold nothing but assignments. It carries the
 # full-DDL database password (used only through an SSH tunnel, see PR B), which
@@ -281,8 +297,21 @@ rsh() {
 # again — an unreachable host rather than one that stops replying mid-call.
 CTRL_PATH=$(mktemp -u "${TMPDIR:-/tmp}/deploy-ssh-XXXXXX")
 SSH_KEEPALIVE=(-o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
+
+# Off a terminal, ssh must fail rather than ask. Without BatchMode a key problem becomes a
+# password prompt against a closed stdin, which reads as a hang and then as a timeout
+# nobody can explain; with it, the same problem is one line saying permission denied.
+# StrictHostKeyChecking is stated rather than left to the default for the same reason it is
+# never set to `no`: this script refuses rather than guesses, and trust-on-first-use is a
+# guess. An unattended caller writes the host key into known_hosts BEFORE calling this.
+#
+# Both are conditional on stdin, so a person at a terminal keeps the passphrase prompt and
+# the one-time host-key question they have always had.
+SSH_UNATTENDED=()
+[ -t 0 ] || SSH_UNATTENDED=(-o BatchMode=yes -o StrictHostKeyChecking=yes)
+
 SSH=(ssh -o ControlMaster=auto -o ControlPath="$CTRL_PATH" -o ControlPersist=120
-     "${SSH_KEEPALIVE[@]}"
+     "${SSH_KEEPALIVE[@]}" "${SSH_UNATTENDED[@]}"
      -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST")
 
 # One exit handler for everything, installed once. Both halves are conditional
@@ -292,6 +321,8 @@ FILE_LIST=''
 STASHED=0
 CHECKED_OUT_REF=0
 ORIG_BRANCH=''
+LOCK=''
+LOCK_HELD=0
 on_exit() {
     local status=$?
     # First, before anything prints: a heartbeat that outlives the script would keep
@@ -316,6 +347,14 @@ on_exit() {
     if [ "$STASHED" = 1 ]; then
         printf '\n%srestoring stashed changes%s\n' "$C_DIM" "$C_OFF"
         git stash pop --quiet || warn "git stash pop failed — your changes are safe in 'git stash list'."
+    fi
+    # The server-side lock, before the connection closes under it. Only ever removed by
+    # the run that took it: LOCK_HELD is set on a successful mkdir and nowhere else, so a
+    # deploy that refused because someone else held the lock cannot release theirs.
+    if [ "${LOCK_HELD:-0}" = 1 ]; then
+        RSH_TIMEOUT=20 RSH_LABEL="releasing the deploy lock" \
+            rsh "rm -rf ${LOCK:-}" >/dev/null 2>&1 \
+            || warn "could not release the deploy lock — clear it by hand: rm -rf ${LOCK:-}"
     fi
     if [ -S "$CTRL_PATH" ]; then "${SSH[@]}" -O exit >/dev/null 2>&1 || true; fi
     return $status
@@ -998,7 +1037,13 @@ fi
 # therefore runs ci-local in the tree the capsule actually serves — but only when that
 # tree is on the very revision being shipped — and says which happened here.
 #
-# Exactly one of the two is non-empty, and nothing but prod-deploy.sh sets either.
+# A runner is the other caller with a real answer here, and its answer is not ci-local:
+# ci-local needs the capsule and there is no capsule on a runner. What proved that
+# revision green there is this repository's own CI, on the same commit. So the claim and
+# the claimant are separate variables — DEPLOY_VERIFIED_SHA is *which revision* was proven,
+# DEPLOY_VERIFIED_BY is *what proved it* — and the SHA check below is what keeps the claim
+# honest when master moves between the proof and the deploy. Nothing but
+# tools/prod-deploy.sh and .github/workflows/deploy.yml sets any of the three.
 VERIFIED_ELSEWHERE=0
 if [ "$SKIP_TESTS" = 0 ]; then
     if [ -n "${DEPLOY_VERIFIED_SHA:-}" ]; then
@@ -1018,12 +1063,14 @@ fi
 
 if [ "$VERIFIED_ELSEWHERE" = 1 ]; then
     step "Verification"
-    ok "tools/prod-deploy.sh already ran ci-local against $SHORT in the capsule's tree"
+    ok "${DEPLOY_VERIFIED_BY:-tools/prod-deploy.sh already ran ci-local} against $SHORT"
 elif [ "$SKIP_TESTS" = 1 ]; then
     warn "skipping tools/ci-local.sh"
-    # CI cannot run (Actions quota), so ci-local is the ONLY verification this change
-    # gets. Skipping it is exactly the case where someone should be asked — unless the
-    # reason is already in UNUSUAL, which the block above has seen to.
+    # Skipping it is exactly the case where someone should be asked — unless the reason is
+    # already in UNUSUAL, which the block above has seen to. Note what this branch is NOT:
+    # a deploy driven by .github/workflows/deploy.yml arrives with DEPLOY_VERIFIED_SHA set
+    # and lands above, because CI really did run on that commit and the workflow checks so
+    # before calling. A bare --skip-tests still means nothing verified this build.
     if [ "$DRY_RUN" = 0 ] && [ -z "${DEPLOY_UNVERIFIED_REASON:-}" ] && [ -z "${DEPLOY_VERIFIED_SHA:-}" ]; then
         UNUSUAL+=("tests were skipped, and CI cannot run — nothing verified this build")
     fi
@@ -1040,6 +1087,7 @@ fi
 step "Release plan"
 
 assert_bootstrapped
+
 HOME_ABS=$(remote_home)
 PREV=$(current_release)
 REL="$(date +%Y%m%d-%H%M%S)-$SHORT"
@@ -1092,6 +1140,41 @@ else
     printf '        - %s\n' "${UNUSUAL[@]}" >&2
     confirm "deploy $SHORT to $DEPLOY_BASE_URL anyway"
 fi
+
+# --- one deploy at a time, enforced on the server ---------------------------
+#
+# GitHub `concurrency` serialises runs against each other and knows nothing about the
+# person running `make prod-deploy` on a laptop at the same moment. That is the race worth
+# preventing: two deploys both build releases, both swap the symlink, and whichever
+# finishes second wins with no record that the first ever ran.
+#
+# `mkdir` is the lock because it is atomic on every POSIX filesystem — `[ -f ] || touch` is
+# not, and the window between the test and the touch is exactly when the other deploy is
+# also looking. The holder's identity goes inside it, so a stale lock names who to ask.
+#
+# Taken HERE and not at the release plan, which is the obvious-looking place: a --dry-run
+# exits before this line, and a dry run that held the lock would block a real deploy while
+# modifying nothing. The prompt above is also on the far side, so an unusual deploy waiting
+# on a human does not park the lock for as long as they take to answer. The first thing
+# below this is the first thing that writes to the server.
+#
+# --rollback and --reset-caches return long before this and deliberately do NOT take it.
+# Both are what you reach for when a deploy has gone wrong, and the most likely holder of
+# the lock at that moment is the deploy you are trying to undo. A recovery path that can be
+# blocked by the thing it recovers from is worse than the race it would prevent.
+LOCK=$SHARED/deploy.lock
+LOCK_HELD=0
+if ! rsh "mkdir $LOCK" >/dev/null 2>&1; then
+    HOLDER=$(rsh "cat $LOCK/holder 2>/dev/null" || true)
+    fail "another deploy holds the lock on the server.
+
+${HOLDER:-  (the lock directory carries no holder file, so it predates this check)}
+
+Wait for it, or — if you are certain nothing is deploying — clear it with:
+    ssh -p $DEPLOY_SSH_PORT $DEPLOY_SSH_USER@$DEPLOY_SSH_HOST 'rm -rf $LOCK'"
+fi
+LOCK_HELD=1
+rsh "printf '%s\n' \"held by ${DEPLOY_LOCK_OWNER:-$(id -un)@$(hostname)} since $(date -u +%Y-%m-%dT%H:%M:%SZ) for $SHORT\" > $LOCK/holder" >/dev/null 2>&1 || true
 
 step "Backing up the live public/.htaccess"
 # Tracked, and therefore replaced by every release. The backup is the escape

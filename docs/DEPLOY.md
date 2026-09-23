@@ -20,8 +20,15 @@ Configuration lives in **`.deploy.local`** (gitignored, mode 0600), seeded from
 `.deploy.local.dist` by `./config.sh`: the SSH target, `DEPLOY_API_KEY` (any
 `sion_model.api_keys` value — sent as an `X-Api-Key` header, never a query string)
 and the full-DDL database credentials. **Nothing in it is ever written to the
-server, committed, printed or copied.** An unreplaced `TODO` aborts the preflight —
+server, committed or printed.** An unreplaced `TODO` aborts the preflight —
 a bogus API key would fail the smoke run and roll back a release that was fine.
+
+There is now one other place those values exist: the GitHub secrets that
+[Deploying from GitHub Actions](#deploying-from-github-actions) reads. That is a real
+widening — the whole point of full-DDL credentials being local was that compromising the
+web application could not reach them — and the things holding it are named in that
+section. `DEPLOY_CONFIG` exists so the file the runner writes never lands in the
+working tree.
 
 ## The entry point: `make prod-deploy`
 
@@ -100,8 +107,10 @@ reporting on the release. So it runs where the capsule is, under one condition.
 `smoke-prod` as well as the seven CI jobs) rather than the `--ci` subset — which it no
 longer runs twice, because `deploy.sh` now honours the handover.
 
-That handover is two environment variables, `DEPLOY_VERIFIED_SHA` and
-`DEPLOY_UNVERIFIED_REASON`, set by nothing but `tools/prod-deploy.sh`. Getting it wrong in
+That handover is three environment variables — `DEPLOY_VERIFIED_SHA` (which revision was
+proven green), `DEPLOY_VERIFIED_BY` (what proved it, defaulting to ci-local) and
+`DEPLOY_UNVERIFIED_REASON` — set by nothing but `tools/prod-deploy.sh` and
+`.github/workflows/deploy.yml`. Getting it wrong in
 the lenient direction ships an unverified build without the prompt that exists for exactly
 that, and the deploy succeeds either way — so `test/Deploy/deploy-checkout-test.sh` drives
 the real block out of `tools/deploy.sh` through all six of its paths, and checks that
@@ -144,6 +153,61 @@ gh pr merge <n> --merge && make prod-deploy
 
 That deploys `origin/master` whatever branch you happen to be on. Being on master
 yourself, clean, is what lets `ci-local` verify it first.
+
+## Deploying from GitHub Actions
+
+`.github/workflows/deploy.yml` runs the same `tools/deploy.sh` from a runner. Its only
+trigger is **`workflow_dispatch`** — Actions → Deploy → Run workflow, with a `dry_run`
+checkbox that defaults to **on**. It is not push-to-deploy and is not meant to be yet;
+what it removes is the requirement that the person deploying be at the machine holding
+the credentials.
+
+Four things stand between a stranger and production:
+
+- **No `pull_request` trigger.** On a public repository that is the only guarantee worth
+  anything: a fork's pull request cannot reach a secret through a trigger that does not
+  exist. Do not add one.
+- **The `production` Environment**, which carries a required reviewer. That approval is
+  what `-y` replaces — `tools/deploy.sh` refuses to run unattended without it, and the
+  reviewer has already answered before the deploy step starts. **Naming an environment in
+  a workflow does not protect it.** GitHub will happily run against one that has no rules,
+  so Settings → Environments → `production` → *Required reviewers* has to be set by hand,
+  once, or this line is decoration. Put the secrets below on that environment rather than
+  on the repository, so they cannot be read by a workflow that skips it.
+- **`concurrency: deploy-production`** with `cancel-in-progress: false`, plus the
+  server-side lock in `$SHARED/deploy.lock`, which is what catches the case GitHub cannot
+  see: someone running `make prod-deploy` from a laptop at the same moment.
+- **A pinned host key.** `DEPLOY_KNOWN_HOSTS`, never `StrictHostKeyChecking=no`.
+
+`ci-local` cannot run on a runner — it drives the capsule — so the gate is this
+repository's own CI. The workflow **checks that**, rather than asserting it: its first step
+asks the Actions API for a successful `ci.yml` run on the exact SHA being deployed and
+refuses if there is none. A green run on the branch is a different claim and does not
+count. It then hands `tools/deploy.sh` `DEPLOY_VERIFIED_SHA` and `DEPLOY_VERIFIED_BY`
+instead of `--skip-tests`, so the script reports which run proved the commit and still
+warns if `master` moved in between. CI covers roughly 43% of the assertions (no database
+for most of it), which is why the reviewer requirement is not decoration.
+
+**Secrets to create** (Settings → Secrets and variables → Actions), all in the
+`production` environment. The first group is `.deploy.local` field for field:
+
+| secret | notes |
+| --- | --- |
+| `DEPLOY_SSH_USER` | the shell account, not the retired SFTP one |
+| `DEPLOY_SSH_HOST` | |
+| `DEPLOY_SSH_PORT` | `222`; the workflow defaults to it if unset |
+| `DEPLOY_APP_PATH` | relative to the account's home |
+| `DEPLOY_BASE_URL` | |
+| `DEPLOY_API_KEY` | any `sion_model.api_keys` entry |
+| `DEPLOY_CANARY_COOKIE` | may be empty |
+| `DEPLOY_DB_NAME`, `DEPLOY_DB_USER`, `DEPLOY_DB_PASS` | used only through the SSH tunnel. This does not have to be the full-DDL account: a user with DDL on this application's tables and no `GRANT` is enough for every migration the ledger has ever applied, and is the credential worth putting here. Left unset, the deploy reports migrations as unmanaged and a person runs `tools/migrate.sh` — which splits `@phase: pre` from `@phase: post` across two operators, and that ordering exists because of the 2026-08-17 outage. |
+| `DEPLOY_DB_TUNNEL_PORT` | |
+| `DEPLOY_SSH_KEY` | a **passphrase-less** private key, its own key, added to the server's `authorized_keys`. There is no agent on a runner and nobody to type a passphrase. Give it its own key so it can be revoked without touching yours. |
+| `DEPLOY_KNOWN_HOSTS` | from `ssh-keyscan -p 222 -H <host>`, run from a machine you trust |
+
+The first dispatch doubles as the spike for #267 — whether a GitHub runner can reach the
+host on port 222 at all. Leave `dry_run` checked for it: the preflight opens the
+connection and plans the release without touching the server.
 
 ## The steps
 
@@ -364,6 +428,19 @@ public_html/schoenstatt.link/
   shared/data/{logs,exceptions,htaccess-backups,fonts,musicas,texts,scans,import}
   shared/public/{covers,associations,dh,BingSiteAuth.xml,google0e1110cae0fbf177.html}
   shared/config-autoload/{local.php,*.local.php}
+  shared/deploy.lock/holder                          present only while a deploy is running
+```
+
+`shared/deploy.lock` is a directory, taken with `mkdir` because that is atomic where
+`[ -f ] || touch` is not, and released by the exit handler of the run that took it. It is
+what stops a dispatched Actions run and a laptop `make prod-deploy` from building over each
+other; GitHub's own `concurrency` cannot see the laptop. `--dry-run`, `--rollback` and
+`--reset-caches` never take it — the first writes nothing, and the other two are what you
+reach for when the lock's likely holder is the deploy you are trying to undo. If one is
+left behind, its `holder` file says who and since when:
+
+```bash
+ssh -p 222 <user>@<host> 'rm -rf <app>/shared/deploy.lock'
 ```
 
 `public/index.php` resolves `__DIR__/../vendor` through the symlink into its own
