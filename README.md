@@ -12,7 +12,6 @@ Getting started
 The whole environment is a Docker "time capsule" that matches production:
 
 ```bash
-git submodule update --init --recursive   # SionModel, JUser and JTranslate
 ./config.sh                               # seeds .dist configs, runs composer install
 bash tools/get-phars.sh                   # pinned phpunit + phpstan
 docker compose up -d
@@ -66,7 +65,7 @@ Layout
 | `templates/` | Twig templates; `layout.html.twig` is the shared chrome |
 | `config/symfony/routes.php` | every route the site serves |
 | `module/{Application,Books,Schoenstatt}` | laminas modules: config, models, forms |
-| `module/{SionModel,JUser,JTranslate}` | shared libraries, **git submodules** — commit there first, then move the pointer |
+| `module/{SionModel,JUser,JTranslate}` | shared libraries: the form stack, the db layer, users, translation |
 | `config/autoload/` | `*.global.php` committed, `*.local.php` machine-specific (from `.dist` via `config.sh`) |
 | `database/` | incremental migrations, applied through the `sch_migration` ledger |
 

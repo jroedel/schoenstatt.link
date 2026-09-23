@@ -56,8 +56,8 @@ parameters:
     #    entity that does not declare `acl_show_permission` — which is three of this
     #    batch's four.
     #
-    # The real fix is to correct those annotations in the SionModel submodule, which
-    # is a cross-repo change and not this batch's. Scoped to the two files rather than
+    # The real fix is to correct those annotations in SionModel, which is a change of
+    # its own with its own review. Scoped to the two files rather than
     # turned off globally via treatPhpDocTypesAsCertain, so the next wrong annotation
     # is still reported.
     #

@@ -141,8 +141,8 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   across Books, Schoenstatt, JUser and SionModel, plus the two `@deprecated` properties on
   `SionModel\Entity\Entity` that hold them). `SionControllerFactory` read them and was
   deleted with the laminas controllers in 2026-09; nothing has read either since. Left in
-  place when laminas-navigation went, because clearing them properly spans two submodules
-  and that removal needed only one line of it.
+  place when laminas-navigation went, because clearing them properly spans Books,
+  Schoenstatt, JUser and SionModel and that removal needed only one line of it.
 - **Watch for date-format drift from the ICU downgrade** (8.4/8.5 builds ship ICU 72.1 vs
   8.3's 76.1; 27 `IntlDateFormatter` sites). A wrong non-English date is this, not our code.
 - **Passkeys (WebAuthn)**: web-auth/webauthn-lib, a credential table, enrollment inside an
@@ -218,7 +218,7 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   `src/Sion/EntityShow.php:246`, `src/Controller/SendToNewUrlController.php:186`,
   `Books\Controller\PublicationsController:131`, plus the "successfully created" twins. Fix:
   `JTranslate\I18n\TranslatableMessage` with a `'%s not found.'` template; the `%s` then
-  needs its own translation (same decision as the next item). Spans the SionModel submodule.
+  needs its own translation (same decision as the next item). Spans SionModel.
 - **Two navigation labels can never be translated**: `'German Schoenstatt Literature'` and
   `'German to Spanish Dictionary'` are concatenated in `Application\Module` from an
   always-English language name (`/it/literature/de`). A per-locale `%s` template means
@@ -353,8 +353,9 @@ Background: [caching.md](caching.md).
 - **Run-time sweep for deprecations a static pass cannot see**: run the smoke suite with
   `E_DEPRECATED` promoted to failures. The ones that matter hide in request handling and
   production's `error_reporting` hides them all.
-- Shared-library tests live here (`test/Unit/TextTest.php` covers `SionModel\Text\Text`)
-  because the submodules have no test infrastructure; move them so patres inherits them.
+- Shared-library tests live in `test/` with everything else (`test/Unit/TextTest.php`
+  covers `SionModel\Text\Text`), which is simply where they belong now that SionModel,
+  JUser and JTranslate are directories of this repository.
 - **Guarded routes whose smoke test asserts only the anonymous 302** prove the guard denies,
   never that the page renders (that shape missed a fatal-200 and a form with no submit
   button). `MagicLinkSignIn::signInWithEveryRole()` exists, nine classes use it; the rest of

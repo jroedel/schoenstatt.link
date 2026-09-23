@@ -1,0 +1,565 @@
+<?php
+
+namespace SionModel;
+
+
+return [
+    /**
+     * Commands bin/console exposes, as name => service id. The entry point
+     * resolves each from the service manager only when it is the command being
+     * run, so registering one here costs nothing until it is invoked.
+     */
+    'console' => [
+        'commands' => [
+            'cache:clear-config'     => Console\Command\ClearConfigCacheCommand::class,
+            'cache:flush-persistent' => Console\Command\FlushPersistentCacheCommand::class,
+        ],
+    ],
+    /**
+     * **No `view_helpers` key any more.** `editPencil`, `editPencilNew` and `formatEntity`
+     * became plain classes on 2026-09: each takes its former `$this->view` collaborators as
+     * injected closures, so a plugin manager cannot build one from a name alone. The host
+     * constructs them — see App\Laminas\ViewHelpers in schoenstatt.link.
+     *
+     * Their laminas factories under src/Service went with them: a factory that resolves a
+     * helper from a plugin manager can no longer build these, and this library keeps no
+     * code for a laminas host.
+     *
+     * **No `validators` key any more either.** It configured
+     * `Laminas\Validator\ValidatorPluginManager`, which left with laminas-validator on
+     * 2026-09. Every specification in both applications names this library's validators by
+     * class, so nothing was resolving through those eight short names;
+     * {@see Validator\Registry} is where a short name becomes a validator now, and it maps
+     * only names a specification actually writes.
+     */
+    'service_manager' => [
+        'invokables' => [
+            I18n\LanguageSupport::class     => I18n\LanguageSupport::class
+        ],
+        'factories' => [
+            'CountryValueOptions'           => Service\CountryValueOptionsFactory::class,
+            'SionModel\Config'              => Service\ConfigServiceFactory::class,
+            Db\Model\FilesTable::class      => Service\FilesTableFactory::class,
+            'SionModel\PersistentCache'     => Service\PersistentCacheFactory::class,
+            Service\EntitiesService::class  => Service\EntitiesServiceFactory::class,
+            Service\ProblemService::class   => Service\ProblemServiceFactory::class,
+            Service\ChangesCollector::class => Service\ChangesCollectorFactory::class,
+            Mailing\Mailer::class           => Service\MailerFactory::class,
+            //the Twig environment mail bodies render with; templates under `@sion-model/…`
+            //plus whatever `sion_model.mail_template_paths` names
+            Mailing\TemplateRendererInterface::class => Service\TemplateRendererFactory::class,
+            Db\Model\PredicatesTable::class => Service\PredicatesTableFactory::class,
+            Service\ErrorHandling::class    => Service\ErrorHandlingFactory::class,
+            'ExceptionsLogger'              => Service\ExceptionsLoggerFactory::class,
+            'SionModel\Logger'              => Service\LoggerFactory::class,
+            //exception reporting: recorder and notifier, reached through the host's
+            //FatalErrorHandler resolver
+            Error\Fingerprinter::class      => Service\FingerprinterFactory::class,
+            Error\ExceptionStore::class     => Service\ExceptionStoreFactory::class,
+            Error\RequestContext::class     => Service\RequestContextFactory::class,
+            Error\ExceptionNotifier::class  => Service\ExceptionNotifierFactory::class,
+            'SionModel\MailTransport'       => Service\MailTransportFactory::class,
+            Console\Command\ClearConfigCacheCommand::class
+                                            => Service\ClearConfigCacheCommandFactory::class,
+            Console\Command\FlushPersistentCacheCommand::class
+                                            => Service\FlushPersistentCacheCommandFactory::class,
+        ],
+        'aliases' => [
+            //a literal, not ExceptionNotifierFactory::TRANSPORT_SERVICE: a
+            //class constant here makes this config file unloadable without an
+            //autoloader, which breaks any tooling that just includes it.
+            //An alias so a project can point exception mail at a different
+            //transport without touching the notifier.
+            'SionModel\ExceptionMailTransport' => 'SionModel\MailTransport',
+        ],
+    ],
+    'sion_model' => [
+        'application_log_path'      => 'data/logs/application_{monthString}.log',
+        'exceptions_log_path'       => 'data/logs/exceptions_{monthString}.log',
+        /**
+         * Public base URL of this site, no trailing slash. Only console
+         * commands use it, because a CLI process has no request to infer the
+         * host from. Empty here so a project must state its own; the
+         * cache:flush-persistent command takes --url when it is unset.
+         */
+        'canonical_base_url'        => '',
+        /**
+         * Where mail templates live, `twig namespace => directory`. This package's own
+         * are under `@sion-model/…`; a host adds its directories here.
+         */
+        'mail_template_paths'       => [],
+        /**
+         * Exception reporting. Every exception that reaches dispatch.error or
+         * render.error is logged as before and additionally recorded in a
+         * per-failure directory under store_path; the first occurrence of each
+         * distinct failure is emailed.
+         *
+         * A "distinct failure" is keyed on the exception class chain, the
+         * matched route name and the enclosing function of the root cause —
+         * never the request URI, which would make every request to a variable
+         * URL look like a brand new bug and mail accordingly.
+         *
+         * Recipients are intentionally empty here: a project that has not
+         * configured them records without mailing.
+         */
+        'exception_notifications'   => [
+            'enabled'    => true,
+            'store_path' => 'data/exceptions',
+            /** Email recipients. Set these per project, e.g. in a *.global.php. */
+            'to'         => [],
+            /** Envelope sender; defaults to the SMTP account when left null. */
+            'from'       => null,
+            'from_name'  => null,
+            /** Subject prefix; defaults to the request's host in brackets. */
+            'subject_prefix' => null,
+            /**
+             * Exception classes that are recorded and logged but never mailed.
+             * Exact class names, or a namespace prefix ending in `*`.
+             *
+             * dispatch.error is not a bug channel: an unauthenticated visitor
+             * touching a guarded route raises UnAuthorizedException through the
+             * very same event. That is ordinary traffic, and mailing it would
+             * bury every real failure. Matched as strings so nothing is
+             * autoloaded while the application is mid-failure.
+             */
+            'ignore_classes' => [
+                'BjyAuthorize\Exception\UnAuthorizedException',
+            ],
+            /**
+             * Occurrence counts that earn a second look after the first email:
+             * a rare annoyance becoming an outage is worth hearing about.
+             */
+            'spike_counts' => [10, 100, 1000],
+            /** Ceiling on distinct fingerprints, so a storm cannot fill the disk. */
+            'max_fingerprints' => 500,
+            /** Ceiling on notifications per hour, so a storm cannot flood the inbox. */
+            'max_emails_per_hour' => 20,
+            /** Truncation ceiling for a single write-up. */
+            'max_write_up_bytes' => 262144,
+            /** How many recent write-ups to keep besides first and last. */
+            'ring_size' => 3,
+            /** How long to stop trying after the mail transport fails. */
+            'breaker_seconds' => 900,
+            /**
+             * What request state to keep. The store gets copied off the server
+             * and its contents get mailed, so these default to the least data
+             * that still lets you reproduce a failure:
+             *   ip:       truncate (IPv4 /24, IPv6 /48) | full | none
+             *   identity: id (user id only, never the address) | none
+             *   params:   keys (names kept, values redacted) | full | none
+             */
+            'capture' => [
+                'ip'       => 'truncate',
+                'identity' => 'id',
+                'params'   => 'keys',
+            ],
+        ],
+        'file_directory'            => 'data/files',
+        'public_file_directory'     => 'public/files',
+        /**
+         * Bytes. A single persistent cache item bigger than this is skipped
+         * rather than written. APCu clears its whole segment when an allocation
+         * fails (apc.ttl is 0), so one oversized write costs every other cached
+         * item site-wide — refusing it locally is cheaper. 0 disables the check.
+         *
+         * 4 MiB was picked from the measured size distribution rather than by
+         * feel. Warming the main routes against production-scale data gives a
+         * long tail of legitimate items topping out at ~2.5 MiB
+         * (query-objects-association 2.44, publication-navigation-data 1.84,
+         * unlinked-persons 0.88) and then one outlier at 29.21 MiB
+         * (query-objects-publication, the full 10k-row 80-field table). The gap
+         * between those two groups is where this belongs: everything real keeps
+         * caching with headroom to grow, and only the table-sized blob is
+         * refused. /sm/cache-status reports largestEntries so the number can be
+         * re-checked against production instead of assumed.
+         */
+        'max_cached_item_size'      => 4194304, //4 MiB
+        'changes_max_rows'          => 500,
+        'changes_show_all'          => true,
+        'api_keys'                  => [], //users should specify long, random authentication keys here
+        'post_place_line_format'    => ':zip :cityState',
+        'post_place_line_format_by_country' => [
+            'US' => ':cityState :zip',
+            'CL' => ':cityState :zip',
+        ],
+        'url_map'                   => [ //@todo clarify this, for general users
+            'g+' => [
+                'android'   => '%s',
+                'ios'       => '%s',
+                'default'   => '%s',
+                'logo'      => 'img/g+.png',
+                'label'     => 'G+',
+            ],
+            'skype' => [
+                'android'   => 'skype:%s?call',
+                'ios'       => 'skype:%s?call',
+                'default'   => 'skype:%s?call',
+                'logo'      => 'img/skype.png',
+                'userKey'   => 'skypeUser',
+                'label'     => 'Skype',
+            ],
+            'instagram' => [
+                'android'   => 'https://www.instagram.com/%s',
+                'ios'       => 'instagram://user?username=%s',
+                'default'   => 'https://www.instagram.com/%s',
+                'logo'      => 'img/instagram.png',
+                'userKey'   => 'instagramUser',
+                'label'     => 'Instagram',
+            ],
+            'slack' => [
+                'android'   => 'https://schoenstatt-fathers.slack.com/messages/%s/',
+                'ios'       => 'https://schoenstatt-fathers.slack.com/messages/%s/',
+                'default'   => 'https://schoenstatt-fathers.slack.com/messages/%s/',
+                'logo'      => 'img/slack.png',
+                'userKey'   => 'slackUser',
+                'label'     => 'Slack',
+            ],
+            'twitter' => [
+                'android'   => 'https://twitter.com/%s',
+                'ios'       => 'twitter://user?screen_name=%s',
+                'default'   => 'https://twitter.com/%s',
+                'logo'      => 'img/twitter.png',
+                'userKey'   => 'twitterUser',
+                'label'     => 'Twitter',
+            ],
+            'facebook' => [
+                'android'   => '%s',
+                'ios'       => '%s',
+                'default'   => '%s',
+                'logo'      => 'img/facebook.png',
+                'userKey'   => 'facebookUrl',
+                'label'     => 'Facebook',
+            ],
+            'wikipedia' => [
+                'android'   => '%s',
+                'ios'       => '%s',
+                'default'   => '%s',
+                'logo'      => 'img/wikipedia.png',
+                'label'     => 'Wikipedia',
+            ],
+            'blog' => [
+                'logo'      => 'img/blogger.png',
+                'label'     => 'Blog',
+            ],
+        ],
+//         'persistent_cache_config' => [
+//             'adapter' => [
+//                 'name' => 'filesystem',
+//                 'options' => [
+//                     'dirLevel' => 2,
+//                     'cacheDir' => 'data/cache',
+//                     'dirPermission' => 0755,
+//                     'filePermission' => 0666,
+//                     'namespaceSeparator' => '-db-'
+//                 ],
+//             ],
+//             'plugins' => ['serializer'],//   - See more at: https://arjunphp.com/zend-framework-2-cache-example/#sthash.1P0kgSma.dpuf
+    //         ],
+        'entities' => [
+            'mailing' => [
+                'table_name' => 'mailings',
+                'table_key' => 'MailingId',
+                'entity_key_field' => 'mailingId',
+                /**
+                 * No `get_object_function`, deliberately. It named `getMailing`, which
+                 * delegated to a `getMailings` whose hardcoded SQL selected `FROM
+                 * a_data_mailing` — a table that does not exist — and which then called
+                 * `$this->getEmailAddress()`, a method that exists nowhere either. Two
+                 * guaranteed fatals in one read path, and nothing ever took it: the only
+                 * use of this entity is `Mailer::sendMailingReport()`'s
+                 * `createEntity('mailing', …)`, and createEntity's read-back is gated on
+                 * a `databaseBoundDataPostprocessor` this spec does not define. Both
+                 * methods are deleted; without the key `getObject('mailing', $id)` falls
+                 * through to `tryGettingObject()`, which reads `table_name` and
+                 * `update_columns` below and therefore works — for the first time.
+                 */
+                'required_columns_for_creation' => [
+                    'toAddresses',
+                    'status',
+                ],
+                'name_field' => 'mailingName',
+                'name_field_is_translatable' => false,
+                //                 'moderate_route' => 'courses/course/moderate',
+                //                 'moderate_route_entity_key' => 'course_id',
+                'text_columns' => [
+                ],
+                'date_columns' => [
+                    'mailingOn',
+                    'openedOn',
+                    'queueUntil',
+                ],
+                'update_columns' => [
+                    'mailingId'             => 'MailingId',
+                    'toAddresses'           => 'ToAddresses',
+                    'mailingOn'             => 'MailingOn',
+                    'mailingBy'             => 'MailingBy',
+                    'subject'               => 'Subject',
+                    'body'                  => 'Body',
+                    'sender'                => 'Sender',
+                    'text'                  => 'MailingText',
+                    'tags'                  => 'MailingTags',
+                    'trackingToken'         => 'TrackingToken',
+                    'openedFromIpAddress'   => 'OpenedFromIpAddress',
+                    'openedFromHeaders'     => 'OpenedFromHeaders',
+                    'openedOn'              => 'OpenedOn',
+                    'emailTemplate'         => 'EmailTemplate',
+                    'emailLocale'           => 'EmailLocale',
+                    'status'                => 'Status',
+                    'attempt'               => 'Attempt',
+                    'maxAttempts'           => 'MaxAttempts',
+                    'queueUntil'            => 'QueueUntil',
+                    'errorMessage'          => 'ErrorMessage',
+                    'stackTrace'            => 'StackTrace',
+                ],
+            ],
+            /**
+             * For more information on entity config:
+             * @see \SionModel\Entity\Entity
+             */
+            'file' => [
+                'name'                                  => 'file',
+                'table_name'                            => 'files',
+                'table_key'                             => 'FileId',
+                'entity_key_field'                      => 'fileId',
+//                 'sion_model_class'                       => FilesTable::class,
+                'get_object_function'                   => 'getFile',
+                'get_objects_function'                  => 'getFiles',
+//                 'format_view_helper'                    => 'formatEvent',
+                'required_columns_for_creation'         => [
+                    'originalFileName',
+                    'mimeType',
+                    'size',
+                    'sha1',
+                ],
+                'name_field'                            => 'originalFileName',
+                'name_field_is_translatable'           => false,
+//                 'country_field'                          => 'country',
+                'text_columns'                          => [],
+                'many_to_one_update_columns'            => [
+//                     'email'  => 'contactInfo',
+//                     'cell'   => 'contactInfo',
+                ],
+                'report_changes'                        => true,
+                'database_bound_data_preprocessor'      => 'preprocessFile',
+                'enable_delete_action'                  => true,
+                'update_columns'                        => [
+                    'fileId'                => 'FileId',
+                    'storeFileName'         => 'StoreFileName',
+                    'originalFileName'      => 'OriginalFileName',
+                    'fileKind'              => 'FileKind',
+                    'description'           => 'Description',
+                    'size'                  => 'Size',
+                    'sha1'                  => 'Sha1',
+                    'contentTags'           => 'ContentTags',
+                    'structureTags'         => 'StructureTags',
+                    'mimeType'              => 'MimeType',
+                    'isPublic'              => 'IsPublic',
+                    'isEncrypted'           => 'IsEncrypted',
+                    'encryptedEncryptionKey' => 'EncryptedEncryptionKey',
+                    'createdOn'             => 'CreatedOn',
+                    'createdBy'             => 'CreatedBy',
+                    'updatedOn'             => 'UpdatedOn',
+                    'updatedBy'             => 'UpdatedBy',
+                ],
+            ],
+            'comment' => [
+                'name'                                  => 'comment',
+                'table_name'                            => 'comments',
+                'table_key'                             => 'CommentId',
+                'entity_key_field'                      => 'commentId',
+                'sion_model_class'                      => Db\Model\PredicatesTable::class,
+                'get_object_function'                   => 'getComment',
+                'get_objects_function'                  => 'getComments',
+                'sion_controllers'                          => [Controller\CommentController::class],//BorrowersController::class],
+                'controller_services'                       => [
+                ],
+//                 'format_view_helper'                    => 'formatEvent',
+                'required_columns_for_creation'         => [
+                    'comment',
+                    'kind',
+                    'status',
+                ],
+                'name_field'                            => 'comment',
+                'name_field_is_translatable'           => false,
+                //                 'country_field'                          => 'country',
+                'text_columns'                          => [],
+                'many_to_one_update_columns'            => [
+//                     'email'  => 'contactInfo',
+//                     'cell'   => 'contactInfo',
+                ],
+                'report_changes'                        => false,
+//                 'index_route'                        => 'files',
+//                 'index_template'                         => 'project/events/index',
+//                 'default_route_key'                     => 'file_id',
+//                 'show_action_template'                   => 'project/events/show',
+//                 'show_route'                             => 'files/files',
+//                 'show_route_key'                         => 'file_id',
+//                 'show_route_key_field'                   => 'fileId',
+//                 'edit_action_form'                       => 'SionModel\Form\EditFileForm',
+//                 'edit_action_template'                   => 'project/events/edit',
+//                 'edit_route'                             => 'events/event/edit',
+//                 'edit_route_key'                         => 'file_id',
+//                 'edit_route_key_field'                   => 'fileId',
+                'create_action_form'                     => Form\CommentForm::class,
+//                 'create_action_valid_data_handler'       => 'createEvent',
+//                 'create_action_redirect_route'           => 'files/file',
+//                 'create_action_redirect_route_key'       => 'file_id',
+//                 'create_action_redirect_route_key_field'=> 'fileId',
+//                 'create_action_template'                 => 'project/events/create',
+//                 'database_bound_data_preprocessor'        => 'preprocessFile',
+                'database_bound_data_postprocessor'  => 'postprocessComment',
+//                 'moderate_route'                         => 'events/event/moderate',
+//                 'moderate_route_entity_key'          => 'file_id',
+//                 'suggest_form'                           => 'Project\Form\SuggestEventForm',
+                'enable_delete_action'                  => true,
+                //                 'delete_action_acl_resource'             => 'event_:id',
+                //                 'delete_action_acl_permission'           => 'delete_event',
+                //                 'delete_action_redirect_route'           => 'events',
+                'update_columns' => [
+                    'commentId'         => 'CommentId',
+                    'rating'            => 'Rating',
+                    'kind'              => 'CommentKind',
+                    'comment'           => 'Comment',
+                    'status'            => 'Status',
+                    'reviewedBy'        => 'ReviewedBy',
+                    'reviewedOn'        => 'ReviewedOn',
+                    'createdOn'         => 'CreatedOn',
+                    'createdBy'         => 'CreatedBy',
+                ],
+            ],
+            'predicate' => [
+                'name'                                  => 'predicate',
+                'table_name'                            => 'predicates',
+                'table_key'                             => 'PredicateKind',
+                'entity_key_field'                      => 'predicateKind',
+                'row_processor_function'                => 'processPredicateRow',
+                'sion_model_class'                      => Db\Model\PredicatesTable::class,
+//                 'get_object_function'                   => 'getRelationship',
+//                 'get_objects_function'                  => 'getRelationships',
+                'sion_controllers'                          => [],//BorrowersController::class],
+                'controller_services'                       => [
+                ],
+                //                 'format_view_helper'                    => 'formatEvent',
+                'required_columns_for_creation'         => [
+                    'predicateKind',
+                    'subjectEntityKind',
+                    'objectEntityKind',
+                    'text',
+                ],
+                'name_field'                            => 'text',
+                'name_field_is_translatable'           => true,
+//                 'country_field'                          => 'country',
+                'text_columns'                          => [],
+                'many_to_one_update_columns'            => [
+//                     'email'  => 'contactInfo',
+//                     'cell'   => 'contactInfo',
+                ],
+                'report_changes'                        => false,
+//                 'index_route'                        => 'files',
+//                 'index_template'                         => 'project/events/index',
+//                 'default_route_key'                     => 'file_id',
+//                 'show_action_template'                   => 'project/events/show',
+//                 'show_route'                             => 'files/files',
+//                 'show_route_key'                         => 'file_id',
+//                 'show_route_key_field'                   => 'fileId',
+//                 'edit_action_form'                       => 'SionModel\Form\EditFileForm',
+//                 'edit_action_template'                   => 'project/events/edit',
+//                 'edit_route'                             => 'events/event/edit',
+//                 'edit_route_key'                         => 'file_id',
+//                 'edit_route_key_field'                   => 'fileId',
+//                 'create_action_form'                     => 'SionModel\Form\UploadFileForm',
+//                 'create_action_valid_data_handler'       => 'createEvent',
+//                 'create_action_redirect_route'           => 'files/file',
+//                 'create_action_redirect_route_key'       => 'file_id',
+//                 'create_action_redirect_route_key_field'=> 'fileId',
+//                 'create_action_template'                 => 'project/events/create',
+//                 'database_bound_data_preprocessor'        => 'preprocessFile',
+//                 'database_bound_data_postprocessor'  => 'postprocessEvent',
+//                 'moderate_route'                         => 'events/event/moderate',
+//                 'moderate_route_entity_key'          => 'file_id',
+//                 'suggest_form'                           => 'Project\Form\SuggestEventForm',
+                'enable_delete_action'                  => false,
+//                 'delete_action_acl_resource'             => 'event_:id',
+//                 'delete_action_acl_permission'           => 'delete_event',
+//                 'delete_action_redirect_route'           => 'events',
+                'update_columns' => [
+                    'predicateKind' => 'PredicateKind',
+                    'subjectEntityKind' => 'SubjectEntityKind',
+                    'objectEntityKind' => 'ObjectEntityKind',
+                    'text' => 'PredicateText',
+                    'description' => 'DescriptionEn',
+                ],
+            ],
+            'relationship' => [
+                'name'                                  => 'relationship',
+                'table_name'                            => 'relationships',
+                'table_key'                             => 'RelationshipId',
+                'entity_key_field'                      => 'relationshipId',
+                'sion_model_class'                      => Db\Model\PredicatesTable::class,
+                'row_processor_function'                => 'processRelationshipRow',
+//                 'get_object_function'                   => 'getRelationship',
+//                 'get_objects_function'                  => 'getRelationships',
+                'sion_controllers'                          => [],//BorrowersController::class],
+                'controller_services'                       => [
+                ],
+//                 'format_view_helper'                    => 'formatEvent',
+                'required_columns_for_creation'         => [
+                    'subjectEntityId',
+                    'objectEntityId',
+                    'predicateKind'
+                ],
+                'name_field'                            => 'comment',
+                'name_field_is_translatable'           => false,
+//                 'country_field'                          => 'country',
+                'text_columns'                          => [],
+                'many_to_one_update_columns'            => [
+//                     'email'  => 'contactInfo',
+//                     'cell'   => 'contactInfo',
+                ],
+                'report_changes'                        => false,
+//                 'index_route'                        => 'files',
+//                 'index_template'                         => 'project/events/index',
+//                 'default_route_key'                     => 'file_id',
+//                 'show_action_template'                   => 'project/events/show',
+//                 'show_route'                             => 'files/files',
+//                 'show_route_key'                         => 'file_id',
+//                 'show_route_key_field'                   => 'fileId',
+//                 'edit_action_form'                       => 'SionModel\Form\EditFileForm',
+//                 'edit_action_template'                   => 'project/events/edit',
+//                 'edit_route'                             => 'events/event/edit',
+//                 'edit_route_key'                         => 'file_id',
+//                 'edit_route_key_field'                   => 'fileId',
+//                 'create_action_form'                     => 'SionModel\Form\UploadFileForm',
+//                 'create_action_valid_data_handler'       => 'createEvent',
+//                 'create_action_redirect_route'           => 'files/file',
+//                 'create_action_redirect_route_key'       => 'file_id',
+//                 'create_action_redirect_route_key_field'=> 'fileId',
+//                 'create_action_template'                 => 'project/events/create',
+//                 'database_bound_data_preprocessor'        => 'preprocessFile',
+//                 'database_bound_data_postprocessor'  => 'postprocessEvent',
+//                 'moderate_route'                         => 'events/event/moderate',
+//                 'moderate_route_entity_key'          => 'file_id',
+//                 'suggest_form'                           => 'Project\Form\SuggestEventForm',
+                'enable_delete_action'                  => true,
+//                 'delete_action_acl_resource'             => 'event_:id',
+//                 'delete_action_acl_permission'           => 'delete_event',
+//                 'delete_action_redirect_route'           => 'events',
+                'update_columns' => [
+                    'relationshipId' => 'RelationshipId',
+                    'subjectEntityId' => 'SubjectEntityId',
+                    'objectEntityId' => 'ObjectEntityId',
+                    'predicateKind' => 'PredicateKind',
+                    'priority' => 'Priority',
+                    'publicNotes' => 'PublicNotes',
+                    'publicNotesUpdatedOn' => 'PublicNotesUpdatedOn',
+                    'publicNotesUpdatedBy' => 'PublicNotesUpdatedBy',
+                    'adminNotes' => 'AdminNotes',
+                    'adminNotesUpdatedOn' => 'AdminNotesUpdatedOn',
+                    'adminNotesUpdatedBy' => 'AdminNotesUpdatedBy',
+                    'updatedOn' => 'UpdatedOn',
+                    'updatedBy' => 'UpdatedBy',
+                ],
+            ],
+        ],
+    ],
+];

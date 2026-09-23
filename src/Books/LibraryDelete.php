@@ -241,8 +241,8 @@ final class LibraryDelete
 
         //SionTable::reportChange() declares `@param string[][]`, which is not what any of
         //its callers pass — `deleteEntity()` hands it an int `id` too. The runtime shape is
-        //correct; the docblock in the submodule is not, and correcting it there is a
-        //separate change with its own review.
+        //correct; the docblock is not, and correcting it is a separate change with its
+        //own review.
         /** @phpstan-ignore argument.type */
         $this->table->reportChange($changes);
     }

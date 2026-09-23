@@ -45,10 +45,8 @@ phploy.log
 # diff, and running the export once produced a ~1000-line diff of pure build output
 # across four repositories.
 #
-# module/Schoenstatt has carried its own rule for this since before the pattern
-# below existed; the JTranslate, JUser and SionModel submodules carry theirs in
-# their own repositories, because a superproject .gitignore does not reach inside a
-# submodule.
+# `/module/*/language/` below covers every module. Several also carry a `/language/`
+# rule of their own, which is redundant but harmless.
 /language/
 /module/*/language/
 node_modules

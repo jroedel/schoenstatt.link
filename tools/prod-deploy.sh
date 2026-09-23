@@ -7,19 +7,12 @@
 # it is about to package is the tree you think it is. That is this script's whole job, and
 # it is worth a script rather than a shell alias because of one hazard in particular.
 #
-# ## The submodule hazard, which is why the checks exist at all
+# ## The hazard, which is why the checks exist at all
 #
-# **A release is `git ls-files --recurse-submodules` over the WORKING TREE.** Not over
-# HEAD. So the submodule code that ships is whatever is checked out inside module/*, and
-# `git checkout master` does NOT move a submodule's working tree — those stay wherever
-# they were left, which on this project is usually `modernization`, often several merges
-# ahead of what master pins.
-#
-# Deploying in that state ships the application from master and its shared libraries from
-# somewhere else. The failure is not subtle: on 2026-09-09 the same mismatch, in the
-# capsule, produced an empty 200 on every page — `git submodule status` showed `+` on two
-# modules and ci-local reported fatal-200 site-wide. In production it would be that, live,
-# on a tree no branch can reproduce.
+# **A release is `git ls-files` over the WORKING TREE.** Not over HEAD. What ships is
+# whatever is checked out, so a tree that is mid-edit, on the wrong branch, or carrying a
+# commit that exists nowhere else ships exactly that — to production, from a state no
+# branch can reproduce.
 #
 # ## The deploy checkout
 #
@@ -32,18 +25,15 @@
 #
 #     $DEPLOY_TREE   (default: ${XDG_CACHE_HOME:-~/.cache}/schoenstatt.link-deploy)
 #
-# hard-reset to origin/master with the pinned submodule commits checked out inside it, and
-# hands THAT to tools/deploy.sh. Your tree is only ever read.
+# hard-reset to origin/master, and hands THAT to tools/deploy.sh. Your tree is only ever
+# read.
 #
-# Four consequences worth knowing:
+# Three consequences worth knowing:
 #
 #  · Two of the old checks are gone because the state they refused is now impossible
 #    rather than merely detected: the tree cannot be dirty (it is reset every run), and
 #    master cannot be ahead of origin (it is not your master — it is origin/master, just
 #    fetched). A local-only commit can no longer reach production even by accident.
-#  · The submodules in the deploy checkout are DETACHED at what master pins. That is
-#    correct there and wrong in your tree, where CLAUDE.md's workflow needs them on
-#    `modernization`; nothing here changes that rule, and nothing here runs in your tree.
 #  · Everything from tools/deploy.sh onwards is master's copy, read from the deploy
 #    checkout. Only this file comes from your working tree, so a change to the deploy
 #    machinery is exercised by `make prod-deploy` only after it is merged.
@@ -57,7 +47,7 @@
 # reporting on the release. So verification stays where the capsule is, under one
 # condition:
 #
-#  · your tree clean, on the same commit, submodules matching → ci-local runs here, and
+#  · your tree clean and on the same commit → ci-local runs here, and
 #    tools/deploy.sh is told this revision is proven and does not repeat it;
 #  · anything else → nothing can verify this build. tools/deploy.sh is told that instead,
 #    counts it an unusual deploy, and asks before the swap.
@@ -106,7 +96,6 @@ set -uo pipefail
 DRY_RUN="${DRY_RUN:-0}"
 CI="${CI:-0}"
 CHECKS_ONLY="${CHECKS_ONLY:-0}"
-INTEGRATION_BRANCH="${INTEGRATION_BRANCH:-modernization}"
 
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; BOLD=$'\033[1m'; OFF=$'\033[0m'
 ok()   { printf '  %sok%s    %s\n' "$GREEN" "$OFF" "$1"; }
@@ -158,71 +147,23 @@ git -C "$DEPLOY_TREE" reset --hard --quiet origin/master \
     || die "could not reset the deploy checkout to origin/master"
 ok "deploy checkout is origin/master at $(git -C "$DEPLOY_TREE" log --oneline -1)"
 
-# --- 3. THE ONE THAT MATTERS: submodule checkouts must match the pinned commits ----
-# In your tree this is a refusal, because the correct repair depends on which side is
-# right and a script must not guess. Here it is simply done: the checkout exists to hold
-# what master pins and nothing else, so --force is the whole answer. The status check
-# after it is a post-condition, not a question.
-git -C "$DEPLOY_TREE" submodule sync --quiet --recursive \
-    || die "could not sync the submodule URLs in the deploy checkout"
-git -C "$DEPLOY_TREE" submodule update --init --recursive --force --quiet \
-    || die "could not check out the pinned submodule commits in the deploy checkout.
-The first run clones them from GitHub, so this needs network and, over SSH, a key that has
-been unlocked in this desktop session."
-
-MISMATCH="$(git -C "$DEPLOY_TREE" submodule status --recursive | grep -E '^[+-]' || true)"
-if [ -n "$MISMATCH" ]; then
-    printf '\n%s\n' "$MISMATCH"
-    die "the deploy checkout's submodules still do not match what master pins, after a
---force update. That should not be possible; do not deploy past it.
-
-A release is 'git ls-files --recurse-submodules' over the WORKING TREE, so this would ship
-the application from master and its libraries from wherever they happen to sit. That is an
-empty 200 on every page, live, on a tree no branch can reproduce."
+# A deploy checkout made while module/{SionModel,JUser,JTranslate} were submodules keeps
+# their gitdir pointer files. The tree that replaced them tracks real files at those paths,
+# so the pointers survive a hard reset as UNTRACKED content — and tools/deploy.sh refuses
+# to package a tree with anything untracked in it. Removing them is idempotent and costs
+# nothing once they are gone; delete this block when no checkout predates 2026-09-23.
+#
+# Guarded on .gitmodules so it is a no-op against a revision that still HAS submodules:
+# this file is read from your working tree, so it runs against whatever master is at the
+# time, and deleting a live submodule's gitdir pointer would be vandalism, not cleanup.
+if [ ! -f "$DEPLOY_TREE/.gitmodules" ]; then
+    for LEGACY_SUBMODULE in SionModel JUser JTranslate; do
+        rm -f "$DEPLOY_TREE/module/$LEGACY_SUBMODULE/.git"
+    done
+    rm -rf "$DEPLOY_TREE/.git/modules"
 fi
-ok "submodule checkouts match the pinned commits"
 
-# --- 4. the pinned commits must be MERGED, not merely pushed -----------------------
-# The weaker question — "is this commit on some remote branch?" — passes for a commit
-# sitting on a pushed but unmerged feature branch. That would deploy code whose review is
-# still open, from a branch that may yet be rebased or abandoned.
-#
-# The question worth asking is whether the pointer names something on the integration
-# branch, which is the same thing as "has this submodule's PR been pulled". Asking it
-# here matters even though tools/bump-submodules.sh already refuses to pin anything it
-# has not proved is an ancestor of origin/$INTEGRATION_BRANCH: that makes the guarantee
-# true by convention, held in one script, and a deploy should not depend on how a pointer
-# came to be. Two independent checks, one at the pin and one at the deploy.
-#
-# A deliberate exception has a door: ./tools/deploy.sh --ref REF says out loud that it is
-# deploying something other than master.
-while read -r _KEY SUB; do
-    [ -d "$DEPLOY_TREE/$SUB" ] || continue
-    PINNED="$(git -C "$DEPLOY_TREE" rev-parse "HEAD:$SUB" 2>/dev/null)" || continue
-    git -C "$DEPLOY_TREE/$SUB" fetch -q origin 2>/dev/null \
-        || die "$SUB: cannot fetch origin, so whether the pinned commit is merged cannot be
-established. Refusing rather than assuming."
-
-    if ! git -C "$DEPLOY_TREE/$SUB" rev-parse --verify -q "refs/remotes/origin/$INTEGRATION_BRANCH" >/dev/null; then
-        die "$SUB: no origin/$INTEGRATION_BRANCH to check the pinned commit against."
-    fi
-
-    if ! git -C "$DEPLOY_TREE/$SUB" merge-base --is-ancestor "$PINNED" "origin/$INTEGRATION_BRANCH" 2>/dev/null; then
-        WHERE="$(git -C "$DEPLOY_TREE/$SUB" branch -r --contains "$PINNED" 2>/dev/null | tr -d ' ' | paste -sd, - )"
-        die "$SUB: master pins $PINNED, which is NOT on origin/$INTEGRATION_BRANCH.
-
-${WHERE:+It is on: $WHERE
-}
-That is a commit whose PR has not been pulled — unreviewed, and on a branch that may
-still be rebased or abandoned. Merge that submodule's PR, then re-pin with
-'make dev-bump-submodules'.
-
-To deploy something other than master deliberately, ./tools/deploy.sh --ref REF says so."
-    fi
-done < <(git config --file "$DEPLOY_TREE/.gitmodules" --get-regexp '^submodule\..*\.path$')
-ok "every pinned submodule commit is merged into origin/$INTEGRATION_BRANCH"
-
-# --- 5. the two things that must not exist twice ----------------------------------
+# --- 3. the two things that must not exist twice ----------------------------------
 # Both are links, so both are untracked, and deploy.sh refuses to package a tree with
 # anything untracked in it. They are this script's doing rather than the repository's, so
 # they are excluded per-checkout in .git/info/exclude — which no reset touches and which
@@ -253,7 +194,7 @@ ok "linked .deploy.local and data/deploy/ from this tree"
 # the check that finds out — measured: `.gitignore`'s `/data/deploy/` has a trailing
 # slash, which matches a directory and not the symlink above, so without the exclude
 # written just now the deploy aborted three steps into tools/deploy.sh.
-RESIDUE="$(git -C "$DEPLOY_TREE" status --porcelain --ignore-submodules=dirty)"
+RESIDUE="$(git -C "$DEPLOY_TREE" status --porcelain)"
 if [ -n "$RESIDUE" ]; then
     printf '\n%s\n' "$RESIDUE"
     die "the deploy checkout is not clean after being reset to origin/master.
@@ -263,7 +204,7 @@ deploy halfway. Anything listed above is either an ignore rule that does not cov
 this script puts there, or a file something else wrote into $DEPLOY_TREE."
 fi
 
-# --- 6. open pull requests that are not in this tree -------------------------------
+# --- 4. open pull requests that are not in this tree -------------------------------
 # **A warning, never a refusal.** Deploying while PRs are open is normal and most of them
 # are nobody's intention to ship. This exists because of the one case that is: twice now a
 # deploy has shipped the previous release because the PR the operator had in mind had not
@@ -303,21 +244,18 @@ if command -v gh >/dev/null 2>&1; then
     fi
 fi
 
-# --- 7. can this build be verified at all? ----------------------------------------
+# --- 5. can this build be verified at all? ----------------------------------------
 # ci-local needs the capsule, and docker-compose.yml bind-mounts THIS tree into it. So the
 # only revision the capsule can speak for is the one checked out here, undisturbed. Asking
 # it about anything else would test this tree and report on the release.
 HERE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 HERE_SHA="$(git rev-parse HEAD)"
 HERE_DIRTY="$(git status --porcelain --untracked-files=no)"
-HERE_UNINIT="$(git submodule status --recursive | grep -E '^-' || true)"
 
 UNVERIFIABLE=""
 if [ "$HERE_SHA" != "$DEPLOY_SHA" ]; then
     UNVERIFIABLE="the capsule serves this working tree, which is on $HERE_BRANCH at $(git rev-parse --short HEAD), not the ${DEPLOY_SHA:0:7} being deployed"
-elif [ -n "$HERE_DIRTY" ] || [ -n "$HERE_UNINIT" ]; then
-    # A ' M module/X' counts: the submodule working tree is what a release is made of, so
-    # a moved pointer there is a different application, not a cosmetic difference.
+elif [ -n "$HERE_DIRTY" ]; then
     UNVERIFIABLE="the capsule serves this working tree, which has uncommitted changes"
 fi
 
@@ -341,9 +279,8 @@ elif [ -n "$UNVERIFIABLE" ]; then
 $UNVERIFIABLE.
 
 Either get this tree onto the revision being deployed —
-    git checkout master && git pull --ff-only && git submodule update --init --recursive
-(the last one detaches, so re-checkout 'modernization' in each submodule afterwards; see
-CLAUDE.md) — or drop CI=1 and decide at tools/deploy.sh's prompt."
+    git checkout master && git pull --ff-only
+— or drop CI=1 and decide at tools/deploy.sh's prompt."
     fi
     warn "nothing can verify this build: $UNVERIFIABLE"
     warn "tools/deploy.sh will count it an unusual deploy and ask before the swap"
