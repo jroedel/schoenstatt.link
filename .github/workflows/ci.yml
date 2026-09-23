@@ -250,6 +250,14 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/base-schema.sql
           mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/ci-seed.sql
+      - name: Create the writable directories
+        # The same three config.sh creates, and for the same reason: they are gitignored,
+        # so a fresh checkout has none of them. Without data/config the merged-config write
+        # in App\Modules\ModuleConfig fails its rename() and emits a PHP warning per test
+        # that builds a container -- 21 of them -- and phpunit.xml.dist sets
+        # failOnWarning="true", so the suite reports every assertion passing and still exits
+        # non-zero. Nothing in the output says "directory".
+        run: mkdir -p data/config data/logs data/cache/twig
       - name: Point the application at it
         # Written rather than committed, because config/autoload/local.php is per-machine
         # by design and 27 of these classes skip on `is_readable()` of exactly this path.
