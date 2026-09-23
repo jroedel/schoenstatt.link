@@ -1,9 +1,0 @@
-[submodule "module/SionModel"]
-	path = module/SionModel
-	url = git@github.com:jroedel/laminas-sion-model.git
-[submodule "module/JUser"]
-	path = module/JUser
-	url = git@github.com:jroedel/laminas-juser.git
-[submodule "module/JTranslate"]
-	path = module/JTranslate
-	url = git@github.com:jroedel/laminas-jtranslate.git
