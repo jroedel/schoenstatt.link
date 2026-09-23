@@ -1,7 +1,6 @@
 <?php
 
 use App\Kernel;
-use Laminas\Stdlib\ArrayUtils;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -41,11 +40,14 @@ if (! class_exists(Kernel::class)) {
 // configured pipeline — including notification — once the container exists.
 SionModel\Error\FatalErrorHandler::registerEarly(dirname(__DIR__));
 
-// Retrieve configuration
+// Retrieve configuration.
+//
+// `config/development.config.php` was merged over this until 2026-09-22. It was
+// laminas-development-mode's file: that package writes it from a `.dist`, it is not
+// installed, there is no `.dist` in the tree, the path is gitignored, and no commit has
+// ever carried one. So the branch could not fire, and a release is exactly
+// `git ls-files --recurse-submodules`, which can never contain it.
 $appConfig = require __DIR__ . '/../config/application.config.php';
-if (file_exists(__DIR__ . '/../config/development.config.php')) {
-    $appConfig = ArrayUtils::merge($appConfig, require __DIR__ . '/../config/development.config.php');
-}
 
 // Report all errors except E_DEPRECATED
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);

@@ -7,8 +7,8 @@ history. Working conventions (capsule, test suites, coding standard, git) are in
 | document | what it covers |
 | --- | --- |
 | [agent-guide.md](agent-guide.md) | who owns which behaviour, what to read beside it, and the narrowest check that proves a change of that kind; how to choose an effective check |
-| [laminas-exit.md](laminas-exit.md) | **the plan**: removing every `laminas/*` package, in order, with the dependency picture measured; step 0 (laminas-mvc) in detail; the rules every step follows; how a Symfony route, its authorization and its Twig template are built |
-| [laminas-exit-iterations.md](laminas-exit-iterations.md) | the iterations that finish the exit: what each removes, why the order is what it is, and the recording each one has to make before it deletes the tests that prove it. Iteration A (the form stack, seven packages) is done; B and C are left |
+| [laminas-exit.md](laminas-exit.md) | removing every `laminas/*` package — **done 2026-09-22, 37 to 0**: what replaced each, the dependency picture as it was measured, step 0 (laminas-mvc) in detail, the rules every step followed, the non-laminas candidates still open, and how a Symfony route, its authorization and its Twig template are built |
+| [laminas-exit-iterations.md](laminas-exit-iterations.md) | the three iterations that finished the exit: what each removed, why the order was what it was, and the recording each one made before deleting the tests that proved it. All three are done — A the form stack, B the module system and container, C the database layer |
 | [BACKLOG.md](BACKLOG.md) | open work, open bugs, open product decisions |
 | [DEPLOY.md](DEPLOY.md) | how a deploy runs: atomic releases, the OPcache reset and revision gate, the migration ledger, rollback, smoke checks, the per-account `php.ini` baseline |
 | [caching.md](caching.md) | APCu and OPcache: the persistent cache and its flush, the dependency map and its invariants, `/en/sm/cache-status`, the oversized-item hazard |
