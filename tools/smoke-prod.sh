@@ -560,6 +560,45 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
     fi
 fi
 
+# --- The maintenance endpoints refuse a stranger --------------------------
+#
+# The half a correct key can never prove. Everything above calls /sm/cache-status
+# WITH the key, which shows the endpoint works; nothing has ever checked, against
+# production, that it turns away someone who does not have one. That check costs
+# two requests and is the one worth having once the repository is public and the
+# route names, the header and the purpose are all published (#261).
+#
+# Safe to run against production precisely because it is the negative: a wrong key
+# on /sm/clear-persistent-cache is a 401, not a flush. Running the POSITIVE case
+# here would empty a 256 MB APCu segment on every deploy.
+#
+# Needs no configuration — no key is the point — so it runs whether or not
+# SMOKE_PROD_CACHE_KEY is set.
+WRONG_KEY="smoke-prod-not-a-key-$(date +%s)-$$"
+for path in /en/sm/cache-status /en/sm/clear-persistent-cache; do
+    EXTRA_HEADERS=(-H "X-Api-Key: $WRONG_KEY")
+    fetch "$BASE$path"
+    EXTRA_HEADERS=()
+    WRONG_STATUS=$STATUS
+    WRONG_BODY=$(cat "$BODY")
+
+    fetch "$BASE$path"
+    KEYLESS_STATUS=$STATUS
+    KEYLESS_BODY=$(cat "$BODY")
+
+    if [ "$WRONG_STATUS" != "401" ] || [ "$KEYLESS_STATUS" != "401" ]; then
+        # A 200 here is the endpoint standing open. A 302 means the guard answered
+        # with JUser's HTML sign-in page, which a deploy hook reads as success.
+        fail "symfony: $path must answer 401 to a stranger (wrong key $WRONG_STATUS, no key $KEYLESS_STATUS)"
+    elif [ "$WRONG_BODY" != "$KEYLESS_BODY" ]; then
+        # App\Http\MaintenanceKey says which channel to use and never whether a key
+        # was presented; a difference here is that property having been lost.
+        fail "symfony: $path tells a wrong key apart from no key at all"
+    else
+        pass "symfony: $path refuses a stranger (401, and a wrong key looks like no key)"
+    fi
+done
+
 # --- The Symfony front controller ----------------------------------------
 #
 # The only front controller since the SYMFONY_KERNEL canary was retired
