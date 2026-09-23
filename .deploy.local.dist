@@ -27,11 +27,45 @@ DEPLOY_BASE_URL=https://schoenstatt.link
 
 # --- keys --------------------------------------------------------------------
 
-# Any entry from the server's sion_model.api_keys. Used for the cache-status
-# smoke checks. It travels in an X-Api-Key header, never a query string — a
-# query string is written to the server's access log on every deploy and kept
-# in shell history. (It also fed the post-deploy /associations/do-work call
-# until that hook was deleted on 2026-08-17; see docs/DEPLOY.md.)
+# The maintenance key, and THIS FILE IS ITS SOURCE. It lives in three places and
+# the other two are copies of what is set here:
+#
+#   1. here                     — what tools/deploy.sh and tools/smoke-prod.sh send
+#   2. the server               — `sion_model.api_keys` in
+#                                 $DEPLOY_APP_PATH/shared/config-autoload/local.php,
+#                                 which is what the application actually checks
+#   3. the GitHub `production`  — the DEPLOY_API_KEY secret that deploy.yml rebuilds
+#      environment                this file from on a runner
+#
+# (3) is the one that gets forgotten, and forgetting it fails silently: nothing
+# breaks today, and then the next deploy from Actions sends the old key, its
+# post-deploy cache flush answers 401, and the release serves stale code out of a
+# warm OPcache.
+#
+# TO ROTATE — generate, paste, distribute:
+#
+#     openssl rand -base64 32 | tr -d '=+/'      # generate; paste the result below
+#     make prod-rotate-sion-model-api-keys       # copy it to (2) and (3)
+#
+# The distribute step widens before it narrows: it adds the new key beside the old
+# one on the server, clears the merged config cache, checks the live site accepts
+# it, updates the GitHub secret, and only then retires the old key. Anything that
+# goes wrong before the last step leaves the old key working, and re-running
+# resumes. `DRY_RUN=1` reports without changing anything.
+#
+# The cache step is not optional and is easy to miss by hand: production boots with
+# config caching on, so `data/config/module-config-cache.*.php` in each release
+# holds the MERGED configuration. Edit local.php without clearing it and the new
+# key is on disk, correct, and still answered with 401.
+#
+# `+`, `/` and `=` are stripped because the value travels through shell
+# assignments, an HTTP header and a PHP string literal; base64 minus those three
+# is still 32 bytes of urandom and needs no quoting anywhere.
+#
+# It travels in an X-Api-Key header, never a query string — a query string is
+# written to the server's access log on every deploy and kept in shell history.
+# (It also fed the post-deploy /associations/do-work call until that hook was
+# deleted on 2026-08-17; see docs/DEPLOY.md.)
 DEPLOY_API_KEY=xxxxTODOxxxx
 
 # --- behaviour ---------------------------------------------------------------

@@ -43,10 +43,12 @@ dev-hooks: ## Enable the repository git hooks in this clone
 prod-deploy: ## Deploy origin/master from a separate checkout
 	@./tools/prod-deploy.sh
 
-## The three places the maintenance key lives are the server's local.php, this
-## machine's .deploy.local, and the GitHub production environment. Rotating is a
-## widen-verify-narrow, so the old key keeps working until the new one is proved.
-prod-rotate-sion-model-api-keys: ## Rotate sion_model.api_keys in all three places
+## .deploy.local is the SOURCE of the maintenance key; the server's local.php and
+## the GitHub production environment are copies. Generate a new key with
+##   openssl rand -base64 32 | tr -d '=+/'
+## paste it into .deploy.local, then run this to copy it to the other two. It
+## widens before it narrows, so the old key works until the new one is proved.
+prod-rotate-sion-model-api-keys: ## Copy .deploy.local's key to the server and to GitHub
 	@./tools/rotate-api-key.sh
 
 ## Push .deploy.local to the GitHub production environment. Idempotent, and worth

@@ -88,16 +88,25 @@ final class ApiKeyEditTest extends TestCase
         return $path;
     }
 
-    /** @return array{0: int, 1: string} status and combined output */
+    /**
+     * @return array{0: int, 1: string, 2: string} status, stdout, stderr
+     *
+     * Separated, not combined, because the difference is load-bearing: the shell wrapper
+     * captures stdout with `$(...)` to get the backup path, while diagnostics — including
+     * the backup announcement made before the write — go to stderr so they reach the
+     * operator without being swallowed into a variable.
+     */
     private function edit(string ...$args): array
     {
         $cmd = 'php ' . escapeshellarg(dirname(__DIR__, 2) . '/tools/api-key-edit.php');
         foreach ($args as $a) {
             $cmd .= ' ' . escapeshellarg($a);
         }
-        exec($cmd . ' 2>&1', $out, $status);
 
-        return [$status, implode("\n", $out)];
+        $errFile = $this->dir . '/stderr';
+        exec($cmd . ' 2>' . escapeshellarg($errFile), $out, $status);
+
+        return [$status, implode("\n", $out), (string) @file_get_contents($errFile)];
     }
 
     public function testItReadsTheMaintenanceKeyAndNotTheOtherOne(): void
@@ -153,10 +162,10 @@ final class ApiKeyEditTest extends TestCase
     {
         $file = $this->fixture('same-key-for-both', 'same-key-for-both');
 
-        [$status, $out] = $this->edit('add', $file, 'new-key-ccc');
+        [$status, , $err] = $this->edit('add', $file, 'new-key-ccc');
 
         self::assertSame(1, $status, 'an ambiguous key must stop the edit');
-        self::assertStringContainsString('both', $out);
+        self::assertStringContainsString('both', $err);
         self::assertStringNotContainsString('new-key-ccc', file_get_contents($file) ?: '');
     }
 
@@ -164,10 +173,10 @@ final class ApiKeyEditTest extends TestCase
     {
         $file = $this->fixture('old-key-aaa', 'notices-key-bbb');
 
-        [$status, $out] = $this->edit('keep-only', $file, 'a-key-that-was-never-added');
+        [$status, , $err] = $this->edit('keep-only', $file, 'a-key-that-was-never-added');
 
         self::assertSame(1, $status);
-        self::assertStringContainsString('add', $out, 'it should point at the safe order');
+        self::assertStringContainsString('add', $err, 'it should point at the safe order');
     }
 
     public function testItRefusesAnEmptyMaintenanceList(): void
@@ -175,10 +184,10 @@ final class ApiKeyEditTest extends TestCase
         $path = $this->dir . '/local.php';
         file_put_contents($path, "<?php\n\nreturn ['sion_model' => ['api_keys' => []]];\n");
 
-        [$status, $out] = $this->edit('add', $path, 'new-key-ccc');
+        [$status, , $err] = $this->edit('add', $path, 'new-key-ccc');
 
         self::assertSame(1, $status);
-        self::assertStringContainsString('nothing to rotate', $out);
+        self::assertStringContainsString('nothing to rotate', $err);
     }
 
     public function testItHandlesDoubleQuotedKeys(): void
@@ -226,6 +235,48 @@ final class ApiKeyEditTest extends TestCase
     }
 
     /**
+     * A server caught mid-rotation holds two keys, and `add` inserts beside the first
+     * rather than at the end. The post-write check compared against "old list, then new",
+     * which does not match that order — so a perfectly good edit aborted, and the operator
+     * was told to restore a file that was correct.
+     */
+    public function testAddWorksWhenTheServerAlreadyHoldsTwoKeys(): void
+    {
+        $file = $this->fixture('first-key-aaa', 'notices-key-bbb');
+
+        [$status] = $this->edit('add', $file, 'second-key-ccc');
+        self::assertSame(0, $status);
+
+        [$status, $out, $err] = $this->edit('add', $file, 'third-key-ddd');
+        self::assertSame(0, $status, $err);
+        self::assertNotSame('', trim($out), 'a successful edit prints its backup path');
+
+        [, $read] = $this->edit('read', $file);
+        self::assertSame(
+            "first-key-aaa\nthird-key-ddd\nsecond-key-ccc",
+            trim($read),
+            'the new key goes beside the first, and the check must expect that order'
+        );
+    }
+
+    /**
+     * `keep-only` has to cope with the same shape, since that is what it is for.
+     */
+    public function testKeepOnlyNarrowsFromThreeKeys(): void
+    {
+        $file = $this->fixture('first-key-aaa', 'notices-key-bbb');
+        $this->edit('add', $file, 'second-key-ccc');
+        $this->edit('add', $file, 'third-key-ddd');
+
+        [$status, , $err] = $this->edit('keep-only', $file, 'third-key-ddd');
+        self::assertSame(0, $status, $err);
+
+        [, $read] = $this->edit('read', $file);
+        self::assertSame('third-key-ddd', trim($read));
+        self::assertStringContainsString('notices-key-bbb', (string) file_get_contents($file));
+    }
+
+    /**
      * A key that appears twice cannot be edited by replacing its literal, and guessing
      * which occurrence was meant is exactly the class of mistake this script exists to
      * avoid.
@@ -242,9 +293,9 @@ final class ApiKeyEditTest extends TestCase
         ];
         PHP);
 
-        [$status, $out] = $this->edit('add', $path, 'new-key-ccc');
+        [$status, , $err] = $this->edit('add', $path, 'new-key-ccc');
 
         self::assertSame(1, $status);
-        self::assertStringContainsString('expected exactly 1', $out);
+        self::assertStringContainsString('expected exactly 1', $err);
     }
 }
