@@ -1,6 +1,8 @@
 <?php
 namespace Books\Form;
 
+use Books\Validator\UniqueBarcodeInLibrary;
+use SionModel\Db\Connection;
 use SionModel\Form\ChoiceDomain;
 use SionModel\Form\SionForm;
 use SionModel\Form\InputFilterProviderInterface;
@@ -28,9 +30,30 @@ class BookForm extends SionForm implements InputFilterProviderInterface
      */
     protected $libraryOptions;
 
-    public function __construct()
+    /**
+     * The book being edited, so the uniqueness rule does not find the row itself.
+     *
+     * Null on a create, which is correct rather than merely tolerated: there is no row yet,
+     * so every existing barcode in the library is a genuine collision.
+     */
+    protected ?int $editedBookId = null;
+
+    /**
+     * The connection `UniqueBarcodeInLibrary` needs, required and passed in.
+     *
+     * The same argument JUser's `EditUserForm` records for its two `NoRecordExists`
+     * validators, and for the same reason: a uniqueness rule that cannot reach the database
+     * does not announce itself. It drops out, the submission validates clean, and the
+     * failure surfaces as a constraint violation from three layers down — which is exactly
+     * what #286 was.
+     */
+    public function __construct(Connection $adapter)
     {
         parent::__construct('book');
+
+        //`SionForm` already owns an `$adapter` property and a setter; a promoted property
+        //here would redeclare it and fatal at class load.
+        $this->setAdapter($adapter);
 
         $this->add([
             'name' => 'libraryId',
@@ -418,6 +441,19 @@ class BookForm extends SionForm implements InputFilterProviderInterface
         return $this;
     }
 
+    /**
+     * Which book this form is editing, or null when it is creating one.
+     *
+     * `App\Books\LibraryScopedForms::form()` sets it from the row it already loaded; the
+     * create entry point, `formForLibrary()`, has no row and leaves it null.
+     */
+    public function setEditedBookId(?int $bookId): static
+    {
+        $this->editedBookId = $bookId;
+
+        return $this;
+    }
+
     public function setData(iterable $data): static
     {
         if (isset($this->libraryOptions) && isset($this->libraryOptions->libraryId)) {
@@ -463,6 +499,34 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             && true === $this->libraryOptions->requireCallNumbers;
     }
 
+    /**
+     * The barcode uniqueness rule, or nothing when there is no library to be unique within.
+     *
+     * The same shape `requiresCallNumber()` takes, and for the same reason: a form built
+     * without library options — which is only ever a test asking what the bare
+     * specification says — has no scope, and a uniqueness check with no scope would compare
+     * this barcode against every library's. That is not a weaker rule, it is a wrong one.
+     * Every path a librarian can reach has a library: `LibraryScopedForms` refuses to build
+     * this form without one.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function barcodeUniquenessRule(): array
+    {
+        if (! isset($this->libraryOptions) || ! isset($this->libraryOptions->libraryId)) {
+            return [];
+        }
+
+        return [[
+            'name'    => UniqueBarcodeInLibrary::class,
+            'options' => [
+                'adapter'       => $this->adapter,
+                'libraryId'     => $this->libraryOptions->libraryId,
+                'excludeBookId' => $this->editedBookId,
+            ],
+        ]];
+    }
+
     public function getInputFilterSpecification()
     {
         return [
@@ -484,7 +548,10 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
-                'validators' => InputTypeRules::number($this->get('withinLibraryId')),
+                'validators' => [
+                    ...InputTypeRules::number($this->get('withinLibraryId')),
+                    ...$this->barcodeUniquenessRule(),
+                ],
             ],
             'title' => [
                 'required' => true,
