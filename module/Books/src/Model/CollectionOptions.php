@@ -1,9 +1,7 @@
 <?php
 namespace Books\Model;
 
-use Laminas\Stdlib\ArraySerializableInterface;
-
-class CollectionOptions implements ArraySerializableInterface
+class CollectionOptions
 {
     use SortTextAwarenessTrait;
 
