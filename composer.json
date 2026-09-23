@@ -24,7 +24,6 @@
         "ext-intl": "*",
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
-        "laminas/laminas-stdlib": "^3.21",
         "symfony/console": "^7.3",
         "monolog/monolog": "^3.10",
         "psr/simple-cache": "^3.0",

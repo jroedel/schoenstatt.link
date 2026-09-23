@@ -12,7 +12,7 @@ Iteration C is what is left:
 |---|---|---|---|
 | **A** ✅ | form, inputfilter, filter, validator, hydrator, escaper, uri | 9 | the form model, and our own validator and filter classes |
 | **B** ✅ | modulemanager, config, loader · session, eventmanager · servicemanager · translator | 2 | the module system, the session, the container and the translator contract |
-| **C** | db, stdlib | 0 | the database layer |
+| **C** ✅ | db, stdlib | 0 | the database layer |
 
 **Iteration B shipped in four parts, not one (2026-09-21), and took a fifth package the
 table had put in C.** The grouping here was wrong four times in the same direction. The module system turned out to be separable
@@ -178,17 +178,30 @@ laminas-eventmanager, laminas-servicemanager — all on 2026-09-21, in four depl
    instead would have read better by domain and cost SionModel a hard dependency on the
    translation package.
 
-## C — the database layer (2 → 0)
+## C — the database layer (2 → 0) ✅
 
-**Removes:** laminas-db ✅ (2026-09-22), laminas-stdlib.
+**Removed 2026-09-22**, in two releases: laminas-db, then laminas-stdlib.
 
 1. **`SionModel\Db\Connection`, a thin PDO wrapper of ours** — not Doctrine DBAL; see
    laminas-exit.md §6. It landed in the submodule rather than in `App\` because
    `SionTable` and the four modules' tables are all SionModel or module code, and a host
    namespace beneath them would have been a dependency in the wrong direction.
-2. **`laminas-stdlib`** is nine references across nine files — `ArraySerializableInterface`,
-   `StringUtils`, `PriorityList`, `InitializableInterface` and `ArrayUtils` — and falls out
-   once its parents have gone.
+2. **`laminas-stdlib` did not fall out behind its parents** — it was a direct line in the
+   root `composer.json` *and* in SionModel's, so it had to be removed by hand. The survey
+   said nine references across nine files; four were docblock prose and one was already
+   dead. What was left: `ArrayUtils::merge()` twice, `StringUtils` once,
+   `ArraySerializableInterface` twice.
+   - `SionModel\Data\ArrayMerge` is the merge rule, which `App\Modules\ModuleConfig` had
+     been holding a copy of since 2026-09-21. It moved into SionModel because
+     `SionModel\Service\ProblemService` needs the same rule and SionModel is the package
+     both sides can see.
+   - `SionTable::strPad()` was a copy of laminas' `AbstractStringWrapper::strPad()` whose
+     fast path, `StringUtils::isSingleByteEncoding('UTF8')`, is always false — and the body
+     under it uses `strlen`/`substr`, so it is `str_pad()` with extra steps. 3,276
+     differential cases agreed; the only divergence is an empty pad string, where `str_pad`
+     raises `ValueError` and the copy silently returned its input.
+   - `ArraySerializableInterface` on `Books\Model\{Library,Collection}Options` was
+     type-hinted by nothing, so only the `implements` went.
 
 **This iteration has the best verification of the three, because the SQL is observable.**
 Capture MariaDB's general log across a full smoke run before and after and diff the

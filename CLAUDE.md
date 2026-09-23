@@ -7,10 +7,13 @@ associations, people, a literature catalogue, lending libraries, a translation G
 v3 API). Live production site, dormant 2020–2026, being brought to the state of the art.
 
 **Direction (decided 2026-09-09): remove every `laminas/*` package, no exceptions, and
-minimise dependencies everywhere.** The plan, its rules and the dependency inventory are
-[docs/laminas-exit.md](docs/laminas-exit.md). Prefer eliminating a dependency over
-rescuing it; before adding one, ask whether twenty lines of our own code would do. Propose
-a migration before a patch, but propose it first.
+minimise dependencies everywhere.** The laminas half is **done — 37 packages to 0 on
+2026-09-22**; what replaced each, and the rules the three iterations followed, are
+[docs/laminas-exit.md](docs/laminas-exit.md), and §8 there inventories the non-laminas
+dependencies that are still candidates. Nothing brings a `laminas/*` package back. The
+standing half: prefer eliminating a dependency over rescuing it; before adding one, ask
+whether twenty lines of our own code would do. Propose a migration before a patch, but
+propose it first.
 
 **Direction (decided 2026-09-11): a fully automated CI/CD pipeline.** The blocker is the
 gate, not the automation: GitHub Actions has neither a database nor the minutes, so

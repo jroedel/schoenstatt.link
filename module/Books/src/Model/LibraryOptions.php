@@ -1,9 +1,7 @@
 <?php
 namespace Books\Model;
 
-use Laminas\Stdlib\ArraySerializableInterface;
-
-class LibraryOptions implements ArraySerializableInterface
+class LibraryOptions
 {
     use SortTextAwarenessTrait;
 
@@ -198,16 +196,6 @@ class LibraryOptions implements ArraySerializableInterface
             ? $array['checkoutPersonListKind'] : self::DEFAULT_CHECKOUT_PERSON_LIST_KIND;
         $this->isActive = isset($array['isActive']) ? $array['isActive'] : true;
         $this->nextWithinLibraryId = isset($array['nextWithinLibraryId']) ? $array['nextWithinLibraryId'] : null;
-    }
-
-    /**
-     * Return an array representation of the object
-     *
-     * @return array
-     */
-    public function getArrayCopy()
-    {
-        //@todo getArrayCopy()
     }
 
     /**

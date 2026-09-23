@@ -2430,7 +2430,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`, `RoleId`";
                 $entities[$assignmentId]['personSort'] = $persons[$assignment['personId']]['sort'];
                 $entities[$assignmentId]['association'] = $associations[$assignment['associationId']];
                 $entities[$assignmentId]['associationSort'] =
-                    $this->strPad($associations[$assignment['associationId']]['sort'], 4, '0', STR_PAD_LEFT) .
+                    str_pad((string) $associations[$assignment['associationId']]['sort'], 4, '0', STR_PAD_LEFT) .
                     $associations[$assignment['associationId']]['nameByLocale'][$locale];
             }
         }
