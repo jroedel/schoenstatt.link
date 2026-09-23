@@ -8,7 +8,7 @@
 # See docs/DEPLOY.md.
 
 .DEFAULT_GOAL := help
-.PHONY: help dev-bump-submodules prod-deploy ci
+.PHONY: help prod-deploy ci
 
 help: ## Show this help
 	@printf '\033[1mTargets\033[0m\n'
@@ -35,16 +35,10 @@ dev-hooks: ## Enable the repository git hooks in this clone
 	@printf 'core.hooksPath = .githooks — pre-push now runs `ci-local.sh qa`.\n'
 	@printf 'Undo with: git config --unset core.hooksPath\n'
 
-## After the submodule PRs merge: verify the merges by ancestry, fast-forward each
-## submodule, pin the pointers to the merged commits and push to the superproject PR.
-## Refuses rather than guesses — see the script header for the three failures it prevents.
-dev-bump-submodules: ## Pin submodules to their merged commits and push
-	@./tools/bump-submodules.sh
-
 ## Check, then deploy — from a checkout of its own, NOT from this working tree. A release
 ## is built from a working tree, so a deploy used to take yours over (checkout master,
 ## merge --ff-only, and a refusal if you had uncommitted work). It now maintains
-## a checkout at origin/master, with the pinned submodule commits inside it, and ships
-## that, leaving you free to carry on here. See the script header.
+## a checkout at origin/master and ships that, leaving you free to carry on here.
+## See the script header.
 prod-deploy: ## Deploy origin/master from a separate checkout
 	@./tools/prod-deploy.sh

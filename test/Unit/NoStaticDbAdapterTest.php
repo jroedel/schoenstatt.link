@@ -83,9 +83,8 @@ class NoStaticDbAdapterTest extends TestCase
      * First-party PHP, which is what this project can hold to a rule.
      *
      * `vendor/` is excluded because laminas-db defines the class and laminas's own
-     * TableGateway feature set uses it; that is not ours to change. The three
-     * submodules are included: they are first-party libraries vendored as git
-     * submodules, and JUser and JTranslate are where the reads lived.
+     * TableGateway feature set uses it; that is not ours to change. The three shared
+     * libraries are included — JUser and JTranslate are where the reads lived.
      *
      * @return list<string>
      */
@@ -174,7 +173,7 @@ class NoStaticDbAdapterTest extends TestCase
             foreach ($iterator as $file) {
                 $path = $file->getPathname();
 
-                //vendor/ can appear under a submodule; it is not ours either.
+                //vendor/ can appear under a module; it is not ours either.
                 if (str_contains($path, '/vendor/') || str_contains($path, '/data/')) {
                     continue;
                 }

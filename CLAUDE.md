@@ -80,26 +80,6 @@ other, so "everything passed" and "everything that could run passed" are differe
 - CI status: `gh run list`, not `gh pr checks` (the token lacks Checks). A run that fails
   in ~2 s with no runner and zero steps is the Actions minutes quota, not a build break.
 
-### Submodules (SionModel, JUser, JTranslate)
-
-Each is its own repo (`jroedel/laminas-{sion-model,juser,jtranslate}`), checked out
-locally **on** branch `modernization` (never detached; plain `git submodule update` is
-wrong here). Their GitHub default branches are stale. A cross-repo change ships as one PR
-per repo, same feature-branch name everywhere:
-
-1. Submodules first: commit, push, `gh pr create --base modernization`.
-2. Superproject PR (base `master`) with the code plus pointer bumps; body says "merge the
-   submodule PRs first".
-3. After the submodule PRs merge: in each submodule `git fetch && git checkout
-   modernization && git merge --ff-only origin/modernization`, then commit pointer bumps
-   pinning the **merge commits**. Never commit a pointer to an unpushed commit.
-4. User merges the superproject PR; then `git checkout master && git pull --ff-only`.
-
-A stacked PR merges into its base, not into `modernization`: verify with
-`git merge-base --is-ancestor` before any pointer bump. These libraries are shared with
-patres, which **follows this application's lead**: do what is best here, drop laminas in
-place, keep no code for a laminas host; patres upgrades against tagged releases.
-
 ## Architecture
 
 - **One front controller**: `public/index.php` runs `App\Kernel` (symfony/http-kernel,
@@ -134,7 +114,8 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   tools, tests); it defines `ViewHelperManager` and `MvcTranslator` itself.
 - **Modules** in `module/` (PSR-4 via `composer.json`): `Application`, `Books`,
   `JTranslate`, `JUser`, `Schoenstatt`, `SionModel`. `SionModel` and `J*` are the user's
-  shared libraries (git submodules).
+  shared libraries, absorbed from their own repositories on 2026-09-23; there is one repo,
+  one PR and one manifest.
   Enabled modules: `config/modules.config.php`; environment config in `config/autoload/`
   (`*.local.php` from the `.dist` files via `config.sh`). PSR-4 paths must match namespaces
   exactly.
@@ -236,10 +217,9 @@ place, keep no code for a laminas host; patres upgrades against tagged releases.
   of output — a median run is 122s and a p90 is 431s.
 - **A stage that passed is skipped while the tree it passed against is unchanged**, and the
   summary states how many stages came from cache. The key hashes every tracked and untracked
-  file in the superproject and in each submodule, plus the installed-package set and the
-  merged config cache. `sha256(git diff HEAD)` cannot do this job: it renders two different
-  submodule edits identically and omits untracked files entirely. `--no-cache` forces a full
-  run, and every deploy passes it.
+  file, plus the installed-package set and the merged config cache. `sha256(git diff HEAD)`
+  cannot do this job: it omits untracked files entirely. `--no-cache` forces a full run,
+  and every deploy passes it.
 - **`make dev-hooks`** points `core.hooksPath` at `.githooks`; `pre-push` then runs
   `ci-local.sh qa`. Per-clone on purpose, and it warns rather than blocks when the capsule
   is down.
@@ -280,7 +260,7 @@ this tree, and only when this tree is on the revision being shipped.
 `/_health` revision poll before any post-deploy migration, migration ledger `sch_migration`
 with `-- @phase`, `@kind`, `@tables` (no default for `@phase`), rollback refused for a
 target lacking a `@destructive` migration. **Never run a deploy**; give the user the
-command. A release is exactly `git ls-files --recurse-submodules`. Credentials live only in
+command. A release is exactly `git ls-files`. Credentials live only in
 `.deploy.local`, never committed or printed. [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Tools
@@ -312,13 +292,9 @@ patch into a release.
       SKIPped and why.
 - [ ] The whole diff read back: no stray generated file, no debug output, no comment the
       change has made untrue.
-- [ ] Submodule PRs opened first, against `modernization`, same branch name everywhere;
-      the superproject PR body says to merge them first.
 
 **Before asking for a deploy**
 
-- [ ] Every submodule PR merged, each pointer pinned to a pushed **merge commit**, and a
-      stacked PR checked with `git merge-base --is-ancestor` before any pointer bump.
 - [ ] `make prod-deploy CI=1`, which runs the full ci-local with `--no-cache`.
 - [ ] Each migration carries `@phase`, `@kind` and `@tables`, and each `@verify` selects
       what is still **wrong** so a success returns zero rows. Rehearsed through

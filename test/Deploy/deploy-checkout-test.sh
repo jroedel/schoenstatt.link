@@ -119,7 +119,7 @@ is "a dry run is not unusual" \
 
 # Every mutating git command in the script must name $DEPLOY_TREE on its own line —
 # either as `-C "$DEPLOY_TREE"` or, for the one clone, as the destination. Read-only
-# commands (`submodule status`, `merge-base`, `rev-parse`, `status`) are the script's
+# commands (`merge-base`, `rev-parse`, `status`) are the script's
 # business in either tree and are deliberately not listed.
 #
 # Lines inside a multi-line double-quoted string are skipped by quote parity, because
@@ -133,7 +133,7 @@ STRAY=$(awk '
         if (gsub(/"/, "\"", line) % 2) in_str = !in_str
         if (start_in) next
         if ($0 ~ /^[[:space:]]*#/) next
-        if ($0 !~ /git[[:space:]]+(-C[[:space:]]+[^ ]+[[:space:]]+)?(clone|checkout|reset|pull|stash|clean|fetch|merge |remote set-url|submodule (update|sync|foreach))/) next
+        if ($0 !~ /git[[:space:]]+(-C[[:space:]]+[^ ]+[[:space:]]+)?(clone|checkout|reset|pull|stash|clean|fetch|merge |remote set-url)/) next
         if ($0 ~ /\$DEPLOY_TREE/) next
         printf "%d: %s\n", NR, $0
     }' "$PROD_DEPLOY_SH")

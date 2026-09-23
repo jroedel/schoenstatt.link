@@ -32,38 +32,29 @@
  *
  * ## Scope
  *
- * One composer package at a time, which is what `--root` selects. The three submodules are
- * separate packages with their own `composer.json`, so a package can read as unused here and
- * still be load-bearing there — that is how removing `laminas-json` broke
- * `JTranslate\Service\CountriesFactory`. Audit all four:
+ * One composer package, because there is one: `module/{SionModel,JUser,JTranslate}` are
+ * directories of this repository, autoloaded through its own PSR-4, so their code is ours
+ * and a package only they name reads as plainly USED. When they were audited separately a
+ * package could read as unused here and be load-bearing there, which is how removing
+ * `laminas-json` broke `JTranslate\Service\CountriesFactory` without this tool saying a word.
  *
  *     docker compose exec -T app php tools/dependency-audit.php
- *     docker compose exec -T app php tools/dependency-audit.php --root=module/SionModel
  *
  * Comments are stripped before matching, so prose about a package is not a use of it.
  */
 
-$options = [
-    'laminasOnly' => false,
-    'root'        => '.',
-];
+$options = ['laminasOnly' => false];
 foreach (array_slice($argv, 1) as $argument) {
     if ('--laminas' === $argument) {
         $options['laminasOnly'] = true;
-    } elseif (str_starts_with($argument, '--root=')) {
-        $options['root'] = rtrim(substr($argument, 7), '/');
     } else {
-        fwrite(STDERR, "usage: dependency-audit.php [--laminas] [--root=<path>]\n");
+        fwrite(STDERR, "usage: dependency-audit.php [--laminas]\n");
         exit(2);
     }
 }
 
-$root = $options['root'];
-
-//The lock file is always the superproject's: it is the only one that says what is actually
-//installed. A submodule's composer.json says what it *requires*, which is the other half.
 $lock     = json_decode(file_get_contents('composer.lock'), true);
-$manifest = json_decode(file_get_contents($root . '/composer.json'), true);
+$manifest = json_decode(file_get_contents('composer.json'), true);
 $declared = array_merge($manifest['require'] ?? [], $manifest['require-dev'] ?? []);
 
 /** @var array<string, string> $installed */
@@ -90,14 +81,14 @@ foreach (array_merge($lock['packages'], $lock['packages-dev'] ?? []) as $package
 }
 
 /**
- * This package's own source, comments stripped.
- *
- * The superproject's roots exclude `module/{SionModel,JUser,JTranslate}`: those are separate
- * composer packages and are audited with `--root`.
+ * This package's own source, comments stripped. Every module is ours, the three shared
+ * libraries included — so a package only SionModel names now reads as plainly USED.
  */
-$roots = '.' === $root
-    ? ['src', 'config', 'public', 'bin', 'tools', 'test', 'module/Application', 'module/Books', 'module/Schoenstatt']
-    : [$root . '/src', $root . '/config', $root . '/test'];
+$roots = [
+    'src', 'config', 'public', 'bin', 'tools', 'test',
+    'module/Application', 'module/Books', 'module/Schoenstatt',
+    'module/SionModel', 'module/JUser', 'module/JTranslate',
+];
 
 $code = '';
 foreach ($roots as $directory) {
@@ -151,17 +142,13 @@ foreach ($installed as $name => $version) {
 }
 
 /**
- * Who else names a package this root's own code does not?
+ * Who else names a package our own code does not?
  *
  * WHY: `-` against a declared line reads as "drop it", and in this repository that reading
  * has been wrong on **every** line it has been tested against — six for six on 2026-09-21.
  * Two mechanisms, and neither is visible in the table above:
  *
- * 1. The superproject's manifest is the only one composer reads: `module/{SionModel,JUser,
- *    JTranslate}` are autoloaded through this package's own PSR-4, not installed as path
- *    repositories. So `symfony/mailer` is unused by `src/` and installs the mailer for two
- *    submodules; dropping the line uninstalls it and takes every email with it.
- * 2. An installed package names it without requiring it. The case that proved this was
+ * 1. An installed package names it without requiring it. The case that proved this was
  *    `laminas-modulemanager`, which imported `Laminas\Loader\ModuleAutoloader` in
  *    `ModuleLoaderListener` without requiring `laminas/laminas-loader` — so our own
  *    direct line was the only thing installing a package our code never names, and
@@ -171,9 +158,7 @@ foreach ($installed as $name => $version) {
  * So the two verdicts differ on one question: would the package still arrive without our
  * line? A consumer that also **requires** it answers yes — composer installs it either way
  * and the line is at most a version pin (`PIN?`). A consumer that names it and does not
- * require it answers no, and the line is load-bearing (`USED*`). A submodule is always the
- * second kind: composer never reads a submodule manifest, however honestly it declares
- * things, because they are autoloaded through this package's PSR-4.
+ * require it answers no, and the line is load-bearing (`USED*`).
  *
  * `PIN?` is not "droppable" either — dropping `symfony/error-handler`'s line let composer
  * resolve it from ^7.4 up to 8.1, because http-kernel accepts `^6.4|^7.0|^8.0`. It means
@@ -183,18 +168,12 @@ foreach ($installed as $name => $version) {
  * @param array<string, array<string, string>> $requires package name => its own require map
  * @return array<string, array<string, bool>> package name => [who => does it require it]
  */
-$findConsumers = static function (array $candidates, string $root, array $requires): array {
+$findConsumers = static function (array $candidates, array $requires): array {
     if ([] === $candidates) {
         return [];
     }
 
     $sources = [];
-    //Only for the superproject: the submodules' code is served by ITS installed set.
-    if ('.' === $root) {
-        foreach (['SionModel', 'JUser', 'JTranslate'] as $submodule) {
-            $sources['module/' . $submodule] = ['module/' . $submodule . '/src'];
-        }
-    }
     foreach (glob('vendor/*/*', GLOB_ONLYDIR) ?: [] as $directory) {
         $sources[substr($directory, 7)] = [$directory];
     }
@@ -238,13 +217,13 @@ foreach ($rows as $row) {
         $candidates[$row[0]] = $namespaces[$row[0]];
     }
 }
-$consumers = $findConsumers($candidates, $root, $packageRequires);
+$consumers = $findConsumers($candidates, $packageRequires);
 
 foreach ($rows as $index => $row) {
     if (! isset($consumers[$row[0]])) {
         continue;
     }
-    //Not "unused": unused BY THIS ROOT. Whether the line may go turns on ONE question —
+    //Not "unused": unused by OUR code. Whether the line may go turns on ONE question —
     //would the package still arrive without it? A single consumer that requires it is
     //enough for yes, however many others merely name it. Getting this backwards reads
     //`symfony/error-handler` as load-bearing when it is the measured pin.
@@ -263,14 +242,14 @@ $rank = static fn(array $row): int => match (true) {
 };
 usort($rows, static fn(array $a, array $b): int => [$rank($a), $a[0]] <=> [$rank($b), $b[0]]);
 
-printf("%-46s %-12s %-5s %s\n", 'PACKAGE', 'VERSION', 'USED', 'IN ' . $root . '/composer.json');
+printf("%-46s %-12s %-5s %s\n", 'PACKAGE', 'VERSION', 'USED', 'IN composer.json');
 foreach ($rows as $row) {
     printf("%-46s %-12s %-5s %s\n", ...$row);
 }
 
 if ([] !== $consumers) {
     printf(
-        "\nUSED* — this root's own code does not name it, but something its installed set "
+        "\nUSED* — our own code does not name it, but something the installed set "
         . "serves names it\n        and does NOT require it. The line is what installs the "
         . "package; dropping it breaks them.\nPIN?  — every consumer requires it too, so "
         . "composer installs it either way. The line only bounds\n        the version — "

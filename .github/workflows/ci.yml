@@ -16,7 +16,7 @@
 # the resolver is deliberately looking at an older PHP than the one that will
 # run the code.
 #
-# lint: syntax-lints every application PHP file, submodules included.
+# lint: syntax-lints every application PHP file.
 #
 # composer-install: a continuous rehearsal of deploy-day step 4
 # (docs/BACKLOG.md "Production deploy checklist"): from a bare checkout, the
@@ -100,8 +100,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set up PHP 8.5
         uses: shivammathur/setup-php@v2
         with:
@@ -123,8 +121,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set up PHP 8.5
         uses: shivammathur/setup-php@v2
         with:
@@ -140,8 +136,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set up PHP 8.5
         uses: shivammathur/setup-php@v2
         with:
@@ -165,8 +159,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set up PHP 8.5
         uses: shivammathur/setup-php@v2
         with:
@@ -227,8 +219,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set up PHP 8.5
         uses: shivammathur/setup-php@v2
         with:
@@ -271,8 +261,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set up PHP 8.5
         uses: shivammathur/setup-php@v2
         with:
