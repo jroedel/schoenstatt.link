@@ -147,6 +147,35 @@ class AssociationLinkingTest extends TestCase
     /**
      * The two linking paths agree, for every record, on everything a template can read.
      */
+    /**
+     * An association set that matched nothing links to nothing, rather than throwing.
+     *
+     * `relatedAssociations()` opened with `['parentId' => array_keys($objects)]`, and
+     * `queryObjects()` turns an array value into an `In`, which refuses an empty set —
+     * rightly, because `sch_associations.Parent IN ()` is a syntax error. So an empty
+     * `$objects` raised `InvalidPredicate` instead of returning no related rows.
+     *
+     * The live caller is `shrinesOfKind()`: it asks for one `kind` and links whatever came
+     * back, so a kind with no rows turned `/shrines` into a 500. It was latent only because
+     * both kinds it is called with have rows — `sch-shrine` 207, `sch-wayside-shrine` 43 on
+     * 2026-09-23 — and it is not latent at all against an empty database, where it was 13
+     * of the integration suite's errors.
+     *
+     * Asserted through `linkAssociations()` rather than `relatedAssociations()`, because
+     * the caller's contract is what matters: linking nothing must leave nothing and must
+     * not reach the database at all.
+     */
+    public function testLinkingAnEmptySetIsNotAnError(): void
+    {
+        $table = $this->table();
+
+        $objects = [];
+        $link    = new ReflectionMethod($table, 'linkAssociations');
+        $link->invokeArgs($table, [&$objects]);
+
+        self::assertSame([], $objects, 'linking an empty set produced rows out of nowhere');
+    }
+
     public function testLinkingWithAndWithoutTheQueryProducesTheSameStructure(): void
     {
         $table = $this->table();
