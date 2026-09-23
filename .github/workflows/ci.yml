@@ -157,6 +157,27 @@ jobs:
   integration:
     name: Integration tests
     runs-on: ubuntu-latest
+    # A database, at last. Until 2026-09-23 there was no way to build one from this
+    # repository -- `database/` holds incremental migrations and, of the 48 tables the
+    # application uses, only 34 are created by one -- so 37 test classes skipped here on a
+    # failed CONNECTION rather than on missing rows, and the job ran ~43% of the
+    # assertions the capsule does. `database/base-schema.sql` is the schema and
+    # `database/ci-seed.sql` is a small set of invented rows; together they take this job
+    # from 3,085 assertions to ~4,227 and from 195 skipped tests to 38.
+    services:
+      db:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: ci
+          MARIADB_DATABASE: ourlink_db1
+          MARIADB_USER: schoenstatt
+          MARIADB_PASSWORD: schoenstatt
+        ports: ["3306:3306"]
+        # Without this the first client connects before the server is listening and the
+        # whole job fails on a connection error that reads like a configuration mistake.
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - name: Set up PHP 8.5
@@ -191,6 +212,30 @@ jobs:
         run: php composer.phar install --no-dev --no-interaction --no-progress
       - name: Fetch the pinned phpunit phar
         run: bash tools/get-phars.sh phpunit
+      - name: Build the database
+        # The schema, then the rows. Both are tracked and both are readable: no production
+        # export is involved and none ever should be. ci-seed.sql empties what it fills, so
+        # re-running it is a no-op rather than a duplicate-key error.
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/base-schema.sql
+          mysql -h 127.0.0.1 -P 3306 -uschoenstatt -pschoenstatt ourlink_db1 < database/ci-seed.sql
+      - name: Point the application at it
+        # Written rather than committed, because config/autoload/local.php is per-machine
+        # by design and 27 of these classes skip on `is_readable()` of exactly this path.
+        run: |
+          cat > config/autoload/local.php <<'PHP'
+          <?php
+          return [
+              'db' => [
+                  'driver'   => 'pdo_mysql',
+                  'hostname' => '127.0.0.1',
+                  'port'     => 3306,
+                  'database' => 'ourlink_db1',
+                  'username' => 'schoenstatt',
+                  'password' => 'schoenstatt',
+              ],
+          ];
+          PHP
       - name: Run the integration suite
         # memory_limit=1G for the same reason the fuzz job needs it, and since
         # batch 10 for the same code: three of these tests build every form in
@@ -200,6 +245,14 @@ jobs:
         run: >
           php -d memory_limit=1G tools/phpunit.phar --testsuite integration
           --log-junit integration-junit.xml
+        env:
+          # Says which corpus this is. Five classes compare against baselines recorded on
+          # the capsule's 498 associations -- `authors` alone offers 1,890 options there
+          # and six here -- so against the seed they would answer a different question.
+          # They skip on this rather than being re-recorded per environment, which would
+          # leave them asserting nothing. Unset anywhere else, so forgetting it is a red
+          # build rather than a false green.
+          SCHOENSTATT_TEST_CORPUS: seed
 
       - name: Every skipped class says why it cannot run here
         # This job runs a little over half the assertions the capsule does — no
