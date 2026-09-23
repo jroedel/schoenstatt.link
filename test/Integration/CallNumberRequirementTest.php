@@ -7,9 +7,11 @@ namespace SchoenstattTest\Integration;
 use App\Books\LibraryScopedForms;
 use App\Laminas\ServiceBridge;
 use Books\Form\BookForm;
+use Books\Validator\UniqueBarcodeInLibrary;
 use App\Services\Container;
 use PDO;
 use PHPUnit\Framework\TestCase;
+use SionModel\Db\Connection;
 use SchoenstattTest\Form\Engine;
 
 use function getenv;
@@ -103,10 +105,29 @@ final class CallNumberRequirementTest extends TestCase
      */
     public function testAFormWithNoLibraryOptionsRequiresNothing(): void
     {
-        $form = new BookForm();
+        $form = new BookForm(self::container()->get(Connection::class));
 
         self::assertFalse($form->requiresCallNumber());
         self::assertFalse($form->getInputFilterSpecification()['callNumber']['required']);
+    }
+
+    /**
+     * The same fallback for the barcode rule, and it is the more dangerous of the two.
+     *
+     * `UniqueBarcodeInLibrary` is scoped to one library, and a form with no library options
+     * has none. Left in the specification anyway it would compare a barcode against every
+     * library's — refusing perfectly good entries — or throw from `isValid()`, which on this
+     * page is a 500. It is absent instead, which is why this is asserted rather than assumed:
+     * the only caller that can reach the no-library state is a test.
+     */
+    public function testAFormWithNoLibraryOptionsCarriesNoBarcodeUniquenessRule(): void
+    {
+        $form = new BookForm(self::container()->get(Connection::class));
+
+        $validators = $form->getInputFilterSpecification()['withinLibraryId']['validators'];
+        $names      = array_column($validators, 'name');
+
+        self::assertNotContains(UniqueBarcodeInLibrary::class, $names);
     }
 
     private static function storedSetting(int $libraryId): int

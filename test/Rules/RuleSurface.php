@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Rules;
 
+use Books\Validator\UniqueBarcodeInLibrary;
 use DateTimeImmutable;
 use DateTimeInterface;
 use SionModel\Db\Connection;
@@ -332,6 +333,19 @@ final class RuleSurface
             //the query, and the value it compares against is whatever the form submitted.
             $queries[$label] = $validator->getSelect()->render()[0];
         }
+
+        //Books' own uniqueness rule, which asks a three-term question the two above cannot
+        //express. Both forms of it are recorded: a create compares against every book in
+        //the library, an edit excludes the row it is editing, and dropping that third term
+        //would refuse every save that left the barcode alone.
+        $barcode = new UniqueBarcodeInLibrary([
+            'adapter'   => $adapter,
+            'libraryId' => 1,
+        ]);
+        $queries['UniqueBarcodeInLibrary (create)'] = $barcode->getSelect()->render()[0];
+
+        $barcode->setExcludeBookId(1);
+        $queries['UniqueBarcodeInLibrary (edit)'] = $barcode->getSelect()->render()[0];
 
         return $queries;
     }
