@@ -147,6 +147,22 @@ git -C "$DEPLOY_TREE" reset --hard --quiet origin/master \
     || die "could not reset the deploy checkout to origin/master"
 ok "deploy checkout is origin/master at $(git -C "$DEPLOY_TREE" log --oneline -1)"
 
+# A deploy checkout made while module/{SionModel,JUser,JTranslate} were submodules keeps
+# their gitdir pointer files. The tree that replaced them tracks real files at those paths,
+# so the pointers survive a hard reset as UNTRACKED content — and tools/deploy.sh refuses
+# to package a tree with anything untracked in it. Removing them is idempotent and costs
+# nothing once they are gone; delete this block when no checkout predates 2026-09-23.
+#
+# Guarded on .gitmodules so it is a no-op against a revision that still HAS submodules:
+# this file is read from your working tree, so it runs against whatever master is at the
+# time, and deleting a live submodule's gitdir pointer would be vandalism, not cleanup.
+if [ ! -f "$DEPLOY_TREE/.gitmodules" ]; then
+    for LEGACY_SUBMODULE in SionModel JUser JTranslate; do
+        rm -f "$DEPLOY_TREE/module/$LEGACY_SUBMODULE/.git"
+    done
+    rm -rf "$DEPLOY_TREE/.git/modules"
+fi
+
 # --- 3. the two things that must not exist twice ----------------------------------
 # Both are links, so both are untracked, and deploy.sh refuses to package a tree with
 # anything untracked in it. They are this script's doing rather than the repository's, so
