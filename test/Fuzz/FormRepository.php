@@ -8,6 +8,7 @@ use App\Books\CheckoutForms;
 use App\Books\LibraryScopedForms;
 use App\Laminas\ContainerFactory;
 use App\Laminas\ServiceBridge;
+use Schoenstatt\Model\SchoenstattTable;
 use SionModel\Form\Element\Registry;
 use SionModel\Form\Fieldset;
 use App\Services\Container;
@@ -99,6 +100,9 @@ final class FormRepository
     public const COUNT_SANITY_FLOOR = 40;
 
     private static ?self $instance = null;
+
+    /** @var array<string, true>|null Memoised by {@see personLabels()}. */
+    private static ?array $personLabels = null;
 
     private ?Container $container = null;
 
@@ -596,6 +600,52 @@ final class FormRepository
         }
 
         return $byClass;
+    }
+
+    // ---------------------------------------------------------- person labels
+
+    /**
+     * Every label a person select can show, as a set — the one thing in these baselines
+     * that is somebody's personal data rather than the catalogue's.
+     *
+     * Six selects are filled from the persons table (`LibraryForm::contactPersonId` and
+     * `::defaultCheckoutPersonId`, `EditUserForm::personId`, `AssignmentForm::personId`,
+     * `EditAssignmentForm::personId`, `PersonForm::spousePersonId`), and the recordings
+     * sample the first three options and the last of every list. For those six that meant
+     * four real names — living people, in a file that a public repository keeps forever.
+     *
+     * The rule is a domain fact rather than a pattern: every one of those selects is
+     * filled from `SchoenstattTable::getPersonValueOptions()`, directly or through
+     * `JUser\Model\PersonValueOptionsProviderInterface`, so membership of *that* answer
+     * is what makes a label personal. A regex over "Last, First" would redact
+     * `A. Deichertsche Verlagsbuchhandlung, Leipzig` and miss a person with one name;
+     * a list of element names would silently cover nothing the day a seventh select is
+     * added.
+     *
+     * `true` because the argument is `$includeInactive`: a form that offers inactive
+     * persons must not be the gap in the set.
+     *
+     * Memoised for the process. It is one query, but both recorders ask and the second
+     * would otherwise build a whole container of its own to repeat it.
+     *
+     * @return array<string, true>
+     */
+    public static function personLabels(): array
+    {
+        if (null !== self::$personLabels) {
+            return self::$personLabels;
+        }
+
+        $table = self::fresh()->container()->get(SchoenstattTable::class);
+
+        $labels = [];
+        foreach ($table->getPersonValueOptions(true) as $label) {
+            if (is_string($label) && '' !== $label) {
+                $labels[$label] = true;
+            }
+        }
+
+        return self::$personLabels = $labels;
     }
 
     // -------------------------------------------------------------- container
