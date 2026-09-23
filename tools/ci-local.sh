@@ -62,11 +62,11 @@ CACHE_DIR="$STATE_DIR/cache"
 
 # Canonical order. A stage selector never reorders them: PHPStan before the suites is not
 # an accident, and `ci-local.sh unit phpstan` should still be the cheaper one first.
-ALL_STAGES="lint composer phpstan phpcs deploy unit integration smoke fuzz smoke-prod"
+ALL_STAGES="lint composer phpstan phpcs deploy schema unit integration smoke fuzz smoke-prod"
 CI_STAGES="lint composer phpstan phpcs deploy unit integration"
 QA_STAGES="phpcs phpstan unit"
 # Stages that need `docker compose exec app`. The other two are plain bash on the host.
-CAPSULE_STAGES="composer phpstan phpcs deploy unit integration smoke fuzz smoke-prod"
+CAPSULE_STAGES="composer phpstan phpcs deploy schema unit integration smoke fuzz smoke-prod"
 
 USE_CACHE=1
 SELECTED=""
@@ -375,6 +375,61 @@ stage_deploy() {
         fi
         rm -f "$rsh_log"
     done
+}
+
+stage_schema() {
+    # --- NOT in ci.yml: the schema recording, which ci.yml is the point of ----
+    # database/base-schema.sql is what lets anything build this application's database
+    # from the repository. Two questions, and the second is the one worth the seconds:
+    #
+    #   1. Is the recording current? `--check` re-dumps the capsule and diffs.
+    #   2. Does it actually WORK? A file that is faithful to the capsule and does not
+    #      load is worse than no file, because it fails in CI rather than here. So the
+    #      recording is loaded into a scratch database and re-dumped: a schema built FROM
+    #      the file must produce the file, byte for byte.
+    #
+    # The scratch database is dropped either way. It needs root, because the application's
+    # user has no grants outside its own schema — which is correct and stays that way.
+    step "Schema recording  (NOT in ci.yml — needs the capsule)"
+
+    OUT=$(./tools/schema-dump.sh --check 2>&1)
+    if [ $? -eq 0 ]; then
+        record "schema-dump --check" "$OUT"
+        ok "database/base-schema.sql matches the capsule"
+    else
+        record "schema-dump --check (FAILED)" "$OUT"
+        printf '%s\n' "$OUT" | sed 's/^/    /'
+        bad "database/base-schema.sql is stale — ./tools/schema-dump.sh, then read the diff"
+        return
+    fi
+
+    PROBE=$(docker compose exec -T db mariadb -uroot -proot \
+        -e "DROP DATABASE IF EXISTS schema_probe; CREATE DATABASE schema_probe CHARACTER SET utf8mb4;" 2>&1)
+    if [ $? -ne 0 ]; then
+        record "schema round-trip (could not create scratch db)" "$PROBE"
+        bad "schema round-trip — could not create the scratch database"
+        return
+    fi
+
+    OUT=$(docker compose exec -T db mariadb -uroot -proot schema_probe < database/base-schema.sql 2>&1)
+    if [ $? -ne 0 ]; then
+        record "schema round-trip (load FAILED)" "$OUT"
+        printf '%s\n' "$OUT" | sed 's/^/    /'
+        bad "database/base-schema.sql does not load into an empty database"
+    else
+        OUT=$(SCHEMA_DUMP_DB=schema_probe SCHEMA_DUMP_USER=root SCHEMA_DUMP_PASS=root \
+            ./tools/schema-dump.sh --check 2>&1)
+        if [ $? -eq 0 ]; then
+            record "schema round-trip" "$OUT"
+            ok "a database built from the recording re-dumps to it exactly"
+        else
+            record "schema round-trip (DRIFT)" "$OUT"
+            printf '%s\n' "$OUT" | sed 's/^/    /'
+            bad "the schema built from the recording does not re-dump to it"
+        fi
+    fi
+
+    docker compose exec -T db mariadb -uroot -proot -e "DROP DATABASE IF EXISTS schema_probe;" >/dev/null 2>&1
 }
 
 stage_unit() {
