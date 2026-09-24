@@ -158,17 +158,38 @@ yourself, clean, is what lets `ci-local` verify it first.
 
 ## Deploying from GitHub Actions
 
-`.github/workflows/deploy.yml` runs the same `tools/deploy.sh` from a runner. Its only
-trigger is **`workflow_dispatch`** — Actions → Deploy → Run workflow, with a `dry_run`
-checkbox that defaults to **on**. It is not push-to-deploy and is not meant to be yet;
-what it removes is the requirement that the person deploying be at the machine holding
-the credentials.
+`.github/workflows/deploy.yml` runs the same `tools/deploy.sh` from a runner. Since
+2026-09-24 it is **push-to-deploy**: `workflow_run` fires when CI completes, and a commit
+that landed on master and went green ships itself with no approval step.
+`workflow_dispatch` is kept — Actions → Deploy → Run workflow, with a `dry_run` checkbox
+that defaults to **on** — for the deploys that are still a decision: a dry run, or a
+re-deploy of an unchanged tip.
 
-Four things stand between a stranger and production:
+It is deliberately **not** `push: branches: [master]`. A push trigger fires the instant the
+merge lands, while CI is still queued, so the CI gate below would ask whether CI passed on
+a commit CI has not finished and refuse every time. `workflow_run` fires *after* CI, which
+is the only ordering in which that gate can be satisfied.
 
-- **No `pull_request` trigger.** On a public repository that is the only guarantee worth
-  anything: a fork's pull request cannot reach a secret through a trigger that does not
-  exist. Do not add one.
+What this makes unattended is **migrations**: `tools/deploy.sh` runs the pending
+`database/*.sql` through the ledger with nobody watching. That path has every guard it
+needs — phases, per-file sha256, a server-side snapshot, an `@verify` that must return zero
+rows — and as of this change it has still never run in anger. Watch the first merge that
+carries one.
+
+Five things stand between a stranger and production:
+
+- **No `pull_request` trigger, and no `pull_request_target`.** On a public repository a
+  fork's pull request cannot reach a secret through a trigger that does not exist. Do not
+  add one.
+- **The three-condition `if:` on the deploy job.** This is the guard that `workflow_run`
+  specifically needs, and the branch restriction below does *not* cover it: a `workflow_run`
+  job runs in the **default branch's** context, so the Environment sees `refs/heads/master`
+  and passes no matter whose commit CI was testing — and CI *does* run on a fork's pull
+  request. The job therefore demands that the run succeeded, that its head branch was
+  `master`, and that its head repository was this one. Drop any of the three and a fork's
+  green CI run reaches the SSH key. `test/Deploy/workflow-triggers-test.sh` holds all three,
+  and holds `workflows: [CI]` against `ci.yml`'s `name:` — renaming CI would otherwise stop
+  every automatic deploy silently.
 - **The `production` Environment, restricted to `master`.** Settings → Environments →
   `production` → *Deployment branches and tags* → **Selected branches**, `master`. This is
   the one that is doing the work today, and it is not optional: `workflow_dispatch` can run
@@ -177,11 +198,11 @@ Four things stand between a stranger and production:
   `deploy.yml` that can reach them is the reviewed one. Keep the secrets on the environment
   rather than on the repository for the same reason.
 
-  *Required reviewers* would be the stronger form of this — a human approving each specific
-  run — but deployment protection rules are not offered on a **private** repository on this
-  plan, which is why the Configure page shows no such section. Going public (#259) makes
-  them available at no cost; until then the branch restriction is the gate, and `-y` in the
-  workflow has that standing behind it rather than a person.
+  *Required reviewers* became available when the repository went public on 2026-09-24 and
+  are deliberately **not** used: the decision was push-to-deploy without an approval step.
+  With a single maintainer a required reviewer is a keystroke rather than a review — GitHub
+  permits self-approval unless *Prevent self-review* is ticked — so it would add friction
+  without adding a second pair of eyes. Revisit when someone else has write access.
 - **`concurrency: deploy-production`** with `cancel-in-progress: false`, plus the
   server-side lock in `$SHARED/deploy.lock`, which is what catches the case GitHub cannot
   see: someone running `make prod-deploy` from a laptop at the same moment.
@@ -190,7 +211,10 @@ Four things stand between a stranger and production:
 `ci-local` cannot run on a runner — it drives the capsule — so the gate is this
 repository's own CI. The workflow **checks that**, rather than asserting it: its first step
 asks the Actions API for a successful `ci.yml` run on the exact SHA being deployed and
-refuses if there is none. A green run on the branch is a different claim and does not
+refuses if there is none. That SHA is `workflow_run.head_sha`, never `github.sha`: for a
+`workflow_run` event the latter is master's tip at fire time, which is a *different* commit
+whenever a second merge landed during CI's ~7 minutes, and deploying that pairing would
+credit an unverified commit with a green run. A green run on the branch is a different claim and does not
 count. It then hands `tools/deploy.sh` `DEPLOY_VERIFIED_SHA` and `DEPLOY_VERIFIED_BY`
 instead of `--skip-tests`, so the script reports which run proved the commit and still
 warns if `master` moved in between. CI runs 3,768 of 4,487 tests — everything except the

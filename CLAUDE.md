@@ -15,11 +15,14 @@ standing half: prefer eliminating a dependency over rescuing it; before adding o
 whether twenty lines of our own code would do. Propose a migration before a patch, but
 propose it first.
 
-**Direction (decided 2026-09-11): a fully automated CI/CD pipeline.** The blocker is the
-gate, not the automation: GitHub Actions has neither a database nor the minutes, so
-`ci-local.sh` is the only real check and it needs a running capsule. Every tooling change
-should move a check closer to running unattended — a committed schema-only base dump, a
-staging target, a deploy that needs no keystrokes. Tracked in the open issues.
+**Direction (decided 2026-09-11): a fully automated CI/CD pipeline. Reached 2026-09-24.**
+Both halves of the old blocker are gone: CI has had a database since 2026-09-23
+(`database/ci/base-schema.sql` + `ci-seed.sql`), and Actions minutes stopped being scarce
+when the repository went public. A commit that lands on master and goes green in CI now
+deploys itself — `deploy.yml` triggers on `workflow_run`, with no approval step. What that
+makes unattended is migrations; the first merge carrying one is worth watching land.
+`ci-local.sh` remains the broader check, because the three suites that need a running
+application still cannot run on a runner.
 
 ## Identity and working style
 
