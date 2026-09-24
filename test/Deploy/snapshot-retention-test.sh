@@ -38,7 +38,9 @@ check() {
 eval "$(awk '/^prunable\(\) \{/,/^\}/' tools/migrate.sh)"
 declare -f prunable >/dev/null || { echo "could not lift prunable() out of tools/migrate.sh" >&2; exit 1; }
 
-run() { printf '%s\n' "$1" | prunable "$2" "$3" | sort | tr '\n' ' ' | sed 's/ $//'; }
+# $4 is the ceiling and is optional, exactly as prunable() takes it: the cases below that
+# omit it are asserting the two floors on their own, unchanged by the ceiling's arrival.
+run() { printf '%s\n' "$1" | prunable "$2" "$3" "${4:-}" | sort | tr '\n' ' ' | sed 's/ $//'; }
 
 OLD_A="20250101-010000-production-db1.0.sql.gz"
 OLD_B="20250101-010000-production-db1.1.sql.gz"   # same run as OLD_A
@@ -95,7 +97,44 @@ EXPECT="$OLD_A $OLD_B"
 [ "$OUT" = "$EXPECT" ] && check 0 "a multi-file run is pruned as a unit, never split" \
     || check 1 "a multi-file run is pruned as a unit, never split" "$EXPECT" "$OUT"
 
-# 7. And the cutoff helper produces something the string compare can actually use, in the
+# 7. THE CEILING. The run floor protects by POSITION and has no time limit of its own, so
+#    without this a snapshot of data we deliberately erased is kept until two more
+#    migrations happen — which, in a month with no migrations, is never. Past the ceiling
+#    neither floor saves it.
+OUT=$(run "$OLD_A
+$MID
+$NEW" 5 "$CUTOFF" "20260801-000000")
+EXPECT="$OLD_A $MID"
+[ "$OUT" = "$EXPECT" ] && check 0 "the ceiling deletes what the run floor would have kept forever" \
+    || check 1 "the ceiling deletes what the run floor would have kept forever" "$EXPECT" "$OUT"
+
+# 8. It does not reach what is younger than it. A ceiling that took the newest snapshot
+#    too would leave a just-applied migration with no undo at all.
+OUT=$(run "$OLD_A
+$NEW" 5 "$CUTOFF" "20260801-000000")
+EXPECT="$OLD_A"
+[ "$OUT" = "$EXPECT" ] && check 0 "the ceiling spares anything younger than itself" \
+    || check 1 "the ceiling spares anything younger than itself" "$EXPECT" "$OUT"
+
+# 9. A run is still indivisible under the ceiling. Both halves share a stamp, so both cross
+#    it together — but a ceiling applied per FILE rather than per run would be a plausible
+#    way to reintroduce the split this policy exists to prevent.
+OUT=$(run "$OLD_A
+$OLD_B
+$NEW" 5 "$CUTOFF" "20260801-000000")
+EXPECT="$OLD_A $OLD_B"
+[ "$OUT" = "$EXPECT" ] && check 0 "a multi-file run crosses the ceiling as a unit" \
+    || check 1 "a multi-file run crosses the ceiling as a unit" "$EXPECT" "$OUT"
+
+# 10. An empty ceiling disables it, which is what keeps every case above this one honest:
+#     they pass the floors alone and must keep answering as they did before it existed.
+OUT=$(run "$OLD_A
+$MID
+$NEW" 5 "$CUTOFF" "")
+[ -z "$OUT" ] && check 0 "no ceiling means the run floor still protects everything" \
+    || check 1 "no ceiling means the run floor still protects everything" "(nothing)" "$OUT"
+
+# 11. And the cutoff helper produces something the string compare can actually use, in the
 #    same shape the filenames carry. A cutoff of the wrong shape compares wrong silently.
 eval "$(awk '/^prune_cutoff\(\) \{/,/^\}/' tools/migrate.sh)"
 CUT=$(prune_cutoff 30)

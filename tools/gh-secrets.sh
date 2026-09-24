@@ -47,9 +47,12 @@ fi
 # shellcheck disable=SC1090
 . "$CONFIG"
 
-# The eleven the workflow reads. DEPLOY_KEEP_RELEASES and the backup-retention knobs are
+# The eleven the workflow reads. DEPLOY_KEEP_RELEASES and every retention knob are
 # deliberately absent: they are policy, not credentials, and the workflow leaves them at
-# tools/deploy.sh's defaults so a runner cannot quietly prune differently from a laptop.
+# the scripts' own defaults so a runner cannot quietly prune differently from a laptop.
+# Those defaults are split across two files — the snapshot knobs in tools/migrate.sh, the
+# htaccess and exception ones in tools/deploy.sh — and each must match .deploy.local.dist,
+# or an unattended deploy applies a policy nobody wrote down.
 FIELDS=(
     DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_SSH_PORT DEPLOY_APP_PATH DEPLOY_BASE_URL
     DEPLOY_API_KEY DEPLOY_CANARY_COOKIE

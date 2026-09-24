@@ -142,6 +142,12 @@ esac
 : "${DEPLOY_APP_PATH:?not set in .deploy.local}"
 : "${DEPLOY_BASE_URL:?not set in .deploy.local}"
 : "${DEPLOY_KEEP_RELEASES:=5}"
+# One small text file per deploy, kept forever until 2026-09-24.
+: "${DEPLOY_KEEP_HTACCESS:=10}"
+# One directory per distinct failure, kept forever until 2026-09-24. Longer than a
+# snapshot's ceiling on purpose: this is diagnostic, holds only a /24, and a rare fault
+# needs a wider window than a backup does.
+: "${DEPLOY_KEEP_EXCEPTION_DAYS:=90}"
 : "${DEPLOY_API_KEY:=}"
 : "${DEPLOY_CANARY_COOKIE:=}"
 
@@ -1620,6 +1626,73 @@ done
 ")
 if [ -n "$KEPT" ]; then
     dim "pruned: $(printf '%s' "$KEPT" | tr '\n' ' ')"
+fi
+
+# ---- the other two stores that grew without a limit -------------------------
+#
+# Migration snapshots are bounded by tools/migrate.sh, which this script calls twice per
+# deploy and which now prunes even when there is nothing to apply. These two had no bound
+# at all: one file per deploy forever, and a fingerprint directory per distinct failure
+# forever. Neither is large, and that is exactly why nobody noticed.
+#
+# Done here rather than in a cron job because a deploy is the one thing that reliably
+# happens, and done on the SERVER rather than through clear-exceptions.sh because that
+# script archives to the deploying machine first — which on a runner is a disposable
+# snapshot, the same mistake #297 fixed for backups.
+#
+
+# Both are sent as a function definition plus a call, so the program is a single legible
+# block here rather than a string assembled at the call site, takes its inputs as
+# arguments instead of interpolating them, and can be lifted out by its markers and run
+# against a synthetic directory. test/Deploy/store-retention-test.sh does exactly that,
+# which is not optional for a program whose job is `rm -rf` on production, unattended.
+# Keep the markers.
+
+# >>> prune htaccess backups
+PRUNE_HTACCESS_PROG=$(cat <<'PROG'
+prune_htaccess() {
+    local dir=$1 keep=$2
+    cd "$dir" 2>/dev/null || return 0
+    ls -1t 2>/dev/null | tail -n +$((keep + 1)) | while read -r old; do
+        rm -f -- "$old" && echo "$old"
+    done
+}
+PROG
+)
+# <<< prune htaccess backups
+
+# >>> prune exception store
+PRUNE_EXCEPTIONS_PROG=$(cat <<'PROG'
+prune_exceptions() {
+    local dir=$1 days=$2
+    cd "$dir" 2>/dev/null || return 0
+    # last.txt, not the directory: on Linux, rewriting a file INSIDE a directory does not
+    # move the directory's mtime, and last.txt is rewritten on every occurrence. Ageing on
+    # the directory would delete fingerprints that are still firing.
+    #
+    # -mindepth/-maxdepth 2 keeps this to <fp>/last.txt. .emails/ holds hourly counters and
+    # .overflow is a file, so neither can match, and the grep is belt and braces.
+    find . -mindepth 2 -maxdepth 2 -name last.txt -mtime +"$days" -printf '%h\n' 2>/dev/null \
+        | sed 's#^\./##' | grep -vxF '.emails' | while read -r fp; do
+            rm -rf -- "$fp" && echo "$fp"
+        done
+}
+PROG
+)
+# <<< prune exception store
+
+PRUNED=$(rsh "$PRUNE_HTACCESS_PROG
+prune_htaccess '$APP/shared/data/htaccess-backups' '$DEPLOY_KEEP_HTACCESS'" || true)
+if [ -n "$PRUNED" ]; then
+    dim ".htaccess backups pruned to the last $DEPLOY_KEEP_HTACCESS: $(printf '%s' "$PRUNED" | wc -l | tr -d ' ') removed"
+fi
+
+# Deleting a fingerprint re-arms its notification threshold, so a failure that returns
+# after this long is reported as new — which is what you want after that long.
+EXPIRED=$(rsh "$PRUNE_EXCEPTIONS_PROG
+prune_exceptions '$APP/shared/data/exceptions' '$DEPLOY_KEEP_EXCEPTION_DAYS'" || true)
+if [ -n "$EXPIRED" ]; then
+    dim "exception fingerprints aged off after $DEPLOY_KEEP_EXCEPTION_DAYS days: $(printf '%s' "$EXPIRED" | tr '\n' ' ')"
 fi
 
 ELAPSED=$((SECONDS - START_TS))

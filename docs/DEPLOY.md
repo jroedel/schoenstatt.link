@@ -528,15 +528,55 @@ from. That is the right trade for the failure it exists for — a migration that
 wrong thing — and no protection at all against losing that host. The server's own backups
 are what cover the second case.
 
-`DEPLOY_KEEP_BACKUP_RUNS=2` (per environment) and `DEPLOY_KEEP_BACKUP_DAYS=30` are
-both floors: a snapshot is deleted only when it is *both* outside the last N runs
-for its environment *and* older than the day limit, so capsule rehearsals cannot
-push out the last production snapshot. A run is a group — both snapshots of one apply
-share a timestamp and are pruned together or not at all, or a restore finds one table and
-not the other. Age comes from the filename's run stamp rather than an mtime, which a copy
-or a restore would have moved. Every deletion is named on screen. A single
-`sch_changes` dump is ~74 MB. The policy is one function, `prunable()`, used by both the
-local and the server path and pinned by `test/Deploy/snapshot-retention-test.sh`.
+**Two floors and a ceiling.** `DEPLOY_KEEP_BACKUP_RUNS=3` (per environment) and
+`DEPLOY_KEEP_BACKUP_DAYS=7` are floors: a snapshot survives if it is among the last N runs
+*or* younger than the day limit, so capsule rehearsals cannot push out the last production
+snapshot and a busy afternoon cannot age out yesterday's.
+
+`DEPLOY_MAX_BACKUP_DAYS=30` is the ceiling and beats both. Without it the run floor has no
+time limit at all, and that is not a corner case: migrations arrive in bursts — fourteen
+between 11 and 23 August 2026, then none for a month — so "the last few runs" routinely
+means "the last few months", and if migration work stops it means forever. A snapshot of
+data deliberately erased must not have its lifetime decided by whether anyone happens to
+write another migration.
+
+Losing the oldest snapshot at the ceiling costs less than it looks, because a snapshot's
+value decays on its own. The table keeps changing, so restoring a month-old one wholesale
+would destroy a month of edits; past a week or so it is something you mine for particular
+rows rather than restore. And it was never what rolls a release back — that is `releases/`
+and `DEPLOY_KEEP_RELEASES`, which a `@destructive` migration makes `deploy.sh` refuse
+anyway, precisely because the database cannot follow the code.
+
+**Pruning runs on every deploy, not only when a migration applies.** `migrate.sh` used to
+`exit 0` on "no pending migrations" before it reached the prune, so retention was reachable
+only by applying something — it could not expire anything during exactly the quiet stretch
+the ceiling exists for. Both the pre and post calls now prune on their way out.
+
+A run is a group — both snapshots of one apply share a timestamp and are pruned together or
+not at all, or a restore finds one table and not the other. Age comes from the filename's
+run stamp rather than an mtime, which a copy or a restore would have moved. Every deletion
+is named on screen. A single `sch_changes` dump is ~74 MB. The policy is one function,
+`prunable()`, used by both the local and the server path and pinned by
+`test/Deploy/snapshot-retention-test.sh`.
+
+### The other two stores
+
+Housekeeping also bounds the two that had no limit at all until 2026-09-24. Both run on the
+server, as a function sent with its arguments rather than a string built at the call site,
+and both are pinned by `test/Deploy/store-retention-test.sh`.
+
+`shared/data/htaccess-backups/` keeps the last `DEPLOY_KEEP_HTACCESS=10`. One copy per
+deploy, tiny, so this is clutter rather than a privacy question.
+
+`shared/data/exceptions/` ages a fingerprint off after `DEPLOY_KEEP_EXCEPTION_DAYS=90`
+without firing. **The age comes from `<fp>/last.txt`, not from the directory**: on Linux,
+rewriting a file inside a directory does not move the directory's mtime, so ageing on the
+directory would delete fingerprints that are still failing every day. `.emails/` and
+`.overflow` are bookkeeping and are never touched. Deleting a fingerprint re-arms its
+notification threshold, so a failure that returns after that long is reported as new —
+which is the behaviour you want. This is deliberately *not* done through
+`clear-exceptions.sh`: that archives to the deploying machine first, and on a runner the
+archive is discarded, which is the mistake #297 fixed for backups.
 
 Full-DDL credentials live only in `.deploy.local` and are used through an **SSH
 tunnel** to the server's own `127.0.0.1:3306` (`DEPLOY_DB_TUNNEL_PORT` locally; if
