@@ -271,13 +271,39 @@ connection and plans the release without touching the server.
 | 11 | Post-swap | server | `cache:flush-persistent` (APCu, over HTTP — see below) |
 | 12 | Make the swap visible | local | reset **every** opcode-cache segment; not optional |
 | 13 | Confirm the live release | local | `/_health` polled 12×; any disagreement **aborts before any migration runs** |
-| 13b | Sustained check | local | only when a `@destructive` migration is pending: three rounds, 45 s apart |
+| 13b | Sustained check | local | only when a `@destructive` migration is pending: **three consecutive** agreeing rounds, 45 s apart, waiting out drift for up to 480 s |
 | 14 | Post-migrations | local → tunnel | `@phase: post`, now that the new code is provably running |
 | 15 | Smoke | local | `tools/smoke-prod.sh`; a failure rolls back automatically unless that would be worse |
 | 16 | Housekeeping | local / server | tag `deploy/<ts>` locally (never pushed; `git tag -l 'deploy/*'` answers "what shipped?"); prune to `DEPLOY_KEEP_RELEASES` (5), never the live release or its predecessor |
 
 Any failure before the swap leaves production untouched; nothing irreversible
 happens before step 13 passes.
+
+### Step 13b waits, because drift is normal
+
+A `@destructive` migration drops something older code still reads, so it must not run
+while any pool is still serving the previous release. Step 13 asks once; 13b asks
+repeatedly, and requires **three consecutive** agreements rather than three attempts.
+
+It used to abort the first time a round disagreed, which made its real patience one
+interval — shorter than the four minutes its own message said pool drift takes to clear.
+The first destructive migration to meet it (#310, dropping eight IP-address columns on
+2026-09-24) aborted after 56 s on an otherwise correct deploy, leaving the migration to be
+run by hand. Under push-to-deploy that is the wrong trade: the abort is benign by its own
+admission — the symlink is already swapped and nothing has run — so waiting costs only
+time, while giving up removes the automation from exactly the deploys nobody is watching.
+
+Two things are deliberately **not** waited out:
+
+- **A revision that cannot be read at all.** A wrong `DEPLOY_API_KEY` or an unreachable
+  `/_health` answers that way for the whole timeout and then fails anyway, so it fails at
+  once instead, with a different message.
+- **Drift that outlasts 480 s.** That is no longer a pool recycling slowly; it is a pool
+  not recycling, and the deploy says so rather than waiting forever.
+
+`DEPLOY_DRIFT_TIMEOUT`, `DEPLOY_DRIFT_INTERVAL` and `DEPLOY_DRIFT_STREAK` override the
+defaults (480 / 45 / 3). `test/Deploy/drift-wait-test.sh` drives the loop with scripted
+responses and a stubbed clock, so the eight-minute timeout is exercised in microseconds.
 
 **The release is exactly `git ls-files`.** The transfer list
 comes from git, not the working directory, so local cruft cannot reach production,

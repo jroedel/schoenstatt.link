@@ -737,6 +737,12 @@ census_segments() {
 # and it is served by the Symfony kernel without booting laminas — so it answers
 # even when the legacy bootstrap is fatalling, which is exactly the state this is
 # meant to detect.
+# 0 = every probe agrees.
+# 1 = a pool is serving something else. Transient by nature: pools recycle.
+# 2 = the revision could not be read at all. NOT transient — a wrong key or an
+#     unreachable endpoint answers this way forever, so a caller that waits out a 1
+#     must not wait out a 2. Both are still non-zero, so the plain `if !` callers
+#     below are unaffected.
 assert_live_revision() {
     local want=$1 i got mismatched=0
     if [ -z "$DEPLOY_API_KEY" ]; then
@@ -750,7 +756,7 @@ assert_live_revision() {
             | sed -n 's/.*"revision" *: *"\([0-9a-f]*\)".*/\1/p')
         if [ -z "$got" ]; then
             warn "/_health did not report a revision (attempt $i). Is the key right?"
-            return 1
+            return 2
         fi
         if [ "$got" != "$want" ]; then
             warn "/_health reports $got, expected $want"
@@ -1447,28 +1453,91 @@ else
     PENDING_DESTRUCTIVE=' (unknown)'
 fi
 
+# >>> drift bookkeeping
+#
+# Waiting for every pool to report the release that was just swapped in, before a
+# destructive migration drops what older code still reads.
+#
+# This used to abort the first time any round disagreed, which made its real patience one
+# interval — shorter than the four minutes its own error message said drift takes to
+# clear. #310 was the first destructive migration to meet it: it aborted after 56 seconds,
+# leaving a correct deploy to be finished by hand. Under push-to-deploy that is the wrong
+# trade. The abort is benign by its own admission — nothing irreversible has happened — so
+# waiting costs time, while bailing out removes the automation from exactly the deploys
+# where nobody is watching.
+#
+# Drift is therefore waited out, and three CONSECUTIVE agreements are required: a pool that
+# answers correctly once and then reveals itself must not count towards the streak.
+#
+# What is NOT waited out is a revision that cannot be read at all. A wrong key or an
+# unreachable /_health answers that way forever, so waiting the full timeout would just
+# delay the same failure by eight minutes while looking like drift.
+#
+# Returns rather than failing, so the messages live with their context in the caller and
+# this loop can be driven by test/Deploy/drift-wait-test.sh with no server:
+#   0  agreement held for DRIFT_STREAK consecutive rounds
+#   1  still drifting when DRIFT_TIMEOUT ran out
+#   2  the live revision could not be read; state unknown
+DRIFT_TIMEOUT=${DEPLOY_DRIFT_TIMEOUT:-480}
+DRIFT_INTERVAL=${DEPLOY_DRIFT_INTERVAL:-45}
+DRIFT_STREAK=${DEPLOY_DRIFT_STREAK:-3}
+
+DRIFT_WAITED=0
+await_revision_agreement() {
+    local want=$1 streak=0 rc
+    DRIFT_WAITED=0
+    while :; do
+        assert_live_revision "$want"
+        rc=$?
+        case $rc in
+            0) streak=$((streak + 1)) ;;
+            2) return 2 ;;
+            *)
+                [ "$streak" -gt 0 ] && warn "agreement broke after $streak round(s); the streak restarts."
+                streak=0
+                ;;
+        esac
+        [ "$streak" -ge "$DRIFT_STREAK" ] && return 0
+        [ "$DRIFT_WAITED" -ge "$DRIFT_TIMEOUT" ] && return 1
+        sleep "$DRIFT_INTERVAL"
+        DRIFT_WAITED=$((DRIFT_WAITED + DRIFT_INTERVAL))
+    done
+}
+# <<< drift bookkeeping
+
 if [ -n "$PENDING_DESTRUCTIVE" ]; then
     step "Sustained revision check — destructive migration pending:$PENDING_DESTRUCTIVE"
     info "Older code cannot survive this migration, so the live site must agree on"
-    info "$REL consistently, not once. Three rounds, 45s apart."
-    for round in 1 2 3; do
-        if ! assert_live_revision "$SHA"; then
-            fail "a pool is still serving an older release, and the pending migration(s)
- ($PENDING_DESTRUCTIVE) would break whatever is still running that code.
+    info "$REL consistently, not once: $DRIFT_STREAK consecutive rounds, ${DRIFT_INTERVAL}s apart."
+    info "A pool that has not recycled yet is drift, not a fault, so a disagreement restarts"
+    info "the streak rather than ending the deploy. Up to ${DRIFT_TIMEOUT}s for it to settle."
+
+    await_revision_agreement "$SHA"
+    case $? in
+        2)
+            fail "the live revision cannot be read, so whether a pool is behind is unknown.
+  A destructive migration ($PENDING_DESTRUCTIVE) will not be run against an unknown state.
 
   Nothing irreversible has happened: the symlink points at $REL and no post-deploy
-  migration has run. This is drift, and it clears on its own as pools recycle —
-  measured at roughly four minutes on 2026-08-17. Wait a few minutes and run:
+  migration has run. Check DEPLOY_API_KEY, and that /_health answers it."
+            ;;
+        1)
+            fail "a pool is STILL serving an older release after ${DRIFT_WAITED}s, and the pending
+  migration(s) ($PENDING_DESTRUCTIVE) would break whatever is still running that code.
+
+  Nothing irreversible has happened: the symlink points at $REL and no post-deploy
+  migration has run. Drift clears as pools recycle — measured at roughly four minutes on
+  2026-08-17 — so outlasting ${DRIFT_TIMEOUT}s means a pool is not recycling at all rather
+  than being slow. Read docs/DEPLOY.md, then:
 
       ./tools/deploy.sh --migrations     # confirm what is still pending
       bash tools/migrate.sh apply --phase=post
 
-  Do not force it. Read docs/DEPLOY.md for what
-  happens when a DROP meets code that has not caught up."
-        fi
-        [ "$round" -lt 3 ] && sleep 45
-    done
-    ok "agreement held across three rounds; safe to migrate"
+  Do not force it. A DROP that meets code which has not caught up is the
+  2026-08-18 outage."
+            ;;
+    esac
+    ok "agreement held across $DRIFT_STREAK consecutive rounds after ${DRIFT_WAITED}s; safe to migrate"
 fi
 
 step "Post-deploy migrations"
