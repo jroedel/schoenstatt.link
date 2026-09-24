@@ -96,11 +96,36 @@ DEPLOY_DB_PASS=TODO
 # unrelated WordPress container's MariaDB.
 DEPLOY_DB_TUNNEL_PORT=13306
 
-# Retention for the table snapshots taken before each migration
-# (data/deploy/backups/, gitignored, this machine only). Both are floors: a
-# snapshot is deleted only when it is BOTH outside the last N runs for its
-# environment AND older than the day limit. So a quiet month cannot leave you
-# with nothing, and a busy afternoon cannot age out yesterday's. Every deletion
-# is named on screen.
-DEPLOY_KEEP_BACKUP_RUNS=2
-DEPLOY_KEEP_BACKUP_DAYS=30
+# Retention for the table snapshots taken before each migration (on the server
+# in shared/migration-snapshots/ for production, data/deploy/backups/ for the
+# capsule). Every deletion is named on screen.
+#
+# The first two are floors: a snapshot survives if it is among the last N runs
+# for its environment OR younger than the day limit, so a quiet month cannot
+# leave you with nothing and a busy afternoon cannot age out yesterday's.
+#
+# The third is a ceiling and beats both. The run floor protects by POSITION and
+# has no time limit of its own, so without this the last few snapshots are kept
+# until that many further migrations happen — which, across the month of 2026
+# with no migrations at all, was never. A snapshot of data deliberately erased
+# must not have its lifetime decided by whether anyone writes another migration.
+#
+# MAX must be greater than KEEP_DAYS; set it empty to disable the ceiling and
+# get the old unbounded behaviour back.
+DEPLOY_KEEP_BACKUP_RUNS=3
+DEPLOY_KEEP_BACKUP_DAYS=7
+DEPLOY_MAX_BACKUP_DAYS=30
+
+# The two stores the deploy prunes in its housekeeping step, both of which grew
+# without any limit until 2026-09-24.
+#
+# htaccess-backups: one copy of public/.htaccess per deploy. Tiny, so this is
+# clutter rather than a privacy question; the last ten answer "what did it look
+# like before".
+DEPLOY_KEEP_HTACCESS=10
+# exceptions: one directory per distinct failure, aged on <fp>/last.txt — the
+# last time that failure actually happened. Longer than a snapshot's ceiling on
+# purpose: this is diagnostic, it holds only a truncated /24, and a rare fault
+# needs a wider window than a backup does. Deleting a fingerprint re-arms its
+# notification threshold, so one that returns after this long is reported as new.
+DEPLOY_KEEP_EXCEPTION_DAYS=90
