@@ -414,6 +414,10 @@ final class RuleSurface
 
         $date = $moment->format('Y-m-d');
 
+        // Whether this moment fell on the reference's own day. Only then can its
+        // time-of-day have come from the clock — see the guard below.
+        $sameDay = false;
+
         foreach ([0, 1, 2, -1, -2] as $days) {
             $reference = $now->modify(sprintf('%+d days', $days));
             if ($moment->format('m-d') !== $reference->format('m-d')) {
@@ -425,13 +429,27 @@ final class RuleSurface
                 $days,
                 (int) $moment->format('Y') - (int) $reference->format('Y')
             );
+            $sameDay = 0 === $days;
             break;
         }
 
         $secondsIntoDay = static fn(DateTimeInterface $at): int
             => (int) $at->format('H') * 3600 + (int) $at->format('i') * 60 + (int) $at->format('s');
 
-        $time = abs($secondsIntoDay($moment) - $secondsIntoDay($now)) <= self::CLOCK_TOLERANCE
+        // `$sameDay` is the whole of this fix, and without it the recording is unstable
+        // for ten minutes around every time-of-day it contains. Proximity of the
+        // time-of-day ALONE says nothing: `'2020-03-15'` parses to midnight, which is
+        // within 300 seconds of the clock for five minutes after midnight, so between
+        // 00:00 and 00:05 every fixed date in the corpus recorded `<clock>` instead of
+        // `00:00:00` and the comparison failed. The same held around 14:30 for the two
+        // `date-iso-datetime` cases. It cost a refused production deploy on 2026-09-24,
+        // the CI run having landed at 00:04:37.
+        //
+        // A clock-derived time-of-day always arrives on the reference's own day: `'1799'`
+        // is this month, this day, this second of the year 1799 — the year moves, the day
+        // does not. A moment on any other date cannot have taken its time from this
+        // clock, however close the two happen to look.
+        $time = $sameDay && abs($secondsIntoDay($moment) - $secondsIntoDay($now)) <= self::CLOCK_TOLERANCE
             ? '<clock>'
             : $moment->format('H:i:s');
 
