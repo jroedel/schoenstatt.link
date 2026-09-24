@@ -626,8 +626,8 @@ final class BootstrapFormRenderer
                 'value'];
         /**
          * FormDate declares none of its own — it extends AbstractFormDateTime, and this is
-         * that class's list. Note the absence of `placeholder`, which PersonForm declares
-         * on `birthDate`: laminas drops it and so must this.
+         * that class's list. Note the absence of `placeholder`: a Date element may declare
+         * one, and laminas drops it, so this must too.
          */
         $date = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'max',
                  'min', 'readonly', 'required', 'step', 'type', 'value'];

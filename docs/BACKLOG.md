@@ -183,13 +183,6 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   (helpers use `$this->getView()->plugin()`), `SionController` undefined `$entity`,
   `LibraryOptions::getArrayCopy()` without `return`, duplicate array keys in `Coins.php`. A
   receiver-blind scan (every defined method name vs every `$var->name(` call) finds more.
-- **Four patres date fields ride on every person save and nothing renders them**
-  (`priestDate`, `priestDatePrecision`, `bishopDate`, `bishopDatePrecision` on the shared
-  `Schoenstatt\Form\PersonForm`; `templates/schoenstatt/_person-fields.html.twig` round-trips
-  them as hidden inputs). Proper fix: a validation group naming only the fields this app
-  shows (`EditAssignmentForm::prepareforEdit()` is the precedent). **Never give the
-  `*Precision` columns a default**: the same POST's `PriestDate => null` would then erase
-  the ordination dates of the ten persons who have one.
 - **The publication form fetches an author list no picker offers**:
   `templates/books/publication-edit.html.twig:97` says `authorPersons.concat(authorAssociations);`
   and discards the result, so no `IsAuthor` association has ever been offered. One-word fix,

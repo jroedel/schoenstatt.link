@@ -2338,10 +2338,6 @@ second line',
           0 => '',
         ),
         'automaticTitle' => '1',
-        'birthDate' => '<DateTime>',
-        'birthDatePrecision' => 'day',
-        'bishopDate' => '<DateTime>',
-        'bishopDatePrecision' => 'day',
         'cellPhone' => '+1 202 555 0100',
         'cellPhoneHasWhatsApp' => 1,
         'contactNotes' => 'Bäseline value & "quoted"
@@ -2360,7 +2356,6 @@ second line',
         'lastName' => 'Bäseline value & "quoted" \'apostrophe\'',
         'lifeCommunity' => '81',
         'manualTitle' => 'Bäseline value & "quoted" \'apostrophe\'',
-        'nameDay' => '<DateTime>',
         'personTags' => 
         array (
           0 => 'bishop',
@@ -2376,8 +2371,6 @@ second line',
         'postStreet1' => 'Bäseline value & "quoted" \'apostrophe\'',
         'postStreet2' => 'Bäseline value & "quoted" \'apostrophe\'',
         'postZip' => 'Bäseline value & "quoted" \'apostrophe\'',
-        'priestDate' => '<DateTime>',
-        'priestDatePrecision' => 'day',
         'publicNotes' => 'Bäseline value & "quoted"
 second line',
         'skypeUser' => 'Bäseline value & "quoted" \'apostrophe\'',
@@ -2427,10 +2420,6 @@ second line',
           0 => 'no-such-option',
         ),
         'automaticTitle' => 'neither-checked-nor-unchecked',
-        'birthDate' => 'not-a-date',
-        'birthDatePrecision' => 'no-such-option',
-        'bishopDate' => 'not-a-date',
-        'bishopDatePrecision' => 'no-such-option',
         'cellPhone' => 'not a phone number',
         'cellPhoneHasWhatsApp' => 0,
         'contactNotes' => 'alert(1)',
@@ -2448,7 +2437,6 @@ second line',
         'lastName' => 'alert(1)',
         'lifeCommunity' => 'no-such-option',
         'manualTitle' => 'alert(1)',
-        'nameDay' => 'not-a-year-99-99',
         'personTags' => 
         array (
           0 => 'no-such-option',
@@ -2464,8 +2452,6 @@ second line',
         'postStreet1' => 'alert(1)',
         'postStreet2' => 'alert(1)',
         'postZip' => 'alert(1)',
-        'priestDate' => 'not-a-date',
-        'priestDatePrecision' => 'no-such-option',
         'publicNotes' => 'alert(1)',
         'skypeUser' => 'alert(1)',
         'slackUser' => '<script>alert(1)</script>',
@@ -2482,24 +2468,6 @@ second line',
       'messages' => 
       array (
         'automaticTitle' => 
-        array (
-          'notInArray' => 'The input was not found in the haystack',
-        ),
-        'birthDate' => 
-        array (
-          'dateInvalidDate' => 'The input does not appear to be a valid date',
-          'dateNotParseable' => 'This does not look like a date. Please enter one like 2020-03-15.',
-        ),
-        'birthDatePrecision' => 
-        array (
-          'notInArray' => 'The input was not found in the haystack',
-        ),
-        'bishopDate' => 
-        array (
-          'dateInvalidDate' => 'The input does not appear to be a valid date',
-          'dateNotParseable' => 'This does not look like a date. Please enter one like 2020-03-15.',
-        ),
-        'bishopDatePrecision' => 
         array (
           'notInArray' => 'The input was not found in the haystack',
         ),
@@ -2543,10 +2511,6 @@ second line',
         array (
           'notInArray' => 'The input was not found in the haystack',
         ),
-        'nameDay' => 
-        array (
-          'dateInvalidDate' => 'The input does not appear to be a valid date',
-        ),
         'phone1' => 
         array (
           'regexNotMatch' => 'Please begin with \'+\' and the country code, and use only numbers, dash, space or parenthesis. \' ext. ##\' may be added for extensions.',
@@ -2560,15 +2524,6 @@ second line',
           'regexNotMatch' => 'Please begin with \'+\' and the country code, and use only numbers, dash, space or parenthesis. \' ext. ##\' may be added for extensions.',
         ),
         'postCountry' => 
-        array (
-          'notInArray' => 'The input was not found in the haystack',
-        ),
-        'priestDate' => 
-        array (
-          'dateInvalidDate' => 'The input does not appear to be a valid date',
-          'dateNotParseable' => 'This does not look like a date. Please enter one like 2020-03-15.',
-        ),
-        'priestDatePrecision' => 
         array (
           'notInArray' => 'The input was not found in the haystack',
         ),

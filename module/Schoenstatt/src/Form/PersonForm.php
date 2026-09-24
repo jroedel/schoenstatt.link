@@ -506,93 +506,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
         ]);
 
         $this->add([
-            'name' => 'birthDate',
-            'type' => 'Date',
-            'options' => [
-                'label' => 'Birth date',
-                'format' => 'Y-m-d',
-            ],
-            'attributes' => [
-                'min' => '1900-01-01',
-                'step' => 'any',
-                'required' => false,
-            ],
-        ]);
-
-        $this->add([
-            'name' => 'birthDatePrecision',
-            'type' => 'Select',
-            'options' => [
-                'label' => 'How precisely the birth date is known',
-                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
-                //filterSpec() owns the domain check, so the Select's automatic
-                //InArray is off to leave exactly one — see DatePrecision.
-                'disable_inarray_validator' => true,
-            ],
-            'attributes' => [
-                'required' => false,
-                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
-            ],
-        ]);
-        $this->add([
-            'name' => 'priestDate',
-            'type' => 'Date',
-            'options' => [
-                'label' => 'Priest ordination date',
-                'format' => 'Y-m-d',
-            ],
-            'attributes' => [
-                'min' => '1900-01-01',
-                'step' => 'any',
-                'required' => false,
-            ],
-        ]);
-
-        $this->add([
-            'name' => 'priestDatePrecision',
-            'type' => 'Select',
-            'options' => [
-                'label' => 'How precisely the ordination date is known',
-                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
-                //filterSpec() owns the domain check, so the Select's automatic
-                //InArray is off to leave exactly one — see DatePrecision.
-                'disable_inarray_validator' => true,
-            ],
-            'attributes' => [
-                'required' => false,
-                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
-            ],
-        ]);
-        $this->add([
-            'name' => 'bishopDate',
-            'type' => 'Date',
-            'options' => [
-                'label' => 'Bishop ordination date',
-                'format' => 'Y-m-d',
-            ],
-            'attributes' => [
-                'min' => '1900-01-01',
-                'step' => 'any',
-                'required' => false,
-            ],
-        ]);
-
-        $this->add([
-            'name' => 'bishopDatePrecision',
-            'type' => 'Select',
-            'options' => [
-                'label' => 'How precisely the episcopal ordination date is known',
-                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
-                //filterSpec() owns the domain check, so the Select's automatic
-                //InArray is off to leave exactly one — see DatePrecision.
-                'disable_inarray_validator' => true,
-            ],
-            'attributes' => [
-                'required' => false,
-                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
-            ],
-        ]);
-        $this->add([
             'name' => 'isAuthor',
             'type' => 'Checkbox',
             'options' => [
@@ -618,27 +531,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'value'   => '0',
             ],
         ]);
-        $this->add([
-            'name' => 'nameDay',
-            'type' => 'DateSelect',
-            'options' => [
-                'label' => 'Name day',
-                'create_empty_option' => true,
-                'render_delimiters' => false,
-                'min_year' => 1900,
-                'day_attributes'      => [
-                    'class' => 'form-control',
-                ],
-                'month_attributes'    => [
-                    'class' => 'form-control',
-                ],
-                'year_attributes'     => [
-                    'value' => 1900,
-                    'hidden' => true,
-                ],
-            ],
-        ]);
-
         $this->add([
             'name' => 'deathDate',
             'type' => 'Date',
@@ -1235,70 +1127,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-            'birthDate' => [
-                'required' => false,
-                'filters' => [
-                    ...InputTypeRules::filters($this->get('birthDate')),
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-                'validators' => [
-                    ...InputTypeRules::date($this->get('birthDate')),
-                    ['name' => 'SionModel\Validator\ParseableDate'],
-                    [
-                        'name' => 'SionModel\Validator\DateWithinRange',
-                        'options' => ['min' => '1850-01-01', 'max' => 'today'],
-                    ],
-                ],
-            ],
-            'birthDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
-            'priestDate' => [
-                'required' => false,
-                'filters' => [
-                    ...InputTypeRules::filters($this->get('priestDate')),
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-                'validators' => [
-                    ...InputTypeRules::date($this->get('priestDate')),
-                    ['name' => 'SionModel\Validator\ParseableDate'],
-                    [
-                        'name' => 'SionModel\Validator\DateWithinRange',
-                        'options' => ['min' => '1850-01-01', 'max' => '+2 years'],
-                    ],
-                    [
-                        'name' => 'SionModel\Validator\DateNotBefore',
-                        'options' => ['field' => 'birthDate', 'relatedLabel' => 'birth date'],
-                    ],
-                ],
-            ],
-            'priestDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
-            'bishopDate' => [
-                'required' => false,
-                'filters' => [
-                    ...InputTypeRules::filters($this->get('bishopDate')),
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-                'validators' => [
-                    ...InputTypeRules::date($this->get('bishopDate')),
-                    ['name' => 'SionModel\Validator\ParseableDate'],
-                    [
-                        'name' => 'SionModel\Validator\DateWithinRange',
-                        'options' => ['min' => '1850-01-01', 'max' => '+2 years'],
-                    ],
-                    [
-                        'name' => 'SionModel\Validator\DateNotBefore',
-                        'options' => ['field' => 'priestDate', 'relatedLabel' => 'date of priestly ordination'],
-                    ],
-                ],
-            ],
-            'bishopDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
-            'nameDay' => [
-                'required' => false,
-                'filters' => [
-                    ...InputTypeRules::filters($this->get('nameDay')),
-                    ['name' => 'SionModel\Filter\DateSelectNoYear'],
-                ],
-                'validators' => InputTypeRules::date($this->get('nameDay')),
-            ],
             'deathDate' => [
                 'required' => false,
                 'filters' => [
@@ -1312,10 +1140,9 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         'name' => 'SionModel\Validator\DateWithinRange',
                         'options' => ['min' => '1850-01-01', 'max' => 'today'],
                     ],
-                    [
-                        'name' => 'SionModel\Validator\DateNotBefore',
-                        'options' => ['field' => 'birthDate', 'relatedLabel' => 'birth date'],
-                    ],
+                    //There is no longer a second date on this form to compare against, so
+                    //the DateNotBefore that paired this with the birth date is gone with it.
+                    //DateWithinRange is what bounds a death date now.
                 ],
             ],
             'deathDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
