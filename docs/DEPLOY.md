@@ -477,9 +477,8 @@ retirement, because phrase discovery un-retires whatever the old code still look
 ### Snapshot retention and credentials
 
 **A production snapshot lives on the server**, in `shared/migration-snapshots/`, and the
-migration does not run until it is there and its `sha256` matches what was sent. Anything
-else is `data/deploy/backups/` in the deploying checkout, which is where capsule
-rehearsals go.
+migration does not run until it is there and intact. Anything else is
+`data/deploy/backups/` in the deploying checkout, which is where capsule rehearsals go.
 
 That split exists because of where a deploy can run from. `data/deploy/backups/` is right
 for `make prod-deploy` — it lands in your tree and stays. On a GitHub runner it is
@@ -494,7 +493,37 @@ inside them, because everything under those two is symlinked into every release.
 docroot is `public/`, so nothing there was ever web-reachable — the point is that no
 application code should be able to reach a database dump by walking `data/`.
 
-Know what this does not protect against: the snapshot now sits on the host it was taken
+**The dump runs on the server.** `mysqldump` executes there, writes straight into
+`shared/migration-snapshots/`, and the bytes never cross the connection. `sch_visits`
+alone is 8.7 million rows and 1.9 GB: dumped through the tunnel that is an hour and a half
+with a deploy waiting on it, and a connection that drops at minute eighty starts again
+from nothing.
+
+That needs credentials on the server, and the ones in `.deploy.local` stay where they are.
+A snapshot is a read, and the server already holds an account with `SELECT` on these
+tables — the application's own, in `shared/config-autoload/local.php`, which it has had all
+along. PHP reads that config and writes a mode-600 `--defaults-extra-file`; only the
+database *name* is ever printed, and the file is removed on every exit path.
+
+The server answers with one line, and which line decides what happens next:
+
+| the server says | what it means | what the runner does |
+|---|---|---|
+| `OK <size> <sha256>` | the snapshot is in place | applies the migration |
+| `PRECHECK …` | this server cannot dump for itself: no `mysqldump`, no `php`, no config, no grant, under 2 GB free | warns, dumps through the tunnel instead, applies the migration |
+| `FAIL …` | it dumped, and what it produced cannot be trusted | aborts; nothing is applied |
+| anything else | the connection died, or said something unclassifiable | aborts; nothing is applied |
+
+The gap between the middle two rows is the point. A server that *cannot* take the snapshot
+must never stop a release — the tunnel still works, it is only slow. A dump that ran and
+came back short must always stop one, because a valid gzip of the first half of a table is
+indistinguishable from a good backup until the day you need it. `mysqldump` writes its own
+end marker; its absence is the only thing that tells the two apart, and it is checked.
+`test/Deploy/server-snapshot-test.sh` runs the shipped program here — against stubs for
+every branch, and against the capsule for the one thing stubs cannot prove, that a real
+`mysqldump` accepts what PHP wrote.
+
+Know what this does not protect against: the snapshot sits on the host it was taken
 from. That is the right trade for the failure it exists for — a migration that did the
 wrong thing — and no protection at all against losing that host. The server's own backups
 are what cover the second case.
@@ -514,6 +543,8 @@ tunnel** to the server's own `127.0.0.1:3306` (`DEPLOY_DB_TUNNEL_PORT` locally; 
 taken, the runner moves to the next free port and says so, and it asserts
 `sch_changes` + `trans_phrases` exist before touching anything). Never written to
 the server, never in `argv` — a mode-600 `--defaults-extra-file` carries them. The
+snapshot is the one step that runs on the server, and it uses the server's own
+application account rather than these; see above. The
 account must be granted for `127.0.0.1`. The production ledger is complete: 75 files
 backfilled through `db7.7`, everything after applied through the runner.
 
