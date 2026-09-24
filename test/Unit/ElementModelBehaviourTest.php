@@ -37,7 +37,7 @@ final class ElementModelBehaviourTest extends TestCase
      */
     public function testADateSelectRefusesAValueItCannotParse(): void
     {
-        $element = new DateSelect('nameDay', ['create_empty_option' => true]);
+        $element = new DateSelect('dayAndMonth', ['create_empty_option' => true]);
 
         $this->expectException(InvalidArgumentException::class);
         $element->setValue('the feast of Saint Nobody');
@@ -46,7 +46,7 @@ final class ElementModelBehaviourTest extends TestCase
     /** The other half of the same contract: a parsable string splits into three selects. */
     public function testADateSelectSplitsAParsableStringIntoItsThreeSelects(): void
     {
-        $element = new DateSelect('nameDay', ['create_empty_option' => true]);
+        $element = new DateSelect('dayAndMonth', ['create_empty_option' => true]);
         $element->setValue('1985-09-15');
 
         self::assertSame('1985', $element->getYearElement()->getValue());
@@ -57,16 +57,16 @@ final class ElementModelBehaviourTest extends TestCase
 
     /**
      * Null means *now* unless the form asked for an empty option. Surprising, laminas', and
-     * the reason `PersonForm::nameDay` sets `create_empty_option`: without it, every person
-     * with no name day would silently acquire today's date.
+     * the reason the one field of this shape this site ever had set `create_empty_option`:
+     * without it, a record with no such date silently acquires today's.
      */
     public function testANullValueMeansTodayUnlessTheFormAskedForAnEmptyOption(): void
     {
-        $withEmptyOption = new DateSelect('nameDay', ['create_empty_option' => true]);
+        $withEmptyOption = new DateSelect('dayAndMonth', ['create_empty_option' => true]);
         $withEmptyOption->setValue(null);
         self::assertNull($withEmptyOption->getValue());
 
-        $without = new DateSelect('nameDay');
+        $without = new DateSelect('dayAndMonth');
         $without->setValue(null);
         self::assertSame(date('Y-m-d'), $without->getValue());
     }

@@ -19,15 +19,16 @@ use function sprintf;
 /**
  * A day, a month and a year, as three `<select>`s that post as one field.
  *
- * One of these on the site — `Schoenstatt\Form\PersonForm::nameDay` — and it is the reason
- * this class exists at all. A name day is a day and a month with no meaningful year, which
- * is why the form hides the year select behind a fixed 1900 and pairs the field with
- * `SionModel\Filter\DateSelectNoYear`.
+ * **Nothing on this site uses one any more.** The class exists for a day-and-month with no
+ * meaningful year, and the single field of that shape — `PersonForm::nameDay` — went with
+ * its column when the birth and ordination dates were removed. It is kept because the
+ * element surface still records its answers and `SionModel` is a shared library; it is a
+ * fair candidate for removal on its own merits, not as a side effect of that change.
  *
  * ## Why an element composes elements
  *
  * The value of one of these is `1900-09-15`, and the browser posts
- * `nameDay[year]=1900&nameDay[month]=09&nameDay[day]=15`. Something has to join and split
+ * `feastDay[year]=1900&feastDay[month]=09&feastDay[day]=15`. Something has to join and split
  * that, and the choice laminas made — and this keeps — is that the parent element owns
  * three real {@see Select}s, renames them to `name[day]` and so on when the form is
  * prepared, and translates between the parts and the string in `setValue()`/`getValue()`.

@@ -6,13 +6,6 @@
   No submit row: persons/edit.phtml renders it outside this partial, with the delete
   button and its modal.
 
-  **The hidden inputs are load-bearing and are not in the laminas partial.** They
-  round-trip nameDay and the four patres date fields, which are on the form's input
-  filter but rendered by no partial on this site — so without them getData() answers null
-  for each and updateEntity() writes those nulls over real data. person-edit.html.twig has
-  the full account; it is the one place this file deliberately renders more than its
-  laminas counterpart.
-
   The cut follows laminas: this file holds what fields-partial.phtml holds, and whatever
   a page puts around it stays in that page's template.
 
@@ -71,42 +64,6 @@
 {{ form_row(form.get('contactNotes')) }}
     <hr>
     <h2>{{ translate('Personal Info') }}</h2>
-{{ form_row(form.get('birthDate')) }}
-{{ form_row(form.get('birthDatePrecision')) }}
-{# nameDay: not editable, but round-tripped. See the note at the top of this file. #}
-<input type="hidden" name="nameDay[year]" value="1900">
-<input type="hidden" name="nameDay[month]" value="{{ form.get('nameDay').getMonthElement().getValue() }}">
-<input type="hidden" name="nameDay[day]" value="{{ form.get('nameDay').getDayElement().getValue() }}">
-{#
-  The four patres date fields, for the same reason and a sharper one: **without these the
-  form cannot save at all.**
-
-  `priestDate`, `priestDatePrecision`, `bishopDate` and `bishopDatePrecision` are elements
-  on `PersonForm` and columns in the person spec's `update_columns`, but no partial on this
-  site renders them — they belong to the patres application, which shares the form. So
-  `getData()` answers null for all four and `updateEntity()` writes those nulls.
-  `PriestDatePrecision` and `BishopDatePrecision` are `NOT NULL`, added by db6.5, so the
-  write fails: **every save of a person 500s under laminas and wedges as a fatal-200 under
-  Symfony.** Reproduced and measured 2026-08-14 against both front controllers.
-
-  And the crash is the *lucky* half. It aborts before the same POST's `PriestDate => null`
-  lands, which would silently erase the ordination dates of the ten persons who have one.
-  Anyone who "fixes" the crash by defaulting the precision columns instead of round-tripping
-  them turns a loud failure into a quiet deletion — which is why this is fixed here rather
-  than filed.
-
-  **The two precision fields fall back to the element's own `value` attribute**, which the
-  create form needs and the edit form never notices. On an edit `getValue()` answers the
-  stored precision and the fallback is dead code; on a create it answers null, the hidden
-  input would carry `''`, and `DatePrecision::filterSpec()` refuses that — deliberately, so
-  that an empty precision is a loud failure rather than a silent coercion to `day`. The
-  attribute is `DatePrecision::DEFAULT_PRECISION`, i.e. exactly what a *rendered* precision
-  select posts on a create page, so this hidden input now submits what the visible ones do.
-#}
-<input type="hidden" name="priestDate" value="{{ form.get('priestDate').getValue() }}">
-<input type="hidden" name="priestDatePrecision" value="{{ form.get('priestDatePrecision').getValue() ?: form.get('priestDatePrecision').getAttribute('value') }}">
-<input type="hidden" name="bishopDate" value="{{ form.get('bishopDate').getValue() }}">
-<input type="hidden" name="bishopDatePrecision" value="{{ form.get('bishopDatePrecision').getValue() ?: form.get('bishopDatePrecision').getAttribute('value') }}">
 {{ form_row(form.get('deathDate')) }}
 {{ form_row(form.get('deathDatePrecision')) }}
 {{ form_row(form.get('publicNotes')) }}

@@ -16,17 +16,14 @@ use function is_string;
  * violate it — so this only prevents future mistakes, which is the cheapest time
  * to add a rule.
  *
- * The chain it implements on persons is
- * `birthDate <= priestDate <= bishopDate <= deathDate`. `bishopDate` is the date
- * of **episcopal** ordination, which in the Catholic church always follows
- * priestly ordination, so its place in the chain is a fact about the subject
- * rather than an assumption about the data.
+ * It used to implement a four-date chain on persons as well
+ * (`birthDate <= priestDate <= bishopDate <= deathDate`); those four dates were
+ * removed, so an assignment's start and end are the only pair left on this site.
  *
- * **Both sides have to be present, or there is nothing to compare.** 175 of 325
- * persons have no birth date, and 15 assignments have an end date with no start
- * date — the owner confirmed those are meaningful ("left in 2019, joined we do not
- * know when"). Requiring the earlier field would make every one of those records
- * unsavable, so a blank on either side is valid.
+ * **Both sides have to be present, or there is nothing to compare.** 15 assignments
+ * have an end date with no start date — the owner confirmed those are meaningful
+ * ("left in 2019, joined we do not know when"). Requiring the earlier field would
+ * make every one of those records unsavable, so a blank on either side is valid.
  *
  * Two things about `$context` that are easy to get wrong:
  *
@@ -65,8 +62,8 @@ class DateNotBefore extends AbstractValidator
 
     /**
      * How to name that field to a human. Kept separate from `field` because the
-     * element name ('priestDate') is not what the message should say
-     * ('date of priestly ordination').
+     * element name ('startDate') is not what the message should say
+     * ('date the assignment began').
      *
      * @var string
      */

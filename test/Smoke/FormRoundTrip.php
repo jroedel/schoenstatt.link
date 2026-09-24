@@ -35,10 +35,10 @@ use function sprintf;
  *
  * `fields()` reads every input, textarea and select out of the rendered form and posts
  * exactly that. A hand-written payload tests the payload; a scraped one tests the form,
- * including the parts nobody looks at — `PersonForm` round-trips `nameDay` and four
- * ordination fields through hidden inputs purely because their precision columns are
- * `NOT NULL`, and a submission that omits them crashes the save. That is invisible in a
- * fixture and unmissable in a scrape.
+ * including the parts nobody looks at — `PersonForm` once round-tripped five fields
+ * through hidden inputs purely because their precision columns were `NOT NULL`, and a
+ * submission that omitted them crashed the save. That is invisible in a fixture and
+ * unmissable in a scrape.
  *
  * It also means a removed field needs no change here: it simply stops being scraped, and
  * the assertions about what survives keep running.
