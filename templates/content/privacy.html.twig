@@ -24,9 +24,20 @@ Date published: 2016-03-15
 What personal data do we potentially collect?
 -------------------------------------------------
 
--   IP addresses and User-Agent strings for management of the website
-    and prevention and detection of malicious activity (only
-    accessible to Page administrators)
+-   **No IP addresses and no User-Agent strings.** Schoenstatt Link does not
+    store either one. Page views, record edits and library loans are all
+    recorded without them.
+
+    There is one exception, and it is deliberate: when a page fails, the
+    resulting error report keeps a *shortened* address, with the final part
+    removed, so that it identifies a network rather than a device. It is what
+    lets us tell a fault that affects one visitor from one that affects
+    everyone. It is never shown on any page.
+
+    Separately, and outside this application, the web server keeps a standard
+    access log in which each request's full address appears for a limited
+    period. That log is not part of Schoenstatt Link and is not used to build
+    any record about a person.
 
 -   Names, emails, phone numbers for the purpose of facilitating contact
     within the Schoenstatt Movement (no home addresses)
@@ -125,8 +136,9 @@ All persons have the right to be forgotten and may request this at any
 time. Otherwise, all personal data will be kept indefinitely until the
 particular person has ceased to hold any active assignment for more than
 5 years. After 5 years without any active assignments, all email
-addresses, phone numbers, social media contacts, IP addresses and User
-Agent strings will be deleted or anonymized.
+addresses, phone numbers and social media contacts will be deleted or
+anonymized. IP addresses and User-Agent strings are not listed here because
+none are stored; see the first section.
 
 Access to one's own personal data
 --------------------------------------

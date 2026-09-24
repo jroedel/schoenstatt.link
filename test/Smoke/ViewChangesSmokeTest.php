@@ -168,10 +168,9 @@ class ViewChangesSmokeTest extends SmokeTestCase
      * The change log never publishes an editor's IP address (#308).
      *
      * `SionTable::reportChange()` recorded `$_SERVER['REMOTE_ADDR']` raw on every field
-     * change — no privacyHash(), unlike registerVisit() — and this page rendered it as a
-     * tooltip on the editor's username. 165,092 of the capsule's 165,127 change rows
-     * still carry one, so the assertion is not vacuous: the column is full, and the
-     * question is only whether a response can reach it.
+     * change, and this page rendered it as a tooltip on the editor's username. 165,092 of
+     * the capsule's 165,127 change rows still carry one, so the assertion is not vacuous:
+     * the column is full, and the question is only whether a response can reach it.
      *
      * Asserted over HTTP rather than against the template, because there were three
      * places to get this wrong — the INSERT, the read in processChangeRow(), and the
