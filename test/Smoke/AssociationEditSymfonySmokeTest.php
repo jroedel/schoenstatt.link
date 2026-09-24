@@ -41,6 +41,7 @@ use PDO;
 class AssociationEditSymfonySmokeTest extends SmokeTestCase
 {
     use MagicLinkSignIn;
+    use FormRoundTrip;
 
     private const EMAIL_PREFIX = 'association-edit-smoke-';
 
@@ -49,8 +50,21 @@ class AssociationEditSymfonySmokeTest extends SmokeTestCase
     private const SW_ID = 'SL100319A';
     private const PATH = '/en/' . self::SW_ID . '/edit';
 
-    /** @var array<string, string|null>|null the row's original values, restored in tearDown */
-    private ?array $original = null;
+    protected function table(): string
+    {
+        return 'sch_associations';
+    }
+
+    /** @return array{0: string, 1: int} */
+    protected function row(): array
+    {
+        return ['AssociationId', self::ASSOCIATION_ID];
+    }
+
+    protected function formXPath(): string
+    {
+        return '//form[@id="edit_association"]';
+    }
 
     protected function emailPrefix(): string
     {
@@ -219,7 +233,7 @@ class AssociationEditSymfonySmokeTest extends SmokeTestCase
         $this->signIn($jar, ['sch_moderator']);
 
         $this->rememberAssociation();
-        $fields = $this->fieldsFromForm($this->get(self::PATH, false, $jar)['body']);
+        $fields = $this->fields($this->get(self::PATH, false, $jar)['body']);
         $fields['security'] = 'not-a-valid-token';
         $fields['openingHoursHuman'] = 'should-never-be-stored';
 
@@ -241,78 +255,10 @@ class AssociationEditSymfonySmokeTest extends SmokeTestCase
      * @return array{status: int, redirect: string, body: string, contentType: string,
      *               headers: array<string, string>}
      */
+    /** @param array<string, string> $overrides */
     private function submit(string $jar, array $overrides): array
     {
-        $form = $this->get(self::PATH, false, $jar);
-        $this->assertSame(200, $form['status'], 'GET the form before posting it');
-
-        return $this->request('POST', self::PATH, [], false, $jar, $overrides + $this->fieldsFromForm($form['body']));
-    }
-
-    /**
-     * Every input, textarea and select the rendered form carries, with its current
-     * value — a crude browser.
-     *
-     * @return array<string, string>
-     */
-    private function fieldsFromForm(string $body): array
-    {
-        $document = new \DOMDocument();
-        @$document->loadHTML($body);
-        $xpath = new \DOMXPath($document);
-
-        $form = $xpath->query('//form[@id="edit_association"]')->item(0);
-        $this->assertNotNull($form, 'the edit form was not rendered');
-
-        $fields = [];
-        foreach ($xpath->query('.//input|.//textarea|.//select', $form) as $node) {
-            /** @var \DOMElement $node */
-            $name = $node->getAttribute('name');
-            if ('' === $name) {
-                continue;
-            }
-            if ('input' === $node->nodeName) {
-                $type = $node->getAttribute('type');
-                if ('checkbox' === $type && ! $node->hasAttribute('checked')) {
-                    //The hidden twin already supplied the unchecked value, and a
-                    //browser would send nothing for the box itself.
-                    continue;
-                }
-                $fields[$name] = $node->getAttribute('value');
-                continue;
-            }
-            if ('textarea' === $node->nodeName) {
-                $fields[$name] = $node->textContent;
-                continue;
-            }
-            $selected = $xpath->query('.//option[@selected]', $node)->item(0);
-            $fields[$name] = $selected instanceof \DOMElement ? $selected->getAttribute('value') : '';
-        }
-
-        return $fields;
-    }
-
-    private function pdo(): PDO
-    {
-        return new PDO(
-            'mysql:host=db;dbname=ourlink_db1;charset=utf8mb4',
-            'schoenstatt',
-            'schoenstatt',
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
-    }
-
-    /** @return string|null */
-    private function column(string $column): ?string
-    {
-        $statement = $this->pdo()->query(sprintf(
-            'SELECT `%s` FROM sch_associations WHERE AssociationId = %d',
-            $column,
-            self::ASSOCIATION_ID
-        ));
-        $value = $statement->fetchColumn();
-
-        return false === $value || null === $value ? null : (string) $value;
+        return $this->submitForm(self::PATH, $jar, $overrides);
     }
 
     /** The columns a save here can touch, so tearDown can put them back. */
@@ -328,43 +274,11 @@ class AssociationEditSymfonySmokeTest extends SmokeTestCase
 
     private function rememberAssociation(): void
     {
-        if (null !== $this->original) {
-            return;
-        }
-
-        $statement = $this->pdo()->query(sprintf(
-            'SELECT `%s` FROM sch_associations WHERE AssociationId = %d',
-            implode('`, `', self::RESTORED_COLUMNS),
-            self::ASSOCIATION_ID
-        ));
-
-        /** @var array<string, string|null> $row */
-        $row            = $statement->fetch(PDO::FETCH_ASSOC);
-        $this->original = $row;
+        $this->remember(self::RESTORED_COLUMNS);
     }
 
     private function restoreAssociation(): void
     {
-        if (null === $this->original) {
-            return;
-        }
-
-        $pdo         = $this->pdo();
-        $assignments = [];
-        foreach ($this->original as $column => $value) {
-            $assignments[] = sprintf(
-                '`%s` = %s',
-                $column,
-                null === $value ? 'NULL' : $pdo->quote((string) $value)
-            );
-        }
-
-        $pdo->exec(sprintf(
-            'UPDATE sch_associations SET %s WHERE AssociationId = %d',
-            implode(', ', $assignments),
-            self::ASSOCIATION_ID
-        ));
-
-        $this->original = null;
+        $this->restore();
     }
 }
