@@ -42,3 +42,16 @@ dev-hooks: ## Enable the repository git hooks in this clone
 ## See the script header.
 prod-deploy: ## Deploy origin/master from a separate checkout
 	@./tools/prod-deploy.sh
+
+## .deploy.local is the SOURCE of the maintenance key; the server's local.php and
+## the GitHub production environment are copies. Generate a new key with
+##   openssl rand -base64 32 | tr -d '=+/'
+## paste it into .deploy.local, then run this to copy it to the other two. It
+## widens before it narrows, so the old key works until the new one is proved.
+prod-rotate-sion-model-api-keys: ## Copy .deploy.local's key to the server and to GitHub
+	@./tools/rotate-api-key.sh
+
+## Push .deploy.local to the GitHub production environment. Idempotent, and worth
+## running after any edit to that file — deploy.yml rebuilds .deploy.local from these.
+prod-send-secrets: ## Upload .deploy.local to the GitHub production environment
+	@./tools/gh-secrets.sh
