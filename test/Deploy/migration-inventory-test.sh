@@ -59,6 +59,48 @@ trap - EXIT
 ./tools/migrate.sh lint >/dev/null 2>&1
 check $? "and passes again once it is removed"
 
+# 4. An @tables header that is not a list of table names. This one is not about tidiness:
+#    on production the list is interpolated into a command built here and run by a shell
+#    on the server, so a quote or a semicolon in this header is a repository file reaching
+#    a remote shell. lint is where it must be caught — before a deploy, with no database
+#    and no credentials in play.
+BAD=database/db99.9.sql
+cleanup() { rm -f "$BAD"; }
+trap cleanup EXIT
+cat > "$BAD" <<'SQL'
+-- @phase: post
+-- @kind: dml
+-- @tables: sch_changes; rm -rf ~
+SELECT 1;
+SQL
+OUT=$(./tools/migrate.sh lint 2>&1)
+if [ $? = 0 ]; then
+    check 1 "an @tables header that is not table names is rejected"
+else
+    case $OUT in
+        *"not a list of table names"*) check 0 "an @tables header that is not table names is rejected" ;;
+        *) check 1 "an @tables header that is not table names is rejected (rejected for the wrong reason)"
+           printf '%s\n' "$OUT" | sed 's/^/        /' ;;
+    esac
+fi
+cleanup
+trap - EXIT
+
+# 5. …and a well-formed one with spaces after the commas, as several real migrations
+#    write it, is still accepted. A guard that rejects the valid case is worse than none.
+cleanup() { rm -f "$BAD"; }
+trap cleanup EXIT
+cat > "$BAD" <<'SQL'
+-- @phase: post
+-- @kind: dml
+-- @tables: sch_changes, lib_checkouts
+SELECT 1;
+SQL
+./tools/migrate.sh lint >/dev/null 2>&1
+check $? "a comma-and-space @tables list is accepted"
+cleanup
+trap - EXIT
+
 if [ "$FAILED" = 0 ]; then
     echo "migration inventory: all checks passed"
     exit 0

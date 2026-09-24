@@ -1624,6 +1624,6 @@ if [ "$POST_MIGRATIONS_FAILED" = 1 ]; then
     warn "That is a data step, not a code one — rolling back the release would not undo it"
     warn "and would not fix it. Read the error above, then:"
     warn "  ./tools/migrate.sh status      what applied and what did not"
-    warn "  data/deploy/backups/           the snapshot taken before it ran"
+    warn "  shared/migration-snapshots/    the snapshot taken before it ran, on the server"
     exit 1
 fi
