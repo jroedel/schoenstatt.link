@@ -8,6 +8,10 @@ require __DIR__ . '/Smoke/SmokeTestCase.php';
 // than autoloaded for the same reason as the base class: there is no autoloader in
 // this suite, and PHPUnit loads each test file on its own.
 require __DIR__ . '/Smoke/MagicLinkSignIn.php';
+// The form round-trip driver, shared by the edit-form smoke tests. Same reason again:
+// PHPUnit resolves a `use` of a trait while *collecting* the class, so an unrequired one
+// aborts the whole run before a single test executes.
+require __DIR__ . '/Smoke/FormRoundTrip.php';
 // Same reason, different suite: the integration tests do have vendor/autoload.php,
 // but `test/` is not on any PSR-4 path — so a trait shared between two test classes
 // is never loaded and PHPUnit dies at *collection* time with "Trait not found",
