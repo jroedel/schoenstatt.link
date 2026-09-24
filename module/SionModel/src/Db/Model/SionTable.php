@@ -1387,7 +1387,12 @@ class SionTable
     /**
      * Takes an array of associative arrays containing reports of changed columns.
      * Keys are table(req), field(req),  id(req), newValue, oldValue.
-     * @todo include the UserAgent
+     *
+     * The editor's IP address is deliberately NOT recorded, and the standing
+     * `@todo include the UserAgent` that sat here is deliberately not done. Both were
+     * written raw — no privacyHash() — and the IP was rendered as a tooltip on the
+     * editor's username in a panel every signed-in user can open. See #308.
+     *
      * @param string[][] $data
      */
     public function reportChange($data)
@@ -1443,7 +1448,6 @@ class SionTable
                     'OldValue'         => isset($row['oldValue']) ? $row['oldValue'] : null,
                     'UpdatedOn'        => $date->format('Y-m-d H:i:s'),
                     'UpdatedBy'        => $actingUserId,
-                    'IpAddress'        => $_SERVER['REMOTE_ADDR'], //@todo there should be a better way to do this
                 ];
                 $changesTableGateway->insert($params);
                 $i++;
@@ -1657,7 +1661,6 @@ class SionTable
             'field'                 => $this->filterDbString($row['ChangedField']),
             'newValue'              => $row['NewValue'],
             'oldValue'              => $row['OldValue'],
-            'ipAddress'             => $this->filterDbString($row['IpAddress']),
             'updatedOn'             => $updatedOn,
             'updatedBy'             => $user,
 

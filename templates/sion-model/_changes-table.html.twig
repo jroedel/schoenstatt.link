@@ -14,10 +14,12 @@
      whenever the short date differs from the previous row's, so one table carries many
      <thead> elements. Invalid-ish, universally rendered, and what the page has always
      looked like.
-  2. **`<span >`, with a stray quote, when a row has no ipAddress.** The original opens
-     `<span ` and writes the tooltip attributes conditionally, but the closing `">` sits
-     *outside* the condition. Reproduced, because the alternative is a port whose output
-     differs.
+  2. **No IP address.** The original rendered `row.ipAddress` as a tooltip on the
+     editor's username, and this port reproduced it faithfully — including a stray quote
+     that emitted `<span >` for rows with no IP. Both are gone (#308): the value was
+     stored raw and this panel is shown to every signed-in user, so the tooltip published
+     every editor's IP to the whole signed-in population. `SionTable` no longer records
+     or reads the column, so `row.ipAddress` is never set.
   3. **updatedBy prints only when it is an array**, and only its `username`. A change made
      by a user id the users table no longer holds arrives as `['userId' => n]` — an array
      with no `username` — and the original prints nothing for it (an undefined-index
@@ -44,8 +46,7 @@
 	</tr>
 	</thead>
 	{% endif %}	<tr>
-    	<td><span{% if row.ipAddress is defined and row.ipAddress %} data-toggle="tooltip" data-placement="bottom" data-container="body"
-    	title="{{ row.ipAddress }}{% endif %}">{{ row.updatedBy is iterable ? (row.updatedBy.username ?? '') : '' }}</span>
+    	<td><span>{{ row.updatedBy is iterable ? (row.updatedBy.username ?? '') : '' }}</span>
     	</td>{% if show_entity %}		<td>{% if row.object is defined and row.object is not null %}{{ fmt.entity(row.entityType, row.object, {'displayEditPencil': (row.object.isDeleted ?? null) is null, 'failSilently': true}) }}{% endif %}</td>{% endif %}		<td>{{ row.field }}</td>
 		<td>{{ truncate(row.oldValue, 150) }}</td>
 		<td>{{ truncate(row.newValue, 150) }}</td>

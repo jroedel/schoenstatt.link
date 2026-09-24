@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
+use function array_unique;
+use function array_values;
 use function microtime;
+use function preg_match_all;
 use function sprintf;
 use function strlen;
 use function substr_count;
@@ -159,6 +162,94 @@ class ViewChangesSmokeTest extends SmokeTestCase
 
         self::assertSame(302, $response['status']);
         self::assertStringEndsWith('/en/sm/view-changes', $response['redirect']);
+    }
+
+    /**
+     * The change log never publishes an editor's IP address (#308).
+     *
+     * `SionTable::reportChange()` recorded `$_SERVER['REMOTE_ADDR']` raw on every field
+     * change — no privacyHash(), unlike registerVisit() — and this page rendered it as a
+     * tooltip on the editor's username. 165,092 of the capsule's 165,127 change rows
+     * still carry one, so the assertion is not vacuous: the column is full, and the
+     * question is only whether a response can reach it.
+     *
+     * Asserted over HTTP rather than against the template, because there were three
+     * places to get this wrong — the INSERT, the read in processChangeRow(), and the
+     * tooltip — and only a rendered page proves all three at once.
+     */
+    public function testTheChangeLogNeverShowsAnEditorsIpAddress(): void
+    {
+        $jar = $this->newCookieJar();
+        $this->signIn($jar, ['sch_general_moderator']);
+
+        $body = $this->get('/en/sm/view-changes', false, $jar)['body'];
+
+        //floor first: a page that rendered nothing would pass the real assertion
+        self::assertStringContainsString('Database edits', $body, 'the page rendered no heading');
+        self::assertGreaterThan(100, substr_count($body, '<tr>'), 'too few rows to be a real change log');
+
+        self::assertSame(
+            [],
+            self::ipAddressesIn($body),
+            'the change log is publishing editor IP addresses again — see SionTable::reportChange()'
+        );
+    }
+
+    /**
+     * And the panel on an entity page, which is the wider exposure of the two.
+     *
+     * /sm/view-changes is behind `sch_general_moderator`. The same table is rendered
+     * inline on association, publication, book and composition pages behind
+     * `is_allowed('route/association-edit')` — and that resource is granted to
+     * `sch_user`, which is `is_default = 1`. A default role means "signed in", so this
+     * panel is what any authenticated account sees. The account below is granted no
+     * roles at all for exactly that reason.
+     *
+     * Association 319 is used because it carries 367 IP-bearing change rows, the most of
+     * any association in the capsule.
+     */
+    public function testTheEntityChangePanelShowsNoIpAddressToAnOrdinarySignedInVisitor(): void
+    {
+        $jar = $this->newCookieJar();
+        $this->signIn($jar, []);
+
+        //followed: the numeric id 301s to the association's canonical text-id URL, and
+        //what this asserts about is the page at the end of that, not the redirect
+        $response = $this->get('/en/associations/319', true, $jar);
+
+        self::assertSame(200, $response['status']);
+        $body = $response['body'];
+
+        //the floor that matters here: if the panel stopped rendering for a default role,
+        //the IP assertion would pass while testing nothing
+        self::assertStringContainsString(
+            'id="changesPanel"',
+            $body,
+            'no change panel on the page: a default role can no longer see it, so this test '
+            . 'is no longer exercising the exposure it was written for'
+        );
+
+        self::assertSame(
+            [],
+            self::ipAddressesIn($body),
+            'an entity change panel is publishing editor IP addresses to every signed-in user'
+        );
+    }
+
+    /**
+     * Every dotted quad in a response body, deduplicated.
+     *
+     * Returned rather than counted so a failure names what leaked. Four dot-separated
+     * numbers is not a shape this application's pages otherwise produce — asset versions
+     * are three parts at most — and a false positive here is a page worth reading anyway.
+     *
+     * @return list<string>
+     */
+    private static function ipAddressesIn(string $body): array
+    {
+        preg_match_all('/\b(?:\d{1,3}\.){3}\d{1,3}\b/', $body, $matches);
+
+        return array_values(array_unique($matches[0]));
     }
 
     protected function tearDown(): void
