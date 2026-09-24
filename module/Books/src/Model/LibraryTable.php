@@ -1045,8 +1045,6 @@ ORDER BY `publisher`";
                 $data = [
                     'checkedInOn'           => $today,
                     'checkedInBy'           => $this->getActingUserId(),
-                    'checkedInIp'           => $_SERVER['REMOTE_ADDR'],
-//                     'checkedInUserAgent'    => $row['CheckedInUserAgent']),
                 ];
                 //don't refresh the cache
                 $this->updateEntity('checkout', $checkoutId, $data, [], false);
@@ -1063,14 +1061,10 @@ ORDER BY `publisher`";
                         'bookId'                => $bookId,
                         'checkedOutOn'          => $today,
                         'checkedOutBy'          => $this->getActingUserId(),
-                        'checkedOutIp'          => $_SERVER['REMOTE_ADDR'],
-//                         'checkedOutUserAgent'   => $row['CheckedOutUserAgent']),
                         'dueOn'                 => $today,
 
                         'checkedInOn'           => $today,
                         'checkedInBy'           => $this->getActingUserId(),
-                        'checkedInIp'           => $_SERVER['REMOTE_ADDR'],
-//                     'checkedInUserAgent'    => $row['CheckedInUserAgent']),
                     ];
                     (string)$this->createEntity('checkout', $data, false);
                     $booksToCheckin[$checkout['bookId']] = true;
@@ -1866,8 +1860,8 @@ ORDER BY CreatedOn DESC";
 //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
 //          'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
             $select->columns(['CheckoutId', 'PersonId', 'BookId', 'CheckedOutOn', 'CheckedOutBy',
-                'CheckedOutIp', 'CheckedOutUserAgent', 'DueOn', 'TimesRenewed', 'LastRenewedOn', 'CheckedInOn',
-                'CheckedInBy', 'CheckedInIp', 'CheckedInUserAgent', 'AdminNotes', 'AdminNotesUpdatedOn',
+                'DueOn', 'TimesRenewed', 'LastRenewedOn', 'CheckedInOn',
+                'CheckedInBy', 'AdminNotes', 'AdminNotesUpdatedOn',
                 'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy']);
 //, 'CurrentCheckouts' => new Expression('(SELECT MAX(`CheckoutId`)
 //  FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')]);
@@ -1906,15 +1900,11 @@ ORDER BY CreatedOn DESC";
             'bookId'                => $this->filterDbId($row['BookId']),
             'checkedOutOn'          => $this->filterDbDate($row['CheckedOutOn']),
             'checkedOutBy'          => $this->filterDbId($row['CheckedOutBy']),
-            'checkedOutIp'          => $row['CheckedOutIp'],
-            'checkedOutUserAgent'   => $row['CheckedOutUserAgent'],
             'dueOn'                 => $dueOn,
             'timesRenewed'          => $this->filterDbInt($row['TimesRenewed']),
             'lastRenewedOn'         => $this->filterDbDate($row['LastRenewedOn']),
             'checkedInOn'           => $checkedIn,
             'checkedInBy'           => $this->filterDbId($row['CheckedInBy']),
-            'checkedInIp'           => $row['CheckedInIp'],
-            'checkedInUserAgent'    => $row['CheckedInUserAgent'],
             'adminNotes'            => $row['AdminNotes'],
             'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
             'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
@@ -2140,14 +2130,12 @@ ORDER BY CreatedOn DESC";
                 $data['checkedOutBy'] = $this->getActingUserId();
             }
 
-            if (! isset($data['checkedOutIp'])) {
-                $data['checkedOutIp'] = $_SERVER['REMOTE_ADDR'];
-            }
-
-            //@todo find a safe way to store user agent
-//             if (!isset($data['checkedOutUserAgent'])) {
-//                 $data['checkedOutUserAgent'] = $_SERVER['REMOTE_ADDR'];
-//             }
+            //No IP address and no User-Agent. The commented-out User-Agent capture here
+            //carried `//@todo find a safe way to store user agent` from 2020; the safe way
+            //is not to. A borrower is not an account holder — they reach a loan through a
+            //scoped ?t= token — so this tied a named person to a raw address with no
+            //notice, and docs/libraries.md already records that an IP is not an
+            //authentication signal here and cannot become one.
 
             //calculate the dueDate
             if (! isset($data['dueOn'])) {

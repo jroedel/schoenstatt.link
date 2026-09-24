@@ -1163,14 +1163,16 @@ function httpRequest(string $method, string $url, string $jar, ?array $post = nu
         CURLOPT_COOKIEJAR      => $jar,
         CURLOPT_CUSTOMREQUEST  => $method,
         CURLOPT_TIMEOUT        => 120,
-        //Not decoration. ext/curl sends no User-Agent unless told to, and
-        //SionTable::registerVisit() reads $_SERVER['HTTP_USER_AGENT'] unguarded — so a
-        //capture without this one line renders every visit-registering page (the
-        //dictionaries) with three PHP warnings printed above the doctype,
-        //and the second and third of those are "Cannot modify header information",
-        //i.e. the page also loses its Content-Security-Policy. That is a real
-        //robustness bug in SionModel, not an artefact of this tool; the tool just
-        //stops triggering it, because a capture is supposed to look like a browser.
+        //A capture is supposed to look like a browser, and ext/curl sends no
+        //User-Agent unless told to.
+        //
+        //This line used to be load-bearing for a second reason, now gone:
+        //SionTable::registerVisit() read $_SERVER['HTTP_USER_AGENT'] unguarded, so a
+        //capture without it rendered every visit-registering page (the dictionaries)
+        //with three PHP warnings above the doctype — the second and third being
+        //"Cannot modify header information", i.e. the page also lost its
+        //Content-Security-Policy. registerVisit() no longer reads either superglobal,
+        //so that failure mode cannot recur.
         CURLOPT_USERAGENT      => 'schoenstatt-port-baseline',
     ]);
     if (null !== $post) {
