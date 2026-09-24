@@ -1,15 +1,35 @@
 # Deploy schoenstatt.link from a runner.
 #
-# WHAT THIS IS NOT, YET: push-to-deploy. The only trigger is `workflow_dispatch`, and the
-# job runs in the `production` GitHub Environment, which is where the required reviewer
-# lives. A deploy is still a person's decision — the difference is that the decision is a
-# button rather than a laptop holding the credentials. Adding `push: branches: [master]`
-# is the last step of #263 and should wait until this has run clean several times.
+# THIS IS PUSH-TO-DEPLOY (2026-09-24, the last step of #263). A commit that lands on master
+# and goes green in CI ships itself: `workflow_run` fires when CI completes, and there is
+# no approval step. `workflow_dispatch` is kept for the deploys that are still a decision —
+# a dry run, or a re-deploy of an unchanged tip — but it is no longer the way ordinary work
+# reaches production.
 #
-# WHY IT CAN NEVER RUN FROM A PULL REQUEST: it has no `pull_request` trigger. That matters
-# beyond taste. This repository is going public (#259), and on a public repository the one
-# reliable way to keep a fork's pull request away from these secrets is not to give it a
-# trigger that could reach them.
+# WHAT THAT MAKES UNATTENDED, and it is worth naming once: migrations. tools/deploy.sh runs
+# the pending `database/*.sql` through the ledger with nobody watching. That path is built
+# for it and has every guard it needs — phases, per-file sha256, a snapshot on the server,
+# an `@verify` that must return zero rows — but as of this change it has still never run in
+# anger. The first merge that carries a migration is the one to watch land.
+#
+# NOT `push: branches: [master]`. A push trigger fires the instant the merge lands, while
+# CI is still queued, so the gate below would ask whether CI passed on a commit CI has not
+# finished — and refuse every time. `workflow_run` fires *after* CI, which is the only
+# ordering in which the gate can ever be satisfied.
+#
+# WHY IT CAN NEVER RUN FROM A PULL REQUEST: it has no `pull_request` trigger, and no
+# `pull_request_target` either. That matters beyond taste. This repository went public on
+# 2026-09-24 (#259), and the one reliable way to keep a fork's pull request away from these
+# secrets is not to give it a trigger that could reach them.
+#
+# `workflow_run` needs its own answer to that, because it is not covered by the same
+# reasoning. CI *does* run on a fork's pull request, so a fork can make this workflow's
+# trigger fire — and a `workflow_run` job runs in master's context, which means the
+# `production` environment's branch restriction sees `refs/heads/master` and passes no
+# matter whose commit CI was testing. The branch restriction is therefore NOT the guard
+# here. The `if:` on the job is: it demands the run succeeded, that its head branch was
+# master, and that its head repository was this one. Removing any of those three hands a
+# fork the deploy key.
 #
 # THE SECRETS ARE THE WHOLE CONFIGURATION. tools/deploy.sh sources a file of shell
 # assignments; this writes that file from GitHub secrets into RUNNER_TEMP rather than into
@@ -30,6 +50,12 @@ on:
         description: "Preflight and plan only; the server is not modified"
         type: boolean
         default: true
+  workflow_run:
+    # `workflows` matches on ci.yml's `name:`, not its filename. Renaming CI silently
+    # stops every automatic deploy, with no error anywhere — the workflow simply never
+    # fires. test/Deploy/workflow-triggers-test.sh holds the two names together.
+    workflows: [CI]
+    types: [completed]
 
 concurrency:
   group: deploy-production
@@ -46,6 +72,25 @@ jobs:
     name: ${{ inputs.dry_run && 'Dry run' || 'Deploy master' }}
     runs-on: ubuntu-latest
     environment: production
+    # Three conditions, and the header says why each is load-bearing. A dispatch is exempt
+    # because only someone with write access can dispatch, and `production` is restricted
+    # to master.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    env:
+      # The commit this run ships, decided once so the checkout, the CI gate and the
+      # script's own claim cannot disagree.
+      #
+      # For a workflow_run event `github.sha` is master's tip AT FIRE TIME, which is not
+      # necessarily the commit CI just proved: if a second merge lands during CI's ~7
+      # minutes, the run that just went green was testing the older commit while
+      # `github.sha` already names the newer one. Deploying that pairing would credit an
+      # unverified commit with a green run — exactly what DEPLOY_VERIFIED_SHA exists to
+      # prevent. `workflow_run.head_sha` is the commit CI actually tested.
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,22 +105,25 @@ jobs:
         # detached HEAD. `checkout -B` makes that true without depending on what
         # actions/checkout does with a branch ref.
         #
-        # The equality check is the part that matters. If master moved between the dispatch
-        # and now, the commit CI proved green and the commit deploy.sh would ship are
-        # different, and deploy.sh would notice but only WARN — and -y forces past a
-        # warning. So it is refused here instead. Re-dispatch; the new tip needs its own
-        # green run anyway.
-        env:
-          SHA: ${{ github.sha }}
+        # The equality check is the part that matters. If master moved on, the commit CI
+        # proved green and the commit deploy.sh would ship are different, and deploy.sh
+        # would notice but only WARN — and -y forces past a warning. So it is refused here
+        # instead.
+        #
+        # Under workflow_run this is the rapid-merge case and it is benign: the newer
+        # commit has its own CI run in flight, and that run's workflow_run will deploy it.
+        # The refusal is still loud rather than a quiet skip, because "a deploy did not
+        # happen" should never be something you have to go looking for.
         run: |
           git fetch --quiet origin master
           REMOTE=$(git rev-parse origin/master)
-          if [ "$REMOTE" != "$SHA" ]; then
-            echo "::error::master has moved since this run was dispatched \
-          (dispatched ${SHA:0:7}, origin/master is now ${REMOTE:0:7}). Re-dispatch." >&2
+          if [ "$REMOTE" != "$TARGET_SHA" ]; then
+            echo "::error::master has moved on (this run is for ${TARGET_SHA:0:7}, \
+          origin/master is now ${REMOTE:0:7}). Refused. If a newer commit landed, its own \
+          CI run deploys it and nothing here needs doing." >&2
             exit 1
           fi
-          git checkout -B master "$SHA"
+          git checkout -B master "$TARGET_SHA"
           git status --porcelain
 
       - name: Require CI green on this exact commit
@@ -90,17 +138,16 @@ jobs:
         # reviewer on the `production` environment is the rest of it.
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.sha }}
         run: |
           RUN_ID=$(gh api -X GET \
             "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
-            -f head_sha="$SHA" -f status=success \
+            -f head_sha="$TARGET_SHA" -f status=success \
             --jq '.workflow_runs | sort_by(.run_number) | last | .id // empty')
           if [ -z "$RUN_ID" ]; then
-            echo "::error::CI has no successful run for $SHA. Deploy refused." >&2
+            echo "::error::CI has no successful run for $TARGET_SHA. Deploy refused." >&2
             exit 1
           fi
-          echo "ci.yml run $RUN_ID passed on ${SHA:0:7}"
+          echo "ci.yml run $RUN_ID passed on ${TARGET_SHA:0:7}"
           echo "CI_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
 
       - name: Write the deploy configuration
@@ -199,11 +246,15 @@ jobs:
         env:
           DEPLOY_CONFIG: ${{ runner.temp }}/deploy.local
           DEPLOY_LOCK_OWNER: github-actions/${{ github.run_id }}
-          DEPLOY_VERIFIED_SHA: ${{ github.sha }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           # CI_RUN_ID comes from the gate step above, so this names the run that actually
-          # proved the commit green rather than this deploy's own run.
+          # proved the commit green rather than this deploy's own run. TARGET_SHA comes
+          # from the job's env, so the script is told the same commit the gate checked.
+          #
+          # DRY_RUN is empty on a workflow_run event — `inputs` exists only for a dispatch —
+          # and an empty string is not "true", so an automatic deploy is a real one.
+          export DEPLOY_VERIFIED_SHA="$TARGET_SHA"
           export DEPLOY_VERIFIED_BY="GitHub Actions CI (run $CI_RUN_ID) passed"
           if [ "$DRY_RUN" = "true" ]; then
             ./tools/deploy.sh --dry-run -y
