@@ -568,6 +568,118 @@ enough to be worth watching, and the reason it came to that is above."
     snapshot_over_the_wire "$f" "$tables" "$name"
 }
 
+# ------------------------------------------------------------ retention ----
+
+# Two floors and a ceiling.
+#
+# The floors: a snapshot survives if it is among the last N runs OR younger than
+# the day limit, so a quiet month cannot leave you with nothing and a busy
+# afternoon of migrations cannot age out yesterday's.
+#
+# The ceiling overrides both. Without it the run floor has no time limit at all,
+# and that is not a corner case: migrations arrive in bursts — fourteen between
+# 11 and 23 August 2026, then none for a month — so "the last two runs" routinely
+# means "the last two months", and if migration work stops it means forever. A
+# snapshot of data we deliberately erased must not have its lifetime decided by
+# whether anyone happens to write another migration.
+#
+# Losing the last snapshot at the ceiling costs less than it looks, because a
+# snapshot's value decays on its own: the table keeps changing, so restoring a
+# month-old one wholesale would destroy a month of edits. Past a week or so it is
+# something you mine for particular rows, not something you restore. And it was
+# never the thing that rolls a release back — that is releases/ and
+# DEPLOY_KEEP_RELEASES, which a @destructive migration makes deploy.sh refuse
+# anyway, precisely because the database cannot follow the code.
+#
+# Runs are counted per environment. Otherwise a couple of capsule rehearsals
+# would push the last production snapshot out of the window, which is the one
+# that actually matters.
+#
+# Deletions are always named. A retention policy that prunes silently reads, a
+# year later, as "we never had a backup of that".
+# Which snapshots to drop. Pure: names on stdin, names to delete on stdout, no filesystem
+# and no server. That is what lets test/Deploy/snapshot-retention-test.sh exercise the
+# policy on synthetic input instead of on a real backup directory — and the policy now has
+# two callers, local and remote, which is exactly when a duplicated rule starts to rot.
+#
+# Age comes from the filename's run stamp, not from mtime. The stamp is when the snapshot
+# was TAKEN; an mtime is when the file was last written, which a copy, a restore or an
+# rsync changes. On the server there is no mtime worth trusting at all.
+prunable() {
+    local keep_runs=$1 cutoff=$2 max_cutoff=${3:-}
+    local input protected name run
+    input=$(cat)
+    [ -n "$input" ] || return 0
+
+    protected=$(printf '%s\n' "$input" \
+        | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p' | sort -ru | head -n "$keep_runs")
+
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        run=$(printf '%s' "$name" | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p')
+        [ -n "$run" ] || continue
+        # The ceiling is checked FIRST and answers on its own: past it, neither
+        # floor saves a snapshot. An empty max_cutoff disables it.
+        if [ -n "$max_cutoff" ] && [[ "$run" < "$max_cutoff" ]]; then
+            printf '%s\n' "$name"
+            continue
+        fi
+        # floor 1: among the most recent runs for this environment
+        if printf '%s\n' "$protected" | grep -qxF "$run"; then continue; fi
+        # floor 2: younger than the day limit
+        if [[ ! "$run" < "$cutoff" ]]; then continue; fi
+        printf '%s\n' "$name"
+    done <<EOF
+$input
+EOF
+}
+
+# The cutoff as a run stamp, so the comparison above is a string compare and needs no
+# epoch arithmetic on either side of the ssh connection.
+prune_cutoff() {
+    date -d "${1} days ago" +%Y%m%d-%H%M%S 2>/dev/null \
+        || date -v "-${1}d" +%Y%m%d-%H%M%S   # BSD/macOS
+}
+
+# A snapshot's disappearance is always named. A retention policy that prunes silently
+# reads, a year later, as "we never had a backup of that".
+prune_backups() {
+    local keep_runs=${DEPLOY_KEEP_BACKUP_RUNS:-3}
+    local keep_days=${DEPLOY_KEEP_BACKUP_DAYS:-7}
+    local max_days=${DEPLOY_MAX_BACKUP_DAYS:-30}
+    local cutoff max_cutoff doomed name deleted=0
+    cutoff=$(prune_cutoff "$keep_days")
+    max_cutoff=$(prune_cutoff "$max_days")
+
+    if [ "$ENV_NAME" = production ]; then
+        doomed=$(remote "ls -1 '$SNAPSHOT_DIR_REMOTE' 2>/dev/null" 2>/dev/null \
+            | grep -E "^[0-9]{8}-[0-9]{6}-$ENV_NAME-.*\.sql\.gz$" \
+            | prunable "$keep_runs" "$cutoff" "$max_cutoff" || true)
+        while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            remote "rm -f '$SNAPSHOT_DIR_REMOTE/$name'" >/dev/null 2>&1 \
+                && deleted=$((deleted + 1)) && info "pruned $name (server)"
+        done <<EOF
+$doomed
+EOF
+    else
+        [ -d "$BACKUP_DIR" ] || return 0
+        doomed=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*-$ENV_NAME-*.sql.gz" -printf '%f\n' 2>/dev/null \
+            | prunable "$keep_runs" "$cutoff" "$max_cutoff" || true)
+        while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            rm -f "$BACKUP_DIR/$name" && deleted=$((deleted + 1)) && info "pruned $name"
+        done <<EOF
+$doomed
+EOF
+    fi
+
+    if [ "$deleted" -gt 0 ]; then
+        dim "$deleted snapshot(s) removed (keeping the last $keep_runs runs and everything
+       under $keep_days days, but nothing at all past $max_days days)"
+    fi
+}
+
 # ------------------------------------------------------------- inventory ----
 
 migration_files() {
@@ -803,6 +915,11 @@ done < <(migration_files)
 
 if [ "${#TODO[@]}" -eq 0 ]; then
     dim "no pending $PHASE-deploy migrations on $ENV_NAME"
+    # Retention still runs. Until this call existed, pruning was reachable only by
+    # APPLYING a migration — the exit below skipped it — so the ceiling could not
+    # expire anything during exactly the quiet stretch it exists for. Every deploy
+    # calls this twice, pre and post, and both usually land here.
+    prune_backups
     exit 0
 fi
 
@@ -910,90 +1027,4 @@ done
 printf '\n'
 ok "all $PHASE-deploy migrations applied on $ENV_NAME"
 
-# ------------------------------------------------------------ retention ----
-
-# Two floors, and a snapshot survives if it clears EITHER. It is deleted only
-# when it is both older than the day limit and outside the last N runs — so a
-# quiet month cannot leave you with nothing, and a busy afternoon of migrations
-# cannot age out yesterday's.
-#
-# Runs are counted per environment. Otherwise a couple of capsule rehearsals
-# would push the last production snapshot out of the window, which is the one
-# that actually matters.
-#
-# Deletions are always named. A retention policy that prunes silently reads, a
-# year later, as "we never had a backup of that".
-# Which snapshots to drop. Pure: names on stdin, names to delete on stdout, no filesystem
-# and no server. That is what lets test/Deploy/snapshot-retention-test.sh exercise the
-# policy on synthetic input instead of on a real backup directory — and the policy now has
-# two callers, local and remote, which is exactly when a duplicated rule starts to rot.
-#
-# Age comes from the filename's run stamp, not from mtime. The stamp is when the snapshot
-# was TAKEN; an mtime is when the file was last written, which a copy, a restore or an
-# rsync changes. On the server there is no mtime worth trusting at all.
-prunable() {
-    local keep_runs=$1 cutoff=$2
-    local input protected name run
-    input=$(cat)
-    [ -n "$input" ] || return 0
-
-    protected=$(printf '%s\n' "$input" \
-        | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p' | sort -ru | head -n "$keep_runs")
-
-    while IFS= read -r name; do
-        [ -n "$name" ] || continue
-        run=$(printf '%s' "$name" | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p')
-        [ -n "$run" ] || continue
-        # floor 1: among the most recent runs for this environment
-        if printf '%s\n' "$protected" | grep -qxF "$run"; then continue; fi
-        # floor 2: younger than the day limit
-        if [[ ! "$run" < "$cutoff" ]]; then continue; fi
-        printf '%s\n' "$name"
-    done <<EOF
-$input
-EOF
-}
-
-# The cutoff as a run stamp, so the comparison above is a string compare and needs no
-# epoch arithmetic on either side of the ssh connection.
-prune_cutoff() {
-    date -d "${1} days ago" +%Y%m%d-%H%M%S 2>/dev/null \
-        || date -v "-${1}d" +%Y%m%d-%H%M%S   # BSD/macOS
-}
-
-# A snapshot's disappearance is always named. A retention policy that prunes silently
-# reads, a year later, as "we never had a backup of that".
-prune_backups() {
-    local keep_runs=${DEPLOY_KEEP_BACKUP_RUNS:-2}
-    local keep_days=${DEPLOY_KEEP_BACKUP_DAYS:-30}
-    local cutoff doomed name deleted=0
-    cutoff=$(prune_cutoff "$keep_days")
-
-    if [ "$ENV_NAME" = production ]; then
-        doomed=$(remote "ls -1 '$SNAPSHOT_DIR_REMOTE' 2>/dev/null" 2>/dev/null \
-            | grep -E "^[0-9]{8}-[0-9]{6}-$ENV_NAME-.*\.sql\.gz$" \
-            | prunable "$keep_runs" "$cutoff" || true)
-        while IFS= read -r name; do
-            [ -n "$name" ] || continue
-            remote "rm -f '$SNAPSHOT_DIR_REMOTE/$name'" >/dev/null 2>&1 \
-                && deleted=$((deleted + 1)) && info "pruned $name (server)"
-        done <<EOF
-$doomed
-EOF
-    else
-        [ -d "$BACKUP_DIR" ] || return 0
-        doomed=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*-$ENV_NAME-*.sql.gz" -printf '%f\n' 2>/dev/null \
-            | prunable "$keep_runs" "$cutoff" || true)
-        while IFS= read -r name; do
-            [ -n "$name" ] || continue
-            rm -f "$BACKUP_DIR/$name" && deleted=$((deleted + 1)) && info "pruned $name"
-        done <<EOF
-$doomed
-EOF
-    fi
-
-    if [ "$deleted" -gt 0 ]; then
-        dim "$deleted snapshot(s) removed (keeping the last $keep_runs runs and everything under $keep_days days)"
-    fi
-}
 prune_backups
