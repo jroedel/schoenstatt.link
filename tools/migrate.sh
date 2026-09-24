@@ -26,8 +26,10 @@
 #      transaction can protect it, so a `ddl` migration must declare
 #      `@idempotent: yes` — an assertion by its author that re-running it is a
 #      no-op. That is a forcing function, not a proof. Write the guards.
-#   3. The tables named in `@tables` are dumped to data/deploy/backups/ BEFORE
-#      anything runs. "Can we undo it" becomes a file rather than a hope.
+#   3. The tables named in `@tables` are dumped BEFORE anything runs: on the
+#      server, into shared/migration-snapshots/, for production; into
+#      data/deploy/backups/ for the capsule. "Can we undo it" becomes a file
+#      rather than a hope.
 #   4. `mysql` aborts on the first error and exits non-zero; --force is never
 #      used. Combined with (1) a failure in statement 3 of 7 leaves nothing.
 #   5. Row counts are captured per statement and stored in the ledger, so the
@@ -302,6 +304,16 @@ asserting you have written those guards. It is a forcing function, not a proof."
 they can be dumped before it runs, or write '-- @tables: none' if it changes none
 (a report-only migration). Saying 'none' is a claim; make it a true one."
 
+    # The list reaches mysqldump as arguments, and on production it does so inside a
+    # command this machine builds for a shell on the server. A table name is
+    # [A-Za-z0-9_]; anything else in this header is a typo at best, and at worst it is
+    # whatever the author wrote arriving at a remote shell. Caught by `lint`, with no
+    # database and no credentials, rather than mid-deploy.
+    case $tables in
+        *[!A-Za-z0-9_,\ ]*) fail "$base has '-- @tables: $tables', which is not a list of table names.
+Table names are letters, digits and underscores, separated by commas." ;;
+    esac
+
     # Optional, and only meaningful as 'yes': it declares that code from before this
     # migration cannot run after it. tools/deploy.sh reads it to refuse a rollback
     # into a release that predates the file. Unset means "older code still works",
@@ -340,10 +352,171 @@ remote() {
         "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" "$@"
 }
 
-# Take the pre-migration snapshot, and do not return until it exists somewhere that
-# outlives this process. Every failure path aborts BEFORE the migration runs, which is the
-# whole point: a snapshot that might not be there is not a snapshot.
-take_snapshot() {
+# The application's own configuration on the server, which is where the server finds
+# database credentials of its own. See snapshot_on_server().
+REMOTE_APP_CONFIG="${DEPLOY_APP_PATH:-}/shared/config-autoload/local.php"
+
+# ------------------------------------------------------- remote program ----
+#
+# Sent to the server on stdin and run by `bash -s`, so the whole of it is legible here
+# rather than assembled from fragments at the call site. It takes its four inputs as
+# positional arguments and prints ONE line: `OK <size> <sha256>`, or a line beginning
+# `PRECHECK` or `FAIL` naming what stopped it.
+#
+# `set -e` is deliberately absent and every step is checked by hand, because an exit
+# status on its own cannot say which of two very different things happened:
+#
+#   exit 10  this server cannot take the snapshot at all — no mysqldump, no config, no
+#            grant, no disk. Nothing was attempted; the caller falls back to the tunnel.
+#   exit 11+ it ran, and what it produced cannot be trusted. The caller aborts, and no
+#            migration runs.
+#
+# The markers are read by test/Deploy/server-snapshot-test.sh, which extracts this exact
+# text and runs it against the capsule. Keep them.
+# >>> remote snapshot program
+REMOTE_SNAPSHOT_PROG=$(cat <<'PROG'
+set -uo pipefail
+DIR=$1 CFG=$2 NAME=$3
+# An @tables header spells its list with commas; mysqldump wants arguments. Expanded by
+# the shell rather than piped through tr, so that the checks below are genuinely the first
+# thing that runs and a server missing its coreutils still gets to say so.
+TABLES=${4//,/ }
+OUT=$DIR/$NAME
+
+command -v mysqldump >/dev/null 2>&1 || { echo "PRECHECK there is no mysqldump on the server"; exit 10; }
+command -v php       >/dev/null 2>&1 || { echo "PRECHECK there is no php on the server"; exit 10; }
+[ -f "$CFG" ]        || { echo "PRECHECK there is no application config at $CFG"; exit 10; }
+mkdir -p "$DIR"      || { echo "PRECHECK $DIR cannot be created"; exit 10; }
+
+# The gzip is what lands here, and it is far smaller than the tables — but refuse to
+# start on a nearly full filesystem rather than write a plausible truncated file into one.
+AVAIL=$(df -Pk "$DIR" 2>/dev/null | awk 'NR==2 {print $4}')
+case ${AVAIL:-} in
+    ''|*[!0-9]*) echo "PRECHECK the free space on $DIR cannot be read"; exit 10 ;;
+esac
+[ "$AVAIL" -ge 2097152 ] || { echo "PRECHECK only $((AVAIL / 1024))MiB free on $DIR, and 2GiB is the floor"; exit 10; }
+
+MYCNF=$(mktemp) || { echo "PRECHECK no writable temporary directory"; exit 10; }
+chmod 600 "$MYCNF"
+ERRF=$(mktemp) || { rm -f "$MYCNF"; echo "PRECHECK no writable temporary directory"; exit 10; }
+trap 'rm -f "$MYCNF" "$ERRF"' EXIT INT TERM HUP
+
+# PHP reads the application's own config and writes the password straight into the 0600
+# file; only the database NAME comes back on stdout. No secret is printed, and none is
+# put in argv, where `ps` would show it to every other account on a shared host.
+DB=$(php -r '
+    $config = require $argv[1];
+    $db = is_array($config) && isset($config["db"]) && is_array($config["db"]) ? $config["db"] : null;
+    if (null === $db) { fwrite(STDERR, "the config has no db section"); exit(1); }
+    foreach (["hostname", "database", "username", "password"] as $key) {
+        if (! isset($db[$key]) || "" === (string) $db[$key]) {
+            fwrite(STDERR, "db." . $key . " is empty"); exit(1);
+        }
+    }
+    $written = file_put_contents($argv[2], sprintf(
+        "[client]\nhost=%s\nport=%s\nuser=%s\npassword=%s\n",
+        $db["hostname"], $db["port"] ?? 3306, $db["username"], $db["password"]
+    ));
+    if (false === $written) { fwrite(STDERR, "the defaults file could not be written"); exit(1); }
+    echo $db["database"];
+' "$CFG" "$MYCNF" 2>"$ERRF") \
+    || { echo "PRECHECK the application config is unusable: $(tr -d '\n' < "$ERRF")"; exit 10; }
+
+# Prove the capability before committing to it: the same command, the same tables, the
+# same flags, with no rows. A missing grant or a renamed table fails here in a second and
+# sends the caller back to the tunnel, rather than an hour into a real dump with a deploy
+# waiting on it.
+# shellcheck disable=SC2086
+mysqldump --defaults-extra-file="$MYCNF" --single-transaction --quick --no-data \
+        "$DB" $TABLES >/dev/null 2>"$ERRF" \
+    || { echo "PRECHECK the server's own account cannot dump these tables: $(tail -1 "$ERRF" | tr -d '\r\n')"; exit 10; }
+
+# shellcheck disable=SC2086
+mysqldump --defaults-extra-file="$MYCNF" --single-transaction --quick \
+        "$DB" $TABLES 2>"$ERRF" | gzip > "$OUT" \
+    || { echo "FAIL the dump did not complete: $(tail -1 "$ERRF" | tr -d '\r\n')"; exit 11; }
+
+gzip -t "$OUT" 2>/dev/null || { echo "FAIL $NAME is not a readable gzip"; exit 12; }
+# mysqldump's own last line. A dump cut short — out of disk, out of patience, killed by
+# the host — is a valid gzip of a valid prefix, and nothing else here would notice.
+#
+# `case`, not `grep -q`: grep stops reading at the first match, gzip takes SIGPIPE for it,
+# and pipefail then reports the whole pipeline as failed. That turns a perfectly good
+# snapshot into a FAIL, and only sometimes — whether grep exits before gzip finishes is a
+# race, which is how it passed here on a small file and would not have on a real one.
+TAIL=$(gzip -dc "$OUT" 2>/dev/null | tail -c 256)
+case $TAIL in
+    *'Dump completed'*) ;;
+    *) echo "FAIL $NAME stops short of mysqldump's end marker"; exit 13 ;;
+esac
+
+echo "OK $(du -h "$OUT" | cut -f1) $(sha256sum "$OUT" | cut -d' ' -f1)"
+PROG
+)
+# <<< remote snapshot program
+
+# Dump on the server, using credentials the server already has.
+#
+# It used to dump from here: mysqldump through the tunnel, gzip locally, then upload the
+# result back to the machine it came from. For the small tables that is a second. For
+# sch_visits — 8.7 million rows, 1.9GB — it was measured at 150KiB/s on 2026-09-24 and
+# abandoned after eighty-five minutes, having reached the halfway mark, with the upload
+# still to come. The failure mode is total, too: a tunnel that drops at minute eighty
+# starts again from nothing, and no migration runs until it finishes.
+#
+# THE CREDENTIALS STILL DO NOT TRAVEL. The account in .deploy.local is a full-DDL account
+# and stays on this machine; that is what the tunnel is for and none of it changes. But a
+# snapshot is a read, and the server already holds an account with SELECT on these tables
+# — the one the application itself uses, in the config file it has always had. So the
+# server dumps with that, and we send it nothing.
+#
+# Returns 0 with the snapshot in place, 1 when this server cannot take it and the caller
+# should fall back, and does not return at all when a dump ran and produced something
+# that cannot be trusted.
+#
+# NOTE: the caller tolerates a non-zero status from this function, and bash turns errexit
+# off for the whole body of a function called that way. Every command below is checked by
+# hand. Nothing here may rely on `set -e`.
+snapshot_on_server() {
+    local tables=$1 name=$2
+    local out err errf verdict size sum rc=0
+
+    if [ -z "${DEPLOY_APP_PATH:-}" ]; then
+        warn "DEPLOY_APP_PATH is not set in .deploy.local, so the server has nowhere to put a snapshot."
+        return 1
+    fi
+
+    errf=$(mktemp "${TMPDIR:-/tmp}/migrate-snap-err-XXXXXX") || errf=/dev/null
+    out=$(printf '%s\n' "$REMOTE_SNAPSHOT_PROG" \
+        | remote "bash -s -- '$SNAPSHOT_DIR_REMOTE' '$REMOTE_APP_CONFIG' '$name' '$tables'" \
+            2>"$errf") || rc=$?
+    err=$(cat "$errf" 2>/dev/null || true)
+    [ "$errf" = /dev/null ] || rm -f "$errf"
+
+    # The program prints one line. Classify on the last one regardless, so that anything
+    # a login shell adds ahead of it is shown by the failure rather than mistaken for it.
+    verdict=${out##*$'\n'}
+    case $verdict in
+        'OK '*)
+            read -r _ size sum <<<"$verdict"
+            ok "snapshot $name ($size) taken on the server, sha256 ${sum:0:16}…"
+            return 0
+            ;;
+        'PRECHECK '*)
+            warn "the server cannot dump for itself: ${verdict#PRECHECK }"
+            return 1
+            ;;
+    esac
+
+    fail "the snapshot of [$tables] failed on the server (exit $rc). Nothing was applied.
+${out:-(no output)}${err:+
+stderr: $err}"
+}
+
+# Dump from here, through the connection we already have, and do not return until the
+# snapshot exists somewhere that outlives this process. This is the capsule's only path,
+# and production's fallback.
+snapshot_over_the_wire() {
     local f=$1 tables=$2 name=$3
     local tmp sum_local sum_remote size
 
@@ -377,6 +550,22 @@ take_snapshot() {
     [ "$sum_remote" = "$sum_local" ] || fail "the snapshot on the server does not match what was sent
 (local $sum_local, server ${sum_remote:-absent}). Nothing was applied."
     ok "snapshot $name ($size) on the server, sha256 verified"
+}
+
+# Take the pre-migration snapshot. Every failure path aborts BEFORE the migration runs,
+# which is the whole point: a snapshot that might not be there is not a snapshot.
+take_snapshot() {
+    local f=$1 tables=$2 name=$3 rc=0
+
+    if [ "$ENV_NAME" = production ]; then
+        snapshot_on_server "$tables" "$name" || rc=$?
+        if [ "$rc" = 0 ]; then
+            return 0
+        fi
+        warn "dumping [$tables] over the tunnel instead. On a large table that is slow
+enough to be worth watching, and the reason it came to that is above."
+    fi
+    snapshot_over_the_wire "$f" "$tables" "$name"
 }
 
 # ------------------------------------------------------------- inventory ----
