@@ -1487,8 +1487,14 @@ await_revision_agreement() {
     local want=$1 streak=0 rc
     DRIFT_WAITED=0
     while :; do
-        assert_live_revision "$want"
-        rc=$?
+        # `|| rc=$?`, never a bare call. This script runs under `set -euo pipefail`, so a
+        # bare command returning non-zero ends the deploy where it stands — and non-zero is
+        # this helper's normal way of saying "a pool is behind", which is the case the loop
+        # exists to handle. The first version of this loop called it bare and died on the
+        # first disagreement, reproducing the very bug it was written to fix while printing
+        # a message promising to wait. Same idiom as POST_MIGRATIONS_FAILED below.
+        rc=0
+        assert_live_revision "$want" || rc=$?
         case $rc in
             0) streak=$((streak + 1)) ;;
             2) return 2 ;;
@@ -1512,8 +1518,11 @@ if [ -n "$PENDING_DESTRUCTIVE" ]; then
     info "A pool that has not recycled yet is drift, not a fault, so a disagreement restarts"
     info "the streak rather than ending the deploy. Up to ${DRIFT_TIMEOUT}s for it to settle."
 
-    await_revision_agreement "$SHA"
-    case $? in
+    # `|| DRIFT_RC=$?` for the same reason as inside the helper: under `set -e` a bare
+    # call to something that returns non-zero on purpose never reaches the `case`.
+    DRIFT_RC=0
+    await_revision_agreement "$SHA" || DRIFT_RC=$?
+    case $DRIFT_RC in
         2)
             fail "the live revision cannot be read, so whether a pool is behind is unknown.
   A destructive migration ($PENDING_DESTRUCTIVE) will not be run against an unknown state.

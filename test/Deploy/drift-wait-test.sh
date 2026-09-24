@@ -29,6 +29,14 @@
 # 480-second timeout is exercised in microseconds. An extraction that finds nothing is a
 # failure, not a skip.
 #
+# UNDER `set -euo pipefail`, WHICH IS NOT OPTIONAL HERE. tools/deploy.sh sets it at line
+# 56, and this loop's whole job is to keep going when a helper returns non-zero — which is
+# exactly what errexit turns into an immediate exit. The first version of this file sourced
+# the block into a plain shell, so a bare `assert_live_revision "$want"` passed every check
+# here and killed the deploy on the first disagreement in production (#311, 2026-09-24),
+# reproducing the bug it was written to fix while printing a message promising to wait 480s.
+# An extraction test that runs code under different shell options is testing different code.
+#
 # WHAT THIS DOES NOT COVER, because the gap is the interesting half: whether
 # `assert_live_revision` itself can see a stale pool. That needs a live multi-pool host and
 # is what opcache-swap-test.sh and segment-gate-test.sh address from the other side. Here
@@ -94,16 +102,24 @@ check() {
 }
 
 # Run one attempt in a subshell so the watchdog's exit is contained, and read the state
-# back out. rc 99 means the attempt never returned, and no check accepts it.
+# back out. rc 99 means the attempt never returned — a watchdog abort, or errexit killing
+# the subshell at an unguarded call — and no check accepts it.
+#
+# `set -euo pipefail` inside the subshell is the point, not housekeeping: it is what
+# tools/deploy.sh runs under. The `|| rc=$?` here guards only THIS call; an unguarded call
+# *inside* await_revision_agreement still takes the subshell down, which is the production
+# failure this reproduces.
 run_case() {
     local out status
     out=$(
+        set -euo pipefail
         SEQUENCE=("$@")
         CALLS=0
         SLEEPS=0
         WARNINGS=
-        await_revision_agreement deadbeef
-        printf '%s %s %s %s %s' "$?" "$DRIFT_WAITED" "$CALLS" "$SLEEPS" "$WARNINGS"
+        rc=0
+        await_revision_agreement deadbeef || rc=$?
+        printf '%s %s %s %s %s' "$rc" "$DRIFT_WAITED" "$CALLS" "$SLEEPS" "$WARNINGS"
     )
     status=$?
     if [ "$status" != 0 ]; then
@@ -158,6 +174,58 @@ check $? "an unreadable revision mid-streak still refuses rather than waiting (r
 run_case 1 1 1 1 0 0 0
 [ "$RC" = 0 ]
 check $? "recovery after prolonged drift still succeeds once it holds (rc=$RC)"
+
+# --- 8. The loop must survive errexit being ACTIVE inside it. ----------------------------
+# Bash suppresses `set -e` inside a function invoked as part of a `||` or `&&` list, so
+# run_case above — which needs `|| rc=$?` to read the return code — cannot see an unguarded
+# call inside the body. That is not a detail: it is why the first version of this file
+# passed while the shipped loop died on the first disagreement.
+#
+# So this calls the function BARE, with errexit live inside it, using a sequence that ends
+# in agreement. A guarded body runs to completion and prints. An unguarded
+# `assert_live_revision "$want"` returns 1 at the second round and errexit kills the
+# subshell before the printf, so the output is empty.
+# NOTE the missing `|| BARE=`. Measured on bash 5.x:
+#
+#   o=$( set -e; ... )            errexit ACTIVE inside the substitution
+#   o=$( set -e; ... ) || o=x     errexit SUPPRESSED inside the substitution
+#
+# A `||` on the assignment disables errexit in the very code being tested, which is how
+# the first two attempts at this check reported a clean pass against the bug that had
+# just taken a production deploy down. The status is read from $? on the next line
+# instead. The outer script deliberately does not use `set -e`, so a dying subshell here
+# is a failed check rather than a dead test run.
+BARE=$(
+    set -euo pipefail
+    SEQUENCE=(0 1 0 0 0)
+    CALLS=0
+    SLEEPS=0
+    WARNINGS=
+    await_revision_agreement deadbeef
+    printf 'completed after %s round(s)' "$CALLS"
+)
+BARE_STATUS=$?
+[ "$BARE_STATUS" = 0 ] || BARE=
+case $BARE in
+    'completed after 5 round(s)')
+        check 0 "the loop survives a non-zero helper with errexit active (called bare)" ;;
+    '')
+        check 1 "errexit killed the loop at the first disagreement: an unguarded call inside
+        await_revision_agreement. deploy.sh runs under set -euo pipefail; use '|| rc=\$?'" ;;
+    *)
+        check 1 "bare call under errexit produced unexpected output: $BARE" ;;
+esac
+
+# --- 9. The call site outside the extracted block must be guarded too. -------------------
+# await_revision_agreement returns non-zero by design, so deploy.sh calling it bare would
+# end the deploy before the `case` that turns those codes into messages. That call lives
+# outside the >>> markers, so only a textual check reaches it.
+if grep -qE '^\s*await_revision_agreement "\$SHA" \|\| [A-Z_]+=\$\?' "$DEPLOY_SH"; then
+    check 0 "deploy.sh calls await_revision_agreement with a '|| rc=\$?' errexit guard"
+else
+    check 1 "deploy.sh calls await_revision_agreement unguarded; set -e will kill the deploy
+        before the case that reports why"
+fi
 
 if [ "$FAILURES" = 0 ]; then
     echo "drift wait: all checks passed"
