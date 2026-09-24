@@ -41,17 +41,111 @@ use PDO;
 class PersonEditSymfonySmokeTest extends SmokeTestCase
 {
     use MagicLinkSignIn;
+    use FormRoundTrip;
 
     /** A real person who has both a full name and a stored name day (1900-03-19). */
     private const ID   = 31;
     private const PATH = '/en/persons/31/edit';
 
-    /** @var array<string, string|null>|null */
-    private ?array $original = null;
-
     protected function emailPrefix(): string
     {
         return 'person-edit-';
+    }
+
+    /**
+     * A save preserves every column it does not set out to change.
+     *
+     * This is the baseline for removing a field, and it is deliberately written so that
+     * removing one does not require editing it. The payload is scraped from the rendered
+     * form, so a field that stops existing simply stops being posted; the columns asserted
+     * on are read from the row, so one that stops existing is dropped from the list by the
+     * same edit that drops it from the schema — and until then, every one of them is
+     * pinned.
+     *
+     * What it is really guarding is the `NOT NULL` precision columns. `PriestDatePrecision`
+     * and `BishopDatePrecision` were added `NOT NULL` by db6.5, so a POST that omits them
+     * does not save a null — it throws, and with display_errors off that is an empty 200
+     * with nothing in the log. `_person-fields.html.twig` carries five hidden inputs for
+     * exactly that reason. If those inputs are ever removed without the columns, this is
+     * what says so.
+     */
+    public function testASavePreservesEveryDateColumnItDoesNotChange(): void
+    {
+        $columns = [
+            'BirthDate',
+            'BirthDatePrecision',
+            'NameDay',
+            'PriestDate',
+            'PriestDatePrecision',
+            'BishopDate',
+            'BishopDatePrecision',
+            'DeathDate',
+            'DeathDatePrecision',
+            'PersonTags',
+        ];
+        $present = $this->existingColumns($columns);
+        self::assertNotEmpty($present, 'none of the date columns exist: is this the right table?');
+
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $this->remember([...$present, 'AdminNotes', 'UpdatedOn', 'UpdatedBy']);
+        $before = [];
+        foreach ($present as $column) {
+            $before[$column] = $this->column($column);
+        }
+
+        $response = $this->submitForm(self::PATH, $jar, ['adminNotes' => 'Smoke test ' . time()]);
+        self::assertSame(302, $response['status'], 'the save did not redirect; it did not succeed');
+
+        foreach ($present as $column) {
+            self::assertSame(
+                $before[$column],
+                $this->column($column),
+                sprintf('%s changed across a save that did not touch it', $column)
+            );
+        }
+    }
+
+    /**
+     * Which of `$columns` the table actually has.
+     *
+     * Asking the schema rather than assuming it is what lets one list serve both sides of
+     * a column drop: before the migration all ten are checked, after it the seven that
+     * went are simply not there, and the remaining three are still pinned. A hard-coded
+     * list would turn the migration into a test edit, which is how a baseline quietly
+     * stops covering the thing it was written for.
+     *
+     * @param list<string> $columns
+     * @return list<string>
+     */
+    private function existingColumns(array $columns): array
+    {
+        $statement = $this->pdo()->prepare(
+            'SELECT COLUMN_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+        );
+        $statement->execute([$this->table()]);
+        $actual = $statement->fetchAll(PDO::FETCH_COLUMN);
+
+        return array_values(array_intersect($columns, $actual));
+    }
+
+    protected function table(): string
+    {
+        return 'sch_persons';
+    }
+
+    /** @return array{0: string, 1: int} */
+    protected function row(): array
+    {
+        return ['PersonId', self::ID];
+    }
+
+    protected function formXPath(): string
+    {
+        return '//form[@id="edit_person"]';
     }
 
     protected function tearDown(): void
@@ -279,7 +373,7 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
             [],
             false,
             $jar,
-            ['adminNotes' => $marker] + $this->fieldsFromForm($form['body'])
+            ['adminNotes' => $marker] + $this->fields($form['body'])
         );
 
         $this->assertSame(
@@ -325,7 +419,7 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
         $written = $this->request('POST', self::PATH, [], false, $jar, [
             'skypeUser' => 'smoketest.skype',
             'slackUser' => 'smoketest.slack',
-        ] + $this->fieldsFromForm($form['body']));
+        ] + $this->fields($form['body']));
         $this->assertSame(302, $written['status'], 'the form refused a valid Skype and Slack name');
         $this->assertSame('smoketest.skype', $this->column('SkypeUser'), 'the field is not writable');
         $this->assertSame('smoketest.slack', $this->column('SlackUser'), 'the field is not writable');
@@ -337,7 +431,7 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
         $marker = 'Smoke test ' . time();
         $post   = $this->request('POST', self::PATH, [], false, $jar, [
             'adminNotes' => $marker,
-        ] + $this->fieldsFromForm($again['body']));
+        ] + $this->fields($again['body']));
 
         $this->assertSame(302, $post['status']);
         $this->assertSame($marker, $this->column('AdminNotes'), 'the change did not reach the database');
@@ -375,85 +469,4 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
         return $node;
     }
 
-    /**
-     * Every field the form rendered, with its current value — a crude browser. Submitting
-     * the whole form is the point: a partial POST drops every field it omits, which is the
-     * very thing this file is checking does not happen to `nameDay`.
-     *
-     * @return array<string, string>
-     */
-    private function fieldsFromForm(string $body): array
-    {
-        $document = new DOMDocument();
-        @$document->loadHTML($body);
-        $xpath = new DOMXPath($document);
-
-        $form = $xpath->query('//form[@id="edit_person"]')->item(0);
-        $this->assertNotNull($form, 'the person form was not rendered');
-
-        $fields = [];
-        foreach ($xpath->query('.//input|.//textarea|.//select', $form) as $node) {
-            /** @var DOMElement $node */
-            $name = $node->getAttribute('name');
-            if ('' === $name) {
-                continue;
-            }
-            if ('input' === $node->nodeName) {
-                if ('checkbox' === $node->getAttribute('type') && ! $node->hasAttribute('checked')) {
-                    //the hidden twin already supplied the unchecked value
-                    continue;
-                }
-                $fields[$name] = $node->getAttribute('value');
-                continue;
-            }
-            if ('textarea' === $node->nodeName) {
-                $fields[$name] = $node->textContent;
-                continue;
-            }
-            $selected      = $xpath->query('.//option[@selected]', $node)->item(0);
-            $fields[$name] = $selected instanceof DOMElement ? $selected->getAttribute('value') : '';
-        }
-
-        return $fields;
-    }
-
-    /** @param list<string> $columns */
-    private function remember(array $columns): void
-    {
-        $statement = $this->pdo()->prepare(
-            sprintf('SELECT `%s` FROM sch_persons WHERE PersonId = ?', implode('`, `', $columns))
-        );
-        $statement->execute([self::ID]);
-        /** @var array<string, string|null>|false $row */
-        $row            = $statement->fetch(PDO::FETCH_ASSOC);
-        $this->original = false === $row ? null : $row;
-    }
-
-    private function restore(): void
-    {
-        if (null === $this->original) {
-            return;
-        }
-
-        $assignments = [];
-        foreach (array_keys($this->original) as $column) {
-            $assignments[] = sprintf('`%s` = ?', $column);
-        }
-        $this->pdo()
-            ->prepare(sprintf('UPDATE sch_persons SET %s WHERE PersonId = ?', implode(', ', $assignments)))
-            ->execute([...array_values($this->original), self::ID]);
-
-        $this->original = null;
-    }
-
-    private function column(string $column): ?string
-    {
-        $statement = $this->pdo()->prepare(
-            sprintf('SELECT `%s` FROM sch_persons WHERE PersonId = ?', $column)
-        );
-        $statement->execute([self::ID]);
-        $value = $statement->fetchColumn();
-
-        return false === $value || null === $value ? null : (string) $value;
-    }
 }
