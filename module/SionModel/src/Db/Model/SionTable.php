@@ -178,17 +178,6 @@ class SionTable
     protected $languageNames;
 
 
-    /**
-     * Default algorithm for hashing sensitive data
-     * @var string $privacyHashAlgorithm
-     */
-    protected $privacyHashAlgorithm = 'sha256';
-
-    /**
-     * Default random salt for hashing sensitive data
-     * @var string $privacyHashSalt
-     */
-    protected $privacyHashSalt = '78z^PjApc';
     
     protected $maxChangeTableValueStringLength = 1000;
     
@@ -257,19 +246,6 @@ class SionTable
         //without reading a gitignored file on a server.
         if (isset($config['max_cached_item_size'])) {
             $this->setMaxItemSize($config['max_cached_item_size']);
-        }
-
-        if (
-            isset($config['privacy_hash_algorithm'])
-            && in_array(strtolower((string) $config['privacy_hash_algorithm']), hash_algos(), true)
-        ) {
-            $this->privacyHashAlgorithm = $config['privacy_hash_algorithm'];
-        } elseif (array_key_exists('privacy_hash_algorithm', $config) && null === $config['privacy_hash_algorithm']) {
-            $this->privacyHashAlgorithm = null;
-        }
-
-        if (isset($config['privacy_hash_salt'])) {
-            $this->privacyHashSalt = $config['privacy_hash_salt'];
         }
 
         if (
@@ -1390,8 +1366,9 @@ class SionTable
      *
      * The editor's IP address is deliberately NOT recorded, and the standing
      * `@todo include the UserAgent` that sat here is deliberately not done. Both were
-     * written raw — no privacyHash() — and the IP was rendered as a tooltip on the
-     * editor's username in a panel every signed-in user can open. See #308.
+     * written raw, and the IP was rendered as a tooltip on the editor's username in a
+     * panel every signed-in user can open. See #308; nothing in this application stores
+     * a client address any more.
      *
      * @param string[][] $data
      */
@@ -1704,34 +1681,9 @@ class SionTable
             'Entity' => $entity,
             'EntityId' => $entityId,
             'UserId' => $actingUserId,
-            'IpAddress' => $this->privacyHash($_SERVER['REMOTE_ADDR']),
-            'UserAgent' => $this->privacyHash($_SERVER['HTTP_USER_AGENT']),
             'VisitedAt' => $date->format('Y-m-d H:i:s'),
         ];
         $this->getVisitTableGateway()->insert($params);
-    }
-
-    /**
-     * Hashes some data using the configured hash algorithm and salt.
-     * @param string $data
-     */
-    public function privacyHash($data)
-    {
-        if (! isset($data)) {
-            return null;
-        }
-        if (isset($this->privacyHashAlgorithm)) {
-            if (isset($this->privacyHashSalt)) {
-                $data = $this->privacyHashSalt . $data;
-            }
-            //hash() with the algorithm name and no $binary flag is byte-for-byte
-            //what Laminas\Crypt\Hash::compute() returned: it was a wrapper around
-            //this call, defaulting to OUTPUT_STRING (hex). Stored hashes are
-            //unaffected — the constructor has already checked the algorithm is
-            //one hash_algos() knows.
-            return hash($this->privacyHashAlgorithm, $data);
-        }
-        return $data;
     }
 
     /**

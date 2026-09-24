@@ -299,7 +299,6 @@ return [
                     'text'                  => 'MailingText',
                     'tags'                  => 'MailingTags',
                     'trackingToken'         => 'TrackingToken',
-                    'openedFromIpAddress'   => 'OpenedFromIpAddress',
                     'openedFromHeaders'     => 'OpenedFromHeaders',
                     'openedOn'              => 'OpenedOn',
                     'emailTemplate'         => 'EmailTemplate',
