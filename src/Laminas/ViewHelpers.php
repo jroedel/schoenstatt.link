@@ -294,7 +294,8 @@ final class ViewHelpers
     }
 
     /**
-     * SionModel's `dayFormat` — a month-and-day with no year, for a person's nameday.
+     * SionModel's `dayFormat` — a month-and-day with no year. Its one caller was a
+     * person's name day, removed with that column; the helper stays registered.
      * On the allowlist because it needs nothing but `escapeHtml` and `translate`, both
      * of which a plain PhpRenderer answers; there is no `url()` anywhere in it.
      *

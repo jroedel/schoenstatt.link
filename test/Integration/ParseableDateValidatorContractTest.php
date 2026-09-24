@@ -49,7 +49,7 @@ class ParseableDateValidatorContractTest extends TestCase
 
     /**
      * Emptiness belongs to `required`/NotEmpty. Saying otherwise here would make
-     * every one of the twelve optional date fields mandatory — birthDate,
+     * every one of the optional date fields mandatory — deathDate,
      * deathDate and the rest are routinely unknown in this data.
      *
      * @param mixed $value

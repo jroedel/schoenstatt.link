@@ -50,7 +50,7 @@ final class DatePrecision
     }
 
     /**
-     * @param string $name  The precision field's own name, e.g. 'birthDatePrecision'.
+     * @param string $name  The precision field's own name, e.g. 'deathDatePrecision'.
      * @param string $label
      * @return array<string, mixed>
      */
@@ -76,12 +76,12 @@ final class DatePrecision
                 //`BaseInputFilter::setData()` gives every input it holds a value
                 //whether or not the data mentions it, so an absent field arrives in
                 //getData() as **null** and both createHelper() and updateHelper()
-                //write it. These four columns are NOT NULL, so the write fails:
-                //`Column 'PriestDatePrecision' cannot be null`. A template that
-                //does not render one of these selects must round-trip it in a
-                //hidden input — see templates/schoenstatt/_person-fields.html.twig,
-                //and test/Integration/PortedTemplatesRenderEveryNotNullFieldTest,
-                //which fails when one stops doing so.
+                //write it. A precision column is NOT NULL, so the write fails:
+                //`Column 'DeathDatePrecision' cannot be null`. A template that does
+                //not render one of these selects must round-trip it in a hidden
+                //input — see test/Integration/PortedTemplatesRenderEveryNotNullFieldTest,
+                //which reads the NOT NULL columns out of information_schema and
+                //fails when a template stops covering one.
                 //
                 //filterSpec() owns the domain check, so the Select's automatic
                 //one is turned off to leave exactly one. Normally this flag is a

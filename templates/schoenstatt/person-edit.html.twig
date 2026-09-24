@@ -30,20 +30,6 @@
     the visitor reach this page, and both the trigger button and the modal sit inside that
     gate — a button that opens a modal that posts to a 403 would be worse than no button.
 
-  ## `nameDay` is deliberately not rendered, and deliberately still posted
-
-  The name-day field is on its way out with its database column, so it is not reproduced
-  as the pair of selects the partial builds. **It is still round-tripped through three
-  hidden inputs, and that is not optional.** `nameDay` is on the form's input filter, so
-  omitting it entirely does not mean "leave it alone": `getData()` answers `nameDay => null`
-  for an absent field, and `updateEntity()` writes that null over the stored value. Measured
-  2026-08-14 — 130 of the capsule's 325 persons have a name day, and every one of them would
-  have been erased the first time a moderator saved their record.
-
-  The hidden values reproduce the stored date exactly (verified: `1900-03-19` in, the same
-  DateTime out) and `1900` is the year the partial hardcodes too. When the column goes, these
-  three lines and the form element go with it.
-
   **The field rows live in `schoenstatt/_person-fields.html.twig` now**, shared with the create
   form so that a field cannot be added to one surface and quietly forgotten on the
   other. What stays in this file is what edit.phtml keeps outside its own partial —

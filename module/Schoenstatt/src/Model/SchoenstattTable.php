@@ -1917,7 +1917,7 @@ class SchoenstattTable extends SionTable implements
         }
         $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`, `LastNameWithoutAccents`,
 `FirstNameWithoutAccents`, `PersonTags`, `LifeCommunity`, `Title`, `TitleAutomatic`, `Country`,
-`BirthDate`, `BirthDatePrecision`, `NameDay`, `DeathDate`, `DeathDatePrecision`,
+`DeathDate`, `DeathDatePrecision`,
 `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
 `PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`, `AdminNotes`, `AdminNotesUpdatedOn`,
 `AdminNotesUpdatedBy`, `Email`, `Email2`, `CellPhone`,
@@ -1926,8 +1926,7 @@ class SchoenstattTable extends SionTable implements
 `FacebookUrl`, `SkypeUser`, `TwitterUser`, `InstagramUser`, `SlackUser`, `PostStreet1`, `PostStreet2`,
 `PostCityState`, `PostZip`, `PostCountry`, `ContactNotes`, `ContactInfoUpdatedOn`,
 `ContactInfoUpdatedBy`, `DataSource`, `DataSourceId`, `DataSourceUpdatedOn`, `UpdatedOn`,
-`UpdatedBy`, `CreatedOn`, `CreatedBy`, `SpousePersonId`, `PriestDate`, `PriestDatePrecision`,
-`BishopDate`, `BishopDatePrecision`, `PrimaryLocale`,
+`UpdatedBy`, `CreatedOn`, `CreatedBy`, `SpousePersonId`, `PrimaryLocale`,
 `IsAuthor`, `IsBorrower` FROM `sch_persons` WHERE 1
 ORDER BY `LastName`, `FirstName`, `PersonId`";
         $results = $this->fetchSome(null, $sqlPers, null);
@@ -1953,25 +1952,9 @@ ORDER BY `LastName`, `FirstName`, `PersonId`";
             'hun' => 'de',
             'ces' => 'de',
         ];
-        $tz = new \DateTimeZone('UTC');
-        $today = new \DateTime(null, $tz);
         foreach ($results as $row) {
             $id = $this->filterDbId($row['PersonId']);
             $deathDate = $this->filterDbDate($row['DeathDate']);
-            $birthDate = $this->filterDbDate($row['BirthDate']);
-            $nameDay = null;
-            if (isset($row['NameDay']) && $row['NameDay'] != '0000-00-00') {
-                try {
-                    $nameDay = new \DateTime('1900' . substr($row['NameDay'], 4), $tz);
-                } catch (\Exception $e) {
-                    $nameDay = null;
-                }
-            }
-            $age = null;
-            if (is_object($birthDate)) {
-                $interval = $today->diff($birthDate);
-                $age = $interval->y;
-            }
 
             //process URLs
             $unprocessedUrls = [
@@ -1981,7 +1964,6 @@ ORDER BY `LastName`, `FirstName`, `PersonId`";
             ];
             $urls = SionTable::processUrls($unprocessedUrls);
 
-            $today = new \DateTime(null, $tz);
             $isLiving = ! isset($deathDate);
             //             $category = null;
             //             $condition = null;
@@ -2120,16 +2102,8 @@ ORDER BY `LastName`, `FirstName`, `PersonId`";
                 'lifeCommunity'             => $this->filterDbId($row['LifeCommunity']),
                 'manualTitle'               => $manualTitle,
                 'primaryLocale'             => $primaryLocale,
-                'priestDate'                => $this->filterDbDate($row['PriestDate']),
-                'priestDatePrecision'       => $row['PriestDatePrecision'],
-                'bishopDate'                => $this->filterDbDate($row['BishopDate']),
-                'bishopDatePrecision'       => $row['BishopDatePrecision'],
                 'deathDate'                 => $deathDate,
                 'deathDatePrecision'        => $row['DeathDatePrecision'],
-                'birthDate'                 => $birthDate,
-                'birthDatePrecision'        => $row['BirthDatePrecision'],
-                'age'                       => $age,
-                'nameDay'                   => $nameDay,
 
                 'publicNotes'               => $row['PublicNotes'],
                 'publicNotesUpdatedOn'      => $this->filterDbDate($row['PublicNotesUpdatedOn']),

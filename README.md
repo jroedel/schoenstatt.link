@@ -90,9 +90,11 @@ docker compose exec -T app php tools/acl-table.php --format=json   # diff agains
 Personal data
 -------------
 
-The database holds names, e-mail addresses, telephone numbers, countries,
-languages and birthdays (never birth years) for people who hold roles in the
-Movement, plus borrower records for the lending libraries. Who may see what is
+The database holds names, e-mail addresses, telephone numbers, countries and
+languages for people who hold roles in the Movement, plus borrower records for
+the lending libraries. It holds no dates of birth, no name days and no dates of
+ordination — a person's standing is recorded as a tag, not as the date it was
+conferred. Who may see what is
 decided per row rather than per page, by the ACL in `src/Acl` and
 `src/Authorization`; [docs/acl-baseline.json](docs/acl-baseline.json) is the full
 recorded answer, diffed on every authorization change.

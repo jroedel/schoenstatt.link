@@ -75,7 +75,7 @@ use Throwable;
  * ## What the baseline records, and what it does not
  *
  * The baseline unit is `Class::field throws ExceptionClass` — no corpus label. The
- * label is diagnostic, not identity: `birthDate` throwing
+ * label is diagnostic, not identity: `deathDate` throwing
  * `DateMalformedStringException` is one bug with one fix whether it was `'asdf'`
  * or `'2020-02-30'` that triggered it, and folding the label in would have made the
  * baseline 4,669 lines that all move the moment anyone adds a corpus entry. The

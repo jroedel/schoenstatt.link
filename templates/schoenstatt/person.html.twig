@@ -134,17 +134,6 @@
     {% if person.deathDate is not null %}
         <p><strong>{{ translate('Passed away on') }}:</strong> {{ date_precision(person.deathDate, person.deathDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}</p>
     {% endif %}
-    {% if person.nameDay %}
-    <p><strong>{{ translate('Nameday') }}: </strong>
-        {{ day_format(person.nameDay) }}
-    </p>
-    {% endif %}
-    {% if person.priestDate is not null %}
-        <p><strong>{{ translate('Priestly ordination') }}:</strong> {{ date_precision(person.priestDate, person.priestDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}</p>
-    {% endif %}
-    {% if person.bishopDate is not null %}
-        <p><strong>{{ translate('Bishop ordination') }}:</strong> {{ date_precision(person.bishopDate, person.bishopDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}</p>
-    {% endif %}
 </div> <!-- dates column -->
 </div> <!-- personal info panel row -->
 
@@ -176,8 +165,6 @@
 
 <div class="row"> <!-- private info panel row -->
 <div class="col-md-6"> <!-- private facts column -->
-    <p><strong>{{ translate('Birthday') }}: </strong> {% if person.birthDate is not null %}{{
-        date_precision(person.birthDate, person.birthDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}{% endif %}</p>
     {% if person.adminTags is not empty %}
 <p><strong>{{ translate('Admin tags') }}:</strong> {% for value in person.adminTags %}{% if not loop.first %} {% endif %}<span class="label label-default">{{ value }}</span>{% endfor %}
     {% endif %}

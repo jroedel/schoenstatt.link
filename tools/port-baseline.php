@@ -508,11 +508,9 @@ const PATHS = [
     // batch 10 — the two the create surface left behind.
     //
     // `/texts/create` differs only by the inline-script wrapper every ported page differs by.
-    // `/persons/create` differs by the same two things its already-ported edit twin does —
-    // the `nameDay` selects rendered as hidden inputs, and the four patres date fields that
-    // no laminas partial renders at all — and there **the Symfony side is the correct one**:
-    // without those hidden inputs a save writes NULL to two NOT NULL columns. Both are
-    // recorded in docs/laminas-exit.md's known-differences table.
+    // `/persons/create` differed from its laminas twin by the name-day selects and the four
+    // patres date fields, which the Symfony side round-tripped through hidden inputs. Those
+    // seven columns were removed, so both the difference and the hidden inputs are gone.
     '/persons/create',
     '/texts/create',
 

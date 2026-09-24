@@ -286,11 +286,18 @@ class PatresGateway
         }
         $person = $data['data'];
         $this->lastRemotePersonMessages = [];
+        //The remote record still carries the three ordination dates; this site no longer
+        //stores them. What it keeps is the status they imply, which is the whole of what
+        //the site ever displayed — a tag, not a date.
+        //
+        //The third branch used to test `priestDate` as well, so it could never be reached
+        //and no imported person has ever been tagged a deacon. Patres does send
+        //`deaconDate` (its `PersDiakonW` column); testing it is the fix.
         if (isset($person['bishopDate'])) {
             $person['personTags'] = 'bishop';
         } elseif (isset($person['priestDate'])) {
             $person['personTags'] = 'priest';
-        } elseif (isset($person['priestDate'])) {
+        } elseif (isset($person['deaconDate'])) {
             $person['personTags'] = 'deacon';
         }
         $person['lifeCommunity'] = 1;
