@@ -17,20 +17,6 @@ use PDO;
  * value, a `<title>` built from the record rather than fixed, and a delete-confirmation
  * modal (the second, after `assignment-edit`).
  *
- * ## And one thing that is not on the page at all
- *
- * `nameDay` is **deliberately not rendered** — the field is on its way out with its
- * database column — but it is still posted, through three hidden inputs. That is not
- * tidiness. The element is on the form's input filter, so an absent field does not mean
- * "leave it alone": `getData()` answers `nameDay => null` and `updateEntity()` writes that
- * null over the stored date. Measured 2026-08-14: 130 of the capsule's 325 persons have a
- * name day, and every one of them would have been erased the first time a moderator saved
- * their record.
- *
- * {@see testASaveDoesNotEraseTheNameDayItNeverRendered} is the assertion that pins it, and
- * it is the most important test in this file. When the column is dropped, that test and the
- * hidden inputs go together.
- *
  * ## Restoring what it touches
  *
  * `AdminNotes` is free text with nothing derived from it, snapshotted before the write and
@@ -43,7 +29,7 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
     use MagicLinkSignIn;
     use FormRoundTrip;
 
-    /** A real person who has both a full name and a stored name day (1900-03-19). */
+    /** A real person with a full name and a death date. */
     private const ID   = 31;
     private const PATH = '/en/persons/31/edit';
 
@@ -62,23 +48,14 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
      * same edit that drops it from the schema — and until then, every one of them is
      * pinned.
      *
-     * What it is really guarding is the `NOT NULL` precision columns. `PriestDatePrecision`
-     * and `BishopDatePrecision` were added `NOT NULL` by db6.5, so a POST that omits them
-     * does not save a null — it throws, and with display_errors off that is an empty 200
-     * with nothing in the log. `_person-fields.html.twig` carries five hidden inputs for
-     * exactly that reason. If those inputs are ever removed without the columns, this is
-     * what says so.
+     * What it is really guarding is the `NOT NULL` precision columns. `DeathDatePrecision`
+     * was added `NOT NULL` by db6.5, so a POST that omits it does not save a null — it
+     * throws, and with display_errors off that is an empty 200 with nothing in the log.
+     * The template must render or round-trip every such column; this is what says so.
      */
     public function testASavePreservesEveryDateColumnItDoesNotChange(): void
     {
         $columns = [
-            'BirthDate',
-            'BirthDatePrecision',
-            'NameDay',
-            'PriestDate',
-            'PriestDatePrecision',
-            'BishopDate',
-            'BishopDatePrecision',
             'DeathDate',
             'DeathDatePrecision',
             'PersonTags',
@@ -281,117 +258,8 @@ class PersonEditSymfonySmokeTest extends SmokeTestCase
     }
 
     /**
-     * `nameDay` is not rendered as a field, but is posted back unchanged.
-     *
-     * The hidden inputs must carry the *stored* month and day. Empty values here would mean
-     * every save silently clears the date — which is precisely what omitting the field
-     * altogether would have done.
-     */
-    public function testTheUnrenderedNameDayIsStillPostedBack(): void
-    {
-        $stored = (string) $this->column('NameDay');
-        $this->assertNotSame('', $stored, 'precondition: person 31 has a stored name day');
-
-        $body = $this->signedInBody();
-
-        $this->assertStringNotContainsString(
-            'name="nameDay[month]" class=',
-            $body,
-            'nameDay is rendering as a select again; this port omits it by decision'
-        );
-        $this->assertSame(
-            substr($stored, 5, 2),
-            $this->inputNamed($body, 'nameDay[month]')->getAttribute('value'),
-            'the hidden nameDay month does not match the stored date'
-        );
-        $this->assertSame(
-            substr($stored, 8, 2),
-            $this->inputNamed($body, 'nameDay[day]')->getAttribute('value'),
-            'the hidden nameDay day does not match the stored date'
-        );
-        $this->assertSame('1900', $this->inputNamed($body, 'nameDay[year]')->getAttribute('value'));
-    }
-
-    /**
-     * The four patres date fields are round-tripped, which is what lets the form save.
-     *
-     * They are on `PersonForm` and in the person spec's `update_columns`, but no partial on
-     * this site renders them. Without these hidden inputs `getData()` answers null for all
-     * four, and `PriestDatePrecision`/`BishopDatePrecision` are `NOT NULL` — so the write
-     * fails. Verified against both front controllers on 2026-08-14: laminas answers 500 and
-     * Symfony wedges as a fatal-200, i.e. **saving a person was broken everywhere.**
-     *
-     * Asserting the precision values specifically, because the tempting wrong fix is to
-     * default them to `'day'` — which would let the save through while the same POST's
-     * `PriestDate => null` quietly erased ten persons' ordination dates.
-     */
-    public function testThePatresDateFieldsAreRoundTripped(): void
-    {
-        $body = $this->signedInBody();
-
-        foreach (['priestDatePrecision', 'bishopDatePrecision'] as $field) {
-            $this->assertSame(
-                (string) $this->column(ucfirst($field)),
-                $this->inputNamed($body, $field)->getAttribute('value'),
-                "the hidden '$field' does not carry the stored value; a save would write null to a "
-                . 'NOT NULL column'
-            );
-        }
-        foreach (['priestDate', 'bishopDate'] as $field) {
-            $this->assertSame(
-                (string) $this->column(ucfirst($field)),
-                $this->inputNamed($body, $field)->getAttribute('value'),
-                "the hidden '$field' does not carry the stored value; a save would erase it"
-            );
-        }
-    }
-
-    /**
-     * The assertion this file exists for: a save leaves the name day alone.
-     *
-     * Change one unrelated field, submit the whole form as a browser would, and read the
-     * date back. If the hidden inputs were dropped, `getData()` would contribute
-     * `nameDay => null` and this would come back empty — for 130 of 325 persons.
-     */
-    public function testASaveDoesNotEraseTheNameDayItNeverRendered(): void
-    {
-        $jar   = $this->newCookieJar();
-        $email = $this->signIn($jar);
-        $this->grantEveryRole($email);
-
-        $this->remember(['AdminNotes', 'NameDay', 'UpdatedOn', 'UpdatedBy']);
-        $before = $this->column('NameDay');
-        $this->assertNotNull($before, 'precondition: person 31 has a stored name day');
-
-        $marker = 'Smoke test ' . time();
-        $form   = $this->get(self::PATH, false, $jar);
-        $this->assertSame(200, $form['status']);
-
-        $post = $this->request(
-            'POST',
-            self::PATH,
-            [],
-            false,
-            $jar,
-            ['adminNotes' => $marker] + $this->fields($form['body'])
-        );
-
-        $this->assertSame(
-            302,
-            $post['status'],
-            'a valid submission must redirect; a 200 means the form refused it and re-rendered'
-        );
-        $this->assertSame($marker, $this->column('AdminNotes'), 'the change did not reach the database');
-        $this->assertSame(
-            $before,
-            $this->column('NameDay'),
-            'the save erased the name day — the hidden nameDay inputs are missing or empty'
-        );
-    }
-
-    /**
-     * The same failure as the name day, on two fields that had no hidden input either —
-     * and no visible one, which is why nothing round-tripped them.
+     * A field named in the input filter but rendered by no form is written as NULL on
+     * every save. This is that failure, on two fields that had no visible element.
      *
      * `skypeUser` and `slackUser` were named in `PersonForm`'s input filter specification
      * and were elements on no form. laminas builds an input for a specification key

@@ -293,11 +293,10 @@ final class InputFilter
      * This engine did not pass one, and the omission was silent in the worst way: a
      * validator that reads context is written to return `true` when it has none, because
      * that is how laminas signals "not enough information to judge". Measured 2026-09-11 —
-     * all five `SionModel\Validator\DateNotBefore` rules were inert, so a person could be
-     * recorded as having died before they were born, an assignment could end before it
-     * began, and every form said yes. Nothing else here reads context: the two `Identical`
-     * rules both pass `literal => true`, which is what makes the token a value rather than
-     * a context key.
+     * every `SionModel\Validator\DateNotBefore` rule then declared was inert, so an
+     * assignment could end before it began and every form said yes. Nothing else here
+     * reads context: the two `Identical` rules both pass `literal => true`, which is what
+     * makes the token a value rather than a context key.
      *
      * A nested specification computes its own, exactly as laminas does — the parent passes
      * `null` down, so cross-field rules see their own level's siblings and not the

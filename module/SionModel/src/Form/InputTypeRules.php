@@ -216,7 +216,8 @@ final class InputTypeRules
      * number.
      *
      * It surfaced when the engine was first cut over and the smoke suite refused to create
-     * a person: `Schoenstatt\Form\PersonForm::nameDay` is a `DateSelect`, which posts
+     * a person. The field was `PersonForm::nameDay`, since removed with its column; what
+     * made it fail is true of any `DateSelect`, which posts
      * `['year' => …, 'month' => …, 'day' => …]` from its three `<select>`s, and
      * `Laminas\Form\Element\DateSelect::getInputSpecification()` supplied the
      * `SionModel\Filter\DateSelect` that turns that array into `Y-m-d`. Without it the array

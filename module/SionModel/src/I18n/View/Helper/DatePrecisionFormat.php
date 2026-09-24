@@ -37,7 +37,7 @@ use function in_array;
  *
  * **The formatter is pinned to UTC.** These are date-only values that
  * SionModel\Filter\ToDateTime constructed at midnight UTC. Formatting midnight
- * in a timezone behind UTC moves the date to the previous day — a birthday of
+ * in a timezone behind UTC moves the date to the previous day — a feast day of
  * 15 June would render as 14 June for a viewer in New York — so the timezone has
  * to be the one the value was built in, not the viewer's.
  */

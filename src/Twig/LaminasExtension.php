@@ -672,9 +672,9 @@ final class LaminasExtension extends AbstractExtension
      * through `escapeHtml` before appending the English cardinal ending — exactly as the
      * other formatter wrappers here do.
      *
-     * A null date renders as nothing rather than raising, which is the guard the .phtml
-     * puts around it (`if ($object['nameDay'])`); the helper itself throws on a
-     * non-object, and 195 of the 325 people in the capsule have no nameday at all.
+     * A null date renders as nothing rather than raising; the helper itself throws on a
+     * non-object. **No template calls this now** — its one caller was a person's name day,
+     * removed with that column — but it stays registered, so a caller would work.
      */
     public function dayFormat(mixed $date): string
     {

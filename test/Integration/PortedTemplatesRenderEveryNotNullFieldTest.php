@@ -38,21 +38,22 @@ require_once __DIR__ . '/../Form/Engine.php';
  *
  * ## The failure, which has now happened twice
  *
- * `PersonForm` has four fields no page on this site shows: `priestDate`,
- * `priestDatePrecision`, `bishopDate` and `bishopDatePrecision`. They belong to the patres
- * application, which shares the form. Two of the four columns are `NOT NULL`, and a field the
- * template never renders is a field the browser never posts — at which point laminas is not
- * neutral about it. `BaseInputFilter::setData()` gives every input it holds a value whether or
- * not the data mentions it, so an absent optional field arrives in `getData()` as `null`, and
- * `SionTable::createHelper()`/`updateHelper()` write it. MariaDB refuses:
+ * A field the template never renders is a field the browser never posts — at which point
+ * laminas is not neutral about it. `BaseInputFilter::setData()` gives every input it holds a
+ * value whether or not the data mentions it, so an absent optional field arrives in
+ * `getData()` as `null`, and `SionTable::createHelper()`/`updateHelper()` write it. Against a
+ * `NOT NULL` column MariaDB refuses:
  *
- *     23000 - 1048 - Column 'PriestDatePrecision' cannot be null
+ *     23000 - 1048 - Column 'DeathDatePrecision' cannot be null
  *
- * That is the whole mechanism, and it has bitten this port twice. Batch 7 found it by hand on
- * `person-edit` — **every save of a person 500d** — and fixed it there with four hidden inputs
- * that round-trip the values. Batch 10 met it again on `/persons/create`, which inherits that
- * same partial and so was already half-fixed, but only *after* a live probe; nothing failed
- * until a form was actually submitted, and no test in the suite submits one.
+ * That is the whole mechanism, and it bit this port twice. Both times the form was
+ * `PersonForm`, which the patres application shares, and the fields were ordination dates that
+ * no page here rendered: batch 7 found it by hand on `person-edit` — **every save of a person
+ * 500d** — and carried them in hidden inputs; batch 10 met it again on `/persons/create`,
+ * which inherits the same partial, and only after a live probe. Those seven columns have since
+ * been removed outright, which is why this test reads the `NOT NULL` set out of
+ * `information_schema` rather than naming fields: the rule outlives the fields that taught
+ * it.
  *
  * ## Why this test can exist and a general one cannot
  *
@@ -67,11 +68,10 @@ require_once __DIR__ . '/../Form/Engine.php';
  *
  * ## Reading a finding
  *
- * The fix is **not** to default the column. Batch 7's note on `_person-fields.html.twig` is
- * worth repeating because the wrong fix is the attractive one: defaulting `PriestDatePrecision`
- * would let the same POST's `PriestDate => null` land, silently erasing the ordination dates of
- * the ten persons who have one. A loud 500 became a quiet deletion. Round-trip the value —
- * render the field, or carry it in a hidden input — so the save writes back what it read.
+ * The fix is **not** to default the column, because the wrong fix is the attractive one:
+ * defaulting a precision column lets the same POST's date `=> null` land, turning a loud 500
+ * into a silent deletion of the value it was protecting. Round-trip it instead — render the
+ * field, or carry it in a hidden input — so the save writes back what it read.
  *
  * Required fields are out of scope: their absence is a validation error the moderator sees and
  * can act on, not a write. This test is only about the silent ones.

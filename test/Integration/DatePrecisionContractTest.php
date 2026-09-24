@@ -159,7 +159,7 @@ class DatePrecisionContractTest extends TestCase
     /**
      * These are date-only values that SionModel\Filter\ToDateTime built at
      * midnight UTC. Formatting midnight in a timezone behind UTC moves it to the
-     * previous day, so a birthday of 15 June would render as 14 June for a viewer
+     * previous day, so a feast day of 15 June would render as 14 June for a viewer
      * in New York. The formatter is pinned to UTC for that reason, and this test
      * is what stops someone "fixing" it to the viewer's timezone.
      */

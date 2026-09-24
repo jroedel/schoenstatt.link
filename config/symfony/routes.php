@@ -777,10 +777,6 @@ $edit(
 // No REDIRECT_TARGET: the spec declares `show_route`/`show_route_key`, branch 2 of
 // App\Sion\EntityEdit::redirectTarget(), and PersonsController overrides nothing.
 //
-// **`nameDay` is rendered as three hidden inputs rather than as the partial's two selects**,
-// by decision — the field is on its way out with its column. The hidden inputs are not
-// cosmetic: the element is on the input filter, so an absent field makes `getData()` answer
-// null and `updateEntity()` write it. See the template.
 $edit(
     'persons/person/edit',
     '/persons/{person_id}/edit',

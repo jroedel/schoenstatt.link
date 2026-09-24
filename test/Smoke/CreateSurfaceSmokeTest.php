@@ -298,8 +298,7 @@ class CreateSurfaceSmokeTest extends SmokeTestCase
         );
 
         $row = $this->pdo()->query(sprintf(
-            'SELECT PersonId, SpousePersonId, PriestDatePrecision, BishopDatePrecision'
-                . ' FROM sch_persons WHERE LastName = %s',
+            'SELECT PersonId, SpousePersonId FROM sch_persons WHERE LastName = %s',
             $this->pdo()->quote($surname)
         ))->fetch(PDO::FETCH_ASSOC);
 
@@ -307,8 +306,6 @@ class CreateSurfaceSmokeTest extends SmokeTestCase
         $this->created[] = ['sch_persons', 'PersonId', (int) $row['PersonId']];
 
         $this->assertNull($row['SpousePersonId'], "an unchosen spouse must be NULL, not ''");
-        $this->assertSame('day', $row['PriestDatePrecision'], 'the patres precision round-trip is gone');
-        $this->assertSame('day', $row['BishopDatePrecision'], 'the patres precision round-trip is gone');
 
         $this->assertStringContainsString(
             '/persons/' . $row['PersonId'],

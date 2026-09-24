@@ -38,15 +38,23 @@ require_once __DIR__ . '/../Fuzz/FormRepository.php';
  *
  * ## Why the pairs are discovered rather than listed
  *
- * A sixth rule added to a form next month is checked without anyone editing this file,
- * which is the same reason `test/Fuzz/FormRepository` scans the source tree. The floor
- * guards the opposite failure: a rename that makes the discovery find nothing and every
- * assertion pass vacuously.
+ * A rule added to a form next month is checked without anyone editing this file, which is
+ * the same reason `test/Fuzz/FormRepository` scans the source tree. The floor guards the
+ * opposite failure: a rename that makes the discovery find nothing and every assertion
+ * pass vacuously.
+ *
+ * The floor moves only when rules are deliberately removed, and then it moves to what is
+ * actually left. It went from five to two when the birth date and the two ordination dates
+ * were dropped from `PersonForm`, taking `priestDate >= birthDate`,
+ * `bishopDate >= priestDate` and `deathDate >= birthDate` with them — with no birth date
+ * on the form there is nothing left for a death date to be compared against. The two that
+ * remain are one declared rule, `endDate >= startDate`, discovered twice because
+ * `EditAssignmentForm extends AssignmentForm` and both are enumerated.
  */
 final class CrossFieldValidationTest extends TestCase
 {
-    /** How many ordered date pairs the application declares. Five today. */
-    private const PAIR_FLOOR = 5;
+    /** How many ordered date pairs the application declares. Two today. */
+    private const PAIR_FLOOR = 2;
 
     /**
      * The later field rejects a date that falls before the earlier field's.
