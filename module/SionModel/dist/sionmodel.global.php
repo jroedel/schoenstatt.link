@@ -11,9 +11,6 @@ return [
          * This PersonProvider will be used by the SuggestFormFactory if we have a multi-person user
          */
         'multi_person_user_person_provider' => 'Project\Model\MyPersonProvider',
-        //change values to modify hashing of ip addresses and user agents
-        'privacy_hash_algorithm' => 'sha256',
-        'privacy_hash_salt' => 'O3!k5Uvv@',
         //config for Content Security Policy
         'csp_config' => [
             //https://csp-evaluator.withgoogle.com
