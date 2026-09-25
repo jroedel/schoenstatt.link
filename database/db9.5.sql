@@ -1,0 +1,35 @@
+-- db9.5 — stop recording which account viewed which page
+--
+-- @phase: post
+-- @kind: ddl
+-- @idempotent: yes
+-- @destructive: yes
+-- @tables: sch_visits
+-- @verify: SELECT COLUMN_NAME AS column_still_present FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sch_visits' AND COLUMN_NAME='UserId'
+--
+-- The decision (2026-09-25, #253): `sch_visits` is a view counter, and a counter does not
+-- need to know who looked. `SionTable::registerVisit()` wrote the signed-in account's id on
+-- every entity page view — about 8.7 million rows in production, so for anyone who signs in,
+-- a record of every person, association and publication they opened, and when — and nothing
+-- ever read it: `getVisitCounts()` counts rows by entity and date. This is the reasoning db9.1
+-- applied to the IP address and User-Agent in the same table. The code stopped writing the
+-- column in the release this ships with; this drops it.
+--
+-- `@phase: post` because the previous release INSERTs `UserId` on every show page while it
+-- serves; `@destructive: yes` because a rollback to it would fail that INSERT on every show
+-- page, and tools/deploy.sh refuses one.
+--
+-- ## THIS DOES NOT PHYSICALLY ERASE THE BYTES
+--
+-- As with db9.1: MariaDB 10.11 drops the column INSTANTly and does not rewrite the rows, so
+-- the ids stay on disk until `ALTER TABLE sch_visits FORCE`, which on a 1.9 GB table is a
+-- long copy with a lock and is not something an unattended post-deploy step should start.
+-- It is the same server maintenance task db9.1 left, and one rebuild serves both.
+--
+-- The pre-migration snapshot is a full dump of `sch_visits` (1.9 GB, taken on the server);
+-- it ages out under the retention in docs/DEPLOY.md. The two `sch_visits_rollover_*` tables
+-- carry the column too; no code references them, and dropping them is the server task
+-- docs/BACKLOG.md already tracks.
+
+ALTER TABLE `sch_visits`
+    DROP COLUMN IF EXISTS `UserId`;

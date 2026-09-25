@@ -1175,7 +1175,6 @@ CREATE TABLE `sch_visits` (
   `VisitId` int(11) NOT NULL AUTO_INCREMENT,
   `Entity` varchar(50) NOT NULL,
   `EntityId` int(11) DEFAULT NULL COMMENT 'If null, it refers to some entity index',
-  `UserId` int(11) DEFAULT NULL,
   `VisitedAt` datetime NOT NULL,
   PRIMARY KEY (`VisitId`),
   KEY `idx_entity_visited` (`Entity`,`EntityId`,`VisitedAt`)

@@ -1675,12 +1675,12 @@ class SionTable
      */
     public function registerVisit($entity, $entityId = null)
     {
+        //Not who visited: a view counter needs a row per view and nothing else, and the
+        //account id that was recorded here was read by nothing (db9.5).
         $date = new \DateTime(null, new \DateTimeZone('UTC'));
-        $actingUserId = $this->getActingUserId();
         $params = [
             'Entity' => $entity,
             'EntityId' => $entityId,
-            'UserId' => $actingUserId,
             'VisitedAt' => $date->format('Y-m-d H:i:s'),
         ];
         $this->getVisitTableGateway()->insert($params);
