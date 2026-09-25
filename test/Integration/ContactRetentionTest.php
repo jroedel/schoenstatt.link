@@ -147,7 +147,9 @@ final class ContactRetentionTest extends TestCase
         self::assertContains($gone, $due);
         self::assertNotContains($kept, $due);
 
-        $this->retention->apply($this->now, $due);
+        //Only the fixture: the database's own due persons would make the statement's IN
+        //list as long as they are many, and tools/sql-surface.sh records its shape.
+        $this->retention->apply($this->now, [$gone]);
 
         $row = $this->db->select('SELECT * FROM sch_persons WHERE PersonId = ?', [$gone])->current();
         foreach (ContactRetention::CONTACT_FIELDS as $column) {
@@ -184,8 +186,12 @@ final class ContactRetentionTest extends TestCase
         ?string $email = 'fixture@example.com',
     ): int {
         $this->db->execute(
-            'INSERT INTO sch_persons (FirstName, LastName, Email, CellPhoneHasWhatsApp, ContactInfoUpdatedOn, CreatedOn)
-             VALUES (?, ?, ?, ?, ?, ?)',
+            //split so that the part tools/sql-test-literals.php reads is a prefix of what the
+            //server receives, whichever of the values are strings: that is how
+            //tools/sql-surface.sh knows this statement is the test's and not the application's
+            'INSERT INTO sch_persons (FirstName, LastName, Email, CellPhoneHasWhatsApp, ContactInfoUpdatedOn, '
+            . 'CreatedOn)'
+            . ' VALUES (?, ?, ?, ?, ?, ?)',
             [
                 'Fixture',
                 'Retention',
@@ -199,7 +205,7 @@ final class ContactRetentionTest extends TestCase
 
         if ($assignmentOpen || null !== $assignmentEndedYearsAgo) {
             $this->db->execute(
-                'INSERT INTO sch_assignments (RoleId, PersonId, StartDate, EndDate) VALUES (?, ?, ?, ?)',
+                'INSERT INTO sch_assignments (RoleId, PersonId, StartDate, EndDate)' . ' VALUES (?, ?, ?, ?)',
                 [
                     0,
                     $personId,
@@ -210,13 +216,13 @@ final class ContactRetentionTest extends TestCase
         }
         if (null !== $loanReturnedYearsAgo) {
             $this->db->execute(
-                'INSERT INTO lib_checkouts (PersonId, BookId, CheckedOutOn, CheckedInOn) VALUES (?, ?, ?, ?)',
+                'INSERT INTO lib_checkouts (PersonId, BookId, CheckedOutOn, CheckedInOn)' . ' VALUES (?, ?, ?, ?)',
                 [$personId, 0, $this->yearsAgo($loanReturnedYearsAgo + 1), $this->yearsAgo($loanReturnedYearsAgo)]
             );
         }
         if (null !== $loanOpenSinceYearsAgo) {
             $this->db->execute(
-                'INSERT INTO lib_checkouts (PersonId, BookId, CheckedOutOn) VALUES (?, ?, ?)',
+                'INSERT INTO lib_checkouts (PersonId, BookId, CheckedOutOn)' . ' VALUES (?, ?, ?)',
                 [$personId, 0, $this->yearsAgo($loanOpenSinceYearsAgo)]
             );
         }
@@ -227,8 +233,8 @@ final class ContactRetentionTest extends TestCase
     private function change(int $personId, string $field, ?string $old, ?string $new, int $yearsAgo): void
     {
         $this->db->execute(
-            "INSERT INTO sch_changes (ChangedEntity, ChangedField, ChangedIDValue, OldValue, NewValue, UpdatedOn)
-             VALUES ('person', ?, ?, ?, ?, ?)",
+            'INSERT INTO sch_changes (ChangedEntity, ChangedField, ChangedIDValue, OldValue, NewValue, UpdatedOn)'
+            . " VALUES ('person', ?, ?, ?, ?, ?)",
             [$field, $personId, $old, $new, $this->yearsAgo($yearsAgo)]
         );
     }
