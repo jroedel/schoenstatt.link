@@ -109,10 +109,6 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
 - **SionModel's read methods are annotated `@return mixed[]` and return null** (`getObject`,
   `getObjects`, `queryObjects`, `getLibraryImport`, …), so honest null checks read as dead
   code at level 8; `App\Laminas\SionResult` funnels them meanwhile. Library patres uses.
-- **`mailings` retention.** A post-send log that looks like a queue (`Status`/`Attempt`/
-  `MaxAttempts`/`QueueUntil` vestigial, 117 rows all 2017-18, `OpenedOn` always null);
-  re-enabling book notices writes full bodies into it again. Rule: server-generated content
-  may be logged, recipient behaviour may not be observed, so open tracking goes regardless.
 - **The comment form's open redirect**: `SionModel\Controller\CommentController::
   redirectAfterCreate()` follows hidden field `$data['redirect']` (a `@todo` says so) and
   `App\Controller\CommentCreateController` reproduces it; bounded by CSRF and the `user`
@@ -290,7 +286,7 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   helper nonexistent; registering the helper alone would create a 500.
 - **Four feature ideas**, unjudged: automatic repeat-translations across domains; classified
   data-completeness tracking; a new email verification system; user photo uploads.
-  (Import transactionality, `Subtítulo`, delete dependants, `mailings`, sort-text libraries
+  (Import transactionality, `Subtítulo`, delete dependants, sort-text libraries
   and the cover pairs are decisions too; filed above where their code is.)
 
 ## Config rot / small cleanups

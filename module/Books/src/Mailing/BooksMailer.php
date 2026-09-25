@@ -38,7 +38,7 @@ class BooksMailer extends Mailer
         ?BorrowerTokenTable $borrowerTokenTable = null
     )
     {
-        parent::__construct($transport, $renderer, $translator, $config, $libraryTable);
+        parent::__construct($transport, $renderer, $translator, $config);
         $this->libraryTable  = $libraryTable;
         $this->schoenstattTable = $schoenstattTable;
         $this->borrowerTokenTable = $borrowerTokenTable;
@@ -107,7 +107,6 @@ class BooksMailer extends Mailer
         $subjectBase = '%s - Overdue notice';
         $localizedSubject = [];
         $template = '@sion-model/mailing/action-email.html.twig';
-        $tags = 'book-checkouts|library' . $library['libraryId']; //pipe-separated
         $textDomain = 'Books';
         $paragraphPrototype = [
             'salutation' => [ //salutation
@@ -188,7 +187,6 @@ class BooksMailer extends Mailer
             if (! isset($localizedLibraryName[$locale])) {
                 $localizedLibraryName[$locale] = $this->translator->translate($library['name'], $textDomain, $locale);
             }
-            $trackingToken = self::getNewTrackingToken();
             $paragraphs = $paragraphPrototype;
             $paragraphs['salutation']['contentParams'] = [$salutation];
             $paragraphs['message']['contentParams'] = [$localizedLibraryName[$locale]];
@@ -224,19 +222,16 @@ class BooksMailer extends Mailer
             if (isset($replyEmail)) {
                 $message->addReplyTo($replyEmail);
             }
-            $exception = null;
             try {
                 $message->to(new Address($object['email'], isset($object['fullFriendlyName']) ?
                     $asciiFilter->filter($object['fullFriendlyName']) : ''));
                 $this->getTransport()->send($message);
                 $borrowers[$personId]['mailingStatus'] = self::STATUS_SUCCESSFULLY_SENT;
-            } catch (\Exception $exception) {
+            } catch (\Exception) {
                 //a bad address or a refused delivery is reported and must not
                 //abort the notices still to be sent
                 $borrowers[$personId]['mailingStatus'] = self::STATUS_ERROR;
             }
-            //report email
-            $this->reportMailing($message, 1, 3, $exception, $locale, $template, $trackingToken, $tags);
         }
 
         return $borrowers;
