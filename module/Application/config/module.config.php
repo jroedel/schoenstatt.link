@@ -16,6 +16,9 @@ use App\Session\HttpSession;
 use App\Console\Command\BuildSitemapCommandFactory;
 use App\Console\Command\PrivacyRetentionCommand;
 use App\Console\Command\PrivacyRetentionCommandFactory;
+use App\Console\Command\PrivacyExportCommand;
+use App\Console\Command\PrivacyEraseCommand;
+use App\Console\Command\PrivacyRightsCommandFactory;
 use JTranslate\I18n\Translator\Translator as AppTranslator;
 use SionModel\Cache\Storage as CacheStorage;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
@@ -44,6 +47,9 @@ return [
             BuildSitemapCommand::class => BuildSitemapCommandFactory::class,
             //The privacy policy's retention rule for contact data; App\Privacy\ContactRetention.
             PrivacyRetentionCommand::class => PrivacyRetentionCommandFactory::class,
+            //Access and erasure, docs/privacy.md.
+            PrivacyExportCommand::class => PrivacyRightsCommandFactory::class,
+            PrivacyEraseCommand::class => PrivacyRightsCommandFactory::class,
         ],
         'invokables' => [
             /*
@@ -91,6 +97,8 @@ return [
         'commands' => [
             'sitemap:build' => BuildSitemapCommand::class,
             'privacy:retention' => PrivacyRetentionCommand::class,
+            'privacy:export' => PrivacyExportCommand::class,
+            'privacy:erase' => PrivacyEraseCommand::class,
         ],
     ],
 //     'translator' => [

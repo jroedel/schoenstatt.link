@@ -98,6 +98,8 @@ use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PersonController;
 use App\Controller\PersonsController;
 use App\Controller\NotFoundController;
+use App\Controller\MyDataController;
+use App\Privacy\PersonalData;
 use App\Controller\PhpInfoController;
 use App\Controller\PreApril2020RedirectController;
 use App\Controller\PublicationController;
@@ -456,6 +458,11 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // nothing from laminas, and RouteUrl reaches it lazily for links.
             PhpInfoController::class => fn (): PhpInfoController => new PhpInfoController(
                 $this->twig()
+            ),
+            // The self-service half of the right of access; privacy:export is the other.
+            MyDataController::class => fn (): MyDataController => new MyDataController(
+                $this->juserIdentity(),
+                fn (): PersonalData => new PersonalData($this->laminas()->get(Connection::class))
             ),
             // The data-problems list. Needs the laminas container for ProblemService
             // *and* Twig, and its template reaches back for formatEntity through

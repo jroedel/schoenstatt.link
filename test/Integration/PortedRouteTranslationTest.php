@@ -402,9 +402,10 @@ class PortedRouteTranslationTest extends TestCase
         //all five languages as xhtml:link alternates, so the file has no locale of its own,
         //and giving these routes a text domain would attach a translator to an endpoint
         //that never calls one.
+        //`my-data` is a signed-in account's own export, a JSON download.
         $jsonOnly = ['health', 'sm-cache-status', 'sm-clear-persistent-cache',
                      'api-v1/shrines-json', 'api-v2/shrines-json',
-                     'sitemap', 'sitemap-part'];
+                     'sitemap', 'sitemap-part', 'my-data'];
         foreach ($jsonOnly as $json) {
             if ($name === $json || $name === $json . '.locale') {
                 return false;
