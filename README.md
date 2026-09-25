@@ -99,11 +99,11 @@ decided per row rather than per page, by the ACL in `src/Acl` and
 `src/Authorization`; [docs/acl-baseline.json](docs/acl-baseline.json) is the full
 recorded answer, diffed on every authorization change.
 
-The published policy is <https://schoenstatt.link/en/privacy>. It dates from
-2016-03-15 and predates the GDPR, and in several places it describes something the
-code does not do. Rather than have the documentation pretend otherwise, the
-differences are filed as open issues — #252 through #258. Publishing the gap is
-part of the point of publishing the repository.
+The published policy is <https://schoenstatt.link/en/privacy>, and
+[docs/privacy.md](docs/privacy.md) is its design: every store of personal data, how
+long it is kept, who may see it, and the code or scheduled job that enforces each
+rule. Every promise the policy makes has a mechanism listed there. A promise without
+one is a bug, not a policy.
 
 Nothing in this repository contains anyone's personal data, and a test keeps it
 that way: `test/Integration/NoTrackedFileNamesAPersonTest.php` reads every person
