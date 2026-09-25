@@ -78,6 +78,17 @@
   is not: the helper reads `displayEditPencil`, so that key has never done anything, and
   JUser is unported besides. Add a branch here the day a caller needs it, not before.
 #}
+{#-
+  A person as an anonymous visitor may see them: the first name (after any title) and the
+  initial of each part of the last name — "Fr. José M. L." — as text, not a link. The
+  privacy policy promises exactly this much to someone who is not signed in.
+-#}
+{%- macro person_initials(person) -%}
+    {%- set first = (person.title ?? null) ? translate(person.title) ~ ' ' ~ (person.firstName ?? '') : (person.firstName ?? '') -%}
+    {%- set initials = (person.lastName ?? '')|split(' ')|filter(w => w != '')|map(w => w|first ~ '.')|join(' ') -%}
+    {{- (first ~ ' ' ~ initials)|trim -}}
+{%- endmacro -%}
+
 {%- macro person(person, options = {}) -%}
     {#- `?? null` throughout the guard, for the deleted-record placeholder.
 

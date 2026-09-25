@@ -52,7 +52,20 @@
     'telephone':   'Telephone',
     'association': 'Association',
 } %}
-{% set shown = columns|filter(c => headers[c] is defined) %}
+{#-
+  **Who may read a person's email and telephone is decided here, not by the caller.**
+  Whoever may open the person record (`route/persons/person`, sch_moderator and up) may,
+  because that page shows both anyway; nobody else, whatever `columns` asks for. The
+  search pages asked for them and were open to every signed-in account — and since
+  registration is open, that was everyone who typed an address. One partial renders every
+  contact list, so deciding here covers all of them, including the next one.
+
+  An anonymous visitor (the public shrine pages) sees a first name and the initials of the
+  last name, and no link to a record they cannot open — the privacy policy's promise.
+-#}
+{% set may_see_contact = is_allowed('route/persons/person') %}
+{% set anonymous = not display_name() %}
+{% set shown = columns|filter(c => headers[c] is defined and (may_see_contact or c not in ['email', 'telephone'])) %}
 {% set rows = assignments|filter(a => (a.isActive and show_active) or (not a.isActive and show_inactive)) %}
 {% if rows|length > 0 %}
 {% if wrap_in_panel %}
@@ -87,7 +100,7 @@
 {%- elseif column == 'role' %}
                         <td>{% if assignment.roleTitle is defined and assignment.roleTitle %}{{ format.entity('assignment', assignment, {'displayAsLink': false}) }}{% endif %}</td>
 {%- elseif column == 'person' %}
-                        <td>{% if assignment.person is defined and assignment.person %}{{ format.entity('person', assignment.person, person_format_options|default({'displayEditPencil': false})) }}{{ edit_pencil('assignment', assignment.assignmentId) }}{% endif %}</td>
+                        <td>{% if assignment.person is defined and assignment.person %}{% if anonymous %}{{ format.person_initials(assignment.person) }}{% else %}{{ format.entity('person', assignment.person, person_format_options|default({'displayEditPencil': false})) }}{{ edit_pencil('assignment', assignment.assignmentId) }}{% endif %}{% endif %}</td>
 {%- elseif column == 'email' %}
                         <td>{% if assignment.person is defined and assignment.person %}{{ email_link(assignment.person.email) }}{% elseif assignment.association is defined and assignment.association %}{{ email_link(assignment.association.email) }}{% endif %}</td>
 {%- elseif column == 'telephone' %}
