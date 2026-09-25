@@ -55,6 +55,12 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *
  * What this file *can* prove is the half that needs no identity: the column branches,
  * the active/inactive filter, and the empty-table gate.
+ *
+ * **A headless render is an anonymous visitor's**, and since the partial decides who sees
+ * what, that is what these tests see: names as a first name and initials with no link, and
+ * no email or telephone column whatever `columns` asks for. The signed-in and moderator
+ * views — the person link, and the contact columns rendering on every row under
+ * `strict_variables` — are ContactDetailsSmokeTest's and AssignmentsSearchSymfonySmokeTest's.
  */
 class AssignmentsTableTest extends TestCase
 {
@@ -90,11 +96,10 @@ class AssignmentsTableTest extends TestCase
     }
 
     /**
-     * The person is still linked, whatever happens to the pencils. The weakest of the
-     * three assertions about this cell and the only one available without an identity —
-     * see the class docblock.
+     * An anonymous viewer gets the privacy policy's first name and last-name initials, and
+     * no link to a record they cannot open.
      */
-    public function testThePersonCellLinksThePerson(): void
+    public function testAnAnonymousViewerSeesInitialsAndNoLink(): void
     {
         $assignments = $this->assignments();
         $html        = $this->render(['assignments' => $assignments, 'columns' => ['role', 'person']]);
@@ -103,26 +108,25 @@ class AssignmentsTableTest extends TestCase
         $this->assertIsArray($first);
         $this->assertArrayHasKey('person', $first, 'the sample must include linked person rows');
 
-        $this->assertStringContainsString(
-            sprintf('/en/persons/%s"', $first['person']['personId']),
-            $html
-        );
+        $this->assertStringNotContainsString('/persons/', $html, 'a person link reached an anonymous viewer');
+        $this->assertStringContainsString((string) $first['person']['firstName'], $html);
+        $this->assertStringNotContainsString((string) $first['person']['lastName'] . ',', $html);
     }
 
     /**
-     * `strict_variables` is on, so every column the five branches read has to exist on
-     * every row. The email and telephone branches fall back from the person to the
-     * association, which means both shapes have to be present — this renders all five
-     * columns over the sample and requires one `<td>` per column per row.
+     * `strict_variables` is on, so every column the branches read has to exist on every
+     * row: this asks for all five over the sample and requires one `<td>` per *shown*
+     * column per row. For this viewer that is three — the email and telephone columns are
+     * dropped however they are asked for, which is the other half of the assertion.
      */
-    public function testEveryColumnRendersOnEveryRow(): void
+    public function testEveryColumnTheViewerMaySeeRendersOnEveryRow(): void
     {
         $assignments = $this->assignments();
-        $columns     = ['association', 'role', 'person', 'email', 'telephone'];
+        $columns     = ['association', 'role', 'person'];
 
         $html = $this->render([
             'assignments'   => $assignments,
-            'columns'       => $columns,
+            'columns'       => [...$columns, 'email', 'telephone'],
             'show_active'   => true,
             'show_inactive' => true,
         ]);
@@ -138,6 +142,8 @@ class AssignmentsTableTest extends TestCase
             'one cell per column per row'
         );
         $this->assertStringNotContainsString('Undefined', $html);
+        $this->assertStringNotContainsString('mailto:', $html);
+        $this->assertStringNotContainsString('tel:', $html);
     }
 
     /**
