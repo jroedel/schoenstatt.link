@@ -23,7 +23,7 @@ require_once __DIR__ . '/../../module/SionModel/src/Mailing/CssInliner.php';
  * the inliner or to write that style inline.
  *
  * The inliner's agreement with the package it replaces was measured on the 117 real mail
- * bodies stored in `mailings`: identical inline declarations on every element of all 117.
+ * bodies `mailings` held before db9.3 dropped it: identical inline declarations on every element of all 117.
  */
 final class MailStylesheetIsInlinableTest extends TestCase
 {

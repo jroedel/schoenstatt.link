@@ -403,7 +403,7 @@ else
     # Both are small on purpose. This runs on every ci-local, and the capsule holds a
     # production export — naming sch_visits or sch_changes here would spend a couple of
     # gigabytes to learn the same thing a hundred rows teach.
-    run_prog "$FULL_PATH" "$WORK/capsule" "$WORK/cfg-capsule.php" "two.sql.gz" "lib_checkouts,mailings"
+    run_prog "$FULL_PATH" "$WORK/capsule" "$WORK/cfg-capsule.php" "two.sql.gz" "lib_checkouts,lib_libraries"
     if [ "$RC" = 0 ]; then
         NTABLES=$(gzip -dc "$WORK/capsule/two.sql.gz" 2>/dev/null | grep -c '^CREATE TABLE ')
         [ "$NTABLES" = 2 ] \

@@ -2,7 +2,6 @@
 namespace SionModel\Mailing;
 
 use SionModel\I18n\TranslatesMessages;
-use SionModel\Db\Model\SionTable;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
@@ -10,7 +9,8 @@ use Symfony\Component\Mime\Email;
 /**
  * Base class for application mailers: builds messages stamped with the
  * application's mail identity, renders their bodies from Twig templates through a
- * {@see TemplateRendererInterface}, and records every attempt in the mailings table.
+ * {@see TemplateRendererInterface}. It keeps no copy of what it sends: the `mailings`
+ * table that held every body and recipient was dropped in db9.3.
  */
 class Mailer
 {
@@ -22,8 +22,6 @@ class Mailer
      * went out unstyled, with only a PHP warning to show for it.
      */
     const CSS_PATH_DEFAULT = 'public/css/email-default.css';
-
-    const TOKEN_LENGTH = 24;
 
     /**
      * @var TransportInterface $transport
@@ -55,23 +53,16 @@ class Mailer
      */
     protected $config;
 
-    /**
-    * @var SionTable|null $sionTable
-    */
-    protected $sionTable;
-
     public function __construct(
         TransportInterface $transport,
         TemplateRendererInterface $renderer,
         $translator,
-        array $config,
-        ?SionTable $sionTable = null
+        array $config
     ) {
         $this->transport = $transport;
         $this->renderer  = $renderer;
         $this->translator = $translator;
         $this->config    = $config;
-        $this->sionTable = $sionTable;
     }
 
     /**
@@ -110,68 +101,6 @@ class Mailer
         return $this->renderer->render((string) $template, $params);
     }
 
-    public function reportMailing(
-        Email $message,
-        $attempt = 1,
-        $maxAttempts = 3,
-        $exception = null,
-        $locale = null,
-        $template = null,
-        $trackingToken = null,
-        $tags = null
-    ) {
-        $table = $this->getSionTable();
-        if (! isset($table)) {
-            //a mailer without a table sends without reporting
-            return;
-        }
-        static $timeZone;
-        if (!isset($timeZone)) {
-            $timeZone = new \DateTimeZone('UTC');
-        }
-        $actingUser = $table->getActingUserId();
-        $body = $message->getHtmlBody();
-        if (null === $body) {
-            $body = $message->getTextBody();
-        }
-
-        $sender = $message->getSender();
-        //report email
-        $report = [
-            'toAddresses' => self::addressListToString($message->getTo()),
-            'mailingOn' => new \DateTime('now', $timeZone),
-            'mailingBy' => $actingUser,
-            'subject' => $message->getSubject(),
-            'body' => $body,
-            'sender' => isset($sender) ? $sender->toString() : null,
-            'text' => HtmlToText::convert((string) $body),
-            'tags' => $tags,
-            'trackingToken' => $trackingToken,
-            'emailTemplate' => $template,
-            'emailLocale' => $locale,
-            'status' => isset($exception) ? 'Error' : 'Success',
-            'attempt' => $attempt,
-            'maxAttempts' => $maxAttempts,
-            'queueUntil' => null,
-            'errorMessage' => isset($exception) ? $exception->getMessage() : null,
-            'stackTrace' => isset($exception) ? $exception->getTraceAsString() : null,
-        ];
-        $table->createEntity('mailing', $report);
-    }
-
-    /**
-     * @param Address[] $list
-     * @return string
-     */
-    protected static function addressListToString(array $list)
-    {
-        $addresses = [];
-        foreach ($list as $address) {
-            $addresses[] = $address->toString();
-        }
-        return implode(';', $addresses);
-    }
-
     /**
      * Inlines CSS rules in an HTML document
      * @todo Add a little caching so we don't have to read the same
@@ -195,25 +124,6 @@ class Mailer
         }
 
         return CssInliner::inline($body, $css);
-    }
-
-    /**
-     * A tracking token for one message.
-     *
-     * `Laminas\Math\Rand::getString(24)` until 2026-09, and this reproduces exactly what
-     * that did with no character list: base64 of `ceil(length * 0.75)` random bytes, the
-     * padding stripped, cut to length. The alphabet therefore still includes `+` and `/`.
-     * That is kept rather than tidied because the tokens already in `mailings` were
-     * generated this way and the column is compared against them; nothing puts one in a
-     * URL, which is the only place those two characters would be a problem.
-     *
-     * @return string
-     */
-    protected static function getNewTrackingToken()
-    {
-        $bytes = random_bytes((int) ceil(self::TOKEN_LENGTH * 0.75));
-
-        return substr(rtrim(base64_encode($bytes), '='), 0, self::TOKEN_LENGTH);
     }
 
     /**
@@ -315,25 +225,5 @@ class Mailer
     public function getTranslatorTextDomain()
     {
         return $this->textDomain;
-    }
-
-    /**
-     * Get the sionTable value
-     * @return SionTable|null
-     */
-    public function getSionTable()
-    {
-        return $this->sionTable;
-    }
-
-    /**
-     *
-     * @param SionTable $sionTable
-     * @return self
-     */
-    public function setSionTable($sionTable)
-    {
-        $this->sionTable = $sionTable;
-        return $this;
     }
 }
