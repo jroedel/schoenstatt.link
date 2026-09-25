@@ -832,7 +832,13 @@ holds no code.
 
 ```cron
 */15 * * * * cd -P ~/public_html/schoenstatt.link/public && cd .. && php bin/console sitemap:build >/dev/null
+40 3 * * 1 cd -P ~/public_html/schoenstatt.link/public && cd .. && php bin/console privacy:retention --apply >/dev/null
 ```
+
+`privacy:retention` is the privacy policy's retention rule ([privacy.md](privacy.md)); weekly
+is far finer than a five-year period needs. It needs no key passed in: the flush it ends with
+reads `sion_model.api_keys` from the server's own config. cron mails a non-zero exit, which is
+how a failed flush is noticed.
 
 A run with nothing to do costs ~0.11 s; a rebuild ~1.2 s. konsoleH's scheduler
 reads the same crontab, so `crontab -l` on the port-222 account is the full

@@ -14,6 +14,8 @@ use JUser\Host\SessionInterface as JUserSessionInterface;
 use App\Console\Command\BuildSitemapCommand;
 use App\Session\HttpSession;
 use App\Console\Command\BuildSitemapCommandFactory;
+use App\Console\Command\PrivacyRetentionCommand;
+use App\Console\Command\PrivacyRetentionCommandFactory;
 use JTranslate\I18n\Translator\Translator as AppTranslator;
 use SionModel\Cache\Storage as CacheStorage;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
@@ -40,6 +42,8 @@ return [
             //App\Console\Command\BuildSitemapCommandFactory for what it does and does not
             //build.
             BuildSitemapCommand::class => BuildSitemapCommandFactory::class,
+            //The privacy policy's retention rule for contact data; App\Privacy\ContactRetention.
+            PrivacyRetentionCommand::class => PrivacyRetentionCommandFactory::class,
         ],
         'invokables' => [
             /*
@@ -86,6 +90,7 @@ return [
     'console' => [
         'commands' => [
             'sitemap:build' => BuildSitemapCommand::class,
+            'privacy:retention' => PrivacyRetentionCommand::class,
         ],
     ],
 //     'translator' => [
