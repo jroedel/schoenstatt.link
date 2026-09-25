@@ -87,9 +87,6 @@ return [
         'files_api_url' => 'https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec',
     ],
     'schoenstatt' => [
-        'gdpr_ip_address_exceptions' => [
-
-        ],
         'api_keys' => [
             'xxxxxxxxxxxxxxxxxxxxx',
         ],
