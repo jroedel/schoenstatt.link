@@ -29,6 +29,7 @@ use App\Authorization\RouteAccess;
 use JTranslate\Routing\RouteAudience as JTranslateAudience;
 use JUser\Routing\RouteAudience;
 use App\Controller\AdminController;
+use App\Controller\MyDataController;
 use App\Controller\AssignmentSearchController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\ApiRouteNotFoundController;
@@ -334,6 +335,15 @@ $ported(
     AdminController::class,
     RouteAccess::guardedBy('route/admin'),
     $textDomain('Schoenstatt')
+);
+
+// A signed-in account's own data, as a JSON download (docs/privacy.md). No id in the path:
+// it is always the current identity's.
+$ported(
+    'my-data',
+    '/user/my-data',
+    MyDataController::class,
+    RouteAccess::guardedBy('route/my-data')
 );
 
 // Batch 17, 2026-09-08: the last HTML page laminas served. `sch_administrator` only — the

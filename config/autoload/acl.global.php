@@ -91,6 +91,7 @@ return [
                 ['route' => 'jtranslate/phrase/delete', 'roles' => ['translator', 'sch_general_moderator']],
 
                 ['route' => 'comments/create', 'roles' => ['user']],
+                ['route' => 'my-data', 'roles' => ['user']],
             ],
         ],
     ],

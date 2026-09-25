@@ -33,6 +33,18 @@ return array (
     'instance' => 'App\\Console\\Command\\ImportLibraryBooksCommand',
     'shared' => true,
   ),
+  'App\\Console\\Command\\PrivacyEraseCommand' => 
+  array (
+    'type' => 'App\\Console\\Command\\PrivacyEraseCommand',
+    'instance' => 'App\\Console\\Command\\PrivacyEraseCommand',
+    'shared' => true,
+  ),
+  'App\\Console\\Command\\PrivacyExportCommand' => 
+  array (
+    'type' => 'App\\Console\\Command\\PrivacyExportCommand',
+    'instance' => 'App\\Console\\Command\\PrivacyExportCommand',
+    'shared' => true,
+  ),
   'App\\Console\\Command\\PrivacyRetentionCommand' => 
   array (
     'type' => 'App\\Console\\Command\\PrivacyRetentionCommand',
