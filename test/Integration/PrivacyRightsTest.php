@@ -268,7 +268,11 @@ final class PrivacyRightsTest extends TestCase
             [$personId]
         );
         $userId = $this->db->lastInsertId();
-        $this->db->execute('INSERT INTO user_role_linker (user_id, role_id)' . ' VALUES (?, 1)', [$userId]);
+        //a role of the fixture's own: user_role_linker has a foreign key, and the CI seed
+        //need not hold any particular role row
+        $this->db->execute("INSERT INTO user_role (role_id, is_default) VALUES ('fixture-privacy', 0)");
+        $roleRowId = $this->db->lastInsertId();
+        $this->db->execute('INSERT INTO user_role_linker (user_id, role_id)' . ' VALUES (?, ?)', [$userId, $roleRowId]);
         $this->db->execute(
             "INSERT INTO user_api_token (jti, user_id, label, issued_on, expires_on)
              VALUES (?, ?, 'fixture', UTC_TIMESTAMP(), UTC_TIMESTAMP())",
