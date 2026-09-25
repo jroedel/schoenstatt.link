@@ -10,7 +10,7 @@ enforces the rule. A promise the policy makes must have a row here with a mechan
 | --- | --- | --- | --- |
 | `sch_persons` contact columns | email, phones, web and social-media contacts, postal address, contact notes | erased five years after the person's last activity, unless something is still current (below) | `bin/console privacy:retention`, cron |
 | `sch_changes` | the editor's account id; the old and new value of each edited field | rows are kept (the sitemap's `<lastmod>` and the edit history need them). A person's contact values are blanked when that person's contact data is erased, and for everyone once older than five years. Values of fields the schema no longer has are blanked (db9.4) | `privacy:retention`; db9.4 |
-| `sch_visits` | which account viewed which record, when | no IP address or User-Agent since db9.1 | — |
+| `sch_visits` | none: which record was viewed, when | no IP address or User-Agent since db9.1, no account since db9.5 | — |
 | `lib_checkouts` | who borrowed which book | kept: it is the loan record, and a borrower's last loan is what starts their retention clock | — |
 | `lib_borrower_tokens` | a hash of a borrower's link, their person id, when it was last used | a link works for 30 days; the row is deleted a month after it expires | `privacy:retention` |
 | error reports, `shared/data/exceptions/` | a shortened client address, the account id | 90 days without recurring | deploy housekeeping, [DEPLOY.md](DEPLOY.md) |
