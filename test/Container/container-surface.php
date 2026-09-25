@@ -33,6 +33,12 @@ return array (
     'instance' => 'App\\Console\\Command\\ImportLibraryBooksCommand',
     'shared' => true,
   ),
+  'App\\Console\\Command\\PrivacyRetentionCommand' => 
+  array (
+    'type' => 'App\\Console\\Command\\PrivacyRetentionCommand',
+    'instance' => 'App\\Console\\Command\\PrivacyRetentionCommand',
+    'shared' => true,
+  ),
   'App\\Console\\Command\\SendBookNoticesCommand' => 
   array (
     'type' => 'App\\Console\\Command\\SendBookNoticesCommand',
