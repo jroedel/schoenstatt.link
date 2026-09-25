@@ -358,7 +358,7 @@ return array (
   'Schoenstatt\\Config' => 
   array (
     'type' => 'array',
-    'keys' => 14,
+    'keys' => 12,
   ),
   'Schoenstatt\\FathersValueOptions' => 
   array (
