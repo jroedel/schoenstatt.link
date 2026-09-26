@@ -76,8 +76,9 @@ a finding that is already on one of these lists is not news:
   that carry none. A route being unguarded there is a recorded fact, not an
   oversight — though an argument that a particular one should be guarded is a
   perfectly good issue.
-- **The open issues**, particularly #252 through #258, which are this project's own
-  audit of its privacy and data-handling gaps. They are open because they are real.
+- **[docs/privacy.md](docs/privacy.md)** lists every store of personal data, who may
+  see it and how long it is kept, and names what enforces each rule. A store or a view
+  that contradicts it is exactly the kind of report this page is for.
 
 What is genuinely interesting: anything that lets one person see another's personal
 data, anything that gets past the magic-link authentication in `module/JUser`,

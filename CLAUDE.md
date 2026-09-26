@@ -127,9 +127,12 @@ other, so "everything passed" and "everything that could run passed" are differe
   assembles `AclData` (plain arrays) per request; there is no cross-request ACL cache and
   none is needed. Default roles
   (`lib_user`, `pub_user`, `sch_user`, `bib_user`) mean "signed in"; per-row checks are the
-  real protection. A library created by SQL has no `library_<id>` resource until the
-  persistent cache is flushed over HTTP. `SchoenstattTable::getRules()` is unfinished 2020
-  work; its provider registration stays disabled.
+  real protection. A person's email and telephone reach a page only through the person
+  record and `_assignments-table.html.twig`, which gates both columns on
+  `route/persons/person` ([docs/privacy.md](docs/privacy.md)). A library created by SQL
+  has no `library_<id>` resource until the persistent cache is flushed over HTTP.
+  `SchoenstattTable::getRules()` is unfinished 2020 work; its provider registration stays
+  disabled.
 - **Authentication** is JUser alone, passwordless: a magic link signs in, registers an
   unknown address, and verifies it. `user.state` = may sign in (enforced at mailing, link
   redemption, API token use, and every request's session read); `user.email_verified` =

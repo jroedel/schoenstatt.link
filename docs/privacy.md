@@ -59,6 +59,20 @@ would otherwise keep serving erased values from APCu, which a console process ca
 ([caching.md](caching.md), rule zero); a failed flush fails the run. The schedule is a cron
 entry, [DEPLOY.md](DEPLOY.md#scheduled-jobs).
 
+## Who sees a person's contact data
+
+A person's email addresses and telephone numbers reach a page in two places only: the
+person record (`persons/person`, sch_moderator and up) and the contact lists, which all
+render through `templates/schoenstatt/_assignments-table.html.twig`. That partial shows
+the email and telephone columns only when `is_allowed('route/persons/person')`, whatever
+columns its caller asks for, so the two places answer to the same guard.
+`ContactDetailsSmokeTest` holds both halves: a new account sees neither, a moderator sees
+both. Registration is open and every account holds the default roles, so any rule
+written as "signed in" means "anyone".
+
+An anonymous visitor who reaches a contact list (a shrine's contact persons) sees the
+`person_initials` form: the first name and the initials of the last name, not linked.
+
 ## Access and erasure
 
 **Access.** A signed-in account downloads its own export from `/en/user/my-data` (the
