@@ -6,8 +6,8 @@
 #     ./tools/schema-dump.sh --check    # regenerate into a temp file and diff, exit 1 on drift
 #
 # WHY THIS EXISTS: `database/` holds incremental migrations and, until now, no schema to
-# apply them to. Of the 48 tables the capsule holds, 34 are created by some migration in
-# `database/`; the other 14 only ever existed on a server — twelve from the 2016 one, and
+# apply them to. Of the 48 tables the capsule holds, 33 are created by some migration in
+# `database/` and `sch_migration` by tools/migrate.sh; the other 14 only ever existed on a server — twelve from the 2016 one, and
 # `jtranslate_migration` and `trans_translations_history`, which belong to JTranslate's own
 # PHP migration runner rather than to `database/*.sql`. So nothing in this repository could
 # build a database, which is why the capsule cannot be rebuilt (CLAUDE.md says so), why a

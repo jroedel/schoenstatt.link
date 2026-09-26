@@ -3,7 +3,6 @@ DELETE FROM `trans_translations` WHERE `translation_id` = ?
 DELETE FROM `user_api_token` WHERE `user_id` = ? AND `revoked_on` IS NULL AND `expires_on` < '?'
 INSERT INTO `lib_borrower_tokens` (`TokenHash`, `PersonId`, `LibraryId`, `CreatedOn`, `ExpiresOn`) VALUES ('?', ?, ?, '?', '?')
 INSERT INTO lib_checkouts (PersonId, BookId, CheckedOutOn, DueOn, TimesRenewed) VALUES (?, ?, UTC_TIMESTAMP(), '?', ?)
-INSERT INTO `mailings` (`ToAddresses`, `MailingOn`, `MailingBy`, `Subject`, `Body`, `Sender`, `MailingText`, `MailingTags`, `TrackingToken`, `EmailTemplate`, `EmailLocale`, `Status`, `Attempt`, `MaxAttempts`, `QueueUntil`, `ErrorMessage`, `StackTrace`) VALUES ('?', '?', NULL, '?', '?', NULL, '?', NULL, NULL, NULL, NULL, '?', ?, ?, NULL, NULL, NULL)
 INSERT INTO `sch_provenance` (`Entity`, `EntityId`, `FieldGroup`, `SourceClass`, `SourceUrl`, `SourceNote`, `Outcome`, `AssertedOn`, `RecordedOn`, `RecordedBy`) VALUES ('?', ?, '?', '?', '?', '?', '?', '?', '?', ?)
 INSERT INTO `sch_provenance` (`Entity`, `EntityId`, `FieldGroup`, `SourceClass`, `SourceUrl`, `SourceNote`, `Outcome`, `AssertedOn`, `RecordedOn`, `RecordedBy`) VALUES ('?', ?, '?', '?', NULL, '?', '?', '?', '?', ?)
 INSERT INTO `sch_visits` (`Entity`, `EntityId`, `UserId`, `VisitedAt`) VALUES ('?', ?, NULL, '?')

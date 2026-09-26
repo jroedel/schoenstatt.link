@@ -631,38 +631,6 @@ CREATE TABLE `lib_libraries` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `mailings`
---
-
-DROP TABLE IF EXISTS `mailings`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `mailings` (
-  `MailingId` int(11) NOT NULL AUTO_INCREMENT,
-  `ToAddresses` varchar(2000) NOT NULL,
-  `MailingOn` datetime DEFAULT NULL,
-  `MailingBy` int(11) DEFAULT NULL,
-  `Subject` varchar(255) DEFAULT NULL,
-  `Body` mediumtext DEFAULT NULL,
-  `Sender` varchar(255) DEFAULT NULL,
-  `MailingText` mediumtext DEFAULT NULL,
-  `MailingTags` varchar(255) DEFAULT NULL,
-  `TrackingToken` varchar(100) DEFAULT NULL,
-  `OpenedFromHeaders` varchar(255) DEFAULT NULL COMMENT 'JSON',
-  `OpenedOn` datetime DEFAULT NULL,
-  `EmailTemplate` varchar(100) DEFAULT NULL,
-  `EmailLocale` varchar(50) DEFAULT NULL,
-  `Status` varchar(50) NOT NULL,
-  `QueueUntil` datetime DEFAULT NULL,
-  `Attempt` int(11) NOT NULL DEFAULT 1,
-  `MaxAttempts` int(11) NOT NULL DEFAULT 3,
-  `ErrorMessage` varchar(255) DEFAULT NULL,
-  `StackTrace` mediumtext DEFAULT NULL,
-  PRIMARY KEY (`MailingId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `mus_compositions`
 --
 
