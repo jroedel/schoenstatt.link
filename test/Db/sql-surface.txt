@@ -5,7 +5,7 @@ INSERT INTO `lib_borrower_tokens` (`TokenHash`, `PersonId`, `LibraryId`, `Create
 INSERT INTO lib_checkouts (PersonId, BookId, CheckedOutOn, DueOn, TimesRenewed) VALUES (?, ?, UTC_TIMESTAMP(), '?', ?)
 INSERT INTO `sch_provenance` (`Entity`, `EntityId`, `FieldGroup`, `SourceClass`, `SourceUrl`, `SourceNote`, `Outcome`, `AssertedOn`, `RecordedOn`, `RecordedBy`) VALUES ('?', ?, '?', '?', '?', '?', '?', '?', '?', ?)
 INSERT INTO `sch_provenance` (`Entity`, `EntityId`, `FieldGroup`, `SourceClass`, `SourceUrl`, `SourceNote`, `Outcome`, `AssertedOn`, `RecordedOn`, `RecordedBy`) VALUES ('?', ?, '?', '?', NULL, '?', '?', '?', '?', ?)
-INSERT INTO `sch_visits` (`Entity`, `EntityId`, `UserId`, `VisitedAt`) VALUES ('?', ?, NULL, '?')
+INSERT INTO `sch_visits` (`Entity`, `EntityId`, `VisitedAt`) VALUES ('?', ?, '?')
 INSERT INTO `trans_phrases` (`project`, `text_domain`, `phrase`, `phrase_hash`, `added_on`, `origin_route`) VALUES ('?', '?', '?', '?', '?', '?') ON DUPLICATE KEY UPDATE `retired_on` = NULL, `translation_phrase_id` = LAST_INSERT_ID(`translation_phrase_id`)
 INSERT INTO `trans_translations_history` (`project`, `phrase_hash`, `locale`, `text_domain`, `translation_phrase_id`, `old_translation`, `operation`, `notes`, `replaced_by`, `replaced_on`) VALUES ('?', '?', '?', '?', ?, '?', '?', '?', NULL, '?')
 INSERT INTO `trans_translations_history` (`project`, `phrase_hash`, `locale`, `text_domain`, `translation_phrase_id`, `old_translation`, `operation`, `notes`, `replaced_by`, `replaced_on`) VALUES ('?', '?', '?', '?', ?, '?', '?', NULL, NULL, '?')
