@@ -18,19 +18,19 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 114,
-        "guarded_routes_total": 114,
+        "guarded_routes_existing": 115,
+        "guarded_routes_total": 115,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 115,
+        "route_guard_entries": 116,
         "routes_declared_twice": 1,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 224,
+        "symfony_routes_acl_checked": 226,
         "symfony_routes_open": 31,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 255,
-        "total_routes": 140,
+        "symfony_served_routes": 257,
+        "total_routes": 141,
         "unguarded_routes": 26,
         "unguarded_routes_matchable": 26
     },
@@ -2228,6 +2228,61 @@
             "matchable": true,
             "public": false,
             "route": "music/create-composition"
+        },
+        "my-data": {
+            "anonymous_allowed": false,
+            "assertion": null,
+            "declaration_count": 1,
+            "declarations": [
+                {
+                    "roles": [
+                        "user"
+                    ],
+                    "assertion": null
+                }
+            ],
+            "declared_roles": [
+                "user"
+            ],
+            "effective_roles": [
+                "administrator",
+                "lib_academic",
+                "lib_institute",
+                "lib_patres",
+                "lib_user",
+                "pub_administrator",
+                "pub_all",
+                "pub_brothers",
+                "pub_brothers_moderator",
+                "pub_families",
+                "pub_families_moderator",
+                "pub_general_moderator",
+                "pub_institute",
+                "pub_institute_moderator",
+                "pub_ladies",
+                "pub_ladies_moderator",
+                "pub_moderator",
+                "pub_patres",
+                "pub_patres_moderator",
+                "pub_sisters",
+                "pub_sisters_moderator",
+                "pub_user",
+                "sch_administrator",
+                "sch_basic",
+                "sch_general_moderator",
+                "sch_institute",
+                "sch_moderator",
+                "sch_patres",
+                "sch_user",
+                "texts_administrator",
+                "texts_moderator",
+                "texts_user",
+                "user"
+            ],
+            "exists_in_router": true,
+            "matchable": true,
+            "public": false,
+            "route": "my-data"
         },
         "persons": {
             "anonymous_allowed": false,
@@ -7148,6 +7203,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/music/create-composition",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "my-data": {
+            "path": "/user/my-data",
+            "controller": "App\\Controller\\MyDataController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/my-data",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "my-data.locale": {
+            "path": "/{_locale}/user/my-data",
+            "controller": "App\\Controller\\MyDataController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/my-data",
                 "reason": null,
                 "denial_style": "html"
             }

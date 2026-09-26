@@ -59,11 +59,52 @@ would otherwise keep serving erased values from APCu, which a console process ca
 ([caching.md](caching.md), rule zero); a failed flush fails the run. The schedule is a cron
 entry, [DEPLOY.md](DEPLOY.md#scheduled-jobs).
 
+## Access and erasure
+
+**Access.** A signed-in account downloads its own export from `/en/user/my-data` (the
+account menu's *My data*); anyone else writes in, and an administrator runs
+`php bin/console privacy:export --person=<id>` or `--account=<id>` and sends the JSON.
+`App\Privacy\PersonalData` builds both, and an export of an account includes the person it
+is linked to and the other way round. It holds the person row, assignments, loans, borrower
+links (not their hashes), relationships, publications naming them, the sources of their
+data (`sch_provenance`), the history of their record, and for each account its roles, API
+tokens (not the secrets), comments, and a per-entity count of the edits it made to other
+records — counted rather than listed, because those rows are about the other records.
+
+**Erasure** is `php bin/console privacy:erase --person=<id>` or `--account=<id>`, a dry run
+until `--apply`, which then flushes the web cache. `App\Privacy\Erasure` owns the rules:
+
+- **A book still out refuses** the erasure: the loan is the library's record of its own
+  property. Check it in or write it off first.
+- **Everything linked to the person goes**: assignments, loans, borrower links,
+  relationships naming them, provenance, their record's history, a spouse's link to them, a
+  library's default borrower. So do their accounts.
+- **An author keeps their name.** Someone named as the author, editor, translator or
+  illustrator of a publication or text (the `IsAuthor` flag, `p<id>` in
+  `sch_publications.Authors`, or an authorship relationship) keeps FirstName, LastName and
+  the flag, because authorship of a published work is a public bibliographic fact.
+  Everything else on the row is cleared, and the authorship relationships stay.
+- **An account is deleted, and so is its name on everything it did**: every integer column
+  whose name ends in `By` or `_by` is set to NULL where it holds the account's id. The
+  column list comes from information_schema, so a new column is covered without anyone
+  listing it. The `trans_*` tables are the exception, because they are shared with the
+  patres application and hold its user ids too, so they are updated explicitly and only for
+  this project's `project_name`. The account's comments are deleted.
+- **Free text is reported, not rewritten.** Notes, translations and phrases that contain
+  the person's name or email address are listed for someone to edit by hand.
+
+Partial erasure is an edit: a moderator clears the field, and `privacy:retention` blanks its
+old values in the change log once they are five years old. Nothing is kept to stop an erased
+person being added again. A hash of their name and address would not be anonymous, because
+anyone holding a candidate name can check it against the hash.
+
 ## Not covered by a rule
 
 - **Associations' contact data** (`sch_associations`): an organisation's address and
   numbers, maintained by its moderators, not a person's.
 - **Accounts** (`user`): an address that signs in. There is no record of the last sign-in,
-  so no inactivity rule can be stated yet.
+  so no inactivity rule can be stated yet; an account goes when its owner asks.
+- **`user_remember_me`**: a table from the old sign-in that nothing reads or writes; its
+  removal is the server task in [BACKLOG.md](BACKLOG.md).
 - **Free text** in public notes and the phrase table can mention a person; it is not
   structured, so only an erasure request can find it.
