@@ -99,9 +99,15 @@ docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar --testsuite
 # the ledger, and the sitemap builder writes files rather than rows.
 echo "running the console commands"
 docker compose exec -T -u www-data app php bin/console jtranslate:migrate >/dev/null 2>&1
+# Twice, so the recording holds both paths whatever state the files are in. A plain build
+# asks whether anything changed and exits when nothing has, so the per-entity lastmod query
+# came and went with whatever last touched those files; --force skips that question, which
+# would lose the staleness query instead. The forced build runs first, so the plain one
+# always finds the files fresh.
+docker compose exec -T -u www-data app php bin/console sitemap:build --force >/dev/null 2>&1
 docker compose exec -T -u www-data app php bin/console sitemap:build >/dev/null 2>&1
 
-# The four tables nothing above reaches, driven through their own table classes inside a
+# The three tables nothing above reaches, driven through their own table classes inside a
 # transaction that is rolled back. See test/Db/drive-tables.php for why that is sound.
 echo "driving the tables no page reaches"
 docker compose exec -T -u www-data app php -d memory_limit=1G test/Db/drive-tables.php >/dev/null 2>&1

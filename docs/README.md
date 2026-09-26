@@ -13,6 +13,7 @@ history. Working conventions (capsule, test suites, coding standard, git) are in
 | [DEPLOY.md](DEPLOY.md) | how a deploy runs: atomic releases, the OPcache reset and revision gate, the migration ledger, rollback, smoke checks, the per-account `php.ini` baseline |
 | [caching.md](caching.md) | APCu and OPcache: the persistent cache and its flush, the dependency map and its invariants, `/en/sm/cache-status`, the oversized-item hazard |
 | [translation.md](translation.md) | how the site gets translated: phrase discovery, text domains, the Twig checklist, retirement vs retraction, catalog files |
+| [privacy.md](privacy.md) | personal data: every store, its retention rule, and what enforces it; the contact-data rule and `privacy:retention` |
 | [exception-reporting.md](exception-reporting.md) | how production failures reach the inbox: store, privacy profile, rate limit, scripts |
 | [api-v3.md](api-v3.md) | the API for automated agents: tokens and roles, endpoints, field and validation contracts, the v1/v2 410 |
 | [libraries.md](libraries.md) | the lending feature: roles and per-library checks, checkout, borrower links, notices, deleting a library |

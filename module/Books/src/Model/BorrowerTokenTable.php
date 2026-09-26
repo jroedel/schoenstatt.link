@@ -136,15 +136,32 @@ class BorrowerTokenTable
     }
 
     /**
-     * Delete tokens that expired more than a month ago. Nothing calls this on a
-     * schedule yet; it exists so the table has a documented way to not grow forever.
+     * Delete tokens that expired more than a month ago. `bin/console privacy:retention
+     * --apply` calls this; docs/privacy.md.
      */
     public function pruneExpired(?DateTimeImmutable $now = null): int
     {
-        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $delete = new Delete('lib_borrower_tokens');
-        $delete->where(new Operator('ExpiresOn', Operator::LT, $now->sub(new DateInterval('P30D'))->format('Y-m-d H:i:s')));
+        $delete->where(new Operator('ExpiresOn', Operator::LT, self::pruneBefore($now)));
 
         return $this->adapter->execute($delete);
+    }
+
+    /** How many rows {@see pruneExpired()} would delete, for a dry run. */
+    public function countPrunable(?DateTimeImmutable $now = null): int
+    {
+        $row = $this->adapter->select(
+            'SELECT COUNT(*) AS n FROM lib_borrower_tokens WHERE ExpiresOn < ?',
+            [self::pruneBefore($now)]
+        )->current();
+
+        return (int) ($row['n'] ?? 0);
+    }
+
+    private static function pruneBefore(?DateTimeImmutable $now): string
+    {
+        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+        return $now->sub(new DateInterval('P30D'))->format('Y-m-d H:i:s');
     }
 }
