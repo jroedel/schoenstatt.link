@@ -1,0 +1,31 @@
+-- db9.3 — drop `mailings`, the send-log that kept a full copy of every notice
+--
+-- @phase: post
+-- @kind: ddl
+-- @idempotent: yes
+-- @destructive: yes
+-- @tables: mailings
+-- @verify: SELECT TABLE_NAME AS table_still_present FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mailings'
+--
+-- The decision (2026-09-25, #253): the application keeps no copy of the mail it sends.
+-- `mailings` held 117 rows, all from 2017-12 to 2018-06, each with the recipient's name
+-- and address, the full HTML body, a plain-text copy and a tracking token. Its only writer
+-- was `Mailer::reportMailing()`, called by the library overdue notices, and nothing ever
+-- read a row back: no screen, no report, no retry — `Status`, `Attempt`, `MaxAttempts`
+-- and `QueueUntil` look like a queue and never were one, and `OpenedOn` is null in every
+-- row. A copy nobody reads has no purpose to justify keeping it, so the table goes rather
+-- than being put on a retention schedule.
+--
+-- What a sender still learns is the outcome: `BooksMailer::sendBookNotices()` returns
+-- each borrower's `mailingStatus`, sent or error, to its caller.
+--
+-- `@phase: post` because the previous release still writes this table from the notice
+-- path while it serves; `@destructive: yes` because a rollback to that release would send
+-- a notice and then fail its INSERT, and tools/deploy.sh refuses one.
+--
+-- Unlike db9.1 and db9.2 this does physically remove the data: a dropped InnoDB table's
+-- file is deleted, not left with its rows in place. The pre-migration snapshot this file
+-- triggers is the one remaining copy, and it ages out under the retention policy in
+-- docs/DEPLOY.md.
+
+DROP TABLE IF EXISTS `mailings`;

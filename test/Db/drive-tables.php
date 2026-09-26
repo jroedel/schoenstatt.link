@@ -3,8 +3,8 @@
 /**
  * Drives the tables no page and no test reaches, so their statements reach the recording.
  *
- * Run by tools/sql-surface.sh. Four tables — `files`, `lib_imports`, `mailings`,
- * `user_api_token` — are read or written only behind an authenticated session or a fixture
+ * Run by tools/sql-surface.sh. Three tables — `files`, `lib_imports`, `user_api_token` —
+ * are read or written only behind an authenticated session or a fixture
  * no driver sets up, and a table missing from `test/Db/sql-surface.txt` has no contract at
  * all: its SQL can change and nothing would say so.
  *
@@ -21,8 +21,7 @@
  *
  * Everything runs inside a transaction that is rolled back. The general log records a
  * statement when it executes, not when it commits, so a write's shape is captured while the
- * row it would have written is discarded — which is what lets `mailings` be in the recording
- * without this script leaving a send-log entry behind on every run. All four tables are
+ * row it would have written is discarded, so a run leaves no row behind. All three tables are
  * InnoDB; a MyISAM one would ignore the rollback and keep the row.
  */
 
@@ -35,8 +34,6 @@ use JTranslate\Model\TranslationsTable;
 use JUser\Model\ApiTokenTable;
 use SionModel\Db\Connection;
 use SionModel\Db\Model\FilesTable;
-use SionModel\Mailing\Mailer;
-use Symfony\Component\Mime\Email;
 
 chdir(dirname(__DIR__, 2));
 require 'vendor/autoload.php';
@@ -82,22 +79,6 @@ try {
     $publications->removeDependentCacheItems('publication');
     $publications->getMergedPublicationIds();
 
-    //`reportMailing()` returns early without a table, and the container builds this Mailer
-    //without one — `SionModel\Service\MailerFactory` passes four arguments and the fifth is
-    //optional, so "a mailer without a table sends without reporting", as the class says.
-    //`Books\Mailing\BooksMailer` is the only caller that reports, because it passes its
-    //library table up. Setting one here is what puts the `mailings` INSERT in the recording.
-    /** @var Mailer $mailer */
-    $mailer = $container->get(Mailer::class);
-    $mailer->setSionTable($libraries);
-    $mailer->reportMailing(
-        (new Email())
-            ->from('sql-surface@example.com')
-            ->to('sql-surface@example.com')
-            ->subject('sql-surface')
-            ->html('<p>sql-surface</p>')
-    );
-
     //**Phrase discovery only writes when a phrase is missing**, and against a database that
     //already holds every phrase the pass renders it writes nothing at all — so four statement
     //shapes came and went with the state of `trans_phrases` rather than with the code. A
@@ -128,4 +109,4 @@ try {
     $connection->rollBack();
 }
 
-echo "drove files, user_api_token, lib_imports, mailings, the merged-publication read and the phrase writes; rolled back\n";
+echo "drove files, user_api_token, lib_imports, the merged-publication read and the phrase writes; rolled back\n";
