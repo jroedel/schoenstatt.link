@@ -50,7 +50,6 @@ return [
         'files_api_url' => 'http://localhost/dev-null',
     ],
     'schoenstatt' => [
-        'gdpr_ip_address_exceptions' => [],
         'api_keys' => ['local-dev-api-key'],
         'patres_api_key' => 'local-dev-dummy',
         'patres_api_person_list_uri' => 'https://schoenstatt-fathers.link/api/persons',
