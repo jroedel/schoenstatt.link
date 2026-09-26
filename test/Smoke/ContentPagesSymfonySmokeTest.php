@@ -65,7 +65,7 @@ class ContentPagesSymfonySmokeTest extends SmokeTestCase
             ],
             'privacy'           => [
                 '/en/privacy',
-                'What personal data do we potentially collect?',
+                'What we keep, and why',
                 'Schoenstatt Link',
             ],
             'submitting-photos' => [
