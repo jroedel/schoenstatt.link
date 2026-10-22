@@ -18,8 +18,11 @@ services:
         APCU_VERSION: ${APCU_VERSION:-5.1.22}
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
+    # Every published port is bound to loopback. Docker's default is every
+    # interface, which put a mod_php worker (and, below, a production copy of
+    # the database) on the LAN.
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     volumes:
       - .:/var/www/schoenstatt.link
       - ./docker/local.docker.php:/var/www/schoenstatt.link/config/autoload/local.php
@@ -81,7 +84,7 @@ services:
       # `docker compose down -v` re-import silently loses it.
       - ./database/dumps:/docker-entrypoint-initdb.d:ro
     ports:
-      - "33306:3306"
+      - "127.0.0.1:33306:3306"
     # 50, against MariaDB's default of 151, and it is a guard rail rather than the
     # fix for anything — see MALLOC_ARENA_MAX above, which is the fix.
     #
@@ -108,7 +111,7 @@ services:
   mailpit:
     image: axllent/mailpit
     ports:
-      - "8025:8025"
+      - "127.0.0.1:8025:8025"
     mem_limit: 256m
     memswap_limit: 256m
     cpus: 0.5

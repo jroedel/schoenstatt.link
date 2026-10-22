@@ -1,0 +1,104 @@
+# Every morning: does a security advisory affect what this application runs on?
+#
+# Two sources, because no single tool sees both:
+#
+# - PHP itself. Its advisories are published on github.com/php/php-src and belong to no
+#   package ecosystem, so Dependabot and `composer audit` never see them; php2shell
+#   (CVE-2026-109618/-109619) reached production that way. tools/php-advisories.php judges
+#   each against `config.platform.php`, which states the PHP production runs — that pin
+#   must move whenever production's PHP does, or this checks a server that is gone.
+# - composer.lock. ci.yml's composer-install job audits it on every push to master; this
+#   catches the advisory published during a week nobody pushes.
+#
+# Each finding opens one issue with the advisory's id in its title, and never a second:
+# an issue in any state carrying that id suppresses it, so closing the issue is how a
+# finding is acknowledged. PHP advisories published or updated in the last seven days are
+# read, so a missed run loses nothing and the overlap is absorbed by that rule. The lock is
+# audited whole each time, by the same rule.
+#
+# Whether a finding matters on this server — its SAPI, its loaded extensions, its php.ini —
+# is judgement the issue leaves to a person; /en/sm/phpinfo is where to start.
+
+name: security-advisories
+
+on:
+  schedule:
+    # 06:00 in Chicago during daylight time, 05:00 during standard time.
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  advisories:
+    name: PHP and composer.lock advisories
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: none
+
+      - name: Collect findings
+        run: |
+          # Exit 1 from either tool means "found something", which is the job's input,
+          # not its failure. Anything above 1 is a broken check and must fail the run.
+          gh api --paginate 'repos/php/php-src/security-advisories?state=published&per_page=100' \
+            --jq '.[]' > php-src.ndjson
+          rc=0
+          php tools/php-advisories.php php-src.ndjson --since="$(date -u -d '7 days ago' +%F)" \
+            > php-findings.ndjson || rc=$?
+          [ "$rc" -le 1 ] || { echo "php-advisories.php exited $rc"; exit "$rc"; }
+
+          # Composer's exit status is a bitmask (1 vulnerable, 2 abandoned); the JSON is read
+          # either way, so only a run that produced no JSON is a failure.
+          php composer.phar audit --locked --format=json > audit.json || true
+          jq -e '.advisories' audit.json > /dev/null
+
+      - name: Open an issue per new finding
+        run: |
+          filed() {
+            [ "$(gh issue list --state all --limit 20 --search "\"$1\" in:title" \
+                  --json title --jq "[.[] | select(.title | contains(\"$1\"))] | length")" != 0 ]
+          }
+
+          while IFS= read -r line; do
+            id=$(jq -r .ghsa <<<"$line")
+            if filed "$id"; then echo "already filed: $id"; continue; fi
+            php=$(jq -r .php <<<"$line")
+            case "$(jq -r .verdict <<<"$line")" in
+              affected)
+                fix=$(jq -r '.fixed_in // empty' <<<"$line")
+                if [ -n "$fix" ]; then fix="Fixed in $fix."; else fix="No fix on the ${php%.*} branch."; fi
+                verdict="**Affects PHP $php** (\`config.platform.php\`). $fix" ;;
+              *)
+                verdict="**Could not tell** whether PHP $php is affected: the advisory's version data did not parse. Read it." ;;
+            esac
+            gh issue create \
+              --title "PHP advisory $id: $(jq -r .summary <<<"$line")" \
+              --body "$(jq -r '"[\(.ghsa)](\(.url)) · \(.cve // "no CVE") · severity \(.severity // "unrated") · component \(if .component == "" then "unnamed" else .component end) · published \(.published)"' <<<"$line")
+
+          $verdict
+
+          Production's PHP is confirmed on \`/en/sm/phpinfo\`, not from the pin. The hosting provider owns the binary, so the fix is a konsoleH ticket; once production runs a fixed version, move \`config.platform.php\` to it and close this issue."
+          done < php-findings.ndjson
+
+          jq -c '.advisories | to_entries[] | .value | (if type == "object" then [.[]] else . end)[]' audit.json |
+          while IFS= read -r line; do
+            id=$(jq -r .advisoryId <<<"$line")
+            if filed "$id"; then echo "already filed: $id"; continue; fi
+            pkg=$(jq -r .packageName <<<"$line")
+            locked=$(jq -r --arg p "$pkg" '[.packages[], (.["packages-dev"] // [])[]] | map(select(.name == $p))[0].version' composer.lock)
+            gh issue create \
+              --title "Composer advisory $id: $pkg" \
+              --body "$(jq -r '"[\(.title)](\(.link)) · \(.cve // "no CVE") · reported \(.reportedAt)\n\nAffected versions: `\(.affectedVersions)`"' <<<"$line")
+
+          **composer.lock has $pkg $locked.** Update it on a branch; ci.yml's \`composer audit --locked\` step fails every push until it is."
+          done
