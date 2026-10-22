@@ -661,7 +661,7 @@ by wildcard — `shared/` sits beside them with 1.2 GB of uploads and every `*.l
 
 ## Server facts
 
-- **Production runs PHP 8.5.9, CGI/FastCGI**, MariaDB 10.11, on Hetzner shared
+- **Production runs PHP 8.5.12, CGI/FastCGI**, MariaDB 10.11, on Hetzner shared
   hosting (`$DEPLOY_SSH_HOST`). OPcache on (`validate_timestamps=1`,
   `revalidate_freq=2`, 128 MB, 10000 files), APCu 5.1.27 (`apc.shm_size=256M`,
   `apc.ttl=0`, `apc.entries_hint=4096`), `memory_limit=512M`,
@@ -699,6 +699,7 @@ table, from the web SAPI (`/en/sm/phpinfo` reloaded several times, or
 | `opcache.max_accelerated_files` | `10000` | keep | SYSTEM | ~14% of slots used |
 | `opcache.use_cwd` | `1` | keep | SYSTEM | same-named files in different releases must not collide |
 | `realpath_cache_ttl` | `120` | keep | — | same as the capsule; cannot explain the 12–20 min staleness, not a lever |
+| `session.upload_progress.enabled` | `1` | **`0`** | PERDIR | asked 2026-10-22. The app never reports upload progress, and PHP's advisory for CVE-2026-109619 recommends it off even on a patched build: it runs before ordinary request initialization |
 | `memory_limit` | `512M` | keep | ALL | `public/index.php` also sets it, so a reverted ini does not show immediately |
 
 `/en/sm/cache-status` (maintenance key) reports both caches live —
@@ -715,8 +716,10 @@ evaluates it on every request, so a release whose lock requires the newer PHP
 hard-fatals every page on the older server. The reverse (new PHP running the
 previous release) is a combination the capsule verifies before the rung lands.
 Then copy the tuned `php.ini` values across — the new version reads a different
-file — and confirm from `/en/sm/phpinfo`. `config.platform.php` is **8.5.9** since
-2026-09-11, the version production runs; it read 8.4.24 while locked packages
+file — and confirm from `/en/sm/phpinfo`. `config.platform.php` is **8.5.12**, the version
+production runs, and moves with every PHP change on the server, a patch release included:
+the morning advisory check (`security-advisories.yml`) judges PHP's advisories against it.
+It has stated the runtime since 2026-09-11; it read 8.4.24 while locked packages
 capped PHP there and none does any more. That is a statement about what composer
 resolves against, and it did **not** change the gate: `platform_check.php` is
 written from the packages' own requirements and still reads `>= 8.4.1`.

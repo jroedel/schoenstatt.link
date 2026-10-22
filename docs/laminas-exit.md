@@ -162,8 +162,7 @@ are unreachable by upgrading. They become reachable only by **removing** the pac
 which is this plan — and by the time they are gone there is no servicemanager left to
 upgrade, which is the point. The PHP pin moved for the same reason: eleven packages capped
 PHP below 8.5, step 0 removed six and steps 1 and 2 the other five, so
-`config.platform.php` is **8.5.9** since 2026-09-11 and states the runtime rather than a
-ceiling.
+`config.platform.php` states the runtime rather than a ceiling since 2026-09-11.
 
 **Measure, never assume.** Before and after every step: `why-not php 8.5.0`,
 `why-not laminas/laminas-servicemanager 4.0.0`, and `composer show --locked | grep laminas`

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b319fc64f05257362630ca1da02d95b9",
+    "content-hash": "a3a26f50c6eb90e784244b1babcf8425",
     "packages": [
         {
             "name": "composer/pcre",
@@ -3499,26 +3499,26 @@
     },
     "platform-dev": {},
     "platform-overrides": {
-        "php": "8.5.9",
-        "ext-intl": "8.5.9",
-        "ext-pdo": "8.5.9",
-        "ext-pdo_mysql": "8.5.9",
-        "ext-dom": "8.5.9",
-        "ext-simplexml": "8.5.9",
-        "ext-xmlwriter": "8.5.9",
-        "ext-gd": "8.5.9",
+        "php": "8.5.12",
+        "ext-intl": "8.5.12",
+        "ext-pdo": "8.5.12",
+        "ext-pdo_mysql": "8.5.12",
+        "ext-dom": "8.5.12",
+        "ext-simplexml": "8.5.12",
+        "ext-xmlwriter": "8.5.12",
+        "ext-gd": "8.5.12",
         "lib-icu": "72.1",
         "ext-apcu": "5.1.24",
-        "ext-xml": "8.5.9",
-        "ext-mbstring": "8.5.9",
-        "ext-ctype": "8.5.9",
-        "ext-fileinfo": "8.5.9",
-        "ext-filter": "8.5.9",
-        "ext-iconv": "8.5.9",
-        "ext-libxml": "8.5.9",
-        "ext-xmlreader": "8.5.9",
+        "ext-xml": "8.5.12",
+        "ext-mbstring": "8.5.12",
+        "ext-ctype": "8.5.12",
+        "ext-fileinfo": "8.5.12",
+        "ext-filter": "8.5.12",
+        "ext-iconv": "8.5.12",
+        "ext-libxml": "8.5.12",
+        "ext-xmlreader": "8.5.12",
         "ext-zip": "1.22.8",
-        "ext-zlib": "8.5.9"
+        "ext-zlib": "8.5.12"
     },
     "plugin-api-version": "2.9.0"
 }
