@@ -52,6 +52,12 @@ jobs:
           # not its failure. Anything above 1 is a broken check and must fail the run.
           gh api --paginate 'repos/php/php-src/security-advisories?state=published&per_page=100' \
             --jq '.[]' > php-src.ndjson
+          # php-src has published advisories since 2023, so an empty fetch is a broken
+          # fetch (a token that cannot read them, a changed endpoint), and must not pass
+          # as "nothing affects us".
+          count=$(wc -l < php-src.ndjson)
+          echo "php-src advisories fetched: $count"
+          [ "$count" -gt 0 ] || { echo "no php-src advisories fetched; refusing to report none"; exit 1; }
           rc=0
           php tools/php-advisories.php php-src.ndjson --since="$(date -u -d '7 days ago' +%F)" \
             > php-findings.ndjson || rc=$?
