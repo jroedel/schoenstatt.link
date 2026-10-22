@@ -170,7 +170,7 @@ other, so "everything passed" and "everything that could run passed" are differe
 ## Production
 
 - Hetzner shared hosting (`$DEPLOY_SSH_HOST`, `$DEPLOY_SSH_USER` — both in `.deploy.local`,
-  never in a tracked file), PHP **8.5.9** CGI/FastCGI, three PHP pools, MariaDB 10.11, app
+  never in a tracked file), PHP **8.5.12** CGI/FastCGI, three PHP pools, MariaDB 10.11, app
   at `~/public_html/schoenstatt.link/`, docroot `public/`.
 - OPcache on (`validate_timestamps=On`, `revalidate_freq=2`, 128 MB, interned strings 32 MB);
   APCu 5.1.27, `apc.shm_size=256M`, `apc.ttl=0` (a failed allocation wipes the segment).
@@ -180,17 +180,20 @@ other, so "everything passed" and "everything that could run passed" are differe
   every change is a konsoleH ticket and a version flip reverts them all (table in
   [docs/DEPLOY.md](docs/DEPLOY.md)). Confirm `PHP_INI_SYSTEM` values from `/en/sm/phpinfo`,
   never from CLI.
-- `config.platform.php` is **8.5.9**, the version production runs. It was 8.4.24 while
-  locked packages capped PHP there; nothing does since 2026-09-11, so the pin states the
-  runtime again. `vendor/composer/platform_check.php` still gates at 8.4.1 — it comes from
+- `config.platform.php` is **8.5.12**, the version production runs, and moves whenever
+  production's PHP does: `.github/workflows/security-advisories.yml` checks PHP's own
+  advisories against it every morning. It was 8.4.24 while locked packages capped PHP
+  there; nothing does since 2026-09-11, so the pin states the runtime again.
+  `vendor/composer/platform_check.php` still gates at 8.4.1 — it comes from
   the packages' own requirements, not from this — so no release demands 8.5 of a server.
   Production logs are local time; DB timestamps are UTC.
 
 ## Local environment (Docker capsule)
 
 - `docker compose up -d` → http://localhost:8080, Mailpit :8025, MariaDB host port 33306
-  (`schoenstatt`/`schoenstatt`, db `ourlink_db1`). Serves PHP 8.5.9 like production;
-  `PHP_VERSION`/`APCU_VERSION` in `.env` switch it (`docker compose build`, which has **no
+  (`schoenstatt`/`schoenstatt`, db `ourlink_db1`), every port bound to 127.0.0.1. Serves
+  PHP 8.5.12 like production; `PHP_VERSION`/`APCU_VERSION` in `.env` switch it
+  (`docker compose build`, which has **no
   DNS** here — build with `docker build --network=host`, tag `schoenstattlink-app:latest`,
   `up -d --no-build`). `docker/local.docker.php` is bind-mounted over
   `config/autoload/local.php` by inode: recreate the container after editing it.
