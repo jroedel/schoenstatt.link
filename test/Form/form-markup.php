@@ -2453,8 +2453,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" tabindex="2" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
       'element' => '<select name="personId" tabindex="2" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="personId">Who&#039;s checking out?</label>',
       'errors' => '',
@@ -2463,15 +2471,30 @@ second line</textarea>',
     ),
     'populated' => 
     array (
-      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" tabindex="2" class="form-control"><option value="" selected></option>
+      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" tabindex="2" class="form-control"><option value=""></option>
+<option value="604" selected><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
-      'element' => '<select name="personId" tabindex="2" class="form-control"><option value="" selected></option>
+      'element' => '<select name="personId" tabindex="2" class="form-control"><option value=""></option>
+<option value="604" selected><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
-      'select_without_options' => '<select name="personId" tabindex="2"><option value="" selected></option>
+      'select_without_options' => '<select name="personId" tabindex="2"><option value="604" selected><person></option>
 </select>',
     ),
     'invalid' => 
     array (
+      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" tabindex="2" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
+</select><ul class="help-block"><li>The input was not found in the haystack</li></ul></div>',
+      'errors' => '<ul class="help-block"><li>The input was not found in the haystack</li></ul>',
     ),
     'prepared' => 
     array (
@@ -4884,10 +4907,10 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Person list for checkouts</label><select name="checkoutPersonListKind" class="form-control"><option value="all-borrowers">All borrowers</option>
-<option value="patres-sion">Schoenstatt Fathers</option>
+<option value="library-borrowers">Borrowers of this library</option>
 </select><p class="help-block">This controls which person list will be displayed on the checkout form.</p></div>',
       'element' => '<select name="checkoutPersonListKind" class="form-control"><option value="all-borrowers">All borrowers</option>
-<option value="patres-sion">Schoenstatt Fathers</option>
+<option value="library-borrowers">Borrowers of this library</option>
 </select>',
       'label' => '<label for="checkoutPersonListKind">Person list for checkouts</label>',
       'errors' => '',
@@ -4897,10 +4920,10 @@ second line</textarea>',
     'populated' => 
     array (
       'row' => '<div class="form-group "><label>Person list for checkouts</label><select name="checkoutPersonListKind" class="form-control"><option value="all-borrowers" selected>All borrowers</option>
-<option value="patres-sion">Schoenstatt Fathers</option>
+<option value="library-borrowers">Borrowers of this library</option>
 </select><p class="help-block">This controls which person list will be displayed on the checkout form.</p></div>',
       'element' => '<select name="checkoutPersonListKind" class="form-control"><option value="all-borrowers" selected>All borrowers</option>
-<option value="patres-sion">Schoenstatt Fathers</option>
+<option value="library-borrowers">Borrowers of this library</option>
 </select>',
       'select_without_options' => '<select name="checkoutPersonListKind"><option value="all-borrowers" selected>All borrowers</option>
 </select>',
@@ -4908,7 +4931,7 @@ second line</textarea>',
     'invalid' => 
     array (
       'row' => '<div class="form-group "><label>Person list for checkouts</label><select name="checkoutPersonListKind" class="form-control"><option value="all-borrowers">All borrowers</option>
-<option value="patres-sion">Schoenstatt Fathers</option>
+<option value="library-borrowers">Borrowers of this library</option>
 </select><ul class="help-block"><li>The input was not found in the haystack</li></ul><p class="help-block">This controls which person list will be displayed on the checkout form.</p></div>',
       'errors' => '<ul class="help-block"><li>The input was not found in the haystack</li></ul>',
     ),
@@ -5775,21 +5798,37 @@ second line</textarea>',
   array (
     'populated' => 
     array (
-      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" class="form-control"><option value="" selected></option>
+      'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" class="form-control"><option value=""></option>
+<option value="604" selected><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
-      'element' => '<select name="personId" class="form-control"><option value="" selected></option>
+      'element' => '<select name="personId" class="form-control"><option value=""></option>
+<option value="604" selected><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="personId">Who&#039;s checking out?</label>',
       'errors' => '',
       'help_block' => '',
-      'select_without_options' => '<select name="personId"><option value="" selected></option>
+      'select_without_options' => '<select name="personId"><option value="604" selected><person></option>
 </select>',
     ),
     'invalid' => 
     array (
       'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
       'element' => '<select name="personId" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="personId">Who&#039;s checking out?</label>',
       'errors' => '',
@@ -5799,8 +5838,16 @@ second line</textarea>',
     'prepared' => 
     array (
       'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="checkout&#x5B;0&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
       'element' => '<select name="checkout&#x5B;0&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="checkout&#x5B;0&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
       'errors' => '',
@@ -5859,8 +5906,16 @@ second line</textarea>',
     'prepared' => 
     array (
       'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="checkout&#x5B;1&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
       'element' => '<select name="checkout&#x5B;1&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="checkout&#x5B;1&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
       'errors' => '',
@@ -5899,8 +5954,16 @@ second line</textarea>',
     'prepared' => 
     array (
       'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="checkout&#x5B;2&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
       'element' => '<select name="checkout&#x5B;2&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="checkout&#x5B;2&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
       'errors' => '',
@@ -5939,8 +6002,16 @@ second line</textarea>',
     'prepared' => 
     array (
       'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="checkout&#x5B;3&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
       'element' => '<select name="checkout&#x5B;3&#x5D;&#x5B;personId&#x5D;" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="checkout&#x5B;3&#x5D;&#x5B;personId&#x5D;">Who&#039;s checking out?</label>',
       'errors' => '',
@@ -5988,8 +6059,16 @@ second line</textarea>',
     'pristine' => 
     array (
       'row' => '<div class="form-group "><label>Who&#039;s checking out?</label><select name="personId" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select></div>',
       'element' => '<select name="personId" class="form-control"><option value=""></option>
+<option value="604"><person></option>
+<option value="585"><person></option>
+<!-- 1 more options, a545cfdd88819e26cbfc4d7274abf4e3 -->
+<option value="513"><person></option>
 </select>',
       'label' => '<label for="personId">Who&#039;s checking out?</label>',
       'errors' => '',
@@ -6123,13 +6202,13 @@ second line</textarea>',
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;">(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select></div>',
       'element' => '<select name="authorsAll&#x5B;&#x5D;" multiple class="form-control"><option value=""></option>
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;">(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select>',
       'label' => '<label for="authorsAll">Author(s)</label>',
       'errors' => '',
@@ -6142,13 +6221,13 @@ second line</textarea>',
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select></div>',
       'element' => '<select name="authorsAll&#x5B;&#x5D;" multiple class="form-control"><option value=""></option>
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select>',
       'select_without_options' => '<select name="authorsAll&#x5B;&#x5D;" multiple><option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 </select>',
@@ -6441,13 +6520,13 @@ second line</textarea>',
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;">(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select></div>',
       'element' => '<select name="editorsAll&#x5B;&#x5D;" multiple class="form-control"><option value=""></option>
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;">(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select>',
       'label' => '<label for="editorsAll">Editor(s)</label>',
       'errors' => '',
@@ -6460,13 +6539,13 @@ second line</textarea>',
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select></div>',
       'element' => '<select name="editorsAll&#x5B;&#x5D;" multiple class="form-control"><option value=""></option>
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select>',
       'select_without_options' => '<select name="editorsAll&#x5B;&#x5D;" multiple><option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 </select>',
@@ -7072,13 +7151,13 @@ second line</textarea>',
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;">(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select></div>',
       'element' => '<select name="translatorsAll&#x5B;&#x5D;" multiple class="form-control"><option value=""></option>
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;">(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select>',
       'label' => '<label for="translatorsAll">Translator</label>',
       'errors' => '',
@@ -7091,13 +7170,13 @@ second line</textarea>',
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select></div>',
       'element' => '<select name="translatorsAll&#x5B;&#x5D;" multiple class="form-control"><option value=""></option>
 <option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 <option value="2&#xAA;&#x20;Escuela&#x20;de&#x20;Jefes&#x20;del&#x20;Paraguay&#x20;&#x28;JM&#x29;&#x20;-&#x20;&#x20;&#x201C;Conqu">2ª Escuela de Jefes del Paraguay (JM) -  “Conqu</option>
 <!-- 1928 more options, d2f827319a0aa4b49cab4f60bf076d3b -->
-<option value="p629">Óscar Iván Saldívar</option>
+<option value="p629"><person></option>
 </select>',
       'select_without_options' => '<select name="translatorsAll&#x5B;&#x5D;" multiple><option value="&#x28;verantw.&#x20;Redaktionsteam&#x29;" selected>(verantw. Redaktionsteam)</option>
 </select>',
@@ -12009,96 +12088,6 @@ second line</textarea>',
       'errors' => '',
       'help_block' => '',
       'submit' => '<button type="submit" name="submit" id="submit" class="btn-primary&#x20;btn" value="Submit">Submit</button>',
-    ),
-    'populated' => 
-    array (
-    ),
-    'invalid' => 
-    array (
-    ),
-    'prepared' => 
-    array (
-    ),
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm::<form>' => 
-  array (
-    'pristine' => 
-    array (
-      'open' => '<form method="POST" name="import_person" action="&#x2F;form-action" class="form-horizontal" id="import_person">',
-      'close' => '</form>',
-    ),
-    'populated' => 
-    array (
-    ),
-    'invalid' => 
-    array (
-    ),
-    'prepared' => 
-    array (
-    ),
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm::personId' => 
-  array (
-    'pristine' => 
-    array (
-      'row' => '<div class="form-group "><label>Person to import</label><select name="personId" class="form-control"><option value=""></option>
-</select></div>',
-      'element' => '<select name="personId" class="form-control"><option value=""></option>
-</select>',
-      'label' => '<label for="personId">Person to import</label>',
-      'errors' => '',
-      'help_block' => '',
-      'select_without_options' => '<select name="personId"></select>',
-    ),
-    'populated' => 
-    array (
-      'row' => '<div class="form-group "><label>Person to import</label><select name="personId" class="form-control"><option value="" selected></option>
-</select></div>',
-      'element' => '<select name="personId" class="form-control"><option value="" selected></option>
-</select>',
-      'select_without_options' => '<select name="personId"><option value="" selected></option>
-</select>',
-    ),
-    'invalid' => 
-    array (
-    ),
-    'prepared' => 
-    array (
-    ),
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm::security' => 
-  array (
-    'pristine' => 
-    array (
-      'row' => '<input type="hidden" name="security" class="form-control" value="<csrf-token>">',
-      'element' => '<input type="hidden" name="security" class="form-control" value="<csrf-token>">',
-      'label' => '',
-      'errors' => '',
-      'help_block' => '',
-      'text' => '<input type="text" name="security" value="<csrf-token>">',
-      'hidden' => '<input type="hidden" name="security" value="<csrf-token>">',
-    ),
-    'populated' => 
-    array (
-    ),
-    'invalid' => 
-    array (
-      'errors' => '<ul class="help-block"><li>The form submitted was expired, please resubmit</li></ul>',
-    ),
-    'prepared' => 
-    array (
-    ),
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm::submit' => 
-  array (
-    'pristine' => 
-    array (
-      'row' => '<div class="form-group "><button type="submit" name="submit" id="submit" class="btn-primary&#x20;btn" value="Import">Import</button></div>',
-      'element' => '<button type="submit" name="submit" id="submit" class="btn-primary&#x20;btn" value="Import">Import</button>',
-      'label' => '',
-      'errors' => '',
-      'help_block' => '',
-      'submit' => '<button type="submit" name="submit" id="submit" class="btn-primary&#x20;btn" value="Import">Import</button>',
     ),
     'populated' => 
     array (

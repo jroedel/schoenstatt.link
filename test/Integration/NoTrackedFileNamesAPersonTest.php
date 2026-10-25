@@ -16,11 +16,14 @@ use function escapeshellarg;
 use function file_get_contents;
 use function getenv;
 use function implode;
+use function in_array;
 use function is_readable;
 use function is_string;
 use function mb_strlen;
 use function sprintf;
 use function str_contains;
+use function strlen;
+use function substr;
 use function trim;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -46,11 +49,16 @@ require_once __DIR__ . '/../Fuzz/FormRepository.php';
  *
  * ## What counts as a name
  *
- * `SchoenstattTable::getPersonValueOptions(true)` — the one answer every person select in
- * the application is filled from, inactive persons included. A label from that list
- * appearing anywhere in a tracked file is the failure. Not a pattern, not a heuristic: a
- * `Last, First` regex would flag `A. Deichertsche Verlagsbuchhandlung, Leipzig` and miss a
- * person recorded with one name.
+ * Every person's label as the person selects spell it, inactive persons included
+ * (`FormRepository::personLabelSets()`). "Last, Title First", from
+ * `SchoenstattTable::getPersonValueOptions(true)`, is the failure anywhere in a tracked
+ * file. "First Last", from `fullName`, which the borrower lists use, is the failure in the
+ * {@see RECORDINGS} — not everywhere, because it is also how the 2020 literature data
+ * (`database/db0.1.sql`, `data/publications/`) names a published author, and whether that
+ * belongs in the repository is a question about bibliographic data, not about this check.
+ *
+ * Not a pattern, not a heuristic: a `Last, First` regex would flag
+ * `A. Deichertsche Verlagsbuchhandlung, Leipzig` and miss a person recorded with one name.
  *
  * Labels shorter than {@see MIN_LENGTH} are skipped. A person recorded as `Li` or `Ana`
  * is a substring of ordinary prose and of a hundred identifiers, and a test that fails on
@@ -73,6 +81,13 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
      */
     private const MIN_LENGTH = 7;
 
+    /** The files the recorders write, which sample the borrower lists' "First Last" labels. */
+    private const RECORDINGS = [
+        'test/Element/element-surface.php',
+        'test/Form/engine-surface.php',
+        'test/Form/form-markup.php',
+    ];
+
     public function testNoTrackedFileContainsAPersonName(): void
     {
         if ('seed' === getenv('SCHOENSTATT_TEST_CORPUS')) {
@@ -84,20 +99,18 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
         }
 
         try {
-            $labels = FormRepository::personLabels();
+            $sets = FormRepository::personLabelSets();
         } catch (Throwable $e) {
             self::markTestSkipped('no reachable database: ' . $e->getMessage());
         }
 
-        $names = [];
-        foreach ($labels as $label => $_) {
-            if (mb_strlen((string) $label) >= self::MIN_LENGTH) {
-                $names[] = (string) $label;
-            }
-        }
+        $names     = self::longEnough($sets['listed']);
+        $fullNames = self::longEnough($sets['fullName']);
 
         self::assertNotSame([], $names, 'no person labels were loaded, so this test proves nothing');
+        self::assertNotSame([], $fullNames, 'no full names were loaded, so the recordings go unchecked');
 
+        $root  = dirname(__DIR__, 2) . '/';
         $found = [];
         foreach ($this->trackedFiles() as $file) {
             $contents = @file_get_contents($file);
@@ -105,7 +118,9 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
                 continue;
             }
 
-            foreach ($names as $name) {
+            $recording = in_array(substr($file, strlen($root)), self::RECORDINGS, true);
+            $search    = $recording ? [...$names, ...$fullNames] : $names;
+            foreach ($search as $name) {
                 if (str_contains($contents, $name)) {
                     $found[] = sprintf('%s names %s', $file, $name);
                 }
@@ -123,6 +138,22 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
                 implode("\n  ", array_slice($found, 0, 20))
             )
         );
+    }
+
+    /**
+     * @param array<string, true> $labels
+     * @return list<string>
+     */
+    private static function longEnough(array $labels): array
+    {
+        $names = [];
+        foreach ($labels as $label => $_) {
+            if (mb_strlen((string) $label) >= self::MIN_LENGTH) {
+                $names[] = (string) $label;
+            }
+        }
+
+        return $names;
     }
 
     /**

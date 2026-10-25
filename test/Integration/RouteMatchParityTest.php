@@ -64,6 +64,12 @@ class RouteMatchParityTest extends TestCase
     /** Matched by laminas, deliberately not a destination here. */
     private const KNOWN_REFUSALS = ['comments/create'];
 
+    /**
+     * Routes removed on purpose since the record was frozen. A path that laminas matched to
+     * one of them must now resolve to something else; that is asserted, not skipped.
+     */
+    private const RETIRED = ['admin/import-father'];
+
     private static ?Container $services = null;
 
     public function testTheResolverAgreesWithTheLaminasRouter(): void
@@ -75,6 +81,13 @@ class RouteMatchParityTest extends TestCase
         $mismatch = [];
         foreach ($frozen as $path => $expected) {
             $actual = $resolver->routeFor($path);
+
+            if (in_array($expected, self::RETIRED, true)) {
+                if ($expected === $actual) {
+                    $mismatch[] = sprintf('%s: %s is retired, but still resolves', $path, $expected);
+                }
+                continue;
+            }
 
             if (in_array($expected, self::KNOWN_REFUSALS, true)) {
                 if (null !== $actual) {

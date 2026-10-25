@@ -101,7 +101,11 @@ final class FormRepository
 
     private static ?self $instance = null;
 
-    /** @var array<string, true>|null Memoised by {@see personLabels()}. */
+    /**
+     * Memoised by {@see personLabelSets()}.
+     *
+     * @var array{listed: array<string, true>, fullName: array<string, true>}|null
+     */
     private static ?array $personLabels = null;
 
     private ?Container $container = null;
@@ -590,7 +594,9 @@ final class FormRepository
         //wearing the shape of a finding.
         $mass = $this->quietly(static function () use ($bridge): ?object {
             try {
-                return (new CheckoutForms($bridge))->mass();
+                $forms = new CheckoutForms($bridge);
+
+                return $forms->mass($forms->borrowers(self::LIBRARY_ID));
             } catch (Throwable) {
                 return null;
             }
@@ -614,10 +620,14 @@ final class FormRepository
      * sample the first three options and the last of every list. For those six that meant
      * four real names — living people, in a file that a public repository keeps forever.
      *
-     * The rule is a domain fact rather than a pattern: every one of those selects is
-     * filled from `SchoenstattTable::getPersonValueOptions()`, directly or through
-     * `JUser\Model\PersonValueOptionsProviderInterface`, so membership of *that* answer
-     * is what makes a label personal. A regex over "Last, First" would redact
+     * The rule is a domain fact rather than a pattern: a person select is filled either
+     * from `SchoenstattTable::getPersonValueOptions()` ("Last, Title First"), directly or
+     * through `JUser\Model\PersonValueOptionsProviderInterface`, or — the two borrower
+     * lists, `Books\BorrowersValueOptions` and `CheckoutForms::eligibleBorrowers()` — from
+     * a person's `fullName` ("First Last"). Both spellings of every person are in the set,
+     * so membership of it is what makes a label personal. The second spelling was missing
+     * until the checkout form's list came from the database (2026-10-25), and the first
+     * regeneration after that wrote four real names. A regex over "Last, First" would redact
      * `A. Deichertsche Verlagsbuchhandlung, Leipzig` and miss a person with one name;
      * a list of element names would silently cover nothing the day a seventh select is
      * added.
@@ -632,20 +642,41 @@ final class FormRepository
      */
     public static function personLabels(): array
     {
+        $sets = self::personLabelSets();
+
+        return $sets['listed'] + $sets['fullName'];
+    }
+
+    /**
+     * {@see personLabels()} kept apart by spelling, for NoTrackedFileNamesAPersonTest: the
+     * "First Last" spelling is also how literature data names a published author, so that
+     * test holds it to the recordings only.
+     *
+     * @return array{listed: array<string, true>, fullName: array<string, true>}
+     */
+    public static function personLabelSets(): array
+    {
         if (null !== self::$personLabels) {
             return self::$personLabels;
         }
 
         $table = self::fresh()->container()->get(SchoenstattTable::class);
 
-        $labels = [];
+        $listed = [];
         foreach ($table->getPersonValueOptions(true) as $label) {
             if (is_string($label) && '' !== $label) {
-                $labels[$label] = true;
+                $listed[$label] = true;
+            }
+        }
+        $fullName = [];
+        foreach ($table->getUnlinkedPersons() ?? [] as $person) {
+            $label = is_array($person) ? ($person['fullName'] ?? null) : null;
+            if (is_string($label) && '' !== $label) {
+                $fullName[$label] = true;
             }
         }
 
-        return self::$personLabels = $labels;
+        return self::$personLabels = ['listed' => $listed, 'fullName' => $fullName];
     }
 
     // -------------------------------------------------------------- container

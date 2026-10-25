@@ -82,7 +82,7 @@ return array (
   'Books\\BorrowersValueOptions' => 
   array (
     'type' => 'array',
-    'keys' => 125,
+    'keys' => 68,
   ),
   'Books\\Cache' => 
   array (
@@ -94,11 +94,6 @@ return array (
   array (
     'type' => 'array',
     'keys' => 11,
-  ),
-  'Books\\FathersObjects' => 
-  array (
-    'type' => 'array',
-    'keys' => 0,
   ),
   'Books\\Form\\CompositionForm' => 
   array (
@@ -376,12 +371,7 @@ return array (
   'Schoenstatt\\Config' => 
   array (
     'type' => 'array',
-    'keys' => 12,
-  ),
-  'Schoenstatt\\FathersValueOptions' => 
-  array (
-    'type' => 'array',
-    'keys' => 0,
+    'keys' => 9,
   ),
   'Schoenstatt\\Form\\AdvancedSearchForm' => 
   array (
@@ -405,12 +395,6 @@ return array (
   array (
     'type' => 'Schoenstatt\\Form\\EditAssignmentForm',
     'instance' => 'Schoenstatt\\Form\\EditAssignmentForm',
-    'shared' => true,
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm' => 
-  array (
-    'type' => 'Schoenstatt\\Form\\ImportFatherForm',
-    'instance' => 'Schoenstatt\\Form\\ImportFatherForm',
     'shared' => true,
   ),
   'Schoenstatt\\Form\\PersonForm' => 
@@ -440,12 +424,6 @@ return array (
   array (
     'type' => 'Schoenstatt\\Service\\AssociationKindsService',
     'instance' => 'Schoenstatt\\Service\\AssociationKindsService',
-    'shared' => true,
-  ),
-  'Schoenstatt\\Service\\PatresGateway' => 
-  array (
-    'type' => 'Schoenstatt\\Service\\PatresGateway',
-    'instance' => 'Schoenstatt\\Service\\PatresGateway',
     'shared' => true,
   ),
   'SionModel\\Cache\\EntityChangeListeners' => 
