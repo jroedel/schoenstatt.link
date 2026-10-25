@@ -103,10 +103,9 @@ use function count;
  * ## Two things it deliberately does not do
  *
  * **No options and no fallback yields no validator.** A haystack of nothing would reject every
- * submission, which is a worse failure than the one this fixes and an easy one to ship: some
- * selects are filled from a service that simply is not reachable in every environment —
- * `ImportFatherForm::personId` comes from the patres HTTP gateway, which fails silently
- * offline — and there is no wider list to fall back to. Returning nothing means the fuzz
+ * submission, which is a worse failure than the one this fixes and an easy one to ship: a
+ * select filled from a service that is not reachable in every environment has no wider list
+ * to fall back to. Returning nothing means the fuzz
  * harness reports the field as unconstrained again, which is the honest signal: a domain
  * nobody can enumerate cannot be enforced.
  *

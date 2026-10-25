@@ -18,19 +18,19 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 115,
-        "guarded_routes_total": 115,
+        "guarded_routes_existing": 114,
+        "guarded_routes_total": 114,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 116,
+        "route_guard_entries": 115,
         "routes_declared_twice": 1,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 226,
+        "symfony_routes_acl_checked": 224,
         "symfony_routes_open": 31,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 257,
-        "total_routes": 141,
+        "symfony_served_routes": 255,
+        "total_routes": 140,
         "unguarded_routes": 26,
         "unguarded_routes_matchable": 26
     },
@@ -129,29 +129,6 @@
             "matchable": true,
             "public": false,
             "route": "admin"
-        },
-        "admin/import-father": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "sch_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "sch_administrator"
-            ],
-            "effective_roles": [
-                "sch_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/import-father"
         },
         "assignments/advanced-search": {
             "anonymous_allowed": false,
@@ -4141,7 +4118,7 @@
             "resource": "library_1",
             "is_active": true,
             "checkouts_on": true,
-            "person_list": "patres-sion",
+            "person_list": "library-borrowers",
             "view_role": "guest",
             "checkout_role": "guest",
             "rules": [
@@ -4248,7 +4225,7 @@
             "resource": "library_3",
             "is_active": true,
             "checkouts_on": true,
-            "person_list": "patres-sion",
+            "person_list": "library-borrowers",
             "view_role": "guest",
             "checkout_role": "lib_patres",
             "rules": [
@@ -5593,26 +5570,6 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/admin",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "admin/import-father": {
-            "path": "/admin/import-father",
-            "controller": "App\\Controller\\ImportFatherController",
-            "access": {
-                "kind": "acl",
-                "resource": "route/admin/import-father",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "admin/import-father.locale": {
-            "path": "/{_locale}/admin/import-father",
-            "controller": "App\\Controller\\ImportFatherController",
-            "access": {
-                "kind": "acl",
-                "resource": "route/admin/import-father",
                 "reason": null,
                 "denial_style": "html"
             }

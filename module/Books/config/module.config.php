@@ -4,7 +4,6 @@ namespace Books;
 use SionModel\Db\Connection;
 use Books\Mailing\BooksMailer;
 use Schoenstatt\Model\SchoenstattTable;
-use Schoenstatt\Service\PatresGateway;
 use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
 use SionModel\Db\Model\FilesTable;
@@ -254,6 +253,11 @@ return [
                 'target'    => 'Books\BorrowersValueOptions',
                 'label'     => 'All borrowers',
             ],
+            // No `target`: the list depends on the library, which a container service
+            // cannot be told. App\Books\CheckoutForms builds it from LibraryTable.
+            'library-borrowers' => [
+                'label'     => 'Borrowers of this library',
+            ],
         ],
     ],
     'service_manager' => [
@@ -271,7 +275,6 @@ return [
             Form\SearchForm::class              => Service\SearchFormFactory::class,
             Form\PublicationForm::class         => Service\PublicationFormFactory::class,
             Form\PublicationsSearchForm::class  => Service\PublicationsSearchFormFactory::class,
-            'Books\FathersObjects'              => Service\FathersObjectsFactory::class,
             'Books\BorrowersValueOptions'       => Service\BorrowersValueOptionsService::class,
             'Books\AuthorsValueOptions'         => Service\AuthorsValueOptionsService::class,
             Mailing\BooksMailer::class          => Service\BooksMailerFactory::class,
@@ -834,10 +837,7 @@ return [
                 'entity_key_field'                      => 'checkoutId',
                 'sion_model_class'                      => Model\LibraryTable::class,
                 'controller_services'                   => [
-                    PatresGateway::class,
                     SchoenstattTable::class,
-                    'Books\FathersObjects',
-                    'Schoenstatt\FathersValueOptions',
                 ],
                 'get_object_function'                   => 'getCheckout',
                 'get_objects_function'                  => 'getCheckouts',

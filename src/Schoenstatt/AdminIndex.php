@@ -38,7 +38,6 @@ final class AdminIndex
         'assignments/create'           => 'Add new assignment',
         'roles/create'                 => 'Add new role',
         'sion-model/view-changes'      => 'View Changes',
-        'admin/import-father'          => 'Import Schoenstatt Father',
         'juser'                        => 'User Management',
         'jtranslate'                   => 'Manage Translations',
         'sion-model/data-problems'     => 'Data problems',

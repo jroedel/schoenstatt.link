@@ -54,7 +54,6 @@ use App\Controller\DictionaryController;
 use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
-use App\Controller\ImportFatherController;
 use App\Controller\LibrariesController;
 use App\Controller\LibraryCollectionsController;
 use App\Controller\LibraryCheckoutController;
@@ -324,10 +323,9 @@ $ported(
 // signed-in visitor holding neither gets 403. Measured in
 // test/Smoke/AdminAuthorizationSmokeTest.
 //
-// Only `/admin` itself. Its laminas children — /admin/import-father and
-// /admin/translations — are separate routes with their own guards, and a literal path
-// with no trailing-slash variant is what leaves every one of them falling through to
-// `legacy`. (/admin/maintenance and /admin/literature-maintenance were two more until
+// Only `/admin` itself. Its child /admin/translations is a separate route with its own
+// guard, and a literal path with no trailing-slash variant is what leaves it falling
+// through to `legacy`. (/admin/maintenance and /admin/literature-maintenance were two more until
 // 2026-08-17, when both were retired rather than ported — see docs/BACKLOG.md.)
 $ported(
     'admin',
@@ -344,17 +342,6 @@ $ported(
     '/user/my-data',
     MyDataController::class,
     RouteAccess::guardedBy('route/my-data')
-);
-
-// Batch 17, 2026-09-08: the last HTML page laminas served. `sch_administrator` only — the
-// one admin-index link that even `sch_moderator` never sees. The form's option list is a
-// remote call to Patres made by the laminas form factory; see App\Controller\ImportFatherController.
-$ported(
-    'admin/import-father',
-    '/admin/import-father',
-    ImportFatherController::class,
-    RouteAccess::guardedBy('route/admin/import-father'),
-    $textDomain('Schoenstatt')
 );
 
 // The static content pages, ported 2026-08-07. Five routes, one controller and one
