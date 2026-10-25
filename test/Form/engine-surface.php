@@ -498,7 +498,7 @@ second line',
       array (
         'adminNotes' => 'Bäseline value & "quoted"
 second line',
-        'personId' => '',
+        'personId' => '604',
         'submit' => NULL,
         'withinLibraryIds' => 
         array (
@@ -506,10 +506,6 @@ second line',
       ),
       'messages' => 
       array (
-        'personId' => 
-        array (
-          'isEmpty' => 'Value is required and can\'t be empty',
-        ),
         'withinLibraryIds' => 
         array (
           'isEmpty' => 'Value is required and can\'t be empty',
@@ -530,6 +526,10 @@ second line',
       ),
       'messages' => 
       array (
+        'personId' => 
+        array (
+          'notInArray' => 'The input was not found in the haystack',
+        ),
         'withinLibraryIds' => 
         array (
           'isEmpty' => 'Value is required and can\'t be empty',
@@ -1090,7 +1090,7 @@ second line',
           0 => 
           array (
             'checkedOutOn' => '<DateTime>',
-            'personId' => NULL,
+            'personId' => '604',
             'withinLibraryIds' => 
             array (
             ),
@@ -2294,33 +2294,6 @@ second line',
         array (
           'notInArray' => 'The input was not found in the haystack',
         ),
-      ),
-    ),
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm' => 
-  array (
-    'accepted' => 
-    array (
-      'valid' => true,
-      'values' => 
-      array (
-        'personId' => NULL,
-        'submit' => NULL,
-      ),
-      'messages' => 
-      array (
-      ),
-    ),
-    'rejected' => 
-    array (
-      'valid' => true,
-      'values' => 
-      array (
-        'personId' => NULL,
-        'submit' => NULL,
-      ),
-      'messages' => 
-      array (
       ),
     ),
   ),

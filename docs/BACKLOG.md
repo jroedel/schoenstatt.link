@@ -99,10 +99,6 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   (`templates/books/borrower.html.twig:14` emits `var timerText = $timerText;` unquoted;
   line 45 is `var redirect = "/libraries/3"`). A working version would send every borrower
   to Colegio Mayor. Decide what the page is for before repairing it.
-- **Mass checkout offers the wrong people at four of six libraries**:
-  `src/Books/CheckoutForms.php` uses `Schoenstatt\FathersValueOptions` unconditionally where
-  single checkout honours `checkoutPersonListKind`; the Austin libraries lend to anyone.
-  "Who may this library lend to" has no written answer; see [libraries.md](libraries.md).
 - **`show-collections` is an offered library display with no template**
   (`LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS`); the page falls back to the default.
   Template it or drop it from the form.

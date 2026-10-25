@@ -199,12 +199,6 @@ const PATHS = [
     // — it renders no layout, so what the compare checks is the Location, which the tool
     // normalizes and diffs like any other. `SL10001A` is association 1 (old start 10000).
     '/SL10001A',
-    // batch 17 — `admin/import-father`, the last HTML page laminas served. One GET, signed
-    // in as `sch_administrator`; anonymously it is the sign-in redirect. The select's
-    // option list is a Patres API call made by the form factory, and the capsule's key is a
-    // dummy, so **both** captures render an empty picker — the diff proves the page, not
-    // the list. Nothing here writes: the import is a POST, and this tool never posts.
-    '/admin/import-father',
     // batch 16 — the last four publication actions: the two whole-corpus listings and the
     // two "make a new row from this one" confirmations.
     //

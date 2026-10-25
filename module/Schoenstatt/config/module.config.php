@@ -63,8 +63,6 @@ $federationRoles = [
 return [
     'service_manager' => [
         'factories' => [
-            Service\PatresGateway::class            => Service\PatresGatewayFactory::class,
-            'Schoenstatt\FathersValueOptions'       => Service\FathersValueOptionsService::class,
             Model\SchoenstattTable::class           => Service\SchoenstattTableFactory::class,
             Form\AdvancedSearchForm::class          => Service\AdvancedSearchFormFactory::class,
             Form\PersonForm::class                  => Service\PersonFormFactory::class,
@@ -73,7 +71,6 @@ return [
             Form\AssociationForm::class             => Service\AssociationFormFactory::class,
             Form\RoleForm::class                    => Service\RoleFormFactory::class,
             'Schoenstatt\Config'                    => Service\ConfigServiceFactory::class,
-            Form\ImportFatherForm::class            => Service\ImportFatherFormFactory::class,
             'Schoenstatt\PersonTagsValueOptions'    => Service\PersonTagsValueOptionsFactory::class,
             Service\AssociationKindsService::class  => Service\AssociationKindsServiceFactory::class,
         ],
@@ -85,12 +82,6 @@ return [
      */
     'schoenstatt' => [
         'general_presidium_id' => 71,
-        'person_value_options_providers' => [
-            'patres-sion' => [
-                'target'    => 'Schoenstatt\FathersValueOptions',
-                'label'     => 'Schoenstatt Fathers',
-            ],
-        ],
         // they will appear in the value options in this order, they will be applied according to the sort order
         'person_tags' => [
             'bishop' => [
@@ -1340,7 +1331,6 @@ return [
                 ['route' => 'shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'shrines/submitting-photos', 'roles' => ['user', 'guest', null]],
                 ['route' => 'wayside-shrines', 'roles' => ['user', 'guest', null]],
-                ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'assignments/assignment/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'assignments/assignment/delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'assignments/search', 'roles' => ['sch_user', 'sch_basic']],

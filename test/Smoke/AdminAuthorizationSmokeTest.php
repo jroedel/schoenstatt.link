@@ -65,7 +65,6 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
         ['/en/assignments/create', 'Add new assignment'],
         ['/en/roles/create', 'Add new role'],
         ['/en/sm/view-changes', 'View Changes'],
-        ['/en/admin/import-father', 'Import Schoenstatt Father'],
         ['/en/users', 'User Management'],
         ['/en/admin/translations', 'Manage Translations'],
         ['/en/sm/data-problems', 'Data problems'],
@@ -73,14 +72,15 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
         //data-source migration behind it was measured as finished and retired.
         //'Switch kernel' (/en/kernel-switch) was the last entry until 2026-09-08, when the
         //SYMFONY_KERNEL canary was retired and its toggle deleted with it.
+        //'Import Schoenstatt Father' (/en/admin/import-father) followed 'View Changes' until
+        //2026-10-25, when the Patres connection behind it was severed.
     ];
 
     /**
      * What `sch_moderator` alone sees — the first four and nothing else, because the
-     * other six name resources no descendant of sch_moderator is allowed
+     * other four name resources no descendant of sch_moderator is allowed
      * (`route/juser` wants `administrator`, `route/jtranslate` wants
-     * `sch_general_moderator` or `translator`, `route/kernel-switch` wants
-     * `sch_administrator`, and so on: docs/acl-baseline.json).
+     * `sch_general_moderator` or `translator`, and so on: docs/acl-baseline.json).
      *
      * Worth its own assertion rather than being a smaller version of the same one.
      * Getting through the route guard and seeing the whole page are two different
@@ -129,12 +129,12 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
     {
         $body = $this->get('/en/admin')['body'];
 
-        $this->assertStringNotContainsString('Import Schoenstatt Father', $body);
+        $this->assertStringNotContainsString('Data problems', $body);
         //A label and an href, because a redirect that leaked only one of the two would
-        //still pass the other. This was '/en/admin/literature-maintenance' until
-        //2026-08-17; that link no longer exists on the page, so asserting its absence
-        //had stopped proving anything.
-        $this->assertStringNotContainsString('/en/admin/import-father', $body);
+        //still pass the other. Whichever link this names must still be on the page, or
+        //asserting its absence proves nothing: it was '/en/admin/literature-maintenance'
+        //until 2026-08-17 and '/en/admin/import-father' until 2026-10-25.
+        $this->assertStringNotContainsString('/en/sm/data-problems', $body);
     }
 
     /**

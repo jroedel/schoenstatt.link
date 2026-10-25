@@ -7,8 +7,8 @@ everything surprising here is a deliberate decision that looks like an oversight
 
 | library | audience | how that is expressed |
 |---|---|---|
-| Bellavista (1) | Schoenstatt Fathers house | `CheckoutBooksRole = guest`, person list `patres-sion` |
-| Colegio Mayor (3) | study house, its own community | `CheckoutBooksRole = lib_patres`, person list `patres-sion` |
+| Bellavista (1) | Schoenstatt Fathers house | `CheckoutBooksRole = guest`, person list `library-borrowers` |
+| Colegio Mayor (3) | study house, its own community | `CheckoutBooksRole = lib_patres`, person list `library-borrowers` |
 | PUC (4) | inactive | checkouts off |
 | Vaterhaus Investigation (5) | reference collection | `ViewRole = lib_user`, checkouts off |
 | Schoenstatt Fathers Austin (6) | mostly priests, open to anyone who asks | `CheckoutBooksRole = guest`, person list `all-borrowers` |
@@ -79,21 +79,24 @@ Notices go out via `bin/console books:send-notices --library=N [--dry-run]
 lending form) and `CheckoutPersonListKind` (whose name may be picked). There is no
 per-borrower permission and nowhere to put one.
 
-## The person list, and the Patres import
+## The person list
 
-- **`all-borrowers`** — people already marked as borrowers locally.
-- **`patres-sion`** — the roster from the Patres API
-  (`schoenstatt-fathers.link/api/persons`). On submit, `createCheckouts()` calls
-  `PatresGateway::getSchoenstattPersonFromPatresPersonId($id, true, ['isBorrower' => true])`,
-  which copies the person into `sch_persons` if not present.
+Both lending forms, single and mass, offer the list the library's
+`CheckoutPersonListKind` names (`App\Books\CheckoutForms::borrowers()`):
 
-That path **cannot overwrite an existing local record**: it imports only after the
-local lookup missed, and both run the identical
-`searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => …])` query. The
-overwrite branch is `admin/import-father` (`App\Controller\ImportFatherController`,
-`sch_administrator` only). What a Public `patres-sion` library lets any account do
-is **create** a person from the roster, validated by this application's person
-input filter — bound it there, not in the ACL.
+- **`all-borrowers`** — everyone ticked as a borrower.
+- **`library-borrowers`** — everyone ticked as a borrower who has borrowed at this
+  library or has not borrowed anywhere yet, plus the library's default checkout person.
+  Membership is read off loan history (`LibraryTable::getBorrowingHistory()`), so there
+  is nothing to maintain beyond the tick: a new borrower is a person a moderator adds
+  with "borrower" ticked, their first loan ties them to the library it was made at, and
+  unticking takes them off every list. Someone who has borrowed only at another library
+  cannot be offered here.
+
+Nothing is fetched from another application. The 148 people with
+`DataSource = 'patres-sion'` were imported from the Schoenstatt Fathers' Patres database
+while this application read it; nothing refreshes them, so their deaths and departures are
+kept up by hand, by unticking "borrower".
 
 ## Where the checks live
 
@@ -162,8 +165,6 @@ building its fixtures for exactly this reason.
 - **No individual loan record page.** A library's loans are read through
   `checkouts/library/{current,overdue}`, a person's through `borrowers/borrower`.
 - **No per-library staff list** — see `administrate` above.
-- **Mass checkout offers the Schoenstatt Fathers at every library**, where the
-  single-checkout form offers the library's own `CheckoutPersonListKind` list.
 - **The borrower page announces a redirect it never performs**: its countdown
   script does not parse (a translated string interpolated into JavaScript
   unquoted) and its target is the hardcoded `/libraries/3`. Fixing the syntax

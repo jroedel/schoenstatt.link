@@ -11,6 +11,7 @@ use Symfony\Component\Routing\RequestContext;
 use Throwable;
 
 use function count;
+use function in_array;
 use function sprintf;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -46,6 +47,13 @@ class SymfonyUrlParityTest extends TestCase
 {
     private const LOCALES = ['en', 'es'];
 
+    /**
+     * Routes the laminas router knew and this application has since removed on purpose. The
+     * frozen record keeps them, because it is a record; each one is asserted to be gone
+     * rather than skipped, so a route cannot leave this list by quietly coming back.
+     */
+    private const RETIRED = ['admin/import-father', 'admin/import-father.locale'];
+
     /** @var array{compared: int, skipped: int} */
     private static array $tally = ['compared' => 0, 'skipped' => 0];
 
@@ -58,6 +66,13 @@ class SymfonyUrlParityTest extends TestCase
         $mismatch = [];
         foreach ($frozen as $key => $case) {
             [$name, $locale] = explode('|', $key, 2);
+
+            if (in_array($name, self::RETIRED, true)) {
+                if (null !== SymfonyRoutes::collection()->get($name)) {
+                    $mismatch[] = sprintf('%s: retired, but symfony still declares it', $key);
+                }
+                continue;
+            }
 
             try {
                 $actual = $generator->generate($name, $case['params'] + ['_locale' => $locale]);
@@ -90,5 +105,4 @@ class SymfonyUrlParityTest extends TestCase
             self::$tally['skipped']
         ));
     }
-
 }

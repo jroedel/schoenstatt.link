@@ -928,6 +928,34 @@ ORDER BY `publisher`";
     }
 
     /**
+     * Everyone who has ever borrowed, keyed by person id: true when at least one of their
+     * checkouts is of a book in `$libraryId`, false when all of them are elsewhere. A person
+     * who has never borrowed anywhere is absent, which is how a new borrower is told apart
+     * from one who belongs to another library. Not cached: a checkout changes it.
+     *
+     * @return array<int, bool>
+     */
+    public function getBorrowingHistory(int $libraryId): array
+    {
+        $select = new Select('lib_checkouts');
+        $select->columns(['PersonId']);
+        $select->join('lib_books', 'lib_books.book_id = lib_checkouts.BookId', ['library_id']);
+        $select->group(['PersonId', 'library_id']);
+        $results = $this->getTableGateway('lib_checkouts')->selectWith($select);
+
+        $history = [];
+        foreach ($results as $row) {
+            $personId = $this->filterDbId($row['PersonId']);
+            if (! isset($personId)) {
+                continue;
+            }
+            $history[$personId] = ($history[$personId] ?? false)
+                || $libraryId === $this->filterDbId($row['library_id']);
+        }
+        return $history;
+    }
+
+    /**
      * Get a associative array to lookup bookIds according to the withinLibraryId.
      * Includes information on whether the book is active or not. Format:
      * [
