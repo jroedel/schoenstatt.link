@@ -42,9 +42,9 @@ under `module/*/src` that a Symfony-served request reaches.
   `SionModel\Form\Validation\FormSpecification` assembles — the form's
   `getInputFilterSpecification()`, an entry per element, and a nested entry per fieldset or
   collection, as plain data. **The specification is the whole of it**: a field it does not
-  name is filtered by nothing and validated by nothing. The four non-form callers
+  name is filtered by nothing and validated by nothing. The three non-form callers
   (`App\Schoenstatt\Association\AssociationValidator`, `JTranslate\Form\PhraseValidator`,
-  `Schoenstatt\Service\PatresGateway`, `Books\InputFilter\DriveFileFilter`) build the same
+  `Books\InputFilter\DriveFileFilter`) build the same
   engine through `InputFilter::withRules()`, dropping the CSRF rule by unsetting its key
   rather than by removing an input. The parity tests that ran laminas' assembled filter
   beside it went with the packages; `test/Form/engine-surface.php` records the engine's own

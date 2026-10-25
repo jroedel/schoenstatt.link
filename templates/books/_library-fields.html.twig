@@ -24,11 +24,7 @@
 {{ form_row(form.get('filiationId'), false) }}
 {{ form_row(form.get('contactPersonId'), false) }}
 {% if is_allowed('route/persons/create') %}
-<p>{{ translate('Not in the list?') }} <a target="_blank" href="{{ laminas_path('persons/create') }}">{{ translate('Add new person') }}</a>
-    {% if is_allowed('route/admin/import-father') %}
-    or <a target="_blank" href="{{ laminas_path('admin/import-father') }}">{{ translate('Import from Patres') }}</a>
-    {% endif %}
-</p>
+<p>{{ translate('Not in the list?') }} <a target="_blank" href="{{ laminas_path('persons/create') }}">{{ translate('Add new person') }}</a></p>
 {% endif %}
 {{ form_row(form.get('contactEmail'), false) }}
 {{ form_row(form.get('mainShowDisplay')) }}

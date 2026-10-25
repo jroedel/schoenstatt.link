@@ -74,7 +74,8 @@ final class LibraryMassCheckoutController
             return $refusal;
         }
 
-        $form = $this->forms->mass();
+        $borrowers = $this->forms->borrowers($libraryId);
+        $form      = $this->forms->mass($borrowers);
 
         if ($request->isMethod('POST')) {
             /** @var array<string, mixed> $posted */
@@ -111,7 +112,7 @@ final class LibraryMassCheckoutController
             'first_row'      => $target,
             'row_template'   => $this->rowTemplate($target),
             'person_options' => (string) json_encode(
-                $this->forms->fatherObjects(),
+                CheckoutForms::personObjects($borrowers),
                 JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
             ),
             'self_url'       => $this->urls->path(

@@ -12,8 +12,6 @@ use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
 use Exception;
 use JTranslate\I18n\TranslatableMessage;
-use Schoenstatt\Service\PatresGateway;
-use Schoenstatt\Service\PatresLookupFailed;
 use SionModel\Messaging\FlashMessages;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,7 +21,6 @@ use Twig\Environment;
 use function array_key_exists;
 use function implode;
 use function is_array;
-use function is_object;
 use function sprintf;
 
 /**
@@ -43,18 +40,10 @@ use function sprintf;
  * test/Smoke/LibraryCheckoutAuthorizationSmokeTest pins both halves of it. A port that
  * "tightens" this is a port that has misread the feature.
  *
- * ## The Patres import is the step that can create a person
+ * ## Two failure paths, two different messages
  *
- * At a library whose `checkoutPersonListKind` is `patres-sion`, the borrower is picked
- * from the Schoenstatt Fathers' own database and may not exist locally yet.
- * `getSchoenstattPersonFromPatresPersonId()` looks them up and imports them if missing,
- * and the id the checkout is written against is the **local** one it returns, not the one
- * the form posted. Getting that order wrong writes a checkout against a remote id.
- *
- * ## Three failure paths, three different messages
- *
- * An unknown barcode, a failed checkout, and a missing person are distinct and the
- * original says so. The first uses `TranslatableMessage` rather than a concatenated
+ * An unknown barcode and a failed checkout are distinct and the original says so. The
+ * first uses `TranslatableMessage` rather than a concatenated
  * string, and that is load-bearing: the messengers translate the finished message, so
  * concatenating the bad ids into it filed one permanent phrase row per distinct set of
  * ids — ten of them before it was fixed, none of which anyone could translate.
@@ -75,12 +64,10 @@ final class LibraryCheckoutController
     {
         $libraryId = (int) $request->attributes->get('library_id');
 
-        $library = $this->page->library($request);
-        $refusal = $this->page->refuse($library, 'checkout');
+        $refusal = $this->page->refuse($this->page->library($request), 'checkout');
         if (null !== $refusal) {
             return $refusal;
         }
-        /** @var array<string, mixed> $library */
 
         $form = $this->forms->forLibrary($libraryId);
 
@@ -91,7 +78,7 @@ final class LibraryCheckoutController
             if ($form->isValid()) {
                 /** @var array<string, mixed> $data */
                 $data = $form->getData();
-                $done = $this->checkout($library, $libraryId, $data);
+                $done = $this->checkout($libraryId, $data);
                 if (null !== $done) {
                     return $done;
                 }
@@ -110,10 +97,9 @@ final class LibraryCheckoutController
     /**
      * `createCheckouts()` — a redirect on success, null to re-render with a message.
      *
-     * @param array<string, mixed> $library
      * @param array<string, mixed> $data
      */
-    private function checkout(array $library, int $libraryId, array $data): ?RedirectResponse
+    private function checkout(int $libraryId, array $data): ?RedirectResponse
     {
         /** @var LibraryTable $table */
         $table  = $this->laminas->get(LibraryTable::class);
@@ -132,49 +118,6 @@ final class LibraryCheckoutController
             ));
 
             return null;
-        }
-
-        $options = $library['options'] ?? null;
-        if (is_object($options) && 'patres-sion' === ($options->checkoutPersonListKind ?? null)) {
-            /** @var PatresGateway $gateway */
-            $gateway = $this->laminas->get(PatresGateway::class);
-
-            try {
-                $person = $gateway->getSchoenstattPersonFromPatresPersonId(
-                    $data['personId'],
-                    true,
-                    ['isBorrower' => true]
-                );
-            } catch (PatresLookupFailed $e) {
-                //The branch below handles a person patres *refused* — an invalid record.
-                //This one is a person patres could not be **asked** about, and until
-                //2026-09-11 it was not handled at all: the exception left the gateway,
-                //crossed the message written for the other case and became an error page.
-                //A librarian met it twice in twenty-one seconds on 2026-09-10, because
-                //patres served the person *list* perfectly and answered 500 for the one
-                //father on it they had selected.
-                //
-                //Caught narrowly, on purpose. `catch (Exception)` here would swallow
-                //every bug in the import path and apologise for patres instead.
-                $this->now(FlashMessages::NAMESPACE_ERROR, new TranslatableMessage(
-                    'Patres could not be reached for this person, so nothing was checked out. '
-                    . 'This is a problem at their end, not with your entry — try again in a '
-                    . 'few minutes, and tell an administrator if it keeps happening.'
-                ));
-
-                return null;
-            }
-
-            if (false === $person || ! is_array($person)) {
-                //The laminas action throws here, which reaches the error page. A lending
-                //desk gets a message instead: the person really can be absent — the remote
-                //database is another application — and a 500 tells the librarian nothing.
-                $this->now(FlashMessages::NAMESPACE_ERROR, 'The person selected was not found.');
-
-                return null;
-            }
-            //The *local* id, which is what the checkout row must name.
-            $data['personId'] = $person['personId'];
         }
 
         try {

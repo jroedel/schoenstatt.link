@@ -2290,13 +2290,17 @@ return array (
     ),
     'valueOptions' => 
     array (
-      'count' => 0,
-      'digest' => '40cd750bba9870f18aada2478b24840a',
+      'count' => 4,
+      'digest' => '019fcbf90f9652965c78f3ae9be6001b',
       'first' => 
       array (
+        514 => '<person>',
+        585 => '<person>',
+        604 => '<person>',
       ),
       'last' => 
       array (
+        513 => '<person>',
       ),
     ),
     'emptyOption' => '',
@@ -4114,15 +4118,15 @@ return array (
     'valueOptions' => 
     array (
       'count' => 2,
-      'digest' => 'def3116a320701fbf9a27c878a919433',
+      'digest' => '880566a9ec391fb509b7d82b175a9693',
       'first' => 
       array (
         'all-borrowers' => 'All borrowers',
-        'patres-sion' => 'Schoenstatt Fathers',
+        'library-borrowers' => 'Borrowers of this library',
       ),
       'last' => 
       array (
-        'patres-sion' => 'Schoenstatt Fathers',
+        'library-borrowers' => 'Borrowers of this library',
       ),
     ),
     'emptyOption' => NULL,
@@ -4828,13 +4832,17 @@ return array (
     ),
     'valueOptions' => 
     array (
-      'count' => 0,
-      'digest' => '40cd750bba9870f18aada2478b24840a',
+      'count' => 4,
+      'digest' => '019fcbf90f9652965c78f3ae9be6001b',
       'first' => 
       array (
+        514 => '<person>',
+        585 => '<person>',
+        604 => '<person>',
       ),
       'last' => 
       array (
+        513 => '<person>',
       ),
     ),
     'emptyOption' => '',
@@ -9960,80 +9968,6 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
     'name' => 'submit',
     'label' => NULL,
     'value' => 'Submit',
-    'attributes' => 
-    array (
-      'class' => 'btn-primary',
-      'id' => 'submit',
-      'name' => 'submit',
-      'type' => 'submit',
-    ),
-    'options' => 
-    array (
-    ),
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm::personId' => 
-  array (
-    'class' => 'SionModel\\Form\\Element\\Select',
-    'name' => 'personId',
-    'label' => 'Person to import',
-    'value' => NULL,
-    'attributes' => 
-    array (
-      'name' => 'personId',
-      'type' => 'select',
-    ),
-    'options' => 
-    array (
-      'empty_option' => '',
-      'label' => 'Person to import',
-      'unselected_value' => '',
-      'value_options' => 
-      array (
-      ),
-    ),
-    'valueOptions' => 
-    array (
-      'count' => 0,
-      'digest' => '40cd750bba9870f18aada2478b24840a',
-      'first' => 
-      array (
-      ),
-      'last' => 
-      array (
-      ),
-    ),
-    'emptyOption' => '',
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm::security' => 
-  array (
-    'class' => 'SionModel\\Form\\Element\\Csrf',
-    'name' => 'security',
-    'label' => NULL,
-    'value' => '<csrf-token>',
-    'attributes' => 
-    array (
-      'name' => 'security',
-      'type' => 'hidden',
-      'value' => '<csrf-token>',
-    ),
-    'options' => 
-    array (
-      'csrf_options' => 
-      array (
-        'timeout' => 900,
-      ),
-    ),
-    'csrfValidatorOptions' => 
-    array (
-      'timeout' => 900,
-    ),
-  ),
-  'Schoenstatt\\Form\\ImportFatherForm::submit' => 
-  array (
-    'class' => 'SionModel\\Form\\Element\\Submit',
-    'name' => 'submit',
-    'label' => NULL,
-    'value' => 'Import',
     'attributes' => 
     array (
       'class' => 'btn-primary',

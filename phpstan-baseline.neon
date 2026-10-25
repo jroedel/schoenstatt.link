@@ -21,36 +21,6 @@ parameters:
 			path: module/Books/src/Model/MusicTable.php
 
 		-
-			message: "#^Access to an undefined property Books\\\\Service\\\\DriveGateway\\:\\:\\$personInputFilter\\.$#"
-			count: 2
-			path: module/Books/src/Service/DriveGateway.php
-
-		-
-			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:complementSchoenstattTablePersonDataKeysWithOptions\\(\\)\\.$#"
-			count: 2
-			path: module/Books/src/Service/DriveGateway.php
-
-		-
-			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:getPersonInSchoenstattTable\\(\\)\\.$#"
-			count: 1
-			path: module/Books/src/Service/DriveGateway.php
-
-		-
-			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:getRemotePerson\\(\\)\\.$#"
-			count: 1
-			path: module/Books/src/Service/DriveGateway.php
-
-		-
-			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:getSchoenstattTable\\(\\)\\.$#"
-			count: 4
-			path: module/Books/src/Service/DriveGateway.php
-
-		-
-			message: "#^Cannot unset offset 'personId' on array\\{dataSource\\: 'patres\\-sion', dataSourceId\\: float\\|int\\}\\.$#"
-			count: 1
-			path: module/Books/src/Service/DriveGateway.php
-
-		-
 			message: "#^Array has 2 duplicate keys with value 'numberOfPages' \\('numberOfPages', 'numberOfPages'\\)\\.$#"
 			count: 1
 			path: module/Books/src/View/Helper/Coins.php

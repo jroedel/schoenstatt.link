@@ -32,7 +32,7 @@ class DriveGateway
     protected $cache;
 
     /**
-     * Get associative array of persons from Patres database $personId => $name
+     * The Drive files that belong to a publication, keyed by publication id, then file id
      * @throws \Exception
      * @return array
      */
@@ -49,63 +49,6 @@ class DriveGateway
             }
         }
         return $publicationFiles;
-    }
-
-    /**
-     * Given a patres personId, a person from the SchoenstattTable is returned. Person is imported if requested
-     * @param number $patresPersonId
-     * @param bool $importPersonIfNotFound
-     * @param array $options May specify changes to be made to the person record in SchoenstattTable
-     */
-    public function getSchoenstattPersonFromPatresPersonId($patresPersonId, $importPersonIfNotFound = false, $options = [])
-    {
-        $table = $this->getSchoenstattTable();
-        if (false === $personData = $this->getPersonInSchoenstattTable($patresPersonId)) {
-            if ($importPersonIfNotFound) {
-                if (false === $newId = $this->importRemotePerson($patresPersonId, $options)) {
-                    return false;
-                }
-                $personData = $this->getSchoenstattTable()->getPerson($newId);
-            } else {
-                return false;
-            }
-        } else { //check if we need to make changes based on $options
-            if ($this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options)) {
-                $personId = $personData['personId'];
-                $table = $this->getSchoenstattTable();
-                $table->updateEntity('person', $personId, $personData);
-                $personData = $table->getPerson($personId);
-            }
-        }
-        return $personData;
-    }
-
-    /**
-     *
-     * @param number $personId
-     * @param array $options
-     */
-    public function importRemotePerson($personId, $options = [])
-    {
-        if (false === $personData = $this->getRemotePerson($personId)) {
-            return false;
-        }
-        $personData['dataSource'] = 'patres-sion';
-        $personData['dataSourceId'] = $personId;
-        unset($personData['personId']); //to make sure that we don't try setting that as the primary key
-        $this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options);
-
-        $table = $this->getSchoenstattTable();
-        if (0 !== count($currentPersonList = $table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true))) {
-            //@todo warn the user that existing data will be overwritten
-            $currentPerson = current($currentPersonList);
-            $currentPersonId = $currentPerson['personId'];
-            $table->updateEntity('person', $currentPerson['personId'], $personData);
-            return $currentPersonId;
-        } else {
-            $newId = $table->createEntity('person', $personData);
-        }
-        return $newId;
     }
 
     /**

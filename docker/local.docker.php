@@ -51,9 +51,6 @@ return [
     ],
     'schoenstatt' => [
         'api_keys' => ['local-dev-api-key'],
-        'patres_api_key' => 'local-dev-dummy',
-        'patres_api_person_list_uri' => 'https://schoenstatt-fathers.link/api/persons',
-        'patres_api_get_person_uri' => 'https://schoenstatt-fathers.link/api/persons/%s',
     ],
     'recaptcha' => [
         'name' => 'recaptcha',
