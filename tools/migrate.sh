@@ -94,18 +94,19 @@ fi
 # ---------------------------------------------------------------- config ----
 
 # `lint` reads files and connects to nothing, so it must not require credentials —
-# it runs in CI, where there is no .deploy.local and never will be.
+# it runs in CI, where there is no secrets.env and never will be.
 #
-# DEPLOY_CONFIG, because tools/deploy.sh honours it and shells out to this script at both
+# SECRETS_ENV, because tools/deploy.sh honours it and shells out to this script at both
 # migration phases. A runner writes the credentials outside the workspace and exports the
-# path; without this line that export reaches deploy.sh and stops there, and the deploy
-# dies at the pre-migration step with `.deploy.local is missing` — which is what happened
-# on the first real deploy from Actions, 2026-09-23.
-CONFIG=${DEPLOY_CONFIG:-$REPO_ROOT/.deploy.local}
+# path; without it that export reaches deploy.sh and stops there, and the deploy dies at
+# the pre-migration step with the file missing — which is what happened on the first real
+# deploy from Actions, 2026-09-23. tools/secrets-env.sh reads the variable for every
+# caller, so no script can resolve the path on its own again.
+# shellcheck source=tools/secrets-env.sh
+. "$REPO_ROOT/tools/secrets-env.sh"
+CONFIG=$SECRETS_ENV_FILE
 if [ "$ACTION" != lint ]; then
-    [ -f "$CONFIG" ] || fail "$CONFIG is missing. Run ./config.sh, then fill in the TODOs."
-    # shellcheck disable=SC1090
-    . "$CONFIG"
+    secrets_env_load "$CONFIG" || fail "could not read the deploy configuration (the reason is above)."
 fi
 
 CTRL_PATH=''
@@ -131,12 +132,12 @@ connect() {
         DB_PASS=${CAPSULE_DB_PASS:-schoenstatt}
         dim "environment: capsule ($DB_HOST:$DB_PORT/$DB_NAME)"
     else
-        : "${DEPLOY_DB_NAME:?not set in .deploy.local}"
-        : "${DEPLOY_DB_USER:?not set in .deploy.local}"
-        : "${DEPLOY_DB_PASS:?not set in .deploy.local}"
+        : "${DEPLOY_DB_NAME:?not set in secrets.env}"
+        : "${DEPLOY_DB_USER:?not set in secrets.env}"
+        : "${DEPLOY_DB_PASS:?not set in secrets.env}"
         : "${DEPLOY_DB_TUNNEL_PORT:=13306}"
         case ${DEPLOY_DB_USER}${DEPLOY_DB_PASS} in
-            *TODO*) fail "DEPLOY_DB_USER/DEPLOY_DB_PASS in .deploy.local are still placeholders." ;;
+            *TODO*) fail "DEPLOY_DB_USER/DEPLOY_DB_PASS in secrets.env are still placeholders." ;;
         esac
 
         # The credentials never travel to the server. The tunnel makes the
@@ -464,7 +465,7 @@ PROG
 # still to come. The failure mode is total, too: a tunnel that drops at minute eighty
 # starts again from nothing, and no migration runs until it finishes.
 #
-# THE CREDENTIALS STILL DO NOT TRAVEL. The account in .deploy.local is a full-DDL account
+# THE CREDENTIALS STILL DO NOT TRAVEL. The account in secrets.env is a full-DDL account
 # and stays on this machine; that is what the tunnel is for and none of it changes. But a
 # snapshot is a read, and the server already holds an account with SELECT on these tables
 # — the one the application itself uses, in the config file it has always had. So the
@@ -482,7 +483,7 @@ snapshot_on_server() {
     local out err errf verdict size sum rc=0
 
     if [ -z "${DEPLOY_APP_PATH:-}" ]; then
-        warn "DEPLOY_APP_PATH is not set in .deploy.local, so the server has nowhere to put a snapshot."
+        warn "DEPLOY_APP_PATH is not set in secrets.env, so the server has nowhere to put a snapshot."
         return 1
     fi
 

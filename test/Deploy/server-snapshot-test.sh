@@ -340,7 +340,7 @@ case $OUT in
     *) check 1 "a chatty login shell does not hide the verdict" "ok: … (2.0M) …" "$OUT" ;;
 esac
 
-# 18. .deploy.local without DEPLOY_APP_PATH. The server has nowhere to put it, which is a
+# 18. secrets.env without DEPLOY_APP_PATH. The server has nowhere to put it, which is a
 #     fallback and not a failure: SNAPSHOT_DIR_REMOTE would otherwise be '/shared/…', an
 #     absolute path outside the account.
 OUT=$(

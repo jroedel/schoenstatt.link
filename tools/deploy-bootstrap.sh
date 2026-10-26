@@ -24,10 +24,9 @@ case ${1:-} in
     *)       printf 'usage: %s --check | --yes\n' "$0" >&2; exit 1 ;;
 esac
 
-CONFIG=${DEPLOY_CONFIG:-.deploy.local}
-[ -f "$CONFIG" ] || { echo "ABORT: $CONFIG is missing. Run ./config.sh first." >&2; exit 1; }
-# shellcheck disable=SC1090
-. "$CONFIG"
+# shellcheck source=tools/secrets-env.sh
+. tools/secrets-env.sh
+secrets_env_load "$SECRETS_ENV_FILE" || { echo "ABORT: run ./config.sh first, or take secrets.env from the vault." >&2; exit 1; }
 : "${DEPLOY_SSH_USER:?}" "${DEPLOY_SSH_HOST:?}" "${DEPLOY_SSH_PORT:=222}" "${DEPLOY_APP_PATH:?}"
 
 APP=$DEPLOY_APP_PATH

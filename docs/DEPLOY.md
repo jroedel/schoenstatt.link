@@ -16,19 +16,73 @@ directory nothing is serving, and goes live when one symlink is replaced by a
 single `rename(2)`. No visitor ever meets a half-deployed tree. **phploy was
 deleted 2026-08-16; do not reintroduce it or reason from it.**
 
-Configuration lives in **`.deploy.local`** (gitignored, mode 0600), seeded from
-`.deploy.local.dist` by `./config.sh`: the SSH target, `DEPLOY_API_KEY` (any
-`sion_model.api_keys` value — sent as an `X-Api-Key` header, never a query string)
-and the full-DDL database credentials. **Nothing in it is ever written to the
-server, committed or printed.** An unreplaced `TODO` aborts the preflight —
-a bogus API key would fail the smoke run and roll back a release that was fine.
+Configuration lives in **`secrets.env`** (gitignored, mode 0600, kept in the password
+vault — see [secrets.env](#secretsenv)). Its `DEPLOY_*` section is the deploy's: the SSH
+target, `DEPLOY_API_KEY` (a `sion_model.api_keys` value — sent as an `X-Api-Key` header,
+never a query string) and the full-DDL database credentials, which are **never written to
+the server**. Nothing in the file is committed or printed. An unreplaced `TODO` aborts the
+preflight — a bogus API key would fail the smoke run and roll back a release that was fine.
 
-There is now one other place those values exist: the GitHub secrets that
+There is one other place the deploy section exists: the GitHub secret that
 [Deploying from GitHub Actions](#deploying-from-github-actions) reads. That is a real
 widening — the whole point of full-DDL credentials being local was that compromising the
 web application could not reach them — and the things holding it are named in that
-section. `DEPLOY_CONFIG` exists so the file the runner writes never lands in the
+section. `SECRETS_ENV` exists so the file the runner writes never lands in the
 working tree.
+
+## secrets.env
+
+Every credential this application has, in one file: what the deploy needs (`DEPLOY_*`)
+and the values of production's `config/autoload/local.php` (`APP_*`).
+`secrets.env.example` is its template and says, name by name, where each one goes.
+
+- **The vault copy is the one that counts.** Update it the same day the file changes. On a
+  new machine, take it from the vault, save it at the repository root and
+  `chmod 600 secrets.env`.
+- **It is data, never code.** `tools/secrets-env.sh` parses `NAME=value`, `NAME='value'`
+  and `NAME="value"` and expands nothing; it refuses a file anyone but its owner can read,
+  and a line that is not an assignment. Every script that reads it reads it through that
+  loader, and `SECRETS_ENV` names another file for all of them at once.
+- **Where each section goes** is three make targets, all for a person at a terminal:
+
+| target | reads | sends |
+| --- | --- | --- |
+| `make prod-config-diff` / `make prod-config` | `APP_*`, `DEPLOY_API_KEY`, `DEPLOY_API_KEY_PREVIOUS` | production's `local.php`, rendered on the server ([below](#production-localphp)) |
+| `make gh-secrets` | the deploy section, the CI key, the host key | the one GitHub secret `DEPLOY_SECRETS_ENV` ([The secrets](#the-secrets)) |
+| `make prod-config-import` | the server's `local.php` | `var/secrets.imported.env`, for filling `APP_*` from what production has |
+
+`make secrets-init` wrote the first `secrets.env` from what it replaced: `.deploy.local`,
+the CI key at `~/.ssh/schoenstatt-deploy-ci`, and a host key scan kept only where it matches
+`~/.ssh/known_hosts`.
+
+### Production local.php
+
+`shared/config-autoload/local.php` on the server — the file every release links to — is
+**rendered, not edited.** `config/autoload/local.production.php.dist` is its shape, with each
+secret written as `env('APP_…')`; `secrets.env` holds the values. `tools/prod-config.sh`
+takes the template from a freshly fetched `origin/master` (never a working tree), sends
+`tools/prod-config-remote.php` in the ssh command line and the values on its stdin, and
+the server's own php renders it in memory.
+
+- `make prod-config-diff` names every key path as same, differs, only on the server or
+  only new. **It prints no value**; the entries of an `api_keys` list appear as short hashes.
+- `make prod-config` shows that diff and asks. It then writes the file beside the target
+  at mode 0600, requires it back to check it reads as rendered, keeps the old one as
+  `local.php.prev`, and renames it into place. It clears the merged config cache in every
+  release — production boots with config caching on, so a new `local.php` is otherwise
+  ignored — and checks the live site accepts `DEPLOY_API_KEY`. It refuses a changed
+  `db.hostname` or `db.database` unless `ALLOW_DB_CHANGE=1`: a moved database is a
+  migration, not a credential change.
+- A key the template does not have is **removed** by the next install; the diff names it
+  as "only on the server" first. Settings that are not secret (the driver, the SMTP port
+  and encryption, the error-display and cookie flags) are written in the template.
+
+**Rotating the maintenance key** widens before it narrows, so there is never a moment
+neither key works: put the current key in `DEPLOY_API_KEY_PREVIOUS` and the new one in
+`DEPLOY_API_KEY`, run `make prod-config` (the server accepts both, checked live) and
+`make gh-secrets` (the runner sends the new one), then empty `DEPLOY_API_KEY_PREVIOUS` and
+run `make prod-config` again. Any other `APP_*` value: edit, `make prod-config-diff`,
+`make prod-config`, update the vault.
 
 ## The entry point: `make prod-deploy`
 
@@ -61,11 +115,11 @@ ${XDG_CACHE_HOME:-~/.cache}/schoenstatt.link-deploy      # override with DEPLOY_
 
 cloned from your repository once (hardlinked objects, so it costs neither network nor
 disk), then on every run fetched and hard-reset to `origin/master`. That tree is
-what `tools/deploy.sh` packages. Two things are **linked** back to your tree rather than
-duplicated: `.deploy.local`, so the DDL password exists once on disk, and `data/deploy/`,
-so the table snapshots a migration takes stay in one place across deploys. Both links are
-excluded per-checkout in its `.git/info/exclude`, because `deploy.sh` refuses to package a
-tree with anything untracked in it.
+what `tools/deploy.sh` packages. Its tools read your tree's `secrets.env` by path
+(`SECRETS_ENV`), so the DDL password exists once on disk, and `data/deploy/` is **linked**
+back to your tree, so the table snapshots a migration takes stay in one place across
+deploys. The link is excluded per-checkout in its `.git/info/exclude`, because `deploy.sh`
+refuses to package a tree with anything untracked in it.
 
 Consequences worth knowing:
 
@@ -76,7 +130,7 @@ Consequences worth knowing:
 
 ### The checks
 
-1. **Is `.deploy.local` present?** Asked before anything slow.
+1. **Is `secrets.env` present?** Asked before anything slow.
 2. **Is the deploy checkout at `origin/master`?** By construction: fetched and hard-reset
    every run. Two old refusals disappear with it — the tree cannot be dirty, and master
    cannot be *ahead* of origin, so a local-only commit can no longer reach production even
@@ -145,7 +199,7 @@ working during a deploy.
 
 **A routine deploy asks nothing** — the preflight, the revision gate and the smoke
 rollback protect it, not a `y`. It prompts only for an unusual run (`--ref`,
-`--skip-tests`, `--stash`, a first swap, `.deploy.local` not mode 600/400, or a build
+`--skip-tests`, `--stash`, a first swap, or a build
 nothing could verify). `make prod-deploy` needs no `git` of its own at all, so the
 unattended form is:
 
@@ -206,7 +260,7 @@ Five things stand between a stranger and production:
 - **`concurrency: deploy-production`** with `cancel-in-progress: false`, plus the
   server-side lock in `$SHARED/deploy.lock`, which is what catches the case GitHub cannot
   see: someone running `make prod-deploy` from a laptop at the same moment.
-- **A pinned host key.** `DEPLOY_KNOWN_HOSTS`, never `StrictHostKeyChecking=no`.
+- **A pinned host key.** `DEPLOY_KNOWN_HOSTS_B64`, never `StrictHostKeyChecking=no`.
 
 `ci-local` cannot run on a runner — it drives the capsule — so the gate is this
 repository's own CI. The workflow **checks that**, rather than asserting it: its first step
@@ -224,31 +278,37 @@ not decoration.
 ### The secrets
 
 ```bash
-./tools/gh-secrets.sh          # set them all from .deploy.local
-./tools/gh-secrets.sh --list   # names and dates, never values
+make gh-secrets                        # DEPLOY_SECRETS_ENV from secrets.env's deploy section
+./tools/gh-secrets.sh --list           # names and dates, never values
+./tools/gh-secrets.sh --delete-legacy  # the 13 per-field secrets the bundle replaced
 ```
 
-Reading the same file `tools/deploy.sh` reads, so the two cannot drift, and idempotent —
-run it again after a rotation. It prints names only, passes each value on stdin (a `--body`
-argument is visible in `ps`), generates the deploy key if it is missing, and tells you
-whether the server accepts it yet. It deliberately will not create the environment or set
-the branch restriction: a protection a script can switch on is one a script can switch off.
+**One secret, `DEPLOY_SECRETS_ENV`, in the `production` environment.** It is the deploy
+section of `secrets.env` as a file; the workflow writes it to `$RUNNER_TEMP/secrets.env`
+(mode 0600, outside the workspace), decodes the CI key and the host key from it, and points
+`tools/deploy.sh` at it with `SECRETS_ENV`. A name dropped from `secrets.env` is gone from
+the runner at the next upload, with nothing to delete. Run `make gh-secrets` after any edit
+to the deploy section.
 
-What it sets, which is `.deploy.local` field for field plus two:
+It never carries an `APP_*` name — the runner has no use for production's `local.php` —
+nor `DEPLOY_API_KEY_PREVIOUS` or the retention knobs, which are policy: an unattended run
+keeps the scripts' own defaults. The script prints names only, sends the bundle on stdin (a
+`--body` argument is visible in `ps`), checks both keys decode, and tells you whether the
+server accepts the CI key against the pinned host key. It deliberately will not create the
+environment or set the branch restriction: a protection a script can switch on is one a
+script can switch off.
 
-| secret | notes |
+What the bundle holds:
+
+| name | notes |
 | --- | --- |
-| `DEPLOY_SSH_USER` | the shell account, not the retired SFTP one |
-| `DEPLOY_SSH_HOST` | |
-| `DEPLOY_SSH_PORT` | `222`; the workflow defaults to it if unset |
-| `DEPLOY_APP_PATH` | relative to the account's home |
-| `DEPLOY_BASE_URL` | |
-| `DEPLOY_API_KEY` | any `sion_model.api_keys` entry |
-| `DEPLOY_CANARY_COOKIE` | may be empty |
-| `DEPLOY_DB_NAME`, `DEPLOY_DB_USER`, `DEPLOY_DB_PASS` | used only through the SSH tunnel. This does not have to be the full-DDL account: a user with DDL on this application's tables and no `GRANT` is enough for every migration the ledger has ever applied, and is the credential worth putting here. Left unset, the deploy reports migrations as unmanaged and a person runs `tools/migrate.sh` — which splits `@phase: pre` from `@phase: post` across two operators, and that ordering exists because of the 2026-08-17 outage. |
-| `DEPLOY_DB_TUNNEL_PORT` | |
-| `DEPLOY_SSH_KEY` | generated by the script at `~/.ssh/schoenstatt-deploy-ci` if absent: ed25519, **no passphrase** (no agent on a runner, nobody to type one), its own key so revoking CD is not rotating yours. Install the public half with the `ssh-copy-id` line the script prints. |
-| `DEPLOY_KNOWN_HOSTS` | `ssh-keyscan -p 222 <host>`. Check the fingerprints against your own `~/.ssh/known_hosts` before trusting a scan — a scan taken from a compromised path pins the attacker's key just as happily. |
+| `DEPLOY_SSH_USER`, `DEPLOY_SSH_HOST`, `DEPLOY_SSH_PORT` | the shell account on 222, not the retired SFTP one |
+| `DEPLOY_APP_PATH`, `DEPLOY_BASE_URL` | the path is relative to the account's home |
+| `DEPLOY_API_KEY` | the maintenance key the post-deploy checks send |
+| `DEPLOY_CANARY_COOKIE` | left out when empty |
+| `DEPLOY_DB_NAME`, `DEPLOY_DB_USER`, `DEPLOY_DB_PASS`, `DEPLOY_DB_TUNNEL_PORT` | used only through the SSH tunnel. This does not have to be the full-DDL account: a user with DDL on this application's tables and no `GRANT` is enough for every migration the ledger has ever applied, and is the credential worth putting here. Left unset, the deploy reports migrations as unmanaged and a person runs `tools/migrate.sh` — which splits `@phase: pre` from `@phase: post` across two operators, and that ordering exists because of the 2026-08-17 outage. |
+| `DEPLOY_CI_SSH_KEY_B64` | the runner's own ed25519 key, **no passphrase** (no agent on a runner, nobody to type one), base64. Its own key so revoking CD is not rotating yours; its public half is in the server's `authorized_keys`. |
+| `DEPLOY_KNOWN_HOSTS_B64` | the server's host key, base64. `make secrets-init` takes it with `ssh-keyscan` and keeps only what matches your own `~/.ssh/known_hosts` — a scan taken from a compromised path pins the attacker's key just as happily. |
 
 The first dispatch doubles as the spike for #267 — whether a GitHub runner can reach the
 host on port 222 at all. Leave `dry_run` checked for it: the preflight opens the
@@ -499,7 +559,7 @@ alone is 8.7 million rows and 1.9 GB: dumped through the tunnel that is an hour 
 with a deploy waiting on it, and a connection that drops at minute eighty starts again
 from nothing.
 
-That needs credentials on the server, and the ones in `.deploy.local` stay where they are.
+That needs credentials on the server, and the ones in `secrets.env` stay where they are.
 A snapshot is a read, and the server already holds an account with `SELECT` on these
 tables — the application's own, in `shared/config-autoload/local.php`, which it has had all
 along. PHP reads that config and writes a mode-600 `--defaults-extra-file`; only the
@@ -578,7 +638,7 @@ which is the behaviour you want. This is deliberately *not* done through
 `clear-exceptions.sh`: that archives to the deploying machine first, and on a runner the
 archive is discarded, which is the mistake #297 fixed for backups.
 
-Full-DDL credentials live only in `.deploy.local` and are used through an **SSH
+Full-DDL credentials live only in `secrets.env` and are used through an **SSH
 tunnel** to the server's own `127.0.0.1:3306` (`DEPLOY_DB_TUNNEL_PORT` locally; if
 taken, the runner moves to the next free port and says so, and it asserts
 `sch_changes` + `trans_phrases` exist before touching anything). Never written to
@@ -596,7 +656,8 @@ public_html/schoenstatt.link/
   releases/<ts>-<sha>/                               five kept; vendor hardlinked across releases
   shared/data/{logs,exceptions,htaccess-backups,fonts,musicas,texts,scans,import}
   shared/public/{covers,associations,dh,BingSiteAuth.xml,google0e1110cae0fbf177.html}
-  shared/config-autoload/{local.php,*.local.php}
+  shared/config-autoload/local.php                   rendered by `make prod-config`; .prev is the one before
+  shared/config-autoload/*.local.php                 hand-managed, not secret (cache.local.php)
   shared/deploy.lock/holder                          present only while a deploy is running
   shared/migration-snapshots/                        pre-migration table dumps; NOT under shared/data
 ```
@@ -729,7 +790,7 @@ written from the packages' own requirements and still reads `>= 8.4.1`.
 `public/index.php` runs `App\Kernel` (symfony/http-kernel) unconditionally. **There
 is one front controller and no laminas one to fall back to** — nothing has
 dispatched through laminas-mvc since 2026-09-08, the `SYMFONY_KERNEL` canary and
-`LegacyBridge` are deleted, and `DEPLOY_CANARY_COOKIE` in `.deploy.local` is
+`LegacyBridge` are deleted, and `DEPLOY_CANARY_COOKIE` in `secrets.env` is
 ignored. Rolling back to laminas is not possible; `--rollback` reaches only earlier
 Symfony-served releases. See [laminas-exit.md](laminas-exit.md).
 
@@ -824,8 +885,9 @@ cd releases/<the-release> && php bin/console cache:flush-persistent
 
 Then, locally, `./tools/deploy.sh --reset-caches` (the swap is invisible to OPcache
 until you do) and `bash tools/smoke-prod.sh`. `cache:clear-config` is not a deploy
-step (each release starts with an empty `data/config`); it is the fix after editing
-config *on* the server.
+step (each release starts with an empty `data/config`); `make prod-config` runs it in
+every release after installing `local.php`. Do not edit `local.php` on the server: the next
+`make prod-config` replaces it from `secrets.env`.
 
 ## Scheduled jobs
 
