@@ -305,7 +305,6 @@ What the bundle holds:
 | `DEPLOY_SSH_USER`, `DEPLOY_SSH_HOST`, `DEPLOY_SSH_PORT` | the shell account on 222, not the retired SFTP one |
 | `DEPLOY_APP_PATH`, `DEPLOY_BASE_URL` | the path is relative to the account's home |
 | `DEPLOY_API_KEY` | the maintenance key the post-deploy checks send |
-| `DEPLOY_CANARY_COOKIE` | left out when empty |
 | `DEPLOY_DB_NAME`, `DEPLOY_DB_USER`, `DEPLOY_DB_PASS`, `DEPLOY_DB_TUNNEL_PORT` | used only through the SSH tunnel. This does not have to be the full-DDL account: a user with DDL on this application's tables and no `GRANT` is enough for every migration the ledger has ever applied, and is the credential worth putting here. Left unset, the deploy reports migrations as unmanaged and a person runs `tools/migrate.sh` — which splits `@phase: pre` from `@phase: post` across two operators, and that ordering exists because of the 2026-08-17 outage. |
 | `DEPLOY_CI_SSH_KEY_B64` | the runner's own ed25519 key, **no passphrase** (no agent on a runner, nobody to type one), base64. Its own key so revoking CD is not rotating yours; its public half is in the server's `authorized_keys`. |
 | `DEPLOY_KNOWN_HOSTS_B64` | the server's host key, base64. `make secrets-init` takes it with `ssh-keyscan` and keeps only what matches your own `~/.ssh/known_hosts` — a scan taken from a compromised path pins the attacker's key just as happily. |
@@ -790,9 +789,8 @@ written from the packages' own requirements and still reads `>= 8.4.1`.
 `public/index.php` runs `App\Kernel` (symfony/http-kernel) unconditionally. **There
 is one front controller and no laminas one to fall back to** — nothing has
 dispatched through laminas-mvc since 2026-09-08, the `SYMFONY_KERNEL` canary and
-`LegacyBridge` are deleted, and `DEPLOY_CANARY_COOKIE` in `secrets.env` is
-ignored. Rolling back to laminas is not possible; `--rollback` reaches only earlier
-Symfony-served releases. See [laminas-exit.md](laminas-exit.md).
+`LegacyBridge` are deleted. Rolling back to laminas is not possible; `--rollback`
+reaches only earlier Symfony-served releases. See [laminas-exit.md](laminas-exit.md).
 
 ```bash
 curl https://schoenstatt.link/_health              # {"status":"ok","kernel":"symfony"} — the site booted

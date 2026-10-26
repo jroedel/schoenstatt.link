@@ -74,7 +74,6 @@ DEPLOY_APP_PATH=app
 DEPLOY_BASE_URL=https://stub.invalid
 DEPLOY_API_KEY=maint-key-SECRET-1111
 DEPLOY_API_KEY_PREVIOUS=maint-key-OLD-0000
-DEPLOY_CANARY_COOKIE=
 DEPLOY_DB_NAME=ourlink_db1
 DEPLOY_DB_USER=ddl
 DEPLOY_DB_PASS="pa'ss-SECRET-2222"
@@ -105,7 +104,7 @@ for n in DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_SSH_PORT DEPLOY_APP_PATH DEPLOY_
          DEPLOY_CI_SSH_KEY_B64 DEPLOY_KNOWN_HOSTS_B64; do
     [[ " $NAMES" == *" $n "* ]] && check 0 "the bundle has $n" || check 1 "the bundle has $n" "$NAMES"
 done
-for n in APP_DB_PASSWORD APP_JWT_KEY DEPLOY_API_KEY_PREVIOUS DEPLOY_KEEP_RELEASES DEPLOY_CANARY_COOKIE; do
+for n in APP_DB_PASSWORD APP_JWT_KEY DEPLOY_API_KEY_PREVIOUS DEPLOY_KEEP_RELEASES; do
     [[ " $NAMES" != *" $n "* ]] && check 0 "the bundle leaves out $n" || check 1 "the bundle leaves out $n" "$NAMES"
 done
 grep -qE 'SECRET-3333|SECRET-4444|OLD-0000' "$BUNDLE" \

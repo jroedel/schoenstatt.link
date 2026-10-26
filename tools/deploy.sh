@@ -142,7 +142,6 @@ secrets_env_load "$CONFIG" || fail "could not read the deploy configuration (the
 # needs a wider window than a backup does.
 : "${DEPLOY_KEEP_EXCEPTION_DAYS:=90}"
 : "${DEPLOY_API_KEY:=}"
-: "${DEPLOY_CANARY_COOKIE:=}"
 
 # An unreplaced placeholder is worse than a missing value here. A bogus
 # DEPLOY_API_KEY does not fail loudly: /en/sm/cache-status rejects it, the smoke
@@ -365,9 +364,6 @@ build_smoke_env() {
     SMOKE_ENV=(SMOKE_PROD_BASE_URL="$DEPLOY_BASE_URL")
     if [ -n "$DEPLOY_API_KEY" ]; then
         SMOKE_ENV+=(SMOKE_PROD_CACHE_KEY="$DEPLOY_API_KEY")
-    fi
-    if [ -n "$DEPLOY_CANARY_COOKIE" ]; then
-        SMOKE_ENV+=(SMOKE_PROD_CANARY_COOKIE="$DEPLOY_CANARY_COOKIE")
     fi
 }
 
