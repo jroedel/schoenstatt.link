@@ -24,7 +24,7 @@ use function trim;
  * ## Two things that list got wrong, both silently
  *
  * **`copyrightYear` is not a book field.** The book entity maps `publishedYear =>
- * copyright_year`; commit 4933155 renamed it on 2018-11-02 and the import was never
+ * copyright_year`; commit 7c0bdba renamed it on 2018-11-02 and the import was never
  * updated. `SionTable::createHelper()` and `updateHelper()` both skip a key absent
  * from `update_columns`, so from that day the year column in every spreadsheet was
  * read, cast to an int, and thrown away. Three imports ran afterwards. The field is
