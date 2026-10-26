@@ -16,12 +16,13 @@ use function escapeshellarg;
 use function file_get_contents;
 use function getenv;
 use function implode;
-use function in_array;
 use function is_readable;
 use function is_string;
 use function mb_strlen;
 use function sprintf;
 use function str_contains;
+use function str_ends_with;
+use function str_starts_with;
 use function strlen;
 use function substr;
 use function trim;
@@ -52,10 +53,11 @@ require_once __DIR__ . '/../Fuzz/FormRepository.php';
  * Every person's label as the person selects spell it, inactive persons included
  * (`FormRepository::personLabelSets()`). "Last, Title First", from
  * `SchoenstattTable::getPersonValueOptions(true)`, is the failure anywhere in a tracked
- * file. "First Last", from `fullName`, which the borrower lists use, is the failure in the
- * {@see RECORDINGS} — not everywhere, because it is also how the 2020 literature data
- * (`database/db0.1.sql`, `data/publications/`) names a published author, and whether that
- * belongs in the repository is a question about bibliographic data, not about this check.
+ * file. "First Last", from `fullName`, which the borrower lists and every page heading use,
+ * is the failure anywhere except the {@see BIBLIOGRAPHIC} data, because that is also how
+ * the 2020 literature data names a published author, and whether that belongs in the
+ * repository is a question about bibliographic data, not about this check. It used to be
+ * held to the form recordings only, which let a smoke test assert two people's names.
  *
  * Not a pattern, not a heuristic: a `Last, First` regex would flag
  * `A. Deichertsche Verlagsbuchhandlung, Leipzig` and miss a person recorded with one name.
@@ -81,11 +83,13 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
      */
     private const MIN_LENGTH = 7;
 
-    /** The files the recorders write, which sample the borrower lists' "First Last" labels. */
-    private const RECORDINGS = [
-        'test/Element/element-surface.php',
-        'test/Form/engine-surface.php',
-        'test/Form/form-markup.php',
+    /**
+     * The literature data, where "First Last" is a published author's byline. A prefix
+     * ending in `/` covers a directory.
+     */
+    private const BIBLIOGRAPHIC = [
+        'database/db0.1.sql',
+        'data/publications/',
     ];
 
     public function testNoTrackedFileContainsAPersonName(): void
@@ -108,7 +112,7 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
         $fullNames = self::longEnough($sets['fullName']);
 
         self::assertNotSame([], $names, 'no person labels were loaded, so this test proves nothing');
-        self::assertNotSame([], $fullNames, 'no full names were loaded, so the recordings go unchecked');
+        self::assertNotSame([], $fullNames, 'no full names were loaded, so "First Last" goes unchecked');
 
         $root  = dirname(__DIR__, 2) . '/';
         $found = [];
@@ -118,8 +122,7 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
                 continue;
             }
 
-            $recording = in_array(substr($file, strlen($root)), self::RECORDINGS, true);
-            $search    = $recording ? [...$names, ...$fullNames] : $names;
+            $search = self::isBibliographic(substr($file, strlen($root))) ? $names : [...$names, ...$fullNames];
             foreach ($search as $name) {
                 if (str_contains($contents, $name)) {
                     $found[] = sprintf('%s names %s', $file, $name);
@@ -138,6 +141,17 @@ final class NoTrackedFileNamesAPersonTest extends TestCase
                 implode("\n  ", array_slice($found, 0, 20))
             )
         );
+    }
+
+    private static function isBibliographic(string $path): bool
+    {
+        foreach (self::BIBLIOGRAPHIC as $prefix) {
+            if ($path === $prefix || (str_ends_with($prefix, '/') && str_starts_with($path, $prefix))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
