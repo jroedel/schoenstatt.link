@@ -31,11 +31,13 @@
 # master, and that its head repository was this one. Removing any of those three hands a
 # fork the deploy key.
 #
-# THE SECRETS ARE THE WHOLE CONFIGURATION. tools/deploy.sh sources a file of shell
-# assignments; this writes that file from GitHub secrets into RUNNER_TEMP rather than into
-# the workspace, and points the script at it with DEPLOY_CONFIG. Two reasons: nothing later
-# can sweep it up with the checkout, and `git status` stays clean, which the script's own
-# preflight insists on.
+# ONE SECRET IS THE WHOLE CONFIGURATION. DEPLOY_SECRETS_ENV is the deploy section of
+# secrets.env — the SSH target, maintenance key, DDL database account, the CI deploy key and
+# the pinned host key — uploaded by `make gh-secrets` (tools/gh-secrets.sh). This writes it
+# into RUNNER_TEMP rather than into the workspace, and points the script at it with
+# SECRETS_ENV. Two reasons: nothing later can sweep it up with the checkout, and `git
+# status` stays clean, which the script's own preflight insists on. Production's
+# local.php values (APP_*) are never in it.
 #
 # WHAT STOPS TWO DEPLOYS COLLIDING: `concurrency` serialises this workflow against itself,
 # and tools/deploy.sh takes an atomic lock on the server (shared/deploy.lock), which covers
@@ -150,80 +152,48 @@ jobs:
           echo "ci.yml run $RUN_ID passed on ${TARGET_SHA:0:7}"
           echo "CI_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
 
-      - name: Write the deploy configuration
+      - name: Write the deploy configuration and the SSH trust
         # Outside the workspace on purpose — see the header. Mode 0600 because the file
-        # holds the maintenance API key and a database password with DDL rights; also
-        # because tools/deploy.sh checks the mode and counts anything looser an unusual
-        # deploy, which on a runner means a warning nobody reads.
-        env:
-          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
-          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
-          DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
-          DEPLOY_APP_PATH: ${{ secrets.DEPLOY_APP_PATH }}
-          DEPLOY_BASE_URL: ${{ secrets.DEPLOY_BASE_URL }}
-          DEPLOY_API_KEY: ${{ secrets.DEPLOY_API_KEY }}
-          DEPLOY_CANARY_COOKIE: ${{ secrets.DEPLOY_CANARY_COOKIE }}
-          DEPLOY_DB_NAME: ${{ secrets.DEPLOY_DB_NAME }}
-          DEPLOY_DB_USER: ${{ secrets.DEPLOY_DB_USER }}
-          DEPLOY_DB_PASS: ${{ secrets.DEPLOY_DB_PASS }}
-          DEPLOY_DB_TUNNEL_PORT: ${{ secrets.DEPLOY_DB_TUNNEL_PORT }}
-        run: |
-          umask 077
-          CONF="$RUNNER_TEMP/deploy.local"
-          {
-            printf 'DEPLOY_SSH_USER=%q\n'       "$DEPLOY_SSH_USER"
-            printf 'DEPLOY_SSH_HOST=%q\n'       "$DEPLOY_SSH_HOST"
-            printf 'DEPLOY_SSH_PORT=%q\n'       "${DEPLOY_SSH_PORT:-222}"
-            printf 'DEPLOY_APP_PATH=%q\n'       "$DEPLOY_APP_PATH"
-            printf 'DEPLOY_BASE_URL=%q\n'       "$DEPLOY_BASE_URL"
-            printf 'DEPLOY_API_KEY=%q\n'        "$DEPLOY_API_KEY"
-            printf 'DEPLOY_CANARY_COOKIE=%q\n'  "$DEPLOY_CANARY_COOKIE"
-            printf 'DEPLOY_DB_NAME=%q\n'        "$DEPLOY_DB_NAME"
-            printf 'DEPLOY_DB_USER=%q\n'        "$DEPLOY_DB_USER"
-            printf 'DEPLOY_DB_PASS=%q\n'        "$DEPLOY_DB_PASS"
-            printf 'DEPLOY_DB_TUNNEL_PORT=%q\n' "$DEPLOY_DB_TUNNEL_PORT"
-          } > "$CONF"
-          chmod 600 "$CONF"
-          # Names only. Never the values, and never `cat` — this log becomes world-readable
-          # the day the repository goes public.
-          printf 'wrote %s holding: ' "$CONF"
-          sed 's/=.*//' "$CONF" | tr '\n' ' '
-          printf '\n'
-
-      - name: Trust the host key
-        # Pinned from a secret, not discovered. `StrictHostKeyChecking=no` would turn a
-        # documented atomic deploy into a trust-on-first-use one; tools/deploy.sh refuses
-        # rather than guesses everywhere else, and this is the same rule.
-        # Produce the value with:  ssh-keyscan -p <port> -H <host>
-        env:
-          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          umask 077
-          mkdir -p ~/.ssh
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-          test -s ~/.ssh/known_hosts || { echo "DEPLOY_KNOWN_HOSTS is empty" >&2; exit 1; }
-
-      - name: Install the deploy key
-        # Deliberately not webfactory/ssh-agent or any other third-party action: this is
-        # the step that handles the private key, and it is four lines of our own. The key
-        # must be generated WITHOUT a passphrase — there is no agent and nobody to type
-        # one. Its protection is that it lives in a GitHub secret and that the account it
-        # opens is reachable only on port 222.
+        # holds the maintenance API key and a database password with DDL rights, and
+        # because tools/secrets-env.sh refuses anything looser.
         #
-        # ~/.ssh/config rather than a flag, because tools/deploy.sh builds its own ssh
-        # command and passes its own -e string to rsync; a config entry reaches both
-        # without the script needing to know it is on a runner.
+        # The host key is pinned from the bundle, not discovered. `StrictHostKeyChecking=no`
+        # would turn a documented atomic deploy into a trust-on-first-use one;
+        # tools/deploy.sh refuses rather than guesses everywhere else, and this is the same
+        # rule.
+        #
+        # The deploy key is written by these few lines of our own, deliberately not by
+        # webfactory/ssh-agent or any other third-party action: this is the step that
+        # handles the private key. It has no passphrase — there is no agent and nobody to
+        # type one. Its protection is that it lives in a GitHub secret and that the account
+        # it opens is reachable only on port 222. ~/.ssh/config rather than a flag, because
+        # tools/deploy.sh builds its own ssh command and passes its own -e string to rsync;
+        # a config entry reaches both without the script needing to know it is on a runner.
         env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SECRETS_ENV: ${{ secrets.DEPLOY_SECRETS_ENV }}
         run: |
           umask 077
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
+          # An unset secret reads as empty, not as an error.
+          test -n "$DEPLOY_SECRETS_ENV" || { echo "DEPLOY_SECRETS_ENV is not set — run make gh-secrets" >&2; exit 1; }
+          CONF="$RUNNER_TEMP/secrets.env"
+          printf '%s\n' "$DEPLOY_SECRETS_ENV" > "$CONF"
+          chmod 600 "$CONF"
+          . tools/secrets-env.sh
+          secrets_env_load "$CONF"
+
+          mkdir -p ~/.ssh
+          printf '%s' "${DEPLOY_KNOWN_HOSTS_B64:-}" | base64 -d > ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts || { echo "DEPLOY_KNOWN_HOSTS_B64 is missing or empty" >&2; exit 1; }
+          printf '%s' "${DEPLOY_CI_SSH_KEY_B64:-}" | base64 -d > ~/.ssh/id_deploy
           printf 'Host *\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n' > ~/.ssh/config
-          chmod 600 ~/.ssh/config
+          chmod 600 ~/.ssh/known_hosts ~/.ssh/id_deploy ~/.ssh/config
           ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
-            || { echo "DEPLOY_SSH_KEY is not a usable passphrase-less private key" >&2; exit 1; }
+            || { echo "DEPLOY_CI_SSH_KEY_B64 is not a usable passphrase-less private key" >&2; exit 1; }
+
+          # Names only. Never the values, and never `cat` — this log is world-readable.
+          printf 'wrote %s holding: ' "$CONF"
+          grep -oE '^[A-Z][A-Z0-9_]*=' "$CONF" | tr -d '=' | tr '\n' ' '
+          printf '\n'
 
       - name: Deploy
         # -y because tools/deploy.sh refuses to run without a TTY unless told to; the
@@ -244,7 +214,7 @@ jobs:
         # pastes expressions into a shell is one added input away from being injectable, and
         # the habit is cheaper than the audit.
         env:
-          DEPLOY_CONFIG: ${{ runner.temp }}/deploy.local
+          SECRETS_ENV: ${{ runner.temp }}/secrets.env
           DEPLOY_LOCK_OWNER: github-actions/${{ github.run_id }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
@@ -264,4 +234,4 @@ jobs:
 
       - name: Remove the deploy configuration
         if: always()
-        run: rm -f "$RUNNER_TEMP/deploy.local"
+        run: rm -f "$RUNNER_TEMP/secrets.env" ~/.ssh/id_deploy

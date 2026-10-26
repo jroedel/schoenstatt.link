@@ -2,7 +2,7 @@
 #
 # The deploy's remote-call machinery, exercised without deploying anything.
 #
-# tools/deploy.sh cannot be sourced — it loads .deploy.local and would try to deploy —
+# tools/deploy.sh cannot be sourced — it loads secrets.env and would try to deploy —
 # so this extracts the block between its `>>> remote-call machinery` markers and drives
 # the real functions with `bash -c` standing in for ssh. If the extraction finds
 # nothing, that is a failure and not a skip: a test that quietly stops testing is worse
