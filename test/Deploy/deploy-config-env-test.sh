@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 #
-# Every script that reads the deploy credentials honours $DEPLOY_CONFIG.
+# Every script that reads the deploy credentials honours $SECRETS_ENV — and reads them
+# through tools/secrets-env.sh, never by sourcing a file.
 #
-# WHAT THIS PREVENTS, and it is not hypothetical. tools/deploy.sh learned DEPLOY_CONFIG so
+# WHAT THIS PREVENTS, and it is not hypothetical. tools/deploy.sh learned DEPLOY_CONFIG (the
+# variable's name until secrets.env replaced .deploy.local in 2026-10) so
 # a CI runner could write the credentials outside the workspace — nothing later can archive
 # them, and `git status` stays clean, which the preflight insists on. But deploy.sh shells
 # out to tools/migrate.sh at BOTH migration phases, and migrate.sh kept its own hardcoded
@@ -42,25 +44,33 @@ check() {
 # Discovered, not listed. A hand-maintained list is the thing that went stale here in the
 # first place: migrate.sh was already reading the credentials when deploy.sh grew the
 # variable, and nothing connected the two.
-READERS=$(grep -rlE '^\s*[A-Za-z_]+=.*\.deploy\.local|\.deploy\.local"?$' tools/*.sh 2>/dev/null \
-    | xargs grep -lE '^\s*\.\s+"\$\{?[A-Za-z_]+' 2>/dev/null | sort)
+#
+# Since secrets.env, the path is resolved in ONE place — tools/secrets-env.sh, from
+# $SECRETS_ENV — so the rule a reader must keep is to take the path from there:
+# `secrets_env_load "$SECRETS_ENV_FILE"`, directly or through a variable assigned from it.
+READERS=$(grep -lE 'secrets_env_load' tools/*.sh 2>/dev/null | grep -v 'tools/secrets-env.sh' | sort)
 
-[ -n "$READERS" ] || { echo "found no scripts sourcing .deploy.local — the discovery pattern has rotted" >&2; exit 1; }
+[ -n "$READERS" ] || { echo "found no scripts calling secrets_env_load — the discovery pattern has rotted" >&2; exit 1; }
 
 COUNT=0
 for script in $READERS; do
     COUNT=$((COUNT + 1))
-    # The variable must be USED, not merely mentioned. Grepping for the bare name passes
-    # on a script that only names it in a comment — which this test demonstrated on itself:
-    # with the bug reintroduced, migrate.sh still matched, because the comment explaining
-    # the fix survived the revert. So: it has to appear in a parameter expansion.
-    if grep -qE '\$\{DEPLOY_CONFIG(:-|\})' "$script"; then
-        check 0 "$(basename "$script") honours \$DEPLOY_CONFIG"
+    if grep -qE '\$\{?SECRETS_ENV_FILE' "$script"; then
+        check 0 "$(basename "$script") takes the path from \$SECRETS_ENV_FILE"
     else
-        check 1 "$(basename "$script") reads .deploy.local but ignores \$DEPLOY_CONFIG"
-        printf '        %s\n' "$(grep -nE '\.deploy\.local' "$script" | grep -vE '^\s*[0-9]+:\s*#' | head -2)"
+        check 1 "$(basename "$script") loads credentials from a path of its own"
     fi
 done
+
+# Sourcing is what secrets.env exists to end: a credentials file that is executed can be
+# made to run somebody else's commands. A `. "$VAR"` of anything but tools/*.sh is that.
+SOURCERS=$(grep -nE '^\s*(\.|source)\s+"?\$\{?[A-Za-z_]+' tools/*.sh 2>/dev/null \
+    | grep -vE 'secrets-env\.sh|exception-store\.sh|REPO_ROOT/tools/' || true)
+if [ -z "$SOURCERS" ]; then
+    check 0 "no tools/*.sh sources a file named by a variable"
+else
+    check 1 "a script sources a file named by a variable: $(printf '%s' "$SOURCERS" | head -1)"
+fi
 
 # The one that actually broke, checked by behaviour rather than by grep: point it at a file
 # that is not there and it must name THAT path, proving it read the variable rather than
@@ -71,10 +81,10 @@ done
 # credentials and connect — and with --env=production that connection is an SSH tunnel to
 # the live database, opened by a test. The capsule is local, harmless, and distinguishes
 # the two paths just as well.
-OUT=$(DEPLOY_CONFIG=/nonexistent/deploy.local bash tools/migrate.sh status --env=capsule 2>&1)
+OUT=$(SECRETS_ENV=/nonexistent/secrets.env bash tools/migrate.sh status --env=capsule 2>&1)
 case "$OUT" in
-    *'/nonexistent/deploy.local'*) check 0 "migrate.sh reports the DEPLOY_CONFIG path it was given" ;;
-    *) check 1 "migrate.sh ignored DEPLOY_CONFIG; it said: $(printf '%s' "$OUT" | head -2 | tr '\n' ' ')" ;;
+    *'/nonexistent/secrets.env'*) check 0 "migrate.sh reports the SECRETS_ENV path it was given" ;;
+    *) check 1 "migrate.sh ignored SECRETS_ENV; it said: $(printf '%s' "$OUT" | head -2 | tr '\n' ' ')" ;;
 esac
 
 if [ "$FAILED" = 0 ]; then

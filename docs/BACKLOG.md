@@ -119,7 +119,7 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
   gitignored and outside every deploy: an SSH task, not a commit.
 - **`TitleNoAccents`, `SubtitleNoAccents`, `AuthorsNoAccents`, `EditorNoAccents` are dead
   columns** on `sch_publications` (two mapped in the spec, nothing consumes any). Drop them
-  in a `ddl` migration with the `.deploy.local` credentials.
+  in a `ddl` migration with the `secrets.env` credentials.
 - **Three template permission checks name a resource that does not exist**
   (`AclGuardRouteDriftTest::KNOWN_DEAD_PERMISSION_CHECKS`): `route/publications/
   advanced-search` (`search-bar.phtml`; `LiteratureController::advancedSearchUrl()` catches
@@ -293,8 +293,9 @@ holds the narrative. `(verify)` marks an item not re-checked against the repo wh
 - **`cs-check`'s exit status carries no signal** (425 errors, almost all `.phtml` swept in
   by `phpcs.xml`); the clean set is enforced via `tools/phpcs-clean-paths.txt`. Excluding
   `.phtml` or auto-fixing is undecided; step 0 deletes 116 dead `.phtml` first.
-- Production's server-side `local.php` has a dead `acmailer_options` key; remove when a
-  deploy next touches server config.
+- Production's server-side `local.php` still has a dead `acmailer_options` key and the
+  `patres_api_*` keys. Neither is in `local.production.php.dist`, so the first
+  `make prod-config` removes them; its diff names them first.
 - **The capsule runs in production mode**: tracked `public/.htaccess` sets
   `APP_ENV=production` and `AllowOverride All` beats the vhost's `development`. Changing it
   changes the capsule's error pages; measured, not decided.

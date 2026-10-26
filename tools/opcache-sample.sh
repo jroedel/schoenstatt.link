@@ -46,17 +46,16 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# Same configuration file as the deploy, same two values out of it. Sourced
-# rather than parsed because that is what tools/deploy.sh does and a second
-# dialect of the same file is a bug waiting to happen.
-CONFIG=${DEPLOY_CONFIG:-.deploy.local}
-if [ -f "$CONFIG" ]; then
-    # shellcheck disable=SC1090
-    . "$CONFIG"
+# Same configuration file as the deploy, same two values out of it, through the same
+# parser — a second dialect of the same file is a bug waiting to happen.
+# shellcheck source=tools/secrets-env.sh
+. "$(dirname "$0")/secrets-env.sh"
+if [ -f "$SECRETS_ENV_FILE" ]; then
+    secrets_env_load "$SECRETS_ENV_FILE" || exit 1
 fi
 BASE=${OPCACHE_SAMPLE_BASE_URL:-${DEPLOY_BASE_URL:-https://schoenstatt.link}}
 KEY=${OPCACHE_SAMPLE_API_KEY:-${DEPLOY_API_KEY:-}}
-[ -n "$KEY" ] || { echo "No maintenance key. Set DEPLOY_API_KEY in .deploy.local, or OPCACHE_SAMPLE_API_KEY." >&2; exit 1; }
+[ -n "$KEY" ] || { echo "No maintenance key. Set DEPLOY_API_KEY in secrets.env, or OPCACHE_SAMPLE_API_KEY." >&2; exit 1; }
 
 URL="$BASE/en/sm/cache-status"
 SAMPLES=$(mktemp -t opcache-sample-XXXXXX)

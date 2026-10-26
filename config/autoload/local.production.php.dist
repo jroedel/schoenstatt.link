@@ -1,0 +1,76 @@
+<?php
+
+/**
+ * Production's config/autoload/local.php, as a template.
+ *
+ * `make prod-config` renders this from secrets.env and installs the result on the
+ * server, at shared/config-autoload/local.php, which every release links to. This
+ * file is the SHAPE of production's configuration; secrets.env holds its values.
+ * Nothing else writes that file, so a key that is not here is removed by the next
+ * install — `make prod-config-diff` names it first.
+ *
+ * Read from origin/master, never from a working tree, so what is installed is what
+ * the deployed code expects. Evaluated by tools/prod-config-remote.php on the
+ * server, which defines the two functions it calls:
+ *
+ *   env('NAME')            the value; refused when empty or still a placeholder
+ *   env_list('NAME')       a comma-separated value as a list; env_list('NAME', true)
+ *                          is empty rather than refused when NAME is
+ *
+ * The rendered file is a plain array with no calls left in it. The development
+ * template is local.php.dist; docker/local.docker.php is the capsule's.
+ *
+ * No `declare(strict_types=1)`: the template is evaluated, not included, and a
+ * declare must be the first statement of a file.
+ */
+
+return [
+    'db' => [
+        'driver'   => 'pdo_mysql',
+        'hostname' => env('APP_DB_HOST'),
+        'database' => env('APP_DB_NAME'),
+        'username' => env('APP_DB_USER'),
+        'password' => env('APP_DB_PASSWORD'),
+        // utf8mb4, not UTF8: in MariaDB `utf8` means `utf8mb3`, and a 3-byte connection
+        // degrades anything outside the BMP to `?`. Pdo\Mysql::ATTR_INIT_COMMAND does
+        // not exist before 8.4 and PHP 8.5 deprecates the PDO:: spelling; both are the
+        // same integer, which is what the rendered file holds.
+        'driver_options' => [
+            (class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : \PDO::MYSQL_ATTR_INIT_COMMAND)
+                => 'SET NAMES utf8mb4;',
+        ],
+    ],
+    // Both false on a public server: they render the exception message, the file path
+    // and the stack trace into the error page for anyone who can provoke a 500.
+    'view_manager' => [
+        'display_not_found_reason' => false,
+        'display_exceptions'       => false,
+    ],
+    'sion_model' => [
+        // The maintenance key, and mid-rotation the one it replaces.
+        'api_keys' => [...env_list('DEPLOY_API_KEY'), ...env_list('DEPLOY_API_KEY_PREVIOUS', true)],
+    ],
+    'books' => [
+        'files_api_key' => env('APP_DRIVE_KEY'),
+        'files_api_url' => env('APP_DRIVE_URL'),
+    ],
+    'schoenstatt' => [
+        'api_keys' => env_list('APP_LIBRARY_API_KEYS'),
+    ],
+    'smtp_options' => [
+        'server'   => env('APP_SMTP_HOST'),
+        'port'     => 587,
+        'ssl'      => 'tls',
+        'username' => env('APP_SMTP_USER'),
+        'password' => env('APP_SMTP_PASSWORD'),
+    ],
+    'session_config' => [
+        'cookie_secure'    => true,
+        'cookie_http_only' => true,
+    ],
+    'ApiRequest' => [
+        'jwtAuth' => [
+            'cypherKey' => env('APP_JWT_KEY'),
+        ],
+    ],
+];

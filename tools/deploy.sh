@@ -34,15 +34,16 @@
 # says nothing could verify this build and why, which makes it an unusual deploy
 # and brings back the confirmation prompt.
 #
-# Configuration is .deploy.local (gitignored, mode 0600), seeded from
-# .deploy.local.dist by config.sh. Credentials never reach the server. Set
-# DEPLOY_CONFIG to read it from somewhere else — what .github/workflows/deploy.yml
-# does, so the file it writes from GitHub secrets never lands in the working tree.
+# Configuration is the DEPLOY_* section of secrets.env (gitignored, mode 0600,
+# seeded from secrets.env.example by config.sh), read by tools/secrets-env.sh —
+# parsed, never sourced. Credentials never reach the server. Set SECRETS_ENV to read
+# it from somewhere else — what .github/workflows/deploy.yml does, so the file it
+# writes from the DEPLOY_SECRETS_ENV secret never lands in the working tree.
 #
 # UNATTENDED RUNS. Three things make this safe to drive from a CI runner, and all
 # three key off the environment rather than a flag, so a person at a terminal sees
 # no change: ssh gets BatchMode and StrictHostKeyChecking=yes when stdin is not a
-# tty (fail fast instead of prompting into a closed pipe); DEPLOY_CONFIG above; and
+# tty (fail fast instead of prompting into a closed pipe); SECRETS_ENV above; and
 # a mkdir lock on the server at shared/deploy.lock, which is the only thing that can
 # see a laptop deploy racing a dispatched one. DEPLOY_LOCK_OWNER labels the holder.
 # The confirmation prompt is NOT one of them — -y is still required, because what
@@ -116,31 +117,23 @@ done
 
 # ---------------------------------------------------------------- config ----
 
-# DEPLOY_CONFIG moves the credentials file off the working tree, which is what an
-# unattended run wants: a CI job writes it from secrets into a directory the workspace
+# SECRETS_ENV moves the credentials file off the working tree, which is what an
+# unattended run wants: a CI job writes it from its secret into a directory the workspace
 # never sees, so no later step can archive it and no stray `rm -rf` in the checkout can
-# take it with them. Unset, it is the usual per-machine file beside the repository.
-CONFIG=${DEPLOY_CONFIG:-$REPO_ROOT/.deploy.local}
-[ -f "$CONFIG" ] || fail "$CONFIG is missing. Run ./config.sh, then fill in the TODOs."
+# take it with them. Unset, it is the usual per-machine secrets.env beside the repository.
+#
+# The loader refuses a file anyone but its owner can read: it carries the full-DDL
+# database password (used only through an SSH tunnel) and the maintenance key.
+# shellcheck source=tools/secrets-env.sh
+. "$REPO_ROOT/tools/secrets-env.sh"
+CONFIG=$SECRETS_ENV_FILE
+secrets_env_load "$CONFIG" || fail "could not read the deploy configuration (the reason is above)."
 
-# The file is sourced, so it can hold nothing but assignments. It carries the
-# full-DDL database password (used only through an SSH tunnel, see PR B), which
-# is why the mode is checked rather than assumed.
-CONFIG_MODE=$(stat -c '%a' "$CONFIG" 2>/dev/null || stat -f '%Lp' "$CONFIG")
-case $CONFIG_MODE in
-    600|400) ;;
-    *) warn ".deploy.local is mode $CONFIG_MODE; it holds credentials. chmod 600 it."
-       UNUSUAL+=(".deploy.local is mode $CONFIG_MODE, not 600 — it holds the DDL password") ;;
-esac
-
-# shellcheck disable=SC1090
-. "$CONFIG"
-
-: "${DEPLOY_SSH_USER:?not set in .deploy.local}"
-: "${DEPLOY_SSH_HOST:?not set in .deploy.local}"
+: "${DEPLOY_SSH_USER:?not set in secrets.env}"
+: "${DEPLOY_SSH_HOST:?not set in secrets.env}"
 : "${DEPLOY_SSH_PORT:=222}"
-: "${DEPLOY_APP_PATH:?not set in .deploy.local}"
-: "${DEPLOY_BASE_URL:?not set in .deploy.local}"
+: "${DEPLOY_APP_PATH:?not set in secrets.env}"
+: "${DEPLOY_BASE_URL:?not set in secrets.env}"
 : "${DEPLOY_KEEP_RELEASES:=5}"
 # One small text file per deploy, kept forever until 2026-09-24.
 : "${DEPLOY_KEEP_HTACCESS:=10}"
@@ -149,7 +142,6 @@ esac
 # needs a wider window than a backup does.
 : "${DEPLOY_KEEP_EXCEPTION_DAYS:=90}"
 : "${DEPLOY_API_KEY:=}"
-: "${DEPLOY_CANARY_COOKIE:=}"
 
 # An unreplaced placeholder is worse than a missing value here. A bogus
 # DEPLOY_API_KEY does not fail loudly: /en/sm/cache-status rejects it, the smoke
@@ -157,7 +149,7 @@ esac
 # the deploy reporting a site problem that does not exist.
 for v in DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_APP_PATH DEPLOY_BASE_URL DEPLOY_API_KEY; do
     case ${!v} in
-        *TODO*) fail "$v in .deploy.local is still the template placeholder (${!v}). Fill it in — a placeholder API key fails the post-deploy smoke run and triggers an automatic rollback of a release that was fine." ;;
+        *TODO*) fail "$v in secrets.env is still the template placeholder (${!v}). Fill it in — a placeholder API key fails the post-deploy smoke run and triggers an automatic rollback of a release that was fine." ;;
     esac
 done
 
@@ -372,9 +364,6 @@ build_smoke_env() {
     SMOKE_ENV=(SMOKE_PROD_BASE_URL="$DEPLOY_BASE_URL")
     if [ -n "$DEPLOY_API_KEY" ]; then
         SMOKE_ENV+=(SMOKE_PROD_CACHE_KEY="$DEPLOY_API_KEY")
-    fi
-    if [ -n "$DEPLOY_CANARY_COOKIE" ]; then
-        SMOKE_ENV+=(SMOKE_PROD_CANARY_COOKIE="$DEPLOY_CANARY_COOKIE")
     fi
 }
 

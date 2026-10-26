@@ -142,22 +142,22 @@ RC=0; OUT=$(prune_exceptions "$WORK/not-there" 90) || RC=$?
 #
 # The deploy workflow sends no retention knobs — tools/gh-secrets.sh leaves them out on
 # purpose, because they are policy rather than credentials — so an unattended deploy runs
-# on whatever the scripts default to. If a default drifts from .deploy.local.dist, then the
+# on whatever the scripts default to. If a default drifts from secrets.env.example, then the
 # file everyone reads to learn the policy stops describing the policy that actually runs,
 # and nothing else would say so.
 default_of() {  # $1 var name -> the default the scripts would use
     grep -hoE "\\$\\{$1:[-=][0-9]+\\}" tools/migrate.sh tools/deploy.sh 2>/dev/null \
         | head -1 | grep -oE '[0-9]+'
 }
-dist_of() { grep -oE "^$1=[0-9]+" .deploy.local.dist | cut -d= -f2; }
+dist_of() { grep -oE "^$1=[0-9]+" secrets.env.example | cut -d= -f2; }
 
 for VAR in DEPLOY_KEEP_BACKUP_RUNS DEPLOY_KEEP_BACKUP_DAYS DEPLOY_MAX_BACKUP_DAYS \
            DEPLOY_KEEP_HTACCESS DEPLOY_KEEP_EXCEPTION_DAYS; do
     D=$(default_of "$VAR"); E=$(dist_of "$VAR")
     if [ -n "$D" ] && [ "$D" = "$E" ]; then
-        check 0 "$VAR: the script default and .deploy.local.dist agree ($D)"
+        check 0 "$VAR: the script default and secrets.env.example agree ($D)"
     else
-        check 1 "$VAR: the script default and .deploy.local.dist agree" "${E:-absent from the dist}" "${D:-no default in any script}"
+        check 1 "$VAR: the script default and secrets.env.example agree" "${E:-absent from the example}" "${D:-no default in any script}"
     fi
 done
 

@@ -43,7 +43,7 @@ class ImportStorageTest extends TestCase
             'somebody\'s desktop'        => ['C:\\Users\\Ramon Vergara\\Desktop\\intento.xlsx', false, 'import 14'],
             'an absolute path'           => ['/etc/passwd', false, ''],
             'a traversal'                => ['data/import/../../config/autoload/local.php', false, 'credentials'],
-            'a traversal inside a name'  => ['data/import/3/../../../.deploy.local', false, 'credentials'],
+            'a traversal inside a name'  => ['data/import/3/../../../secrets.env', false, 'credentials'],
             'a lookalike prefix'         => ['data/importsomething/x.xlsx', false, 'the slash is load-bearing'],
             'empty'                      => ['', false, ''],
         ];
