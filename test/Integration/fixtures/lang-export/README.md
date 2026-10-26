@@ -28,7 +28,7 @@ argued with, and the argument belongs in the commit message.
 
 ## Provenance
 
-Taken from the last commit that tracked them, `cc7f68f`:
+Taken from the last commit that tracked them, `1e6d9af`:
 
 | fixture | was |
 | --- | --- |

@@ -22,7 +22,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * ## This is the test that would have caught the missing year
  *
  * The old column map named `copyrightYear`. The book entity's `update_columns` calls that
- * field `publishedYear` — commit `4933155` renamed it on 2018-11-02 — and both
+ * field `publishedYear` — commit `7c0bdba` renamed it on 2018-11-02 — and both
  * `SionTable::createHelper()` and `updateHelper()` iterate their input and **skip any key
  * the map has no column for**, silently. So from that day every import read the year, cast
  * it to an int, and threw it away. Three imports ran afterwards, and nothing anywhere

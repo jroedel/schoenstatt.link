@@ -699,7 +699,7 @@ PHPEOF
 #
 # It reads /en/sm/cache-status rather than writing a probe file, because before the
 # swap the application is healthy by definition and already reports startTimeUnix.
-# That field only exists since 879aca1; against anything older this finds nothing,
+# That field only exists since 8a497c7; against anything older this finds nothing,
 # EXPECTED_SEGMENTS stays at its floor of 1, and the gate is exactly as strong as it
 # was before this function existed. Degrading to the old behaviour is the right
 # failure here — a census that guessed high would block every deploy.

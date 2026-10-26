@@ -124,7 +124,7 @@ class BooksSmokeTest extends SmokeTestCase
      * Regression: every LibrariesController action was a hard 500 because
      * SearchFormFactory asked LibraryTable for library-specific collection
      * options while building the controller, before any route match existed.
-     * Broken since 2017 (156c2f4 dropped the route-match priming of
+     * Broken since 2017 (d55f7f4 dropped the route-match priming of
      * LibraryTable::setLibraryId()); the options now come from the action.
      */
     public function testGuestVisibleLibraryRenders(): void

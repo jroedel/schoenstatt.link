@@ -1312,7 +1312,7 @@ return [
     ],
     'bjyauthorize' => [
         // NOTE (2026-08-04): SchoenstattTable used to implement BjyAuthorize's
-        // resource/rule provider interfaces, registered here by commit 988c24d
+        // resource/rule provider interfaces, registered here by commit 8455e3d
         // and disabled again the same day because its getRules() granted two
         // roles that exist in no migration — the app could not boot with it
         // active. Production never ran it.
