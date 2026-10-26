@@ -50,7 +50,7 @@ REQUIRED=(
     DEPLOY_CI_SSH_KEY_B64 DEPLOY_KNOWN_HOSTS_B64
 )
 OPTIONAL=(
-    DEPLOY_SSH_PORT DEPLOY_CANARY_COOKIE
+    DEPLOY_SSH_PORT
     DEPLOY_DB_NAME DEPLOY_DB_USER DEPLOY_DB_PASS DEPLOY_DB_TUNNEL_PORT
 )
 
@@ -110,8 +110,7 @@ for name in "${REQUIRED[@]}" "${OPTIONAL[@]}"; do
         case " ${REQUIRED[*]} " in
             *" $name "*) fail "$name is not set in $SECRETS_ENV_FILE." ;;
         esac
-        # Legitimately empty for DEPLOY_CANARY_COOKIE, and for DEPLOY_DB_* when
-        # migrations are left to an operator.
+        # Legitimately empty for DEPLOY_DB_* when migrations are left to an operator.
         warn "$name is empty — left out"
         continue
     fi
