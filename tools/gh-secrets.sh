@@ -1,19 +1,28 @@
 #!/usr/bin/env bash
 #
-# Upload the deploy configuration to the GitHub `production` environment, so
-# .github/workflows/deploy.yml can rebuild .deploy.local on a runner.
+# Upload the deploy section of secrets.env to the GitHub `production` environment, as
+# ONE secret — DEPLOY_SECRETS_ENV — that .github/workflows/deploy.yml writes to a file
+# on the runner and hands to tools/deploy.sh.
 #
-#     ./tools/gh-secrets.sh            # set every secret from .deploy.local
-#     ./tools/gh-secrets.sh --list     # what is set there now, names and dates only
+#     make gh-secrets                        # set DEPLOY_SECRETS_ENV from secrets.env
+#     ./tools/gh-secrets.sh --list           # what is set there now, names and dates only
+#     ./tools/gh-secrets.sh --delete-legacy  # remove the 13 per-field secrets it replaced
 #
-# WHY THIS IS A SCRIPT AND NOT A PASTED COMMAND. Credentials rotate, and a rotation that
-# has to be re-typed into a web form field by field is a rotation that gets half done. This
-# reads the same file tools/deploy.sh reads, so the two can never disagree, and it is
-# idempotent: run it again after editing .deploy.local and the environment catches up.
+# ONE SECRET, NOT THIRTEEN. Each field used to be its own secret, set by a loop that
+# had to agree with a list in deploy.yml, and the one the loop did not know —
+# DEPLOY_KNOWN_HOSTS — was set by hand and drifted unseen. A bundle is the file itself:
+# a name dropped from secrets.env is gone from the runner at the next run, and nothing
+# needs deleting to keep the two in step.
 #
-# It prints names, never values — not on success, not in an error. `gh secret set` takes
-# each value on stdin for the same reason: a --body argument is visible in `ps` and lands
-# in shell history.
+# WHAT IS IN IT: the DEPLOY_* names the runner needs, including the CI deploy key and
+# the pinned host key, both base64. NEVER an APP_* name — production's local.php is
+# rendered on the server by `make prod-config` and the runner has no use for it — and
+# never DEPLOY_API_KEY_PREVIOUS, which exists only on the server mid-rotation. The
+# retention knobs are left out too: they are policy, and an unattended run keeps the
+# scripts' own defaults so a runner cannot prune differently from a laptop.
+#
+# It prints names, never values, and the bundle goes to `gh secret set` on stdin: a
+# --body argument is visible in `ps` and lands in shell history.
 #
 # WHAT IT DELIBERATELY DOES NOT DO: create the environment, set the branch restriction, or
 # add a required reviewer. Those are the protections, and a protection that a script can
@@ -21,10 +30,29 @@
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
+# shellcheck source=tools/secrets-env.sh
+. tools/secrets-env.sh
 
 ENVIRONMENT=production
-CONFIG=${DEPLOY_CONFIG:-.deploy.local}
-KEY_FILE=${DEPLOY_CI_KEY:-$HOME/.ssh/schoenstatt-deploy-ci}
+BUNDLE=DEPLOY_SECRETS_ENV
+
+# The per-field secrets the bundle replaced, for --delete-legacy.
+LEGACY=(
+    DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_SSH_PORT DEPLOY_APP_PATH DEPLOY_BASE_URL
+    DEPLOY_API_KEY DEPLOY_CANARY_COOKIE
+    DEPLOY_DB_NAME DEPLOY_DB_USER DEPLOY_DB_PASS DEPLOY_DB_TUNNEL_PORT
+    DEPLOY_KNOWN_HOSTS DEPLOY_SSH_KEY
+)
+
+# Required, then optional: what the runner can be given empty, it is not given at all.
+REQUIRED=(
+    DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_APP_PATH DEPLOY_BASE_URL DEPLOY_API_KEY
+    DEPLOY_CI_SSH_KEY_B64 DEPLOY_KNOWN_HOSTS_B64
+)
+OPTIONAL=(
+    DEPLOY_SSH_PORT
+    DEPLOY_DB_NAME DEPLOY_DB_USER DEPLOY_DB_PASS DEPLOY_DB_TUNNEL_PORT
+)
 
 C_OK=$'\033[32m'; C_WARN=$'\033[33m'; C_DIM=$'\033[2m'; C_OFF=$'\033[0m'
 ok()   { printf '  %sok%s    %s\n' "$C_OK" "$C_OFF" "$1"; }
@@ -35,94 +63,103 @@ fail() { printf '\n  %sFAIL%s  %s\n\n' $'\033[31m' "$C_OFF" "$1" >&2; exit 1; }
 command -v gh >/dev/null || fail "gh is not installed."
 gh auth status >/dev/null 2>&1 || fail "gh is not authenticated. Run: gh auth login"
 
-if [ "${1:-}" = "--list" ]; then
-    gh secret list --env "$ENVIRONMENT"
-    exit 0
-fi
+case ${1:-} in
+    --list)
+        gh secret list --env "$ENVIRONMENT"
+        exit 0
+        ;;
+    --delete-legacy)
+        SET=$(gh secret list --env "$ENVIRONMENT" --json name --jq '.[].name') \
+            || fail "could not list the $ENVIRONMENT environment's secrets."
+        grep -qx "$BUNDLE" <<< "$SET" \
+            || fail "$BUNDLE is not set. Run make gh-secrets, and let a deploy pass with it, first."
+        PRESENT=()
+        for name in "${LEGACY[@]}"; do
+            grep -qx "$name" <<< "$SET" && PRESENT+=("$name")
+        done
+        [ ${#PRESENT[@]} -gt 0 ] || { ok "none of the per-field secrets is left"; exit 0; }
+        printf 'Delete %d per-field secret(s) from %s: %s\n' "${#PRESENT[@]}" "$ENVIRONMENT" "${PRESENT[*]}"
+        if [ -t 0 ]; then
+            printf 'Only once a deploy has passed with %s. Delete? [y/N] ' "$BUNDLE"
+            read -r ANSWER < /dev/tty
+            case $ANSWER in y|Y|yes) ;; *) fail "nothing deleted." ;; esac
+        fi
+        for name in "${PRESENT[@]}"; do
+            gh secret delete "$name" --env "$ENVIRONMENT" || fail "could not delete $name"
+            ok "deleted $name"
+        done
+        exit 0
+        ;;
+    '') ;;
+    *) printf 'usage: %s [--list | --delete-legacy]\n' "$0" >&2; exit 2 ;;
+esac
 
-[ -f "$CONFIG" ] || fail "$CONFIG is missing. Run ./config.sh, then fill in the TODOs."
+secrets_env_load "$SECRETS_ENV_FILE" || exit 1
 
-# Sourced in a subshell's worth of scope only because this script does nothing else; the
-# file is shell assignments, which is the whole contract tools/deploy.sh relies on too.
-# shellcheck disable=SC1090
-. "$CONFIG"
+printf '\n\033[1m%s → %s environment\033[0m\n' "$BUNDLE" "$ENVIRONMENT"
 
-# The eleven the workflow reads. DEPLOY_KEEP_RELEASES and every retention knob are
-# deliberately absent: they are policy, not credentials, and the workflow leaves them at
-# the scripts' own defaults so a runner cannot quietly prune differently from a laptop.
-# Those defaults are split across two files — the snapshot knobs in tools/migrate.sh, the
-# htaccess and exception ones in tools/deploy.sh — and each must match .deploy.local.dist,
-# or an unattended deploy applies a policy nobody wrote down.
-FIELDS=(
-    DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_SSH_PORT DEPLOY_APP_PATH DEPLOY_BASE_URL
-    DEPLOY_API_KEY DEPLOY_CANARY_COOKIE
-    DEPLOY_DB_NAME DEPLOY_DB_USER DEPLOY_DB_PASS DEPLOY_DB_TUNNEL_PORT
-)
-
-printf '\n\033[1mSecrets → %s environment\033[0m\n' "$ENVIRONMENT"
-
-SET=0 EMPTY=0
-for FIELD in "${FIELDS[@]}"; do
-    VALUE=${!FIELD:-}
-    case "$VALUE" in
+INCLUDED=()
+for name in "${REQUIRED[@]}" "${OPTIONAL[@]}"; do
+    value=${!name:-}
+    case $value in
         # An unreplaced placeholder is worse than a missing value: the deploy gets far
-        # enough to fail somewhere confusing. tools/deploy.sh aborts its preflight on the
-        # same test.
-        *TODO*) fail "$FIELD still contains a TODO in $CONFIG." ;;
+        # enough to fail somewhere confusing. tools/deploy.sh refuses the same test.
+        *TODO*) fail "$name still contains a TODO in $SECRETS_ENV_FILE." ;;
     esac
-    if [ -z "$VALUE" ]; then
-        # Legitimately empty for DEPLOY_CANARY_COOKIE, and for DEPLOY_DB_* when migrations
-        # are left to an operator. Skipped rather than set empty, so `gh secret list` shows
-        # what the runner will actually have.
-        warn "$FIELD is empty — not set"
-        EMPTY=$((EMPTY + 1))
+    if [ -z "$value" ]; then
+        case " ${REQUIRED[*]} " in
+            *" $name "*) fail "$name is not set in $SECRETS_ENV_FILE." ;;
+        esac
+        # Legitimately empty for DEPLOY_DB_* when migrations are left to an operator.
+        warn "$name is empty — left out"
         continue
     fi
-    printf '%s' "$VALUE" | gh secret set "$FIELD" --env "$ENVIRONMENT" \
-        || fail "could not set $FIELD"
-    ok "$FIELD"
-    SET=$((SET + 1))
+    INCLUDED+=("$name")
 done
 
-# --- the deploy key -----------------------------------------------------------
-#
-# Its own key, not yours: revoking CD should not mean rotating the key you use daily. No
-# passphrase, because there is no agent on a runner and nobody to type one — what protects
-# it is that it lives in a GitHub secret and opens one account on one port.
-printf '\n\033[1mDeploy key\033[0m\n'
+# Both keys are decoded and checked here rather than on the runner, where a bad paste
+# would surface four steps into a deploy.
+# 0600 for everything below: ssh-keygen refuses a private key anyone else can read.
+umask 077
+WORK=$(mktemp -d) || fail "could not create a temporary directory"
+trap 'rm -rf "$WORK"' EXIT
+printf '%s' "$DEPLOY_CI_SSH_KEY_B64" | base64 -d > "$WORK/key" 2>/dev/null \
+    || fail "DEPLOY_CI_SSH_KEY_B64 is not base64."
+ssh-keygen -y -P '' -f "$WORK/key" > "$WORK/key.pub" 2>/dev/null \
+    || fail "DEPLOY_CI_SSH_KEY_B64 is not a passphrase-less private key; there is no agent on a runner."
+printf '%s' "$DEPLOY_KNOWN_HOSTS_B64" | base64 -d > "$WORK/known_hosts" 2>/dev/null \
+    || fail "DEPLOY_KNOWN_HOSTS_B64 is not base64."
+ssh-keygen -l -f "$WORK/known_hosts" >/dev/null 2>&1 \
+    || fail "DEPLOY_KNOWN_HOSTS_B64 does not decode to known_hosts lines."
+ok "the CI key and the host key decode"
 
-if [ ! -f "$KEY_FILE" ]; then
-    ssh-keygen -t ed25519 -N '' -C "schoenstatt.link CD $(date +%Y-%m-%d)" -f "$KEY_FILE" >/dev/null \
-        || fail "could not generate a key at $KEY_FILE"
-    ok "generated $KEY_FILE"
-else
-    ok "using the existing $KEY_FILE"
-fi
+# Built whole before anything is sent: a line that fails inside a pipe into `gh` would
+# upload the bundle without it, and the pipe would report success.
+CONTENT=$(
+    printf '# %s — written by tools/gh-secrets.sh, %s. The deploy section of secrets.env.\n' \
+        "$BUNDLE" "$(date -u +%Y-%m-%dT%H:%MZ)"
+    for name in "${INCLUDED[@]}"; do secrets_env_line "$name" "${!name}" || exit 1; done
+) || fail "the bundle could not be written; nothing was sent."
+printf '%s\n' "$CONTENT" | gh secret set "$BUNDLE" --env "$ENVIRONMENT" || fail "could not set $BUNDLE"
+ok "$BUNDLE holds: ${INCLUDED[*]}"
 
-gh secret set DEPLOY_SSH_KEY --env "$ENVIRONMENT" < "$KEY_FILE" \
-    || fail "could not set DEPLOY_SSH_KEY"
-ok "DEPLOY_SSH_KEY"
-SET=$((SET + 1))
-
-printf '\n%s%d secret(s) set, %d skipped as empty.%s\n' "$C_DIM" "$SET" "$EMPTY" "$C_OFF"
-
-# Whether the server will accept it. Cheap, and the alternative is finding out from a
-# workflow run that fails four steps in.
-if ssh -i "$KEY_FILE" -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=10 \
+# Whether the server accepts the key, against the pinned host key and nothing else.
+# Cheap, and the alternative is finding out from a workflow run.
+if ssh -i "$WORK/key" -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=10 \
+       -o UserKnownHostsFile="$WORK/known_hosts" -o StrictHostKeyChecking=yes \
        -p "${DEPLOY_SSH_PORT:-222}" "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" true 2>/dev/null; then
-    ok "the server already accepts this key"
+    ok "the server accepts the CI key, and its host key is the pinned one"
 else
-    printf '\n  %sThe server does not accept it yet.%s Install the public half:\n\n' "$C_WARN" "$C_OFF"
-    printf '    ssh-copy-id -i %s.pub -p %s %s@%s\n\n' \
-        "$KEY_FILE" "${DEPLOY_SSH_PORT:-222}" "$DEPLOY_SSH_USER" "$DEPLOY_SSH_HOST"
-    dim "or append this line to ~/.ssh/authorized_keys on the server:"
+    printf '\n  %sThe server did not accept the CI key against the pinned host key.%s\n' "$C_WARN" "$C_OFF"
+    dim "If the key is new, append this line to ~/.ssh/authorized_keys on the server:"
     printf '\n'
-    cat "$KEY_FILE.pub"
+    cat "$WORK/key.pub"
     printf '\n'
+    dim "If the host key changed, check why before updating DEPLOY_KNOWN_HOSTS_B64."
 fi
 
 printf '\nStill yours to do in the web UI, once:\n'
 printf '  Settings → Environments → %s → Deployment branches and tags → master\n' "$ENVIRONMENT"
 dim "workflow_dispatch runs from ANY branch, so without this a branch carrying an edited"
-dim "deploy.yml can read these secrets. It is the gate until required reviewers exist."
+dim "deploy.yml can read this secret."
 printf '\n'

@@ -120,9 +120,13 @@ printf '  built in %s\n' "$DEPLOY_TREE"
 printf '  this working tree is only read\n\n'
 
 # --- 1. credentials, before anything slow -----------------------------------------
-[ -f "$REPO_ROOT/.deploy.local" ] || die "no .deploy.local. Seed it from .deploy.local.dist with ./config.sh.
+[ -f "$REPO_ROOT/secrets.env" ] || die "no secrets.env. Take it from the vault, or seed it with ./config.sh.
 It is gitignored and mode 0600; credentials never reach the server."
-ok ".deploy.local is present"
+ok "secrets.env is present"
+# One copy on disk, not two: the deploy checkout's tools read this tree's file by path.
+# It holds the full-DDL database password, and tools/secrets-env.sh honours the variable
+# in every script deploy.sh calls.
+export SECRETS_ENV="$REPO_ROOT/secrets.env"
 
 # --- 2. the deploy checkout, at origin/master -------------------------------------
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null)" || die "this clone has no 'origin' remote"
@@ -163,21 +167,19 @@ if [ ! -f "$DEPLOY_TREE/.gitmodules" ]; then
     rm -rf "$DEPLOY_TREE/.git/modules"
 fi
 
-# --- 3. the two things that must not exist twice ----------------------------------
-# Both are links, so both are untracked, and deploy.sh refuses to package a tree with
-# anything untracked in it. They are this script's doing rather than the repository's, so
-# they are excluded per-checkout in .git/info/exclude — which no reset touches and which
-# master's .gitignore therefore never has to know about.
+# --- 3. the one thing that must not exist twice -----------------------------------
+# A link, so untracked, and deploy.sh refuses to package a tree with anything untracked
+# in it. It is this script's doing rather than the repository's, so it is excluded
+# per-checkout in .git/info/exclude — which no reset touches and which master's
+# .gitignore therefore never has to know about.
 EXCLUDE="$DEPLOY_TREE/.git/info/exclude"
 mkdir -p "$(dirname "$EXCLUDE")"
 grep -qx '/data/deploy' "$EXCLUDE" 2>/dev/null \
-    || printf '\n# Written by tools/prod-deploy.sh; both are links back to the working tree.\n/.deploy.local\n/data/deploy\n' >> "$EXCLUDE"
+    || printf '\n# Written by tools/prod-deploy.sh; a link back to the working tree.\n/data/deploy\n' >> "$EXCLUDE"
 
-# .deploy.local holds the full-DDL database password. One copy on disk, not two: the
-# deploy checkout reaches the same file, and `stat` follows the link, so deploy.sh still
-# sees mode 600.
-ln -sfn "$REPO_ROOT/.deploy.local" "$DEPLOY_TREE/.deploy.local" \
-    || die "could not link .deploy.local into the deploy checkout"
+# The credentials were linked in here too until secrets.env replaced .deploy.local; a
+# link left behind would point at a file that is about to be deleted.
+[ -L "$DEPLOY_TREE/.deploy.local" ] && rm -f "$DEPLOY_TREE/.deploy.local"
 
 # data/deploy/ is where tools/migrate.sh dumps the production tables a migration is about
 # to change, and where the migration plan is written. That is the operator's material and
@@ -187,7 +189,7 @@ mkdir -p "$REPO_ROOT/data/deploy" || die "could not create $REPO_ROOT/data/deplo
 [ -L "$DEPLOY_TREE/data/deploy" ] || rm -rf "$DEPLOY_TREE/data/deploy"
 ln -sfn "$REPO_ROOT/data/deploy" "$DEPLOY_TREE/data/deploy" \
     || die "could not link data/deploy/ into the deploy checkout"
-ok "linked .deploy.local and data/deploy/ from this tree"
+ok "linked data/deploy/ from this tree"
 
 # The post-condition deploy.sh will insist on, asked here where the answer is still
 # comprehensible. Its preflight refuses a tree with ANY untracked file in it, and this is

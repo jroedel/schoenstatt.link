@@ -169,7 +169,7 @@ other, so "everything passed" and "everything that could run passed" are differe
 
 ## Production
 
-- Hetzner shared hosting (`$DEPLOY_SSH_HOST`, `$DEPLOY_SSH_USER` — both in `.deploy.local`,
+- Hetzner shared hosting (`$DEPLOY_SSH_HOST`, `$DEPLOY_SSH_USER` — both in `secrets.env`,
   never in a tracked file), PHP **8.5.12** CGI/FastCGI, three PHP pools, MariaDB 10.11, app
   at `~/public_html/schoenstatt.link/`, docroot `public/`.
 - OPcache on (`validate_timestamps=On`, `revalidate_freq=2`, 128 MB, interned strings 32 MB);
@@ -286,8 +286,12 @@ this tree, and only when this tree is on the revision being shipped.
 `/_health` revision poll before any post-deploy migration, migration ledger `sch_migration`
 with `-- @phase`, `@kind`, `@tables` (no default for `@phase`), rollback refused for a
 target lacking a `@destructive` migration. **Never run a deploy**; give the user the
-command. A release is exactly `git ls-files`. Credentials live only in
-`.deploy.local`, never committed or printed. [docs/DEPLOY.md](docs/DEPLOY.md).
+command. A release is exactly `git ls-files`. Credentials live only in `secrets.env`
+(and the vault), never committed or printed; it is parsed by `tools/secrets-env.sh`,
+never sourced. Production's `local.php` is rendered from it by `make prod-config` and
+never edited on the server. Never run `make prod-config*`, `gh-secrets` or
+`secrets-init`: they read credentials and send them on — give the user the command.
+[docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Tools
 

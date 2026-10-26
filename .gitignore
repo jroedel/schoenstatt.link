@@ -26,10 +26,16 @@ ubuntu-xenial-16.04-cloudimg-console.log
 phploy.ini
 phploy.log
 .phploy
-# Deploy configuration and credentials (tools/deploy.sh), seeded from
-# .deploy.local.dist by config.sh. Holds the SSH target, the maintenance API key
-# and the full-DDL database password — the last of which exists on developer
-# machines only and is never written to the server.
+# Every credential the application has (tools/secrets-env.sh), seeded from
+# secrets.env.example by config.sh and kept in the password vault: the deploy's SSH
+# target, maintenance key, full-DDL database password and CI key, and production
+# local.php's values. Anchored: it is only ever at the repository root.
+/secrets.env
+/secrets.env.bak
+# `make prod-config-import` writes the server's values here, mode 0600.
+/var/
+# What secrets.env replaced. Ignored until every machine has deleted its copy — it
+# holds the same credentials.
 .deploy.local
 # Table snapshots the migration runner takes before it touches production, and
 # the migration plan it writes. Real production data; never commit either.

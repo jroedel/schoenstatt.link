@@ -2,12 +2,19 @@
 
 # The idea of this file is to simplify development setup on a new machine
 
-# Deploy configuration and credentials — one file, replacing phploy.ini and
-# .phploy. It holds a full-DDL database password, so the mode is not optional.
-if [ ! -f .deploy.local ]; then
-  cp .deploy.local.dist .deploy.local
+# Every credential, in one file — normally taken from the password vault rather than
+# seeded. It holds a full-DDL database password, and tools/secrets-env.sh refuses a copy
+# anyone else can read, so the mode is not optional.
+#
+# Not where .deploy.local still exists: that is what secrets.env replaced, and
+# `make secrets-init` converts it — which it will not do over a seeded copy.
+if [ -f .deploy.local ] && [ ! -f secrets.env ]; then
+  echo "NOTE: .deploy.local is what secrets.env replaced. Run \`make secrets-init\` to convert it,"
+  echo "      then put secrets.env in the vault and delete .deploy.local."
+elif [ ! -f secrets.env ]; then
+  (umask 077 && cp secrets.env.example secrets.env)
 fi
-chmod 600 .deploy.local
+[ -f secrets.env ] && chmod 600 secrets.env
 
 # phploy was retired 2026-08-16 (docs/DEPLOY.md). If this machine still has its
 # credential files lying about, say so once rather than deleting them: they hold
@@ -20,9 +27,6 @@ fi
 # copy a sample local.php file
 if [ ! -f config/autoload/local.php ]; then
   cp config/autoload/local.php.dist config/autoload/local.php
-fi
-if [ ! -f config/autoload/laminas-developer-tools.local.php ]; then
-  cp config/autoload/laminas-developer-tools.local.php.dist config/autoload/laminas-developer-tools.local.php
 fi
 if [ ! -f config/autoload/cache.local.php ]; then
   cp config/autoload/cache.local.php.dist config/autoload/cache.local.php

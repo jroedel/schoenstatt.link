@@ -514,8 +514,6 @@ stage_smoke_prod() {
     #
     # The cache key is the capsule's own, from docker/local.docker.php. With it set,
     # the APCu and OPcache blocks run — which is precisely the code that broke.
-    # SMOKE_PROD_CANARY_COOKIE is deliberately NOT set: the vhost's SetEnv masks the
-    # .htaccess kernel lines, so neither canary works here (see CLAUDE.md).
     step "Post-deploy smoke script  (NOT in ci.yml — tools/smoke-prod.sh vs the capsule)"
     if ! build_capsule_sitemap; then
         warn "could not build the capsule sitemap, so smoke-prod.sh was not run"

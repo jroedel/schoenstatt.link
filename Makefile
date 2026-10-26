@@ -8,7 +8,7 @@
 # See docs/DEPLOY.md.
 
 .DEFAULT_GOAL := help
-.PHONY: help prod-deploy ci
+.PHONY: help prod-deploy ci qa dev-hooks secrets-init prod-config-diff prod-config prod-config-import gh-secrets prod-send-secrets
 
 help: ## Show this help
 	@printf '\033[1mTargets\033[0m\n'
@@ -43,15 +43,29 @@ dev-hooks: ## Enable the repository git hooks in this clone
 prod-deploy: ## Deploy origin/master from a separate checkout
 	@./tools/prod-deploy.sh
 
-## .deploy.local is the SOURCE of the maintenance key; the server's local.php and
-## the GitHub production environment are copies. Generate a new key with
-##   openssl rand -base64 32 | tr -d '=+/'
-## paste it into .deploy.local, then run this to copy it to the other two. It
-## widens before it narrows, so the old key works until the new one is proved.
-prod-rotate-sion-model-api-keys: ## Copy .deploy.local's key to the server and to GitHub
-	@./tools/rotate-api-key.sh
+## --- secrets.env -------------------------------------------------------------------
+## Every credential, in one file kept in the password vault (secrets.env.example says
+## where each name goes). These targets read it and send it on — to the server, to
+## GitHub — so they are for a person at a terminal: never an agent, never CI.
 
-## Push .deploy.local to the GitHub production environment. Idempotent, and worth
-## running after any edit to that file — deploy.yml rebuilds .deploy.local from these.
-prod-send-secrets: ## Upload .deploy.local to the GitHub production environment
+## Once, on a machine that still has .deploy.local: writes secrets.env from it, the CI
+## key and the server's pinned host key. Never overwrites an existing secrets.env.
+secrets-init: ## Write secrets.env from .deploy.local, the CI key and the host key
+	@./tools/secrets-init.sh
+
+## production's local.php, rendered on the server from secrets.env and the template on
+## origin/master. -diff names what would change and prints no value; prod-config shows
+## the diff, asks, installs, clears the config cache and checks the live site.
+## To rotate the maintenance key, see DEPLOY_API_KEY in secrets.env.example.
+prod-config-diff: ## What prod-config would change on the server, by key path
+	@./tools/prod-config.sh diff
+prod-config: ## Install production's local.php from secrets.env
+	@./tools/prod-config.sh install
+prod-config-import: ## The server's local.php values as APP_* lines in var/
+	@./tools/prod-config.sh import
+
+## The deploy section of secrets.env as the one GitHub secret DEPLOY_SECRETS_ENV that
+## deploy.yml writes to a file on the runner. Run after any edit to that section.
+gh-secrets: ## Upload the deploy section to the GitHub production environment
 	@./tools/gh-secrets.sh
+prod-send-secrets: gh-secrets ## The old name for gh-secrets
