@@ -6,6 +6,8 @@ namespace SchoenstattTest\Smoke;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 
+use function preg_match;
+use function rawurlencode;
 use function strlen;
 
 /**
@@ -26,6 +28,9 @@ class Batch6SymfonySmokeTest extends SmokeTestCase
 
     /** A person who exists in the capsule's production data, and the subject of the show-page cases. */
     private const PERSON_ID = 494;
+
+    /** A person the search must find by their own surname. */
+    private const SEARCHED_PERSON_ID = 1;
 
     protected function emailPrefix(): string
     {
@@ -169,13 +174,24 @@ class Batch6SymfonySmokeTest extends SmokeTestCase
         $jar = $this->newCookieJar();
         $this->signIn($jar, ['sch_moderator']);
 
-        $body = $this->get('/en/persons/search?search=Walter', false, $jar)['body'];
+        //the surname is read from the data, never written here: no tracked file names a
+        //real person (NoTrackedFileNamesAPersonTest)
+        $statement = $this->pdo()->prepare('SELECT LastName FROM sch_persons WHERE PersonId = ?');
+        $statement->execute([self::SEARCHED_PERSON_ID]);
+        $surname = $statement->fetchColumn();
+        $this->assertIsString($surname, 'person ' . self::SEARCHED_PERSON_ID . ' is not in the capsule');
+
+        $body = $this->get('/en/persons/search?search=' . rawurlencode($surname), false, $jar)['body'];
 
         foreach (['Name', 'Community', 'Email', 'Cell phone'] as $header) {
             $this->assertStringContainsString('<th>' . $header . '</th>', $body);
         }
         $this->assertStringContainsString('<table class="table">', $body);
-        $this->assertStringContainsString('/en/persons/1"', $body, 'Heinrich Walter is not in the results');
+        $this->assertStringContainsString(
+            '/en/persons/' . self::SEARCHED_PERSON_ID . '"',
+            $body,
+            'a search for a person\'s own surname does not find them'
+        );
     }
 
     /** And the search box, which the .phtml builds and never draws. */
@@ -225,8 +241,10 @@ class Batch6SymfonySmokeTest extends SmokeTestCase
         $this->assertStringContainsString('id="personalInfoPanel"', $body);
         $this->assertStringNotContainsString('id="assignmentsPanel"', $body);
         //the title is data and must not be translated — a translator miss files a phrase,
-        //and here that would be one row per person
-        $this->assertStringContainsString('<title>Sr. M. Aleja Slaughter - Schoenstatt Link</title>', $body);
+        //and here that would be one row per person. It reads as the heading does, which
+        //spares this file the person's name.
+        $this->assertSame(1, preg_match('~<h1[^>]*>([^<]+)</h1>~', $body, $heading), 'the page has no heading');
+        $this->assertStringContainsString('<title>' . $heading[1] . ' - Schoenstatt Link</title>', $body);
     }
 
     /** An id no person has goes back to the index with a flash, as showAction() does. */

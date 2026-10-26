@@ -378,7 +378,7 @@ final class EntityEditController
      * reads. This method's docblock said so while its body walked a fixed list of candidate
      * keys in a fixed order, which is the same thing only by coincidence: for `person` the
      * list reached `title` first, and `title` on a person is the **honorific**. So the
-     * heading of `/persons/494/edit` read "Sr." rather than "M. Aleja Slaughter". Found by
+     * heading of `/persons/494/edit` read "Sr." rather than the person's name. Found by
      * the port baseline, which is also how it became clear the field was never populated on
      * the laminas side at all (see the note on `personName` in docs/BACKLOG.md).
      *
